@@ -1,4 +1,4 @@
-function output_strc=Jmag_fcn_result_export(input_obj)
+function output_obj=Jmag_fcn_result_export(input_obj)
     global ModelName
     global StudyName
         
@@ -39,33 +39,35 @@ end
 
 %% dataset / datamanager()
 jmag.SetCurrentStudy(StudyName);
-data_names=jmag.GetDataManager().GetAllNames();
-celldisp(data_names);
+% data_names=jmag.GetDataManager().GetAllNames();
+% celldisp(data_names);
 
-for outputdata=2:length(input_obj.outputname)
-idx=contains(data_names,input_obj.outputname{outputdata})
+% jmag.GetModel(ModelName).GetStudy(StudyName).GetResultTable().WriteAllTables("Z:\01_Codes_Projects\git_fork_emach\Class\allresult.csv","Time")
+
+for Noutputdata=1:length(input_obj.outputname)
+% idx=contains(data_names,input_obj.outputname{Noutputdata})
 % idx=contains(data_names,o_data_name{2})
-selected_data_name=data_names(idx)
+% selected_data_name=data_names(idx);
 
 %% Get array data
 % o_data_name='LineCurrent'
-% single_data_name=input_obj.outputname;
+single_data_name=input_obj.outputname{Noutputdata};
+res=jmag_fcn_graph_export(input_obj.outputname{Noutputdata});
+
 % extractBetween(data_names{1})
 
-    % for i=1:length(selected_data_name)
-    for i=1:4
-    res=jmag_fcn_graph_export(selected_data_name{i},i,input_obj.outputname{outputdata});
-    % jmag.GetModel(ModelName).GetStudy(StudyName).GetResultTable().GetDataFromName(typename,sourcename{1})
-    
+%     for Nsourcename=1:length(selected_data_name)
+%     res=jmag_fcn_graph_export(selected_data_name{Nsourcename},Nsourcename,input_obj.outputname{Noutputdata});
+%     
     %% Get value data
     
     
     % for i=1:length(data_names(TF))
     
     %% out 
-    output_strc=input_obj;
-    output_strc.res{1,i}={res};
-    end
+output_obj=input_obj;
+output_obj.res=res;
+%     end
 end
 
 end 

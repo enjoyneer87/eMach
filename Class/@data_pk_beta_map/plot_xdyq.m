@@ -29,9 +29,10 @@ function plot_xdxq(td,data)
 %% 
     
     objname=inputname(1); 
+%     objname='test'
     if strcmp(data,'flux')
             
-            disname=strcat(mat2str(td.current(1,i)),'[A]_{pk}'," - ",objname);
+            disname='d';
             subplot(2,1,1)
             surf(td.current_dq.id,td.current_dq.iq,td.flux_linkage.in_d,DisplayName=disname);
             hold on
@@ -45,6 +46,7 @@ function plot_xdxq(td,data)
             ax.YLabel.String='iq[A]';
             view(2)
             subplot(2,1,2)
+            disname='q';
             surf(td.current_dq.id,td.current_dq.iq,td.flux_linkage.in_q,DisplayName=disname);
                         hold on
             stem3(td.current_dq.id,td.current_dq.iq,td.flux_linkage.in_q,'DisplayName',disname,"LineStyle","none");
@@ -59,8 +61,10 @@ function plot_xdxq(td,data)
             view(2)
             title(data)
     elseif  strcmp(data,'torque')
+
         for i=width(td.beta):-1:1
             disname=strcat(mat2str(td.current(1,i)),'[A]_{pk}'," - ",objname);
+
             surf(td.current_dq.id,td.current_dq.iq,td.torque_map,DisplayName=disname);
             hold on
             legend
@@ -75,7 +79,8 @@ function plot_xdxq(td,data)
     elseif strcmp(data,'voltage')
 %         for i=width(td.rpm):-1:1
             %Vd
-            disname=strcat(mat2str(td.current(1,i)),'[A]_{pk}'," - ",objname);
+%             disname=strcat(mat2str(td.current(1,i)),'[A]_{pk}'," - ",objname);
+            disname='Vd'
             subplot(4,2,[1 3])
             surf(td.current_dq.id,td.current_dq.iq,td.voltage.Vd,DisplayName=disname);
             hold on
@@ -87,6 +92,8 @@ function plot_xdxq(td,data)
             ax.YLabel.String='iq[A]';
             view(2)
             % Vq
+            disname='Vq'
+
             subplot(4,2,[2 4])
             surf(td.current_dq.id,td.current_dq.iq,td.voltage.Vq,DisplayName=disname);
             hold on
@@ -98,6 +105,7 @@ function plot_xdxq(td,data)
             ax.YLabel.String='iq[A]';
             view(2)
             %Vabs
+            disname='Vabs'
             subplot(4,2,[5 7])
             surf(td.current_dq.id,td.current_dq.iq,td.voltage.Vabs,DisplayName=disname);
             hold on

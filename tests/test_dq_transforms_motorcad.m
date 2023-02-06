@@ -1,26 +1,48 @@
-
 %% precondition
 mcad_result_list_bydata=struct();
 i=1;
-%% define object
+% define object
 HDEV_motorcad=motorcaddata(12);
-%% 
-
-%% Infor regarding path
+% Infor regarding path
 % HDEV_motorcad.proj_path='Z:\Thesis\HDEV\02_MotorCAD\MOT';
 HDEV_motorcad.proj_path='Z:\01_Codes_Projects\Testdata_post\Simulation_Comparison';
 HDEV_motorcad.file_name='12P72S_N42EH_Maxis_Br_95pro_LScoil_11T_2ndy_TestModel';
 HDEV_motorcad.file_path=HDEV_motorcad.proj_path;
 % file_list=fcn_read_dat(file_list_get(path),1)
-
-%% basic drive &circuit data
+%% Input 정의 
+% basic drive &circuit data
 HDEV_motorcad.Rs= 0.0067;   
 HDEV_motorcad.Vdc=650;
 HDEV_motorcad.Vs_max=HDEV_motorcad.Vdc*(2/pi)*0.98 % dankai
 HDEV_motorcad.Is_max=750;     %pk value
 
+%% Output 정의 -  List the data wanted to export or plot 
+% cell format - python list와의 유사성 때문
+o_data_name=acceptVariableNumInputs('LineCurrent', 'RmsBackEMFPhase');
+o_data_name=cell(1,2);
+celldisp(o_data_name)
+o_data_name{1,1}={'LineCurrent'}
+o_data_name{1,2}='RmsBackEMFPhase'
+o_data_name{1,3}='RMSPhaseResistiveVoltage_D'
+% o_data_name{1,i}='RMSPhaseResistiveVoltage_Q'
+% o_data_name{1,i}='RMSPhaseResistiveVoltage'
+% o_data_name{1,i}='RMSPhaseReactiveVoltage_D'
+% o_data_name{1,i}='RMSPhaseReactiveVoltage_Q'
+% o_data_name{1,i}='PhasorRmsPhaseVoltage'
+% o_data_name{1,i}='RmsPhaseDriveVoltage'
+% o_data_name{1,i}='PhaseVoltage'
+% o_data_name{1,i}='PhasorLoadAngle'
+% o_data_name{1,i}='PhasorPowerFactorAngle'
+% o_data_name{1,i}='PhaseAdvance'
+% o_data_name{1,i}='RMSPhaseCurrent'
+% other format - struct or table 
+
+%% data format to Simul object - 상호간의 구조 allocation이 필요할듯
+
+
 %% data import
 HDEV_motorcad=motorcad_fcn_result_export(HDEV_motorcad)
+
 Jmag_Current=readtable(HDEV_motorcad.res);
 Jmag_Current.Properties.VariableNames(1)={'time'}
 % current
@@ -79,7 +101,7 @@ formatter_sci
 
 figure
 plot(t.time,u_ins')
-end
+
 
 %% One elec period extract
 HDEV_motorcad=fcn_One_period_sampling(HDEV_motorcad);

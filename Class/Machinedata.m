@@ -1,10 +1,11 @@
 classdef (Abstract) Machinedata
     properties
         %Dimension
+
         %Winding
         torque_map
         Rs
-        p
+        p 
         file_name
         file_path
         jmag_version 
@@ -17,7 +18,7 @@ classdef (Abstract) Machinedata
         rpm
         %Simulation File
         
-        force_map
+        force
         Material
         SampleNumber
         Stress
@@ -27,7 +28,8 @@ classdef (Abstract) Machinedata
         Vdc
         Vs_max
         Is_max
-        % LUT 
+        
+        % Map
         LUT
 
         %Force 

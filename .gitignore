@@ -32,3 +32,6 @@ octave-workspace
 *.jfiles
 *.mn
 
+tests/LineCurrent.csv
+Class/LineCurrent.csv
+LineCurrent.csv

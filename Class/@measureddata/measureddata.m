@@ -23,7 +23,8 @@ classdef measureddata < emlab_MachineData
     shaft_torque
     end
     methods
-        phasor_diagram(obj)
+        dq_phasor_diagram(obj)
     end
+    
 
 end

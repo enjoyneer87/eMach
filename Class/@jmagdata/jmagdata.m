@@ -21,6 +21,9 @@ classdef jmagdata <emlab_MachineData
 %   output data name (cell)
     outputname
     end
-    
+    methods 
+    output_strc=Jmag_fcn_result_export(obj)
+     
+    end
 
 end

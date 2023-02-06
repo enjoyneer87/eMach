@@ -16,7 +16,8 @@
 % runtests('xfemmRemovePartiallyOverlappingSegmentsTest');
 
 %% KDH
-runtests("Jmag_Current_import_test");
+runtests("test_Jmag_Current_import");
 runtests("test_data_pk_beta_map");
 runtests("test_data_beta_torque_map");
 runtests("test_data_dq_map");
+runtests("test_dq_transform_measured")

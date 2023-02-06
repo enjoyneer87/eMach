@@ -1,39 +1,40 @@
-HDEV_measured=measureddata
-HDEV_measured.p=12;
+
+HDEV_measured=measureddata(12)
+% HDEV_measured.p=12;
 %%
 path='Z:\01_Codes_Projects\Testdata_post\Test_Measured_Data\Load\Test_20220313_2nd';
-file_list=fcn_read_dat(file_list_get(path),1)
+measurelist_by_channel=fcn_read_dat(file_list_get(path),1)
 %% data import
 for i=1:1
 % current
-    HDEV_measured.I1(1).value.Properties.Description='[A]'
-HDEV_measured.I1=file_list.c1(1);
-HDEV_measured.I2=file_list.c2(1);
+HDEV_measured.I1(1).value.Properties.Description='[A]'
+HDEV_measured.I1=measurelist_by_channel.c1(1);
+HDEV_measured.I2=measurelist_by_channel.c2(1);
 HDEV_measured.I3=HDEV_measured.I2;
-HDEV_measured.I3.value.data=-HDEV_measured.I1(1).value.data-HDEV_measured.I2(1).value.data;
+HDEV_measured.I3(1).value.data=-HDEV_measured.I1(1).value.data-HDEV_measured.I2(1).value.data;
 
 %voltage
 HDEV_measured.u1(1).value.Properties.Description='[V]'
-HDEV_measured.u1=file_list.c3(1);
-HDEV_measured.u2=file_list.c4(1);
+HDEV_measured.u1=measurelist_by_channel.c3(1);
+HDEV_measured.u2=measurelist_by_channel.c4(1);
 HDEV_measured.u3=HDEV_measured.u2;
 HDEV_measured.u3.value.data=-HDEV_measured.u1(1).value.data-HDEV_measured.u2(1).value.data;
 
 %current
-HDEV_measured.I1(i,1)=file_list.c1(i);
-HDEV_measured.I2(i,1)=file_list.c2(i);
+HDEV_measured.I1(i,1)=measurelist_by_channel.c1(i);
+HDEV_measured.I2(i,1)=measurelist_by_channel.c2(i);
 HDEV_measured.I3=HDEV_measured.I2;
 HDEV_measured.I3(i,1).value.data=-HDEV_measured.I1(i).value.data-HDEV_measured.I2(i).value.data;
 
-% time & degree setting
-HDEV_measured.test_rpm(i)=str2num(file_list.c1(i).rpm)
-HDEV_measured.wr_test(i)= 2*pi*HDEV_measured.test_rpm(i)/60*HDEV_measured.p/2
-HDEV_measured.wr_plot(i)= 2*pi*HDEV_measured.test_rpm(i)/60*HDEV_measured.p/2
+% time & degree -theta setting
+HDEV_measured.test_rpm(i)=str2num(measurelist_by_channel.c1(i).rpm)
+% HDEV_measured.wr_test(i)= 2*pi*HDEV_measured.test_rpm(i)/60*HDEV_measured.p/2
+% HDEV_measured.wr_plot(i)= 2*pi*HDEV_measured.test_rpm(i)/60*HDEV_measured.p/2
 
 t=HDEV_measured.I1(i).time;
 theta=HDEV_measured.wr_plot(i)*t.time;
-init_angles=0;
-deg_theta=rad2deg(theta)+init_angles;
+init_angles=90;
+deg_theta=rad2deg(theta+init_angles);
 
 %% dq trans
 I_ins=[HDEV_measured.I1(i).value.data HDEV_measured.I3(i).value.data HDEV_measured.I2(i).value.data]';
@@ -41,6 +42,8 @@ u_ins=[HDEV_measured.u1.value.data HDEV_measured.u3.value.data HDEV_measured.u2.
 
 
 [xab,xdq]=dq_trans(I_ins,deg2rad(deg_theta)'); %% 입력이 3 x time 형태
+HDEV_measured.Id=xdq(1,:)';
+HDEV_measured.Iq=xdq(2,:)';
 
 I_ins=I_ins';
 plot(t.time,I_ins)
@@ -64,9 +67,14 @@ HDEV_measured=fcn_One_period_sampling(HDEV_measured);
 plot(HDEV_measured.Iabc.time, HDEV_measured.Iabc(:,1:3).Variables);
 
 %% FFT - circuit
-FFT_ia=fcn_fft_circuit(HDEV_measured,HDEV_measured.Iabc.Ia);
-FFT_ib=fcn_fft_circuit(HDEV_measured,HDEV_measured.Iabc.Ib);
-FFT_ic=fcn_fft_circuit(HDEV_measured,HDEV_measured.Iabc.Ic);
+FFT_ia=fcn_fft_circuit(HDEV_measured,HDEV_measured.Iabc.Ia,1);
+FFT_ib=fcn_fft_circuit(HDEV_measured,HDEV_measured.Iabc.Ib,1);
+FFT_ic=fcn_fft_circuit(HDEV_measured,HDEV_measured.Iabc.Ic,1);
+
+%dq fft
+HDEV_measured.FFT_Idq.Id=fcn_fft_circuit(HDEV_measured,HDEV_measured.Id,0);
+HDEV_measured.FFT_Idq.Iq=fcn_fft_circuit(HDEV_measured,HDEV_measured.Iq,0);
+HDEV_measured.dq_phasor_diagram
 
 ia_N=length(FFT_ia);
 ia_Side = FFT_ia(1:ia_N/2);
@@ -94,6 +102,8 @@ breakyaxis([50 780]);
 %% Inductance calculation
 
 %% Phasor - fundamental & I-V-P-Q ->  Phi hi
+
+
 for v=1:120
 Ia(v).fft=[ia_amp_positive(1+v) ia_angle_positive(1+v)]
 Ib(v).fft=[ib_amp_positive(1+v) ib_angle_positive(1+v)]

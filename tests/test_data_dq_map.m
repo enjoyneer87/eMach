@@ -29,5 +29,7 @@ HDEVdata.plot_xdyq(HDEVdata,'flux')
 HDEVdata.plot_xdyq(HDEVdata,'voltage')
 HDEVdata.plot_xdyq(HDEVdata,'torque')
 
+
+
 %3d style
 
