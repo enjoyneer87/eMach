@@ -1,8 +1,10 @@
 %% precondition
+% hard code from Z:\01_Codes_Projects\Testdata_post\Code\validation\validation_w_map_motorcad_osilo.mlx
+
 mcad_result_list_bydata=struct();
 i=1;
 % define object
-HDEV_motorcad=motorcaddata(12);
+HDEV_motorcad=MotorcadData(12);
 % Infor regarding path
 % HDEV_motorcad.proj_path='Z:\Thesis\HDEV\02_MotorCAD\MOT';
 HDEV_motorcad.proj_path='Z:\01_Codes_Projects\Testdata_post\Simulation_Comparison';
@@ -41,7 +43,7 @@ o_data_name{1,3}='RMSPhaseResistiveVoltage_D'
 
 
 %% data import
-HDEV_motorcad=motorcad_fcn_result_export(HDEV_motorcad)
+HDEV_motorcad=motorcadResultExport(HDEV_motorcad)
 
 Jmag_Current=readtable(HDEV_motorcad.res);
 Jmag_Current.Properties.VariableNames(1)={'time'}
@@ -167,5 +169,26 @@ spplot(Ia(v).fft,Ib(v).fft,Ic(v).fft)
 % RMSPhaseCurrent
 
 %% phasor diagram
+% fcn call motorcadResultPhasorDiagram.m
+mcad = actxserver('MotorCAD.AppAutomation');
+proj=strcat(input.file_path,'\',input.file_name,'.mot');
+   %   파일이 켜져있지 않으면 파일명 읽어서 열기
+mcad.LoadFromFile(proj);
 
+success = invoke(mcad,'DoMagneticCalculation');
+if success == 0
+    disp('Magnetic calculation successfully completed');
+else
+    disp('Magnetic calculation failed');
+end
+
+pd_test_op1=ResultMotorcadEmagPhasorDiagram(12)
+
+pd_test_op1=motorcadResultPhasorDiagram(pd_test_op1)
+blondelPhasorDiagram(pd_test_op1)
+
+omegaE*pd_test_op1.InductanceXCurrent_D/sqrt(2)
+pd_test_op1.RMSPhaseReactiveVoltage_Q
+pd_test_op1.RMSPhaseReactiveVoltage_D
+-omegaE*pd_test_op1.InductanceXCurrent_Q/sqrt(2)
 %%

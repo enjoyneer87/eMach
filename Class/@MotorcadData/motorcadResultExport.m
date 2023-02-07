@@ -1,4 +1,4 @@
-function output_strc=Jmag_fcn_result_export(input,o_data_struct)
+function output_strc=motorcadResultExport(input)
     mcad = actxserver('MotorCAD.AppAutomation');
     proj=strcat(input.file_path,'\',input.file_name,'.mot');
    %   파일이 켜져있지 않으면 파일명 읽어서 열기

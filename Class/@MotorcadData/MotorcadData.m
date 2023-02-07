@@ -1,4 +1,4 @@
-classdef motorcaddata <emlab_MachineData
+classdef MotorcadData <emlab_MachineData
     properties
     proj_path
     I1=struct('unit','A')
@@ -11,7 +11,7 @@ classdef motorcaddata <emlab_MachineData
     u2=struct()  
     u3=struct()
     FFT_uabc=table()
-
+    
 %     u3=-u1-u2
    
     fluxlink_1=struct()
@@ -21,7 +21,9 @@ classdef motorcaddata <emlab_MachineData
 
     elec_torque
     shaft_torque
-
+    %emag
+    %phasor diagram tap
+    phasorDiagram=struct()
     end
     
 
