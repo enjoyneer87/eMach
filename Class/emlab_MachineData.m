@@ -15,9 +15,7 @@ classdef emlab_MachineData < Machinedata
     wr_plot
    end
     methods 
-        function emlab_MachineData=emlab_MachineData(p)
-            emlab_MachineData.p=p;
-        end
+
    
         function wr_plot=get.wr_plot(emlab_MachineData)
             emlab_MachineData.plot_rpm=emlab_MachineData.test_rpm;

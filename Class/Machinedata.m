@@ -36,6 +36,11 @@ classdef (Abstract) Machinedata
 
         %Mechanical
     end
+    methods 
+    function Machinedata=Machinedata(p)
+        Machinedata.p=p;
+    end
+    end
 
         
 end
