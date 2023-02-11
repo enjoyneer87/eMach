@@ -18,12 +18,13 @@ classdef jmagdata <emlab_MachineData
     FFT_fluxlinkabc=table()
     elec_torque
     shaft_torque
+    
 %   output data name (cell)
-    outputname
+    outputName
     end
-    methods 
-    output_strc=Jmag_fcn_result_export(obj)
-     
+    methods
+    obj=Jmag_fcn_result_export(obj)
+    obj=jmag_fcn_graph_export(obj,name) 
     end
 
 end

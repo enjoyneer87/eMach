@@ -1,17 +1,17 @@
-function output_obj=Jmag_fcn_result_export(input_obj)
+function obj=Jmag_fcn_result_export(obj)
     global ModelName
     global StudyName
         
-    jmag = actxserver(strcat('designer.Application.',input_obj.jmag_version));
+    jmag = actxserver(strcat('designer.Application.',obj.jmag_version));
     jmag.Show()
 %   path='Z:\Thesis\HDEV\Effy_map_JMAG_tool'
-    jproj=strcat(input_obj.file_path,'.jproj');
+    jproj=strcat(obj.file_path,'.jproj');
     jmag.Load(jproj);   
 
     % Jproject File Path
     Read_file_path=jmag.GetProjectPath();
     % Project Name Setting
-    jmag.SetProjectName(input_obj.file_name);
+    jmag.SetProjectName(obj.file_name);
     pjt_name=jmag.GetProjectName();
 
     %   파일이 켜져있지 않으면 파일명 읽어서 열기
@@ -44,15 +44,14 @@ jmag.SetCurrentStudy(StudyName);
 
 % jmag.GetModel(ModelName).GetStudy(StudyName).GetResultTable().WriteAllTables("Z:\01_Codes_Projects\git_fork_emach\Class\allresult.csv","Time")
 
-for Noutputdata=1:length(input_obj.outputname)
+for Noutputdata=1:length(obj.outputName)
 % idx=contains(data_names,input_obj.outputname{Noutputdata})
 % idx=contains(data_names,o_data_name{2})
 % selected_data_name=data_names(idx);
 
 %% Get array data
 % o_data_name='LineCurrent'
-single_data_name=input_obj.outputname{Noutputdata};
-res=jmag_fcn_graph_export(input_obj.outputname{Noutputdata});
+obj=jmag_fcn_graph_export(obj,Noutputdata);
 
 % extractBetween(data_names{1})
 
@@ -65,8 +64,6 @@ res=jmag_fcn_graph_export(input_obj.outputname{Noutputdata});
     % for i=1:length(data_names(TF))
     
     %% out 
-output_obj=input_obj;
-output_obj.res=res;
 %     end
 end
 
