@@ -35,3 +35,6 @@ octave-workspace
 tests/LineCurrent.csv
 Class/LineCurrent.csv
 LineCurrent.csv
+
+*.csv
+*.gif

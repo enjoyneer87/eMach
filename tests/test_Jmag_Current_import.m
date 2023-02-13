@@ -1,7 +1,8 @@
 % test 
 global jmag_version
 jmag_version='210'
-HDEV=jmagdata(12)
+
+HDEV=JmagData(12)
 
 HDEV.jproj_path='D:\KDH\Thesis\HDEV\01_JMAG\Jproject';
 HDEV.file_name='12p72_HDEV_1st_year_RT_20201019'
@@ -19,7 +20,7 @@ HDEV.Is_max=750;     %pk value
 HDEV.outputName{1}='LineCurrent'
 HDEV.outputName{2}='Torque'
 
-HDEV=Jmag_fcn_result_export(HDEV)
+HDEV=jmagFcnResultExport(HDEV)
 Jmag_Current=readtable(HDEV.res{1});
 Jmag_Current.Coil1
 
