@@ -5,9 +5,7 @@ Input.Rs= 0.0067;
 Input.p=12;
 rpm=1000;
 % object make
-% HDEVdata=data_pk_beta_map;
 HDEVdata=DataPkBetaMap(12);
-
 HDEVdata.current=Ipk;
 HDEVdata.beta=beta;
 HDEVdata.torque_map=torque_map;

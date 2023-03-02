@@ -23,8 +23,11 @@ classdef MotorcadData <emlab_MachineData
     shaft_torque
     %emag
     %phasor diagram tap
-    phasorDiagram=struct()
+    phasorDiagram
     end
-    
+%     methods (Static)
+%         obj.phasorDiagram=motorcadResultPhasorDiagram(obj)
+%     end
+
 end
 

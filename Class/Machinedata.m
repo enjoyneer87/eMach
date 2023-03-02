@@ -8,7 +8,7 @@ classdef (Abstract) Machinedata
         p 
         file_name
         file_path
-        jmag_version 
+         
         %Material
         %EM
         flux_linkage

@@ -49,7 +49,7 @@ I_ins=I_ins';
 plot(t.time,I_ins)
 hold on
 plot(t.time,xdq')
-hold on
+
 mean_Idq=mean(xdq')
 yline(mean_Idq)
 hold on
@@ -74,7 +74,8 @@ FFT_ic=fcn_fft_circuit(HDEV_measured,HDEV_measured.Iabc.Ic,1);
 %dq fft
 HDEV_measured.FFT_Idq.Id=fcn_fft_circuit(HDEV_measured,HDEV_measured.Id,0);
 HDEV_measured.FFT_Idq.Iq=fcn_fft_circuit(HDEV_measured,HDEV_measured.Iq,0);
-HDEV_measured.dq_phasor_diagram
+% figure
+% HDEV_measured.dq_phasor_diagram
 
 ia_N=length(FFT_ia);
 ia_Side = FFT_ia(1:ia_N/2);
@@ -93,7 +94,7 @@ ic_angle_positive=rad2deg(angle(ic_Side));
 ic_amp_positive= abs(ic_Side)/(ic_N/2);
 % HDEV_measured.FFT_Iabc=table()
 formatter_sci
-breakyaxis([50 780]);
+breakyaxis([50 78]);
 
 
 %% Flux linkage calculation

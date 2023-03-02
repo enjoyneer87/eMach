@@ -17,6 +17,12 @@ HDEVdata.voltage.Vq=Vqs_test;
 
 
 % preconditionss
+figure
 HDEVdata.plot_xbeta(HDEVdata,'voltage')
+
+% load comp data
+load("HDEV_DataPkBetaMap.mat")
 formatter_sci
 
+
+assert(HDEVdata.current(19,16) == HDEVdata_test.current(19,16),"not same object data")

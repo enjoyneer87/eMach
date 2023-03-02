@@ -4,7 +4,7 @@ jmag_version='210'
 result_list_bydata=struct();
 i=1;
 % define object
-HDEV_jmag=jmagdata(12);
+HDEV_jmag=JmagData(12);
 % Infor regarding path
 HDEV_jmag.jproj_path='D:\KDH\Thesis\HDEV\01_JMAG\Jproject';
 HDEV_jmag.file_name='12p72_HDEV_1st_year_RT_20201019'
@@ -29,11 +29,11 @@ o_data_name=acceptVariableNumInputs('LineCurrent','Torque');
 % other format - struct or table 
 
 %% data format to Simul object - 상호간의 구조 allocation이 필요할듯
-HDEV_jmag.outputname=o_data_name;
+HDEV_jmag.outputName=o_data_name;
 length(o_data_name);
 
 %% data import
-out=HDEV_jmag.Jmag_fcn_result_export;
+out=HDEV_jmag.jmagFcnResultExport;
 
 Jmag_Current=readtable(HDEV_jmag.res{1});
 % t1=readtable('Torque1.csv')

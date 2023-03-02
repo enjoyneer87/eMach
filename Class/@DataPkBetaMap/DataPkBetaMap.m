@@ -1,7 +1,7 @@
-classdef    DataPkBetaMap < Machinedata
+classdef    DataPkBetaMap < DataMap
     properties
-    current_dq
-
+    magVec  
+    gammaVec
     end
 
     methods (Static)
