@@ -73,8 +73,8 @@ sqrt(input_obj.RMSPhaseCurrent_D.^2+input_obj.RMSPhaseCurrent_Q.^2)==input_obj.R
 text(2/3*(input_obj.RMSPhaseCurrent_D),2/3*(input_obj.RMSPhaseCurrent_Q)-10,strcat(num2str(input_obj.RMSPhaseCurrent),'    ','I_{rms}[A]'))
 
 % beta plot
-[betaplot,beta.x,beta.y]=ang([0,0],yy*10,deg2rad(beta.spandeg),'r')
-text(beta.x(50),beta.y(50),'\beta','FontSize',20)
+% [betaplot,beta.x,beta.y]=ang([0,0],yy*10,deg2rad(beta.spandeg),'r')
+% text(beta.x(50),beta.y(50),'\beta','FontSize',20)
 formatter_sci_phasor_diagram
 
 % voltage
@@ -104,12 +104,12 @@ hold on
 %%Plot Voltage_s
 quiver(0,0,xx,yy,'off','r');
 %theta plot
-[thetaplot,theta.x,theta.y]=ang([0,0],yy*10,deg2rad(theta.spandeg),'b')
-text(theta.x(50),theta.y(50),'\theta','FontSize',20)
+% [thetaplot,theta.x,theta.y]=ang([0,0],yy*10,deg2rad(theta.spandeg),'b')
+% text(theta.x(50),theta.y(50),'\theta','FontSize',20)
 
 %delta plot
-[deltaplot,Angdelta.x,Angdelta.y]=ang([0,0],sqrt(xx.^2+yy.^2),deg2rad(Angdelta.spandeg),'b')
-text(Angdelta.x(50),Angdelta.y(50),'\delta','FontSize',20)
+% [deltaplot,Angdelta.x,Angdelta.y]=ang([0,0],sqrt(xx.^2+yy.^2),deg2rad(Angdelta.spandeg),'b')
+% text(Angdelta.x(50),Angdelta.y(50),'\delta','FontSize',20)
 
 
 text(2/3*xx,2/3*yy,strcat(num2str(input_obj.PhasorRMSPhaseVoltage),'Phase Terminal Voltage_{rms}[V]'))
@@ -119,7 +119,7 @@ input_obj.PhasorRMSPhaseVoltage == sqrt(xx.^2+yy.^2)
 quiver(0,0,1000*input_obj.FluxLinkageLoad_D,0,'off','g',LineWidth=2);
 hold on
 [alphaplot,alpha.x,alpha.y]=ang([0,0],input_obj.FluxLinkageLoad*30,deg2rad(alpha.spandeg),'b')
-text(alpha.x(50),alpha.y(50),'\alpha','FontSize',20)
+% text(alpha.x(50),alpha.y(50),'\alpha','FontSize',20)
 
 hold on
 quiver(1000*input_obj.FluxLinkageLoad_D,0,0,1000*input_obj.FluxLinkageLoad_Q,'off','g',LineWidth=2);
@@ -154,24 +154,24 @@ quiver(Vx,Vy,VinductanceDropDaxis,VinductanceDropQaxis,'off','Color', [.5 0 .5])
 % VinductanceDropDaxis
 
 %% Power 
-qinfund=sqrt(2).^2*(3/2)*(yy*input_obj.RMSPhaseCurrent_D-xx*input_obj.RMSPhaseCurrent_Q)/1000; %KVAR
-pinfund=sqrt(2).^2*(3/2)*(yy*input_obj.RMSPhaseCurrent_Q+xx*input_obj.RMSPhaseCurrent_D)/1000; %KW
-PFangle.theta=rad2deg(atan(qinfund/pinfund));
-PF=cos(deg2rad(PFangle.theta));
-Sinfund=sqrt(qinfund.^2+pinfund.^2);         %KVA
-% synch
-% quiver(0,0,-pinfund,qinfund+yy,'off','y',LineWidth=3);
-% hold on
-% quiver(0,0,-pinfund,yy,'off','y',LineWidth=3);
-% hold on
-% quiver(-pinfund,yy,0,qinfund+yy,'off','y',LineWidth=3);
+% qinfund=sqrt(2).^2*(3/2)*(yy*input_obj.RMSPhaseCurrent_D-xx*input_obj.RMSPhaseCurrent_Q)/1000; %KVAR
+% pinfund=sqrt(2).^2*(3/2)*(yy*input_obj.RMSPhaseCurrent_Q+xx*input_obj.RMSPhaseCurrent_D)/1000; %KW
+% PFangle.theta=rad2deg(atan(qinfund/pinfund));
+% PF=cos(deg2rad(PFangle.theta));
+% Sinfund=sqrt(qinfund.^2+pinfund.^2);         %KVA
+% % synch
+% % quiver(0,0,-pinfund,qinfund+yy,'off','y',LineWidth=3);
+% % hold on
+% % quiver(0,0,-pinfund,yy,'off','y',LineWidth=3);
+% % hold on
+% % quiver(-pinfund,yy,0,qinfund+yy,'off','y',LineWidth=3);
 
-% % on d axis
-quiver(0,0,pinfund,qinfund,'off','y',LineWidth=3);
-hold on
-quiver(0,0,pinfund,0,'off','y',LineWidth=3);
-hold on
-quiver(pinfund,0,0,qinfund,'off','y',LineWidth=3);
+% % % on d axis
+% quiver(0,0,pinfund,qinfund,'off','y',LineWidth=3);
+% hold on
+% quiver(0,0,pinfund,0,'off','y',LineWidth=3);
+% hold on
+% quiver(pinfund,0,0,qinfund,'off','y',LineWidth=3);
 fontsize(gcf,scale=1.5)
 fontname(gcf,"Times New Roman")
 

@@ -22,6 +22,8 @@ function plot_xbeta(td,data)
         for i=width(td.beta):-1:1
             disname=strcat(mat2str(td.current(1,i)),'[A]_{pk}'," - ",objname);
             plot(td.beta(:,i),td.beta(:,i),DisplayName=disname);
+            formatter_sci
+
             hold on
             legend
             grid on
@@ -47,6 +49,8 @@ function plot_xbeta(td,data)
             disname=strcat(mat2str(td.current(1,i)),'[A]_{pk}'," - ",objname);
             subplot(2,1,1)
             plot(td.beta(:,i),td.voltage.Vd(:,i),DisplayName=disname);
+            formatter_sci
+
             hold on
             legend
             grid on
@@ -55,6 +59,7 @@ function plot_xbeta(td,data)
             ax.XLabel.String="phase advance [˚]";
             ax.YLabel.String='voltage[V]';
             subplot(2,1,2)
+            formatter_sci
             plot(td.beta(:,i),td.voltage.Vq(:,i),DisplayName=disname);
             hold on
             legend

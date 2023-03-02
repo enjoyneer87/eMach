@@ -51,7 +51,7 @@ HDEVdata.Rs=PmsmFem.Rs_Ohm ;
 % preconditionss
 %2d style
 % 
-HDEVdata.plot_xdyq(HDEVdata,'flux')
+HDEVdata.plot_xdyq('flux')
 % HDEVdata.plot_xdyq(HDEVdata)
 % 
 % HDEVdata.plot_xdyq(HDEVdata,'voltage')

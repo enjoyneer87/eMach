@@ -26,5 +26,5 @@ classdef MotorcadData <emlab_MachineData
     phasorDiagram=struct()
     end
     
-
 end
+

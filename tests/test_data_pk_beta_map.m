@@ -4,7 +4,7 @@ torque_map=readmatrix("Z:\01_Codes_Projects\git_Motor_System_Model\SKKU_RT\SKKU_
 
 
 % object make
-HDEVdata=data_pk_beta_map;
+HDEVdata=DataPkBetaMap(12);
 HDEVdata.current=Ipk;
 HDEVdata.beta=beta;
 HDEVdata.torque_map=torque_map;
@@ -18,5 +18,5 @@ HDEVdata.voltage.Vq=Vqs_test;
 
 % preconditionss
 HDEVdata.plot_xbeta(HDEVdata,'voltage')
-
+formatter_sci
 

@@ -1,0 +1,13 @@
+M1dutycycle=figure(1)
+subplot(2,1,1)
+M1Torque=plot(M1Nosync1.ElapsedTime,M1Nosync1.TorqueStart,'LineWidth',1)
+M1Torque.Parent.YLabel.String='Torque[Nm]'
+M1Torque.Parent.XLabel.String='Time[Sec]'
+M1Torque.DisplayName='Torque'
+formatter_sci
+subplot(2,1,2)
+M1RPM=plot(M1Nosync1.ElapsedTime,M1Nosync1.SpeedStart,'LineWidth',1)
+M1RPM.Parent.YLabel.String='Speed[RPM]'
+M1RPM.Parent.XLabel.String='Time[Sec]'
+M1RPM.DisplayName='Speed'
+formatter_sci

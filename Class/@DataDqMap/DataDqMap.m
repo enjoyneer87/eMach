@@ -1,6 +1,6 @@
-classdef    DataDqMap < Machinedata
+classdef    DataDqMap < DataMap
     properties
-    single_rpm
+    
     flux_linkage_map
     current_dq_map
     voltage_dq_map
