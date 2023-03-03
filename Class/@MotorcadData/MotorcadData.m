@@ -1,6 +1,8 @@
 classdef MotorcadData <emlab_MachineData
     properties
-    proj_path
+    motorcadMotPath
+    motocadLabPath
+    matfileFindList
     I1=struct('unit','A')
     I2=struct('unit','A')
     I3=struct('unit','A')
@@ -22,12 +24,23 @@ classdef MotorcadData <emlab_MachineData
     elec_torque
     shaft_torque
     %emag
+    
+
+    %Lab
+    ModelParameters_MotorLAB
+    
     %phasor diagram tap
     phasorDiagram
+    end
+    methods
+        obj=rawPsiDataPost(obj)
     end
 %     methods (Static)
 %         obj.phasorDiagram=motorcadResultPhasorDiagram(obj)
 %     end
 
+%     methods (Static)
+%         obj.file_path=MotorcadData.motorcadMotPath
+%     end
 end
 

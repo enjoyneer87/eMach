@@ -1,4 +1,4 @@
-function output_strc=motorcadResultExport(input)
+function output_strc=motorcadResultExport(input,resultList)
     mcad = actxserver('MotorCAD.AppAutomation');
     proj=strcat(input.file_path,'\',input.file_name,'.mot');
    %   파일이 켜져있지 않으면 파일명 읽어서 열기
@@ -18,7 +18,7 @@ function output_strc=motorcadResultExport(input)
 % 
 % invoke(mcad,'SetVariable','PeakCurrent',500);
 % 
-% [success,x]=invoke(mcad,'GetVariable','PeakCurrent');
+[success,x]=invoke(mcad,'GetVariable','PeakCurrent');
 % 
 % 
 % %% 

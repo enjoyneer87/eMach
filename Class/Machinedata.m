@@ -1,13 +1,15 @@
 classdef (Abstract) Machinedata
     properties
+        file_name
+        file_path
+        proj_path
         %Dimension
 
         %Winding
         torque_map
         Rs
         p 
-        file_name
-        file_path
+
          
         %Material
         %EM
