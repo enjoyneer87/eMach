@@ -93,11 +93,12 @@ hold on
 
 
 
-
+%% Plot add scatter 3 with TempPost
 [refTempMotorcad calcTempMotorcad refTempMotorcadPost] =plotScatter3TempPost('HDEV_Model2',1,'HDEV_Model2Temp115')
 hold on
 
 
+%% Export Figure to PNG
 
 figHandles = findobj('Type', 'figure');
 
