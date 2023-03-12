@@ -1,6 +1,7 @@
 classdef (Abstract) Machinedata
     properties
         file_name
+        refFile
         file_path
         proj_path
         %Dimension
