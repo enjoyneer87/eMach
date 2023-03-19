@@ -16,6 +16,10 @@
 % runtests('xfemmRemovePartiallyOverlappingSegmentsTest');
 
 %% KDH
+fcnDependencyCheck
+%%Function Test
+runtests("testPlotMaxTorque")
+runtests('testDutyCyclePlot')
 %% Measured Data
 runtests("test_data_pk_beta_map");
 runtests("testCompareDataPkBetaMap")
@@ -49,7 +53,7 @@ runtests('test_data_pk_beta_angle_map_motorcad')
 %% not working
 runtests("test_data_dq_map");
 runtests('test_data_pk_beta_angle_map_motorcad')
-testDutyCyclePlot
+
 %% working on
 runtests('testDataPkBetaMotorcadMat')
 runtests('testCompareEMFMeasuredData')
