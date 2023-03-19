@@ -9,7 +9,7 @@ classdef    DataPkBetaMap < DataMap
 
     methods (Static)
         plot_xpk(obj)
-        plot_xbeta(obj,data)
+        plot_xbeta(obj,data,plotType)
         plot_xdyq(obj,data)
         plot_xpkybeta(obj)
         compMatFile(obj)       
