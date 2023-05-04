@@ -1,11 +1,11 @@
-classdef FEA_simul_Jmag < FEA_simul
+classdef FEASimulJmag < FEASimul
     properties
         jmag_file_name
         file_path
         jmag_version  
     end
     methods 
-        function obj=FEA_simul_Jmag(Input)
+        function obj=FEASimulJmag(Input)
             if isempty(obj.file_name)==1    
                 obj.jmag_file_name= Input.file_name;
                 obj.jmag_version = Input.jmag_version;

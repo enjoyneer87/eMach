@@ -1,4 +1,4 @@
-classdef (Abstract) FEA_simul
+classdef (Abstract) FEASimul
     properties
     file_name 
 
