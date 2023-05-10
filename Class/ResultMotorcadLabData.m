@@ -1,4 +1,4 @@
-classdef ResultMotorcadLabData < ResultMotorcadData & MotorcadData
+classdef ResultMotorcadLabData < ResultMotorcadData
     properties
         % Thermal
         postArmatureConductor_Temperature
@@ -22,31 +22,22 @@ classdef ResultMotorcadLabData < ResultMotorcadData & MotorcadData
         % 생성자 메서드
         function obj = ResultMotorcadLabData(motorcadDataObj)
             % ResultMotorcadLabData의 생성자
-            % MotorcadData 객체의 속성 전체를 상속받아 obj의 속성으로 설정
-            obj = obj@MotorcadData(motorcadDataObj.p);
-            obj.motorcadMotPath = motorcadDataObj.motorcadMotPath;
-            obj.matfileFindList = motorcadDataObj.matfileFindList;
-            obj.I1 = motorcadDataObj.I1;
-            obj.I2 = motorcadDataObj.I2;
-            obj.I3 = motorcadDataObj.I3;
-            obj.Iabc = motorcadDataObj.Iabc;
-            obj.FFT_Iabc = motorcadDataObj.FFT_Iabc;
-            obj.u1 = motorcadDataObj.u1;
-            obj.u2 = motorcadDataObj.u2;
-            obj.u3 = motorcadDataObj.u3;
-            obj.FFT_uabc = motorcadDataObj.FFT_uabc;
-            obj.fluxlink_1 = motorcadDataObj.fluxlink_1;
-            obj.fluxlink_2 = motorcadDataObj.fluxlink_2;
-            obj.fluxlink_3 = motorcadDataObj.fluxlink_3;
-            obj.FFT_fluxlinkabc = motorcadDataObj.FFT_fluxlinkabc;
-            obj.elec_torque = motorcadDataObj.elec_torque;
-            obj.shaft_torque = motorcadDataObj.shaft_torque;
-            obj.ModelParameters_MotorLAB = motorcadDataObj.ModelParameters_MotorLAB;
-            obj.phasorDiagram = motorcadDataObj.phasorDiagram;
-            obj.ArmatureConductor_Temperature=motorcadDataObj.ArmatureConductor_Temperature;
-            obj.Magnet_Temperature=motorcadDataObj.Magnet_Temperature;
+            % ResultMotorcadData 객체의 속성 전체를 상속받아 obj의 속성으로 설정
+            obj = obj@ResultMotorcadData(motorcadDataObj);
+            
+            % 추가로 상속받을 속성들을 정의하고 초기화
+            obj.postArmatureConductor_Temperature = [];
+            obj.postMagnet_Temperature = [];
+            obj.postShaft_Temperature = [];
+            obj.postBearing_Temperature_R = [];
+            obj.postBearing_Temperature_F = [];
+            obj.postAirgap_Temperature = [];
+            obj.postModelParameters_MotorLAB = [];
+            obj.tempCoeffiBrAlpha = [];
+            obj.tempCoeffiHcBeta = [];
+            obj.psiDTempRatio = [];
+            obj.psiQTempRatio = [];
         end
-                
         function obj = tempCorrectedModelParameters_MotorLAB(obj, tempCoeffiBrAlpha)
             % 온도 보정 계수 할당
             obj.tempCoeffiBrAlpha = tempCoeffiBrAlpha;

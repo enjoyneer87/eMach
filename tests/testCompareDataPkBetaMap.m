@@ -58,7 +58,7 @@ size(HDEVdata_Simulation.torque_map)
 size(HDEVdata_Simulation.beta)
 HDEVdata_Simulation.plot_xbeta(HDEVdata_Simulation,'torque')
 formatter_sci
-colormap(cmap);
+% colormap(cmap);
 
 
 %% Calculate Shaft torque from Loss and Saturation

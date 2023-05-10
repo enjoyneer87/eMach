@@ -1,6 +1,7 @@
 function dataobj=compMatFileLoss(dataobj)
 %COMPMATFILE 이 함수의 요약 설명 위치
 %   자세한 설명 위치
+%% dataobj : DataPkBetaMap obj
 matData=dataobj.MotorcadMat;
 matData.calcType;
 
@@ -11,8 +12,6 @@ matData.Stator_Current_Line_Peak;
 matData.Phase_Advance;
 size(matData.Stator_Current_Line_Peak);
 size(matData.Phase_Advance);
-
-
 
 
 %% Add CurrentVec and phaseVec

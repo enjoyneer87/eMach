@@ -1,6 +1,6 @@
 classdef measureddata < emlab_MachineData
     properties
-
+    %
     I1=struct('unit','A')
     I2=struct('unit','A')
     I3=struct('unit','A')
@@ -21,7 +21,12 @@ classdef measureddata < emlab_MachineData
     FFT_fluxlinkabc=table()
     elec_torque
     shaft_torque
+
+    %%Thermal Data
+    tempRise struct
     end
+
+
     methods
         dq_phasor_diagram(obj)
     end

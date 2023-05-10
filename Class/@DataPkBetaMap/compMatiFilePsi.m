@@ -12,11 +12,13 @@ matData.Phase_Advance
 size(matData.Stator_Current_Line_Peak)
 size(matData.Phase_Advance)
 
+%% Add CurrentVec and phaseVec
 currentVec=matData.Stator_Current_Line_Peak(:,1); % column sort
 size(currentVec)
 phaseVec=matData.Phase_Advance(1,:); % row sort
 size(phaseVec)
 
+%% Flux Linkage 
 flux1D=matData.Flux_Linkage_D;
 flux1Q=matData.Flux_Linkage_Q
 size(flux1D)

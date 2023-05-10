@@ -39,3 +39,5 @@ LineCurrent.csv
 *.csv
 *.gif
 tests/validation_w_map_motorcad_osilo.m
+Class/getFieldNames.m
+fcnExportGraphicGif.m

@@ -77,13 +77,13 @@ for i = 1:length(figHandles)
     folderPath='Z:\01_Codes_Projects\git_fork_emach'
 %     figName=figHandle.Name
     figAxis=figHandle.Children;
-%     figName = strrep(figName, ' ', '_'); % 공백을 언더바로 변경
-%     figName = strrep(figName, '.', ''); % '.'을 제거
+    figName = strrep(figName, ' ', '_'); % 공백을 언더바로 변경
+    figName = strrep(figName, '.', ''); % '.'을 제거
     filename = fullfile(folderPath, [figName '.png']); % 저장할 파일명과 경로를 합칩니다.
     exportgraphics(figHandle, filename, 'Resolution', 600,'BackgroundColor', 'none');
 
 end
 
-close;
+% close;
 
 

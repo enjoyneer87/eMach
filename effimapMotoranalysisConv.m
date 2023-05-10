@@ -12,15 +12,26 @@
 %                 Simulation.EfficiencyMap=EfficiencyMap;
 %         PlotEfficiencyMap(EfficiencyMap,Pinputmax,Kmechloss,mode);
 % EfficiencyMap = Simulation.EfficiencyMap;
+%% Load Motoranalysis Format
+% 
+load('Z:\01_Codes_Projects\motoranalysis-pm_v1.1_matlab\SimFiles\Prius.mat')
 
-load('SimFiles\Prius.mat')
+structfun(@(x) disp(x),Simulation)
+
+structfun(@(x) disp(x),EfficiencyMap)
+
+
+%%  struct_plot
+Struct_plot=Simulation.EfficiencyMap.Struct_plot
+Speed_plot=Struct_plot.Speed_plot;
+Efficiency_plot=Struct_plot.Efficiency_plot;
+
+%% 
+
 EfficiencyMap = Simulation.EfficiencyMap;
 Pinput_max=max(Simulation.Magnetostatic.Timesteppingdata.Pinput)
 mode='motor';
 Kmechloss=0
-Struct_plot=Simulation.EfficiencyMap.Struct_plot
-Speed_plot=Struct_plot.Speed_plot;
-Efficiency_plot=Struct_plot.Efficiency_plot;
 
 Speed=EfficiencyMap.Speed;
 BorderTorque=EfficiencyMap.BorderTorque;
@@ -40,7 +51,7 @@ Vmax=EfficiencyMap.Vmax;
 speedmax=EfficiencyMap.speedmax;
 
 
-
+%% 보정
 Efficiency_plot((Struct_plot.Efficiency_plot>0 & Struct_plot.Efficiency_plot<100) & (Efficiency_plot<0 | Efficiency_plot>100))=0;
 
 Efficiency_int=[];
@@ -73,16 +84,30 @@ Torque_q=ones(nspeed,1)*Torque_q;
 Torque_plot=Torque_q;
 Speed_plot=Speed_q;
 
-Efficiency_plot = griddata(Speed_int,Torque_int,Efficiency_int,Speed_plot,Torque_plot);
-RMSCurrent_plot = griddata(Speed_int,Torque_int,RMSCurrent_int,Speed_plot,Torque_plot);
-RMSVoltage_plot = griddata(Speed_int,Torque_int,RMSVoltage_int,Speed_plot,Torque_plot);
-InputPower_plot = griddata(Speed_int,Torque_int,InputPower_int,Speed_plot,Torque_plot);
-Gamma_plot = griddata(Speed_int,Torque_int,Gamma_int,Speed_plot,Torque_plot);
-PowerFactor_plot = griddata(Speed_int,Torque_int,PowerFactor_int,Speed_plot,Torque_plot);
-ReactivePower_plot = griddata(Speed_int,Torque_int,ReactivePower_int,Speed_plot,Torque_plot);
-RMSCurrent_plot(Efficiency_plot<0 | Efficiency_plot>100)=NaN;
-RMSVoltage_plot(Efficiency_plot<0 | Efficiency_plot>100)=NaN;
 
+%% Griddata
+if ~isempty(Speed_int) && ~isempty(Torque_int) && ~isempty(Efficiency_int)
+    Efficiency_plot = griddata(Speed_int,Torque_int,Efficiency_int,Speed_plot,Torque_plot);
+    RMSCurrent_plot = griddata(Speed_int,Torque_int,RMSCurrent_int,Speed_plot,Torque_plot);
+    RMSVoltage_plot = griddata(Speed_int,Torque_int,RMSVoltage_int,Speed_plot,Torque_plot);
+    InputPower_plot = griddata(Speed_int,Torque_int,InputPower_int,Speed_plot,Torque_plot);
+    Gamma_plot = griddata(Speed_int,Torque_int,Gamma_int,Speed_plot,Torque_plot);
+    PowerFactor_plot = griddata(Speed_int,Torque_int,PowerFactor_int,Speed_plot,Torque_plot);
+    ReactivePower_plot = griddata(Speed_int,Torque_int,ReactivePower_int,Speed_plot,Torque_plot);
+    RMSCurrent_plot(Efficiency_plot<0 | Efficiency_plot>100)=NaN;
+    RMSVoltage_plot(Efficiency_plot<0 | Efficiency_plot>100)=NaN;
+else
+    Efficiency_plot = NaN(size(Speed_plot));
+    RMSCurrent_plot = NaN(size(Speed_plot));
+    RMSVoltage_plot = NaN(size(Speed_plot));
+    InputPower_plot = NaN(size(Speed_plot));
+    Gamma_plot = NaN(size(Speed_plot));
+    PowerFactor_plot = NaN(size(Speed_plot));
+    ReactivePower_plot = NaN(size(Speed_plot));
+end
+
+
+%% Plot Patch
 if any(any(abs(InputPower_plot)>Pinput_max))
     PowerLimitPatch=contourf(Speed_plot,Torque_plot,abs(InputPower_plot),[0 Pinput_max]);
 %     PowerLimitPatch(:,1:PowerLimitPatch(2,1)+2)=[];
@@ -99,10 +124,11 @@ PowerFactor_plot(Efficiency_plot<0 | Efficiency_plot>100)=NaN;
 ReactivePower_plot(Efficiency_plot<0 | Efficiency_plot>100)=NaN;
 Efficiency_plot(Efficiency_plot<0 | Efficiency_plot>100)=NaN;
 
-
+%% fieldnames
 effiMapFieldnames=fieldnames(Simulation.EfficiencyMap);
 
 
+%% Plot
 colormap jet
 cntrs=1:round(max(max(Efficiency_plot)));
 [C,h]=contourf(Speed_plot,Torque_plot,Efficiency_plot,cntrs);

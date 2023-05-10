@@ -1,4 +1,8 @@
 classdef MotorcadData <emlab_MachineData
+    % Proj - MotorcadProj
+    % Model - MotorcadModel
+    % Study - MotorcadData
+    % Result - Model by Result or Study by Result or any
     properties
 %% 
     motorcadMotPath
@@ -41,16 +45,32 @@ classdef MotorcadData <emlab_MachineData
     elec_torque
     shaft_torque
 %% emag
-    
+    OpenCircuitCalc =1
+    MagneticSolver =1
+    ProximityLossModel =1
+    HybridACLossMethod =1
+    LabModel_ACLoss_Method =1
+    StackingFactor_Magnetics =1
+    solver =struct()
+    multiplier =struct()
+    stackingFactor =struct()
+    calcMethod =struct()
+    manufacturingInfo = struct()
 %% phasor diagram tap
     phasorDiagram
 %% Lab
     ModelParameters_MotorLAB
+    LossParameters_MotorLAB
+%% OPTIMIZATION VARIABLE RANGE
+    OPTIMIZATION= struct()
+
+
     
 
     end
     methods
         obj=rawPsiDataPost(obj)
+        obj=exportRawLossMap(obj)
     end
 %     methods (Static)
 %         obj.phasorDiagram=motorcadResultPhasorDiagram(obj)

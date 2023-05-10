@@ -1,4 +1,4 @@
-function plotEfficiencyContour(speed, torque, efficiency)
+function contour1Measured=plotEfficiencyContour(speed, torque, efficiency)
     % TN line  추정 
     [speedArray, BorderTorque] = plotMaxTorque(speed, torque);
     speedArray = speedArray';
@@ -14,7 +14,7 @@ function plotEfficiencyContour(speed, torque, efficiency)
     effiMapVec = griddata(speed, torque, efficiency, speedLinVec, torqueLinVec);
 
     %% 측정 위치 scatter
-    scatter3(speed, torque, efficiency,'Marker', 'x','DisplayName', 'Measured Point')
+    scatter3(speed, torque, efficiency,'Marker', 'x','DisplayName', 'Data Point')
     hold on;
     % 2차 등고표면 플롯(surf 대신 contourf with Non EdgeColor) 및 3D 등고선 플롯
     contourf(speedLinVec, torqueLinVec, effiMapVec, 'levels', 0.25, 'EdgeColor', 'none', 'DisplayName', 'Efficiency Contour');
@@ -58,5 +58,7 @@ function plotEfficiencyContour(speed, torque, efficiency)
     % Scientific notation formatter
     formatter_sci;
     view(0,90); % 시야각 조절
-
+    contour1Measured.x=speedLinVec;
+    contour1Measured.y=torqueLinVec;
+    contour1Measured.z=effiMapVec;
 end

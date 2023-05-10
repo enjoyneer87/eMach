@@ -8,8 +8,8 @@ HDEV_motorcad=MotorcadData(12);
 % Infor regarding path
 % HDEV_motorcad.proj_path='Z:\Thesis\HDEV\02_MotorCAD\MOT';
 % HDEV_motorcad.proj_path='Z:\01_Codes_Projects\Testdata_post\Simulation_Comparison';
-HDEV_motorcad.proj_path='Z:\Thesis\Optislang_Motorcad\Validatio\HDEV_Model2'
-% HDEV_motorcad.filen_name='HDEV_Model2.mot'
+HDEV_motorcad.proj_path='Z:\Thesis\Optislang_Motorcad\Validation\HDEV_Model2'
+HDEV_motorcad.file_name='HDEV_Model2'
 % HDEV_motorcad.file_name='12P72S_N42EH_Maxis_Br_95pro_LScoil_11T_2ndy_TestModel';
 HDEV_motorcad.file_path=HDEV_motorcad.proj_path;
 % file_list=fcn_read_dat(file_list_get(path),1)

@@ -16,13 +16,31 @@
 % runtests('xfemmRemovePartiallyOverlappingSegmentsTest');
 
 %% KDH
+
+
 fcnDependencyCheck
 %%Function Test
 runtests("testPlotMaxTorque")
 runtests('testDutyCyclePlot')
+
+runtests('testReadExcelFile')
+runtests('testreadDataFile')
+runtests('testaddIndexToDuplicateCells')
+runtests('testReplaceSimilarData')
+runtests("testfindTimeVariable")
+
+runtests("testPlotTempRise")
+runtests("testplotTempRiseOfPath")
+runtests("testPlotMaxtorque")
+
+
 %% Measured Data
 runtests("test_data_pk_beta_map");
 runtests("testCompareDataPkBetaMap")
+runtests('testPlotEfficiencyContour')
+%temp rise
+runtests("testTempRise")
+runtests("testFindCoolDown")
 %% Jmag
 runtests("test_data_beta_torque_map");
 runtests("test_Jmag_Current_import");
@@ -47,15 +65,32 @@ runtests('test_data_dq_map_simul')
 %% To be revised
 runtests("test_dq_transform_measured")
 runtests('test_dq_transforms_jmag')
-runtests('test_dq_transforms_motorcad')
+
 runtests('test_data_pk_beta_angle_map_motorcad')
 
 %% not working
 runtests("test_data_dq_map");
 runtests('test_data_pk_beta_angle_map_motorcad')
-
-%% working on
 runtests('testDataPkBetaMotorcadMat')
-runtests('testCompareEMFMeasuredData')
+
+runtests('test_dq_transforms_motorcad')  % line 48 문제 
+%% working on
+runtest('testDataPkBetaLossMotorcadperTemp')
+
+
 runtest('fcnCalcDQShaftTorque')
+runtest('testSlotVoltagePhasorQuiver')
+runtest('testCompareMapSurfContour')
+
+runtests('testCompareEMFMeasuredData')
+
+runtests("genPWMVoltage")
+% Class
+runtest("testMakeCalibrationMotorCAD")
+
+runtest('exportRawLossMap')
+runtest('calcLossMap2CoeffMap')
+
+
+
 

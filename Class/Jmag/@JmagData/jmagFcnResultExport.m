@@ -14,6 +14,7 @@ function obj=jmagFcnResultExport(obj)
     jmag.SetProjectName(obj.file_name);
     pjt_name=jmag.GetProjectName();
 
+
     %   파일이 켜져있지 않으면 파일명 읽어서 열기
 
     %% Find Model& study Name

@@ -5,7 +5,7 @@ Input.Rs= 0.0067;
 Input.p=12;
 rpm=1000;
 % object make
-HDEVdata=DataPkBetaMap(12);
+HDEVdata=DataDqMap(12);
 HDEVdata.current=Ipk;
 HDEVdata.beta=beta;
 HDEVdata.torque_map=torque_map;
@@ -25,9 +25,11 @@ HDEVdata.Rs=Input.Rs;
 % preconditionss
 %2d style
 
-HDEVdata.plot_xdyq(HDEVdata,'flux')
-HDEVdata.plot_xdyq(HDEVdata,'voltage')
-HDEVdata.plot_xdyq(HDEVdata,'torque')
+HDEVdata.plot_xdyq('flux')
+% HDEVdata.plot_xdyq(HDEVdata,'flux')
+
+HDEVdata.plot_xdyq('voltage')
+HDEVdata.plot_xdyq('torque')
 
 
 

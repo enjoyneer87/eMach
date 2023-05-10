@@ -16,6 +16,9 @@ HDEV.Vs_max=HDEV.Vdc*(2/pi)*0.98 % dankai
 HDEV.Is_max=750;     %pk value
 
 
+obj=HDEV
+
+methods(a)
 %% data import
 HDEV.outputName{1}='LineCurrent'
 HDEV.outputName{2}='Torque'

@@ -1,5 +1,5 @@
 function [dataTable, nameCell, unitCell] = readDataFile(filepath, NumVariables)
-
+    
     % 파일 확장자 추출
     [~,~,ext] = fileparts(filepath);
 
@@ -35,7 +35,8 @@ function [dataTable, nameCell, unitCell] = readDataFile(filepath, NumVariables)
     
         % NaN 값을 가지는 열 제거
         dataArr = table2array(dataTable);
-        nanCols = any(isnan(dataArr), 1);
+%         nanCols = any(isnan(dataArr), 1); 
+        nanCols = all(isnan(dataArr), 1);
         clear dataArr
         dataTable = dataTable(:, ~nanCols);
         nameCell = nameCell(:, ~nanCols);

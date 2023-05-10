@@ -1,5 +1,5 @@
 %% File List Check
-clear
+% clear
 
 close all
 DutydatTablepath='Z:\Thesis\Optislang_Motorcad\DutyCycleData'
@@ -25,34 +25,57 @@ for i=1:4
 DutyCycle= dataTable.(fieldName{i});
 
 figure(i);
-subplot(2,2,1);
+% subplot(2,2,1);
 M1Torque=plot(DutyCycle.ElapsedTime,DutyCycle.Torque_Start_,'LineWidth',1);
 M1Torque.Parent.YLabel.String='Torque[Nm]';
 M1Torque.Parent.XLabel.String='Time[Sec]';
 M1Torque.DisplayName='Torque';
 formatter_sci;
 
-subplot(2,2,3)
-M1RPM=plot(DutyCycle.ElapsedTime,DutyCycle.Speed_Start_,'LineWidth',1);
+% subplot(2,2,3)
+M1RPM=plot(DutyCycle.ElapsedTime,DutyCycle.Speed_Start_,'LineWidth',1,Color='g');
 M1RPM.Parent.YLabel.String='Speed[RPM]';
 M1RPM.Parent.XLabel.String='Time[Sec]';
 M1RPM.DisplayName='Speed';
-formatter_sci;;
+formatter_sci;
+ax=gca;
+ax.XLim=[0,1800]
+ax.XTick=[0:300:1800]
+ax.XTickLabel
 
-subplot(2,2,[2 4])
+% subplot(2,2,[2 4])
 M1RPM=scatter(DutyCycle.Speed_Start_,DutyCycle.Torque_Start_,'LineWidth',1);
 M1RPM.Parent.XLabel.String='Speed[RPM]';
 M1RPM.Parent.YLabel.String='Torque[Nm]';
 M1RPM.DisplayName='Speed';
 title(removeUnderscore(fieldName{i}));
 
+load('EffimapMeasureInfo.mat')
+xlim=figInfo.xLim ;
+ylim=figInfo.yLim ;
+xticks= figInfo.xTick;
+yticks= figInfo.yTick;
+%   cellstr(get(gca,'XTickLabel'));=figInfo.xTickLabel
+%   cellstr(get(gca,'YTickLabel'));=figInfo.yTickLabel
+xLabel=figInfo.xLabel;
+yLabel=figInfo.yLabel;
 
 formatter_sci;
 end
 
 for i=1:4
 figure(i);
-subplot(2,2,[2 4]);
+% subplot(2,2,[2 4]);
 hold on
 testPlotMaxTorque;
+m1no=gca;
+m1no.XLim=figInfo.xLim ;
+m1no.YLim=figInfo.yLim ;
+m1no.XTick= figInfo.xTick;
+m1no.YTick= figInfo.yTick;
+%   cellstr(get(gca,'XTickLabel'));=figInfo.xTickLabel
+%   cellstr(get(gca,'YTickLabel'));=figInfo.yTickLabel
+% m1no.XLabel=figInfo.xLabel;
+% m1no.YLabel=figInfo.yLabel;
+
 end
