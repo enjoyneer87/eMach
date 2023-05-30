@@ -450,3 +450,134 @@ for fieldIndex=1:length(fieldnames(LabOpPoint_struct))
 end
 
 
+%% Thermal > Calculation>Transient > Transient Start Point (calc_option)
+InitialTransientTemperatureOption                  =   4      %The transient calculation will be started with the machine temperatures specified.      
+Initial_Machine_Temperature                        =   65;      %The initial temperature of the machine for the transient calculation  
+InitialHousingTemperature                          =   65;      %The initial temperature of the housing for the transient calculation  
+InitialStatorTemperature                           =   65;      %The initial temperature of the stator for the transient calculation 
+InitialWindingTemperature                          =   65;      %The initial temperature of the winding for the transient calculation  
+InitialRotorTemperature                            =   65;      %The initial temperature of the rotor lamination for the transient calculation
+InitialMagnetTemperature                           =   65;      %The initial temperature of the magnets for the transient calculation 
+% InitialRotorCopperTemperature                      =         %The initial temperature of the rotor copper (field winding or rotor bars) for the transient thermal calculation  
+% InitialFlangeTemperature                           =         %The initial temperature of the flange for the transient calculation 
+InitialTransientMagTempMethod                      =         % Method used to set initial magnet temperatures for thermal transient calculation..
+
+%% Regarding Contact Resistance
+Stator_Lam_-_Housing= 0.03;
+
+%% WJ
+IncludeWJDuctWallFriction
+WJ_Duct_Wall_Roughness_Active
+WJ_Duct_Wall_Roughness_Front
+WJ_Duct_Wall_Roughness_Rear
+
+%% Calc_option
+CuboidalkValueDefinition = 1;
+% Calc_option
+% Active
+K_Radial_A                     
+K_Tangential_A                 
+K_Axial_A                   
+% Front
+K_Radial_F
+K_Tangential_F
+K_Axial_F
+% Rear
+K_Radial_R
+K_Tangential_R
+K_Axial_R
+
+K_Radial_User_A                  =     0.8713   ;             
+K_Tangential_User_A              =     0.8713   ;         
+K_Axial_User_A                   =     264.4    ;        
+K_Radial_User_F                  =     0.8713   ;         
+K_Tangential_User_F              =     0.8713   ;         
+K_Axial_User_F                   =     264.4    ;    
+K_Radial_User_R                  =     0.8713   ;     
+K_Tangential_User_R              =     0.8713   ;         
+K_Axial_User_R                   =     264.4    ;    
+
+%% Weight
+Weight_Total_Armature_Copper_Total
+Weight_Total_RotorPlate_R
+Weight_Total_RotorPlate_F
+Weight_Total_SlotWedge
+Weight_Total_RotorPocket
+Weight_Total_StatorBacklronInterLamination
+Weight_Total_StatorToothlnterLamination
+Weight_Total_RotorBacklronInterLamination
+Weight_Total
+Weight_Total_Stator_Lam
+Weight_Total_Rotor_Lam
+Weight_Total_Housing_Total
+Weight_Total_Endcap_Rear
+Weight_Total_Stator_Lam_Back_Iron
+Weight_Total_Embedded_Magnet_Pole
+Weight_Total_Stator_Lam_Tooth
+Weight_Total_Endcap_Front
+Weight_Total_Housing_Active
+Weight_Total_Rotor_Lam_Back_Iron
+Weight_Total_Housing_Rear
+Weight_Total_Copper_Active
+Weight_Total_Shaft_Total
+Weight_Total_Housing_Front
+Weight_Total_Impreg_Total
+Weight_Total_Shaft_Active
+Weight_Total_Magnet
+Weight_Total_Copper_EW_Rear
+Weight_Total_Copper_EW_Front
+Weight_Total_Bearing_Front
+Weight_Total_Impreg_EW_Rear
+Weight_Total_Shaft_Front
+Weight_Total_Impreg_EW_Front
+Weight_Total_Inter_Magnet_Gap
+Weight_Total_Shaft_Rear
+Weight_Total_Bearing_Rear
+Weight_Total_Impreg_Active
+Weight_Total_Encoder
+Weight_Total_Insulation_Total
+Weight_Total_EncCase
+Weiqht_Total_Insulation_Active
+
+%% Duty Cycle user Define
+
+Duty_Cycle_Num_Periods
+Duty_Cycle_Points
+Duty_Cycle_Time
+Duty_Cycle_Elapsed_Time
+Duty_Cycle_Vehicle_Speed_Start
+Duty_Cycle_Vehicle_Speed_End
+Duty_Cycle_Speed_Start
+Duty_Cycle_Speed_End
+Duty_Cycle_Ambient_Temp
+
+Duty_Cycle_Torque_Start
+
+Duty_Cycle_Altitude
+Duty_Cycle_Stator_Back_Iron_Loss
+Duty_Cycle_Stator_Tooth_Loss
+Duty_Cycle_Torque_Start
+Duty_Cycle_Torque_End
+Duty_Cycle_Current_Start
+Duty_Cycle_Current_End
+Duty_Cycle_DC_Bus_Voltage
+Duty_Cycle_Gear_Ratio
+Duty_Cycle_Armature_Copper_Loss_DC
+Duty_Cycle_Armature_Copper_Loss_AC
+Duty_Cycle_Armature_Copper_Loss_DC_AuIX
+Duty_Cycle_Field_Copper_Loss_DC
+Duty_Cycle_Magnet_Loss
+Duty_Cycle_Rotor_Back_Iron_Loss
+Duty_Cycle_Embedded_Magnet_Pole_Loss
+Duty_Cycle_Rotor_Tooth_Loss
+Duty_Cycle_Friction_Loss_F
+Duty_Cycle_Friction_Loss_R
+Duty_Cycle_Windage_Loss
+Duty_Cycle_Windage_Loss_Ext_Fan
+Duty_Cycle_Brush_Electrical_Loss
+Duty_Cycle_Brush_Friction_Loss
+Duty_Cycle_Encoder_Loss
+Duty_Cycle_Stray_Load_Stator_Iron_Loss
+Duty_Cycle_Stray_Load_Rotor_Iron_Loss
+Duty_Cycle_Stray_Load_Armature_Copper_Loss
+Duty_Cycle_Stray_Load_Field_Copper_Loss
