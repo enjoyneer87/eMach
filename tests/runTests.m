@@ -17,7 +17,7 @@
 
 %% KDH
 
-
+findClassUse
 fcnDependencyCheck
 %%Function Test
 runtests("testPlotMaxTorque")
@@ -62,20 +62,30 @@ runtests('testDataPkBetaPsiMotorcadperTemp')
 % surf
 runtests('test_data_dq_map_simul')
 
+%% To be checked the result
+runtests('calcSideBandHarmonic');
+
 %% To be revised
 runtests("test_dq_transform_measured")
 runtests('test_dq_transforms_jmag')
 
 runtests('test_data_pk_beta_angle_map_motorcad')
 
+%% Tool
+filepath='Z:\01_Codes_Projects\Testdata_post\Total_Effy_skew_rework_HDEV.csv';
+[EffiTable, NameCell]=readDataFile(filepath,40);
+[varNames, varData]=findVariablebyName(EffiTable,'Torque')
+EffiTableNew=renameVariableByName(EffiTable,varNames{1},'Torque')
+
 %% not working
 runtests("test_data_dq_map");
 runtests('test_data_pk_beta_angle_map_motorcad')
 runtests('testDataPkBetaMotorcadMat')
 
-runtests('test_dq_transforms_motorcad')  % line 48 문제 
 %% working on
 runtest('testDataPkBetaLossMotorcadperTemp')
+
+runtests('test_dq_transforms_motorcad')  % line 48 문제 
 
 
 runtest('fcnCalcDQShaftTorque')
@@ -91,6 +101,44 @@ runtest("testMakeCalibrationMotorCAD")
 runtest('exportRawLossMap')
 runtest('calcLossMap2CoeffMap')
 
+% 
+testPlotForceMap
+changeFileNamesEachFolders
+getFileNamesFromEachFolders
+getForceFileNamesFromEachFolders
+getEMFileNamesFromEachFolders
+getEMMap
+getForceMap
+sortMapdataPyleecanMat
+
+% emlab code refactoring
+testEMlabcode.m
+noteTestEMlabcode.mlx
+    testEmlabTNMain
+    genMapFluxLinkagePhi
+    addCasesJmagDesigner
+    submitToScheduler
+    runWaitJob
+    exportFEMCoilFluxABC
+    exportAirGapBField
+        SOD_air_SelectWorldPos  % NVH py
+        Num_condition_slice % toDo revise
+        exportTableDefinition  %  TN
+        
+
+    importAirGapBField    d
+    sortingJmagTimeBField %  전체 자속밀도데이터에 대해서 일반적인 함수 % ing
+    
+    sortingBtoAGB 
+    transToDQFluxLinkageMapTable
 
 
+%% Jmag Express
+devJmagExpress.mlx
 
+%% Jmag Efficiency Map
+devJmagEfficiencyMap.mlx
+devJmag3Dthermal.mlx
+%% EMLAB Project DOE MotorCAD
+runDOEMotorCAD.mlx
+draft.mlx
