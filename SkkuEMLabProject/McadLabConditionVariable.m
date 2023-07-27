@@ -4,17 +4,17 @@
 function variable = McadLabConditionVariable(fileName)
 
 variable=struct();
-variable.ModelType_MotorLAB     =2             % Saturation model type: 0 Fixed Inductance 1: singel step 2: Full Cycle
-variable.SatModelPoints_MotorLAB=1           % Saturation model: 0 - coarse 1- fine resolution (30 points)
-variable.LossModel_Lab          =1        % Loss model type: 1-FEA 2 -custom
-variable.BuildSatModel_MotorLAB=1          % Activate saturation model               
-variable.BuildLossModel_MotorLAB=1         %% Activate loss model                
-variable.CalcTypeCuLoss_MotorLAB=3         % 0 DC only 1 DC+AC(User) 2 DC+AC (FEA single Point) 3 DC+AC (FEA Map)      
-variable.ACLossGeneratorMethod_Lab =1      
+variable.ModelType_MotorLAB     =2;             % Saturation model type: 0 Fixed Inductance 1: singel step 2: Full Cycle
+variable.SatModelPoints_MotorLAB=1;           % Saturation model: 0 - coarse 1- fine resolution (30 points)
+variable.LossModel_Lab          =1;        % Loss model type: 1-FEA 2 -custom
+variable.BuildSatModel_MotorLAB=1;          % Activate saturation model               
+variable.BuildLossModel_MotorLAB=1;         %% Activate loss model                
+variable.CalcTypeCuLoss_MotorLAB=3;         % 0 DC only 1 DC+AC(User) 2 DC+AC (FEA single Point) 3 DC+AC (FEA Map)      
+variable.ACLossGeneratorMethod_Lab =1;      
 variable.ProximityLossModel = variable.ACLossGeneratorMethod_Lab;   
-variable.IronLossCalc_Lab=3               % 0Neglect 1 OC+SC(User) 2 OC+SC (FEA single Point) 3 (FEA Map)
-variable.LabModel_MagnetLoss_Method=3   %0 Neglect 1 User Defined 2 OC+SC (FEA single Point) 3 (FEA Map)         
-variable.MagnetLossCalc_Lab =3          % 0 Neglect 1 User Defined 2 OC+SC (FEA single Point) 3 (FEA Map)    
+variable.IronLossCalc_Lab=3;               % 0Neglect 1 OC+SC(User) 2 OC+SC (FEA single Point) 3 (FEA Map)
+variable.LabModel_MagnetLoss_Method=3;   %0 Neglect 1 User Defined 2 OC+SC (FEA single Point) 3 (FEA Map)         
+variable.MagnetLossCalc_Lab =3;          % 0 Neglect 1 User Defined 2 OC+SC (FEA single Point) 3 (FEA Map)    
 
 % mcApp.SetVariable("ModelType_MotorLAB", ModelType_MotorLAB)       % Saturation model type: Full Cycle
 % mcApp.SetVariable("SatModelPoints_MotorLAB", SatModelPoints_MotorLAB)  % Saturation model: 0 - coarse 1- fine resolution (30 points)  
