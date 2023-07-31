@@ -13,7 +13,9 @@ function variable=setMcadVariable(variable,mcad)
 
         % Magnet Layer 2 이상사용할려면 아래 수정할것
         if contains(fieldName, 'Array')
-            if length(variable.(fieldName))==2
+            if length(variable.(fieldName))==1
+                mcad.SetArrayVariable(fieldName, 0,variable.(fieldName)(1));
+            elseif length(variable.(fieldName))==2
                 mcad.SetArrayVariable(fieldName, 0,variable.(fieldName)(1));
                 mcad.SetArrayVariable(fieldName, 1,variable.(fieldName)(2));
             elseif length(variable.(fieldName))==3

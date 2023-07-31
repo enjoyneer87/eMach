@@ -1,4 +1,4 @@
-function settedConductorData=calcConductorSize(settedConductorData)    
+function settedConductorData=calcConductorSize(settedConductorData, message_on)    
     %%Input Data define(%)      
     WindingLayers               = settedConductorData.WindingLayers;
     Insulation_Thickness        = settedConductorData.Insulation_Thickness;                            % 도체 절연체 두께
@@ -11,6 +11,7 @@ function settedConductorData=calcConductorSize(settedConductorData)
     Winding_Depth               = settedConductorData.Winding_Depth;
 
     FillFactor                  = settedConductorData.temp_fillfactor;
+    settedConductorData         = rmfield(settedConductorData,'temp_fillfactor');
     effective_FillFactor        = Area_Slot*FillFactor/Area_Winding_With_Liner;
     
     %% Compute Conductor Size
@@ -20,6 +21,10 @@ function settedConductorData=calcConductorSize(settedConductorData)
     settedConductorData.Copper_Width = Slot_Width - Liner_Thickness*2 - Insulation_Thickness*2 - ConductorSeparation*2;  % 한 턴 당 너비 (회전방향)
     settedConductorData.Copper_Height = Turn_per_area / settedConductorData.Copper_Width;  % 한턴당 세로길이
     if settedConductorData.Copper_Height>(Winding_Depth-Liner_Thickness-10*2*Insulation_Thickness-11*ConductorSeparation)/10
+        temp_Copper_Height=settedConductorData.Copper_Height;
         settedConductorData.Copper_Height = (Winding_Depth-Liner_Thickness-10*2*Insulation_Thickness-11*ConductorSeparation)/10;
+        if message_on>0
+            disp(['Copper Height is modified by winding depth limit, and fill factor is reduced from ', num2str(FillFactor),' to ', num2str(FillFactor*settedConductorData.Copper_Height/temp_Copper_Height)])
+        end
     end
 end
