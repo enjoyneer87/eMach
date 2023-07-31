@@ -1,11 +1,13 @@
 function variable=McadMagnetic(fileName)
     variable=struct();
+    % Temperature
     variable.Airgap_Temperature                                  =[];
     variable.Bearing_Temperature_F                               =[];  
     variable.Magnet_Temperature                                  =[];
     variable.Bearing_Temperature_R                               =[];  
     variable.Shaft_Temperature                                   =[];
-    variable.ArmatureConductor_Temperature                       =[];          
+    variable.ArmatureConductor_Temperature                       =[];      
+    % Drive
     variable.DCBusVoltage                                        =[];              
     variable.ModulationIndex_MotorLAB                            =[];                                                                 
     % Build Factor                                      =[]          ;      
