@@ -55,20 +55,20 @@ function variable=McadLABCalcPackage(fileName)
 
 
     %% Electromagnetic 
-    EmagneticCalcType_Lab
-    PowerLim_MotorLAB                       %     % If EmagneticCalcType_Lab =1
-    PowerLimVal_MotorLAB                    %      % if PowerLim_MotorLAB=1
-    SpeedMax_MotorLAB
-    Speedinc_MotorLAB
-    SpeedMin_MotorLAB
-    Imax_MotorLAB
-    Imax_RMS_MotorLAB
-    Iinc_MotorLAB
-    Imin_MotorLAB
-    Imin_RMS_MotorLAB
-    TorqueMax_MotorLAB
-    TorqueInc_MotorLAB
-    MinTorque_MotorLAB
+    variable.EmagneticCalcType_Lab                     =[];        
+    variable.PowerLim_MotorLAB                         =[];                         %     % If EmagneticCalcType_Lab =1
+    variable.PowerLimVal_MotorLAB                      =[];                         %      % if PowerLim_MotorLAB=1
+    variable.SpeedMax_MotorLAB                         =[];    
+    variable.Speedinc_MotorLAB                         =[];    
+    variable.SpeedMin_MotorLAB                         =[];    
+    variable.Imax_MotorLAB                             =[]; 
+    variable.Imax_RMS_MotorLAB                         =[];    
+    variable.Iinc_MotorLAB                             =[]; 
+    variable.Imin_MotorLAB                             =[]; 
+    variable.Imin_RMS_MotorLAB                         =[];    
+    variable.TorqueMax_MotorLAB                        =[];    
+    variable.TorqueInc_MotorLAB                        =[];    
+    variable.MinTorque_MotorLAB                        =[];    
 
     %% Thermal 
     ThermalMapType_Lab
@@ -124,7 +124,7 @@ function variable=McadLABCalcPackage(fileName)
 
 
     %% Operating Point 
-    
+
 
     %% Generator
 
