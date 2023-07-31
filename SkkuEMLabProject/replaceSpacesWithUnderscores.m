@@ -1,5 +1,5 @@
-function tbl = replaceSpacesWithUnderscores(tbl)
-    oldVarNames = tbl.Properties.VariableNames;
+function InputTable = replaceSpacesWithUnderscores(InputTable)
+    oldVarNames = InputTable.Properties.VariableNames;
     newVarNames = strrep(oldVarNames, ' ', '_');
-    tbl.Properties.VariableNames = newVarNames;
+    InputTable.Properties.VariableNames = newVarNames;
 end
