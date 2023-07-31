@@ -41,3 +41,26 @@ LineCurrent.csv
 tests/validation_w_map_motorcad_osilo.m
 Class/getFieldNames.m
 fcnExportGraphicGif.m
+
+*.csv
+*.gif
+tests/validation_w_map_motorcad_osilo.m
+Class/getFieldNames.m
+fcnExportGraphicGif.m
+
+*/emlab_vehicle_driving_performance_gui_Ver3
+
+**motorcad Analysis File
+*.mes
+*.ugf
+
+**/feasys**
+**/AutoSave
+**/MessageLogs
+**/FEResultData
+**/Lab
+**.pdf
+**.zip
+
+**.bh
+**/DOE**
