@@ -3,50 +3,50 @@ function variable=McadLABCalcPackage(fileName)
     %% Calculation
     % >General
     % Drive
-    variable.DCBusVoltage                                        =[];              
-    variable.ModulationIndex_MotorLAB                            =[]; 
+    variable.DCBusVoltage                                     =[];              
+    variable.ModulationIndex_MotorLAB                         =[]; 
     % operating Mode
-    variable.OperatingMode_Lab                       =    []     
-    variable.ControlStrat_MotorLAB                   =    [] 
+    variable.OperatingMode_Lab                                =[];     
+    variable.ControlStrat_MotorLAB                            =[];
     % if Control Strategy is 3 enter below
-    variable.NumControlStrategyPoints_Lab            =    []                
-    variable.ControlStrat_Speed_Lab                  =    []          
-    variable.ControlStrat_PhaseAdvance_Lab           =    [] 
-    % DC Current Limit
-    variable.DCCurrentLimit_Lab                      =    []   
-    % if DC Current Limit is 1 enter below
-    variable.MaxDCCurrent_Lab                        =    []  
-    
-    % Loss
-    variable.StatorIronLossBuildFactor               =[] ;                  
-    variable.RotorIronLossBuildFactor                =[] ;                  
-    variable.MagnetLossBuildFactor                   =[] ;              
-    % Scaling                                   
-    % Turns/Coil                                    
-    variable.TurnsCalc_MotorLAB                      =[];           
-    variable.TurnsRef_MotorLAB                       =[];           
-    % Active Length                                 
-    variable.Length_Ref_Lab                          =[];       
-    variable.Length_Ref_Resistance_Lab               =[];                   
-    variable.Length_Calc_Lab                         =[];           
-    % Temperature                                   
-    % Stator Winding              
-    % variable.Twdg_MotorLAB                        =[];           %ThermalParameters_MotorLAB
-    
-    variable.TwindingCalc_MotorLAB                   =[];          %ModelParameters_MotorLAB
-    
-    % AC loss Temperature Scaling                            
-    variable.WindingTemp_ACLoss_Ref_Lab              =[];          %ThermalParameters_MotorLAB
-    variable.StatorCopperFreqCompTempExponent        =[];                              
-    % Magnet Temperature                                 
-    % variable.
-    variable.Tmag_MotorLAB                           =[];         %ThermalParameters_MotorLAB
-    variable.TmagnetCalc_MotorLAB                    =[];         %ModelParameters_MotorLAB      
-    % Mechanical Loss Temperatures                                  
-    variable.Airgap_Temperature                      =[];          % Magnetics 
-    variable.Bearing_Temperature_F                   =[];          % Magnetics      
-    variable.Bearing_Temperature_R                   =[];          % Magnetics     
-    
+    variable.NumControlStrategyPoints_Lab                     =[];                
+    variable.ControlStrat_Speed_Lab                           =[];          
+    variable.ControlStrat_PhaseAdvance_Lab                    =[]; 
+    % DC Current Limit          
+    variable.DCCurrentLimit_Lab                               =[];   
+    % if DC Current Limit is 1 enter below          
+    variable.MaxDCCurrent_Lab                                 =[];  
+                
+    % Loss          
+    variable.StatorIronLossBuildFactor                        =[];              
+    variable.RotorIronLossBuildFactor                         =[];              
+    variable.MagnetLossBuildFactor                            =[];           
+    % Scaling                                               
+    % Turns/Coil                                             
+    variable.TurnsCalc_MotorLAB                               =[];           
+    variable.TurnsRef_MotorLAB                                =[];           
+    % Active Length                                          
+    variable.Length_Ref_Lab                                   =[];       
+    variable.Length_Ref_Resistance_Lab                        =[];                   
+    variable.Length_Calc_Lab                                  =[];           
+    % Temperature                                            
+    % Stator Winding                         
+    % variable.Twdg_MotorLAB                                  =[];           %ThermalParameters_MotorLAB
+                 
+    variable.TwindingCalc_MotorLAB                            =[];          %ModelParameters_MotorLAB
+                
+    % AC loss Temperature Scaling                                     
+    variable.WindingTemp_ACLoss_Ref_Lab                       =[];          %ThermalParameters_MotorLAB
+    variable.StatorCopperFreqCompTempExponent                 =[];                              
+    % Magnet Temperature                                          
+    % variable.         
+    variable.Tmag_MotorLAB                                    =[];         %ThermalParameters_MotorLAB
+    variable.TmagnetCalc_MotorLAB                             =[];         %ModelParameters_MotorLAB      
+    % Mechanical Loss Temperatures                                           
+    variable.Airgap_Temperature                               =[];          % Magnetics 
+    variable.Bearing_Temperature_F                            =[];          % Magnetics      
+    variable.Bearing_Temperature_R                            =[];          % Magnetics     
+                
     %[TB]> Windage 
 
     %[TB]> Bearings
@@ -55,20 +55,20 @@ function variable=McadLABCalcPackage(fileName)
 
 
     %% Electromagnetic 
-    variable.EmagneticCalcType_Lab                     =[];        
-    variable.PowerLim_MotorLAB                         =[];                         %     % If EmagneticCalcType_Lab =1
-    variable.PowerLimVal_MotorLAB                      =[];                         %      % if PowerLim_MotorLAB=1
-    variable.SpeedMax_MotorLAB                         =[];    
-    variable.Speedinc_MotorLAB                         =[];    
-    variable.SpeedMin_MotorLAB                         =[];    
-    variable.Imax_MotorLAB                             =[]; 
-    variable.Imax_RMS_MotorLAB                         =[];    
-    variable.Iinc_MotorLAB                             =[]; 
-    variable.Imin_MotorLAB                             =[]; 
-    variable.Imin_RMS_MotorLAB                         =[];    
-    variable.TorqueMax_MotorLAB                        =[];    
-    variable.TorqueInc_MotorLAB                        =[];    
-    variable.MinTorque_MotorLAB                        =[];    
+    variable.EmagneticCalcType_Lab                            =[];        
+    variable.PowerLim_MotorLAB                                =[];                         %     % If EmagneticCalcType_Lab =1
+    variable.PowerLimVal_MotorLAB                             =[];                         %      % if PowerLim_MotorLAB=1
+    variable.SpeedMax_MotorLAB                                =[];    
+    variable.Speedinc_MotorLAB                                =[];    
+    variable.SpeedMin_MotorLAB                                =[];    
+    variable.Imax_MotorLAB                                    =[]; 
+    variable.Imax_RMS_MotorLAB                                =[];    
+    variable.Iinc_MotorLAB                                    =[]; 
+    variable.Imin_MotorLAB                                    =[]; 
+    variable.Imin_RMS_MotorLAB                                =[];    
+    variable.TorqueMax_MotorLAB                               =[];    
+    variable.TorqueInc_MotorLAB                               =[];    
+    variable.MinTorque_MotorLAB                               =[];    
 
     %% Thermal 
     ThermalMapType_Lab
