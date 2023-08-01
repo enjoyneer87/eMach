@@ -70,7 +70,7 @@ function variable=McadLABCalcPackage(fileName)
     variable.TorqueInc_MotorLAB                        =[];    
     variable.MinTorque_MotorLAB                        =[];    
 
-    %% Thermal 
+    %% Thermal (LAB)
     ThermalMapType_Lab
     ThermCalcType_MotorLAB
     TempLimit_MotorLAB
@@ -79,6 +79,7 @@ function variable=McadLABCalcPackage(fileName)
     MaxSpeedTherm_MotorLAB
     SpeedStepTherm_MotorLAB
     MinSpeedTherm_Lab
+
     MaxWindTemp_MotorLAB
 
     ThermMaxCurrentLim_MotorLAB
@@ -106,6 +107,7 @@ function variable=McadLABCalcPackage(fileName)
     
     %% Duty Cycle
     DutyCycleType_Lab                          =[]; 
+    DrivCycle_MotorLAB                         =[];
     LabThermalCoupling_DutyCycle               =[];             
     
     % Vehicle Model
