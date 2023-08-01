@@ -126,7 +126,7 @@ noteTestEMlabcode.mlx
         exportTableDefinition  %  TN
         
 
-    importAirGapBField    d
+    importAirGapBField    
     sortingJmagTimeBField %  전체 자속밀도데이터에 대해서 일반적인 함수 % ing
     
     sortingBtoAGB 
@@ -142,3 +142,4 @@ devJmag3Dthermal.mlx
 %% EMLAB Project DOE MotorCAD
 runDOEMotorCAD.mlx
 draft.mlx
+

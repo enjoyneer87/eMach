@@ -1,9 +1,9 @@
 function ANALYSIS(refMotFilePath, NumberOfPorts, NumberOfCases, DoETable, FixVariableTable, message_on)
-% 병렬풀 초기화 및 배치
+%% 병렬풀 초기화 및 배치
 delete(gcp('nocreate'));  % 사전에 실행 중인 병렬 풀 있을까봐 끄고 시작
 parpool(NumberOfPorts);  % 병렬 풀 생성, default가 Processes, Threads로 하면 에러
 
-% spmd loop, numPorts 병렬 실행
+%% spmd loop, numPorts 병렬 실행
 if message_on>0
     time_before_spmd=datetime;
     disp(['The ', num2str(NumberOfPorts), ' ports ', num2str(NumberOfCases), ' cases spmd start'])
@@ -11,7 +11,7 @@ if message_on>0
 end
 spmd
 
-    % spmdIndex
+    %% spmdIndex
     activeServers(spmdIndex)=actxserver('motorcad.appautomation');
     invoke(activeServers(spmdIndex), 'SetVariable', 'MessageDisplayState', 2); % 모든 메시지를 별도의 창에 표시하도록 설정 - 주의: 이로 인해 파일 저장, 데이터 덮어쓰기 등 중요한 팝업 메시지가 비활성화될 수 있으니 주의하시기 바랍니다.
     invoke(activeServers(spmdIndex), 'LoadFromFile', refMotFilePath);
@@ -59,7 +59,7 @@ spmd
         % RotorVariable Struct (그냥 구조체가 아님, 변수 추가하려면 "motorCadGeometryRotor" 내부에서 정의 후 진행)
         RotorVariable=motorCadGeometryRotor(DoETable(CaseNumber,:),FixVariableTable.VMagnet_Layers);
         RotorVariable.BPMRotor=FixVariableTable.BPMRotor;
-        RotorVariable.PoleNumber_Outer=FixVariableTable.Pole_Number;
+        RotorVariable.Pole_Number=FixVariableTable.Pole_Number;
         RotorVariable.VMagnet_Layers=FixVariableTable.VMagnet_Layers;
         % RotorVariable.Banding_Thickness=FixVariableTable.Banding_Thickness;  % 고정
         RotorVariable.Ratio_BandingThickness=FixVariableTable.Ratio_BandingThickness;  % 고정
