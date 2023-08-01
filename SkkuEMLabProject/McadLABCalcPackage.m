@@ -124,15 +124,82 @@ function variable=McadLABCalcPackage(fileName)
 
 
     %% Operating Point 
+    variable.OpPointSpec_MotorLAB               =[];
+    variable.SpeedDemand_MotorLAB               =[];
+    %Torque
+    variable.TorqueDemand_MotorLAB              =[];
+    %Maximum Current / Current/Phase Adcance
+    variable.StatorCurrentDemand_Lab            =[];
+    %Maximum Temperature
+    variable.StatorTempDemand_Lab               =[];
+    variable.RotorTempDemand_Lab                =[];
+    %Current/Phase Adcance
+    variable.PhaseAdvanceDemand_Lab             =[];
 
+    variable.LabThermalCoupling                 =[];
+    variable.LabMagneticCoupling                =[];
 
     %% Generator
+    variable.Gen_Speed_Fixed_Lab                =[];
+    variable.Gen_Speed_Max_Lab                  =[];
+    variable.%None Fixed Value
+    variable.Gen_Speed_Step_Lab                 =[];
+    variable.Gen_Speed_Min_Lab                  =[];
+    variable.Gen_Load_Connection_Lab            =[];
 
+    variable.Gen_Load_Definition_Lab            =[];
+
+    %%Impedance/Power Factor
+    variable.Gen_Impedance_Fixed_Lab            =[];
+    variable.Gen_Impedance_Max_Lab              =[];
+
+    %Load Impedance None Fixed Value
+    variable.Gen_Impedance_Step_Lab             =[];
+    variable.Gen_Impedance_Min_Lab              =[];
+
+    variable.Gen_PF_Fixed_Lab                   =[];
+    variable.Gen_PF_Max_Lab                     =[];
+    %Load Power Factor None Fixed Value
+    variable.Gen_PF_Step_Lab                    =[];
+    variable.Gen_PF_Min_Lab                     =[];
+
+    %%Resistance/Inductance
+    variable.Gen_Resistance_Fixed_Lab           =[];
+    variable.Gen_Resistance_Max_Lab             =[];
+
+    %Load REsistance None
+    variable.Gen_Resistance_Step_Lab            =[];
+    variable.Gen_Resistance_Min_Lab             =[];
+
+    variable.Gen_Inductance_Fixed_Lab           =[];
+    %Load Inductance
+    variable.Gen_Inductance_Max_Lab             =[];
+    %None Fixed Value
+    variable.Gen_Inductance_Step_Lab            =[];
+    variable.Gen_Inductance_Min_Lab             =[];
     %% Calibration
+    %%
+    variable.TestType_MotorLAB                  =[];
+    variable.TestSpeedMax_MotorLAB              =[];
+    variable.TestSpeedInc_MotorLAB              =[];
+    variable.TestSpeedMin_MotorLAB              =[];
 
+    variable.ExpData_MotorLAB                   =[];
+    variable.ExpDataType_MotorLAB               =[];
     %% Setting
+    variable.CurrentSpec_MotorLAB               =[];
+    variable.NonSalient_MotorLAB                =[];
+    variable.SaturationModelMethod_Lab          =[];
+    %Inerpolation
+    variable.SaturationModelInterpolation_Lab   =[];
+
+    variable.XEndLeak_MotorLAB                  =[];
+    variable.LEndWdg_MotorLAB                   =[];
+
+    variable.IronLossBuildFactorDefinition      =[];
+    variable.ACConductorLossSplit_Lab           =[];
 
     
     % Import;
-    SimulationParameter_MotorLab_names = {}; % 
-end
+    variable.SimulationParameter_MotorLab_names = {}; 
+endvariable.

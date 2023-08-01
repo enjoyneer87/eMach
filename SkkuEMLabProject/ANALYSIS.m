@@ -83,6 +83,7 @@ spmd
         settedConductorData.ParallelPaths=2;  % 병렬 수
         % settedConductorData.ConductorsPerSlot=10;  % WindingLayers 에 따라 자동으로 적용됨
         settedConductorData.ConductorSeparation = 0.18;  % 방사방향 도체 사이 거리
+        settedConductorData.Conductor2LinerSeparation=0.05;  % 도체와 Liner사이 거리
         settedConductorData.temp_fillfactor = 60;  % temp
         setMcadVariable(settedConductorData,activeServers(spmdIndex));
         activeServers(spmdIndex).SaveToFile(newMotFilePath);  % 형상 적용을 위한 저장
