@@ -24,14 +24,11 @@ function variable=setMcadVariable(variable,mcad)
                 mcad.SetArrayVariable(fieldName, 2,variable.(fieldName)(3));
             end
         else
-            if length(variable.(fieldName))==1
-                if contains(fieldName, 'Rear')
-                    fieldName = strrep(fieldName, 'Rear', '[R]');
-                elseif contains(fieldName, 'Front')
-                    fieldName = strrep(fieldName, 'Front', '[F]');
+            if length(variable.(fieldName))==1 
+                fieldName=replaceMLABvar2MCADvar(fieldName); % 일괄적으로 매틀랩에서 허용하지 않는 변수명을 모터캐드 변수명을 변환
+                if isempty(variable.(originalFieldName))==0 || ~isnan(variable.(originalFieldName)) % 비어있지 않은 Field값만 입력
+                   mcad.SetVariable(fieldName,double(variable.(originalFieldName)));
                 end
-              
-               mcad.SetVariable(fieldName,double(variable.(originalFieldName)));
             end
         end       
     end

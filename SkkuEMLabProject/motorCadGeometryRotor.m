@@ -17,7 +17,7 @@ classdef motorCadGeometryRotor
         % value
         % absolute
         BPMRotor
-        PoleNumber_Outer
+        Pole_Number
         VMagnet_Layers
         Banding_Thickness
         Shaft_Dia
@@ -43,7 +43,6 @@ classdef motorCadGeometryRotor
                 % obj.VShapeMagnetPost_Array = [tbl.L1_Magnet_Post];
                 obj.MagnetSeparation_Array = [InputTable.L1_Magnet_Separation];
                 % obj.VShapeMagnetSegments_Array = [tbl.L1_Magnet_Segments];
-
                 % Ratio (Interior V(Web) BPMRotor =11 (비율 값)
                 obj.RatioArray_PoleArc = [InputTable.L1_Pole_Arc];
                 obj.RatioArray_WebThickness = [InputTable.L1_Web_Thickness];
@@ -57,7 +56,6 @@ classdef motorCadGeometryRotor
                 % obj.VShapeMagnetPost_Array = [tbl.L1_Magnet_Post, tbl.L2_Magnet_Post];
                 obj.MagnetSeparation_Array = [InputTable.L1_Magnet_Separation, InputTable.L2_Magnet_Separation];
                 % obj.VShapeMagnetSegments_Array = [tbl.L1_Magnet_Segments, tbl.L2_Magnet_Segments];
-
                 % Ratio (Interior V(Web) BPMRotor =11 (비율 값)
                 obj.RatioArray_PoleArc = [InputTable.L1_Pole_Arc, InputTable.L2_Pole_Arc];
                 obj.RatioArray_WebThickness = [InputTable.L1_Web_Thickness, InputTable.L2_Web_Thickness];

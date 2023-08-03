@@ -1,5 +1,5 @@
 % 검색할 문자열
-searchStr = 'plotEfficiencyContour';
+searchStr = 'copyPNGFilesToPNGFolder';
 
 % 검색할 디렉토리 경로
 topDir = 'Z:\01_Codes_Projects\git_fork_emach';

@@ -4,9 +4,9 @@ function variable = McadStatorVariable(fileName)
     variable.SlotType                             =[];
 
     %% Axial
-    variable.Stator_Lam_Length         =[]   ;                   % Stator lamination pack length
-    variable.EWdg_Overhang_Rear       =[]   ;                     % End winding overhang (rear)
-    variable.EWdg_Overhang_Front      =[]   ;                     %                      (front)
+    variable.Stator_Lam_Length                    =[]   ;                   % Stator lamination pack length
+    variable.EWdg_Overhang_Rear                  =[]   ;                     % End winding overhang (rear)
+    variable.EWdg_Overhang_Front                 =[]   ;                     %                      (front)
      
     %% Absolute 
     variable.Slot_Number                        =[]; 
@@ -31,7 +31,7 @@ function variable = McadStatorVariable(fileName)
     variable.Ratio_SlotWidth                    =[];    
     variable.Ratio_SlotDepth_ParallelSlot       =[];            
     variable.Ratio_SlotOpening_ParallelSlot     =[];            
-    
+    variable.Ratio_SleeveThickness              =[];
     % Type 3
     % Type 4
     % Type 5
