@@ -202,4 +202,4 @@ function variable=McadLABCalcPackage(fileName)
     
     % Import;
     variable.SimulationParameter_MotorLab_names = {}; 
-endvariable.
+end
