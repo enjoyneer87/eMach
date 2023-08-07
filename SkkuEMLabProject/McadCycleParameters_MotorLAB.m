@@ -1,6 +1,6 @@
 function variable=McadCycleParameters_MotorLAB()
     variable = struct();     
-    variable.Wheellnertia                  =[];  
+    variable.WheelInertia                  =[];  
     variable.DCExtDataType_Lab             =[];      
     variable.DrivCycle_MotorLAB            =[];      
     variable.Mass_MotorLAB                 =[];  %   vehicle mass
