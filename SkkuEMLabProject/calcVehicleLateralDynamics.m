@@ -14,7 +14,7 @@ function calcVehicleLateralDynamics(vehicleVariable,vehiclePerformData)
     tr =   vehicleVariable.R_w_MotorLAB                                                         % Tire Radius [m]              % 0.274;                       
     cr =   vehicleVariable.K_r_MotorLAB                                                         % Rolling Coefficient          % 0.01;                            
     gr =   vehicleVariable.N_d_MotorLAB                                                     % Gear Ratio (차동기어 포함)    % 8.35;                                    
-    ge =   0.98;                                                     % Gear Efficiency              % 0.98;                        
+    ge =   0.9;                                                     % Gear Efficiency              % 0.98;                        
     ga =   9.81;                                                     % 중력가속도 [m/s2]             % 9.81; 
            
     dif_grade = 10;                                    % 등판 간격 [%]
@@ -72,14 +72,15 @@ function calcVehicleLateralDynamics(vehicleVariable,vehiclePerformData)
     dri_shaft_cont_t = cont_f*tr;
     dri_shaft_max_t = max_f*tr;
     
-    dri_shaft_cont_p = dri_shaft_cont_t*2*pi*rpm.'/(1000*60*gr);
-    dri_shaft_max_p = dri_shaft_max_t*2*pi*rpm.'/(1000*60*gr);
-    
+    dri_shaft_cont_p = dri_shaft_cont_t.*2*pi.*rpm./(1000*60*gr);
+    % dri_shaft_max_p = dri_shaft_max_t*2*pi*rpm.'/(1000*60*gr);
+    dri_shaft_max_p = dri_shaft_max_t.*2*pi.*rpm/(1000*60*gr);
+
     motor_cont_p = dri_shaft_cont_p/ge*1000;
     motor_max_p = dri_shaft_max_p/ge*1000;
     
-    motor_cont_t = motor_cont_p/(2*pi*rpm.'/60);
-    motor_max_t = motor_max_p/(2*pi*rpm.'/60);
+    motor_cont_t = motor_cont_p./(2*pi*rpm./60);
+    motor_max_t = motor_max_p./(2*pi*rpm./60);
     
     
     %%%%%%%%%%%%%%%%%%%%%%% 가속 성능 %%%%%%%%%%%%%%%%%%%%%%%%%%%
