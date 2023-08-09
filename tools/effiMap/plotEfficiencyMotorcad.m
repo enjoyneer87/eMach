@@ -7,7 +7,7 @@ function Mat_File_Data=plotEfficiencyMotorcad(Mat_File_Path)
     Shaft_Power         =            Mat_File_Data.Shaft_Power          ;        
     DC_Bus_Voltage      =            Mat_File_Data.DC_Bus_Voltage       ;       
     %% Plot MotorCad
-    plot3(Shaft_Torque,Speed,Efficiency,'o')
+    % plot3(Shaft_Torque,Speed,Efficiency,'o')
     % contourf(Speed,Shaft_Torque,Efficiency);
     
     

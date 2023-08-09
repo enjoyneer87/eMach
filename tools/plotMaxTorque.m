@@ -5,7 +5,7 @@ function [uniqueSpeed, maxTorque]=plotMaxTorque(speedArray, torqueArray)
 
     % 각 속도에서의 최대 토크값으로 이루어진 선 그래프 생성
     plot(uniqueSpeed, maxTorque,LineStyle="-");
-%     xlabel('Speed, RPM');
-%     ylabel('Torque, N*m');
+    xlabel('Speed, RPM');
+    ylabel('Torque, N*m');
 %     title('Max Torque vs. Speed');
 end
