@@ -96,6 +96,7 @@ spmd
         settedConductorData.ParallelPaths_Hairpin=FixVariableTable.ParallelPaths_Hairpin;  % 병렬 수
         % settedConductorData.ConductorsPerSlot=FixVariableTable.ConductorsPerSlot;  % WindingLayers 에 따라 자동으로 적용됨
         settedConductorData.ConductorSeparation = FixVariableTable.ConductorSeparation;  % 방사방향 도체 사이 거리
+        settedConductorData.Conductor2LinerSeparation=0.05;  % 도체와 Liner사이 거리
         settedConductorData.temp_fillfactor = FixVariableTable.temp_fillfactor;  % temp
         settedConductorData.HairpinWindingPatternMethod = FixVariableTable.HairpinWindingPatternMethod;  % Improved
         settedConductorData.MagThrow = FixVariableTable.MagThrow;  % 권선 피치

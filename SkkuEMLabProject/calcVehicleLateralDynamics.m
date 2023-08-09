@@ -9,17 +9,17 @@ function calcVehicleLateralDynamics(vehicleVariable,vehiclePerformData)
     gvw = cvw+load+(person*no_person);                % 차량 총중량 [kg]
     
     da =   1.225                                                     % 공기밀도 [kg/m2]              % 1.253;                      
-    fa =   vehicleVariable.A_f_MotorLAB                                                       % Frontal Area [m2]            % 3.42;                        
-    ca =   vehicleVariable.C_d_MotorLAB                                                       % Air Drag Coefficient         % 0.5;                             
-    tr =   vehicleVariable.R_w_MotorLAB                                                         % Tire Radius [m]              % 0.274;                       
-    cr =   vehicleVariable.K_r_MotorLAB                                                         % Rolling Coefficient          % 0.01;                            
-    gr =   vehicleVariable.N_d_MotorLAB                                                     % Gear Ratio (차동기어 포함)    % 8.35;                                    
-    ge =   0.98;                                                     % Gear Efficiency              % 0.98;                        
+    fa =   vehicleVariable.A_f_MotorLAB;                                                       % Frontal Area [m2]            % 3.42;                        
+    ca =   vehicleVariable.C_d_MotorLAB;                                                       % Air Drag Coefficient         % 0.5;                             
+    tr =   vehicleVariable.R_w_MotorLAB;                                                         % Tire Radius [m]              % 0.274;                       
+    cr =   vehicleVariable.K_r_MotorLAB;                                                         % Rolling Coefficient          % 0.01;                            
+    gr =   vehicleVariable.N_d_MotorLAB;                                                     % Gear Ratio (차동기어 포함)    % 8.35;                                    
+    ge =   vehicleVariable.gearEfficiency;                                                     % Gear Efficiency              % 0.98;                        
     ga =   9.81;                                                     % 중력가속도 [m/s2]             % 9.81; 
            
     dif_grade = 10;                                    % 등판 간격 [%]
     max_grade = 100;                                   % 최대 등판 각도 [%]
-    rot_iner = 0.0877;                                % Rotor Inertia [kg*m2]
+    rot_iner = vehicleVariable.rot_iner;                                % Rotor Inertia [kg*m2]
     
     
     
@@ -72,14 +72,15 @@ function calcVehicleLateralDynamics(vehicleVariable,vehiclePerformData)
     dri_shaft_cont_t = cont_f*tr;
     dri_shaft_max_t = max_f*tr;
     
-    dri_shaft_cont_p = dri_shaft_cont_t*2*pi*rpm.'/(1000*60*gr);
-    dri_shaft_max_p = dri_shaft_max_t*2*pi*rpm.'/(1000*60*gr);
-    
+    dri_shaft_cont_p = dri_shaft_cont_t.*2*pi.*rpm./(1000*60*gr);
+    % dri_shaft_max_p = dri_shaft_max_t*2*pi*rpm.'/(1000*60*gr);
+    dri_shaft_max_p = dri_shaft_max_t.*2*pi.*rpm/(1000*60*gr);
+
     motor_cont_p = dri_shaft_cont_p/ge*1000;
     motor_max_p = dri_shaft_max_p/ge*1000;
     
-    motor_cont_t = motor_cont_p/(2*pi*rpm.'/60);
-    motor_max_t = motor_max_p/(2*pi*rpm.'/60);
+    motor_cont_t = motor_cont_p./(2*pi*rpm./60);
+    motor_max_t = motor_max_p./(2*pi*rpm./60);
     
     
     %%%%%%%%%%%%%%%%%%%%%%% 가속 성능 %%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -124,18 +125,8 @@ function calcVehicleLateralDynamics(vehicleVariable,vehiclePerformData)
     plot(kph, cont_f, 'LineWidth',2,'DisplayName','')
     plot(kph, max_f, 'LineWidth',2)
     formatter_sci;
-    
+
     figure(2)
-    hold on
-    grid on
-    ylabel('Torque [Nm]');
-    xlabel('Speed [rpm]');
-    title('Required Motor Performance');
-    plot(rpm, motor_cont_t, 'LineWidth',2)
-    plot(rpm, motor_max_t, 'LineWidth',2)
-    formatter_sci
-    
-    figure(3)
     hold on
     grid on
     ylabel('Force [N]');
@@ -149,7 +140,19 @@ function calcVehicleLateralDynamics(vehicleVariable,vehiclePerformData)
       plot(kph, max_f, 'LineWidth',2,'Color','r')
     formatter_sci
     
-    figure(4)
+    figure(3)
+    hold on
+    grid on
+    ylabel('Torque [Nm]');
+    xlabel('Speed [rpm]');
+    % plot(rpm, motor_cont_t, 'LineWidth',2)
+    plot(rpm, motor_max_t, 'LineWidth',2,'DisplayName',['Gear Ratio:' ,num2str(gr)])
+    title('Total Required Motor TN');
+
+    legend
+    formatter_sci
+    
+    figure(5)
     hold on
     grid on
     ylabel('Time [sec]');
@@ -158,4 +161,43 @@ function calcVehicleLateralDynamics(vehicleVariable,vehiclePerformData)
     plot(kph, apro_time_plot, 'LineWidth', 2)
     formatter_sci
     disp('완료');
+
+    figure(4)
+    hold on
+    grid on
+    ylabel('Power [kW]');
+    xlabel('Speed [rpm]');
+    title('Total Required Motor PN');
+    % plot(rpm, motor_cont_p, 'LineWidth',2)
+    plot(rpm, motor_max_p/1000, 'LineWidth',2,'DisplayName',['Gear Ratio:' ,num2str(gr)]);
+    legend
+    formatter_sci;
+    
+    figure(6)
+    hold on
+    grid on
+    ylabel('Torque [Nm]');
+    xlabel('Speed [rpm]');
+    title('Each Required Motor TN');
+    % plot(rpm, motor_cont_t, 'LineWidth',2)
+    plot(rpm, motor_max_t/3, 'LineWidth',2,'DisplayName',['Front Motor -Gear Ratio:' ,num2str(gr)])
+    legend
+    plot(rpm, 2*motor_max_t/3, '--','DisplayName',['Rear 2Motor - Gear Ratio:' ,num2str(gr)])
+    formatter_sci
+    
+    figure(7)
+    hold on
+    grid on
+    ylabel('Power [kW]');
+    xlabel('Speed [rpm]');
+    title('Each Required Motor PN');
+    % plot(rpm, motor_cont_p, 'LineWidth',2)
+    plot(rpm, motor_max_p/1000/3, 'LineWidth',2,'DisplayName',['Front Motor -Gear Ratio:' ,num2str(gr)]);
+    legend
+    plot(rpm, 2*motor_max_p/1000/3, '--','DisplayName',['Rear 2Motor - Gear Ratio:' ,num2str(gr)])
+
+    formatter_sci;
+
+
+
 end
