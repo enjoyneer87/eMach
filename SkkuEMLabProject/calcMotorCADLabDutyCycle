@@ -1,4 +1,4 @@
-function DutyCycleOutput = MotorCAD_Lab_DutyCycle(mcad, mcad_file_dir, mcad_file_name, input)
+function DutyCycleOutput = calcMotorCADLabDutyCycle(mcad, mcad_file_dir, mcad_file_name, input)
 
 % 임시 
 % mcad=actxserver('motorcad.appautomation');
