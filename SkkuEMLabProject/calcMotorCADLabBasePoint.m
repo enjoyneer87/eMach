@@ -1,4 +1,4 @@
-function BasePointOutput = MotorCAD_Lab_BasePoint(mcad, mcad_file_dir, mcad_file_name, input)
+function BasePointOutput = calcMotorCADLabBasePoint(mcad, mcad_file_dir, mcad_file_name, input)
 
 % 임시 
 % mcad=actxserver('motorcad.appautomation');
