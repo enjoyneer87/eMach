@@ -19,7 +19,7 @@ function variable=getMcadStatorVariable(variable,mcad)
         end       
         % Use the original field name for assignment
         [~, fieldData] = mcad.GetVariable(fieldName);
-        fieldData = convertCharTypeData2FieldData(fieldData); % char형을 배열로
+        fieldData = convertCharTypeData2ArrayData(fieldData); % char형을 배열로
         variable.(originalFieldName) = fieldData;
     end
 end
