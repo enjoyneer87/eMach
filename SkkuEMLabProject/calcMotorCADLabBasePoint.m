@@ -56,33 +56,37 @@ mcad.SetVariable("MessageDisplayState", 2);
 mcad.CalculateMagnetic_Lab();
 
 % 파일 복사
-temp_data_file_path=fullfile(mcad_file_dir, mcad_file_name, 'Lab', 'MotorLAB_elecdata');
+initialMatFilePath=fullfile(mcad_file_dir, mcad_file_name, 'Lab', 'MotorLAB_elecdata');
 temp_time=clock;
-data_file_path=[temp_data_file_path, '_', num2str(temp_time(4)), 'h', num2str(temp_time(5)), 'm'];
-movefile([temp_data_file_path, '.mat'], [data_file_path, '.mat'])
+matFilePath=[initialMatFilePath, '_', num2str(temp_time(4)), 'h', num2str(temp_time(5)), 'm'];
+movefile([initialMatFilePath, '.mat'], [matFilePath, '.mat'])
 
 % data 불러오기
-data=load([data_file_path, '.mat']);
+matData=load([matFilePath, '.mat']);
 
 %% 계산
-data.DC_Bus_Voltage(1,1);
-NumberOfIncrements=length(data.Voltage_Line_Peak(1,:));
-MaximumVoltage=round(max(data.Voltage_Line_Peak(:,NumberOfIncrements)),0);
-BaseSpeedRow=min(find(round(data.Voltage_Line_Peak(:,NumberOfIncrements),0)==MaximumVoltage));
+matData.DC_Bus_Voltage(1,1);
+NumberOfIncrements=length(matData.Voltage_Line_Peak(1,:));
+MaximumVoltage=round(max(matData.Voltage_Line_Peak(:,NumberOfIncrements)),0);
+BaseSpeedRow=min(find(round(matData.Voltage_Line_Peak(:,NumberOfIncrements),0)==MaximumVoltage));
 
 % BaseSpeed=data.Speed(BaseSpeedRow,NumberOfIncrements);
 % BaseTorque=data.Shaft_Torque(BaseSpeedRow,NumberOfIncrements);
 % MaximumPower=BaseTorque*BaseSpeed/60*2*pi;
 
-VoltageSlope=(data.Voltage_Line_Peak(1,NumberOfIncrements)-data.Voltage_Line_Peak(BaseSpeedRow-1,NumberOfIncrements))/...
-    (data.Speed(1,NumberOfIncrements)-data.Speed(BaseSpeedRow-1,NumberOfIncrements));
-BaseSpeed_modified=(MaximumVoltage-data.Voltage_Line_Peak(1,NumberOfIncrements))/VoltageSlope+data.Speed(1,NumberOfIncrements);
-TorqueSlope=(data.Shaft_Torque(1,NumberOfIncrements)-data.Shaft_Torque(BaseSpeedRow-1,NumberOfIncrements))/...
-    (data.Speed(1,NumberOfIncrements)-data.Speed(BaseSpeedRow-1,NumberOfIncrements));
-BaseTorque_modified=data.Shaft_Torque(1,NumberOfIncrements)-BaseSpeed_modified*TorqueSlope;
+VoltageSlope=(matData.Voltage_Line_Peak(1,NumberOfIncrements)-matData.Voltage_Line_Peak(BaseSpeedRow-1,NumberOfIncrements))/...
+    (matData.Speed(1,NumberOfIncrements)-matData.Speed(BaseSpeedRow-1,NumberOfIncrements));
+BaseSpeed_modified=(MaximumVoltage-matData.Voltage_Line_Peak(1,NumberOfIncrements))/VoltageSlope+matData.Speed(1,NumberOfIncrements);
+TorqueSlope=(matData.Shaft_Torque(1,NumberOfIncrements)-matData.Shaft_Torque(BaseSpeedRow-1,NumberOfIncrements))/...
+    (matData.Speed(1,NumberOfIncrements)-matData.Speed(BaseSpeedRow-1,NumberOfIncrements));
+BaseTorque_modified=matData.Shaft_Torque(1,NumberOfIncrements)-BaseSpeed_modified*TorqueSlope;
 MaximumPower_modified=BaseTorque_modified*BaseSpeed_modified/60*2*pi;
 
+%% [TC]Return
 BasePointOutput=table2struct(table(MaximumPower_modified, BaseTorque_modified, BaseSpeed_modified));
+BasePointOutput.matData=matData;
+BasePointOutput.matFileName=[matFilePath, '.mat'];
+BasePointOutput.matFilePath=matFilePath;
 
 end
 
