@@ -37,12 +37,12 @@ input.PowerLim_MotorLAB                         = false;    % Calculation - Opti
 if input.PowerLim_MotorLAB==true || input.PowerLim_MotorLAB==1
     input.PowerLimVal_MotorLAB                  = 1000000;  % Calculation - Options - Power Limit - Max Power
 end
-input.SpeedMax_MotorLAB                         = 25000;    % Calculation - Speed - Maximum
-input.Speedinc_MotorLAB                         = 200;      % Calculation - Speed - Step Size
-input.SpeedMin_MotorLAB                         = 200;      % Calculation - Speed - Minimum
+input.SpeedMax_MotorLAB                         = 30000;    % Calculation - Speed - Maximum
+input.Speedinc_MotorLAB                         = 500;      % Calculation - Speed - Step Size
+input.SpeedMin_MotorLAB                         = 500;      % Calculation - Speed - Minimum
 input.Imax_MotorLAB                             = [];       %
 input.Imax_RMS_MotorLAB                         = 500;      % Calculation - Current - Maximum (RMS)
-input.Iinc_MotorLAB                             = 10;       % Calculation - Current - No. of Increments
+input.Iinc_MotorLAB                             = 30;       % Calculation - Current - No. of Increments
 input.Imin_MotorLAB                             = [];       %
 input.Imin_RMS_MotorLAB                         = 0;       % Calculation - Current - Minimum (RMS)
 input.TorqueMax_MotorLAB                        = [];       %
@@ -52,7 +52,7 @@ input.MinTorque_MotorLAB                        = [];       %
 %% 해석
 % 전자계 해석 실행 & 결과 자동 저장 'MotorLAB_elecdata'
 setMcadVariable(input,mcad);
-mcad.SetVariable("MessageDisplayState", 2);
+% mcad.SetVariable("MessageDisplayState", 2);
 mcad.CalculateMagnetic_Lab();
 
 % 파일 복사
@@ -65,24 +65,50 @@ movefile([temp_data_file_path, '.mat'], [data_file_path, '.mat'])
 data=load([data_file_path, '.mat']);
 
 %% 계산
+% BasePoint
 data.DC_Bus_Voltage(1,1);
 NumberOfIncrements=length(data.Voltage_Line_Peak(1,:));
 MaximumVoltage=round(max(data.Voltage_Line_Peak(:,NumberOfIncrements)),0);
-BaseSpeedRow=min(find(round(data.Voltage_Line_Peak(:,NumberOfIncrements),0)==MaximumVoltage));
+temp_BaseSpeedRow=min(find(round(data.Voltage_Line_Peak(:,NumberOfIncrements),0)==MaximumVoltage));
 
 % BaseSpeed=data.Speed(BaseSpeedRow,NumberOfIncrements);
 % BaseTorque=data.Shaft_Torque(BaseSpeedRow,NumberOfIncrements);
 % MaximumPower=BaseTorque*BaseSpeed/60*2*pi;
 
-VoltageSlope=(data.Voltage_Line_Peak(1,NumberOfIncrements)-data.Voltage_Line_Peak(BaseSpeedRow-1,NumberOfIncrements))/...
-    (data.Speed(1,NumberOfIncrements)-data.Speed(BaseSpeedRow-1,NumberOfIncrements));
+VoltageSlope=(data.Voltage_Line_Peak(1,NumberOfIncrements)-data.Voltage_Line_Peak(temp_BaseSpeedRow-1,NumberOfIncrements))/...
+    (data.Speed(1,NumberOfIncrements)-data.Speed(temp_BaseSpeedRow-1,NumberOfIncrements));
 BaseSpeed_modified=(MaximumVoltage-data.Voltage_Line_Peak(1,NumberOfIncrements))/VoltageSlope+data.Speed(1,NumberOfIncrements);
-TorqueSlope=(data.Shaft_Torque(1,NumberOfIncrements)-data.Shaft_Torque(BaseSpeedRow-1,NumberOfIncrements))/...
-    (data.Speed(1,NumberOfIncrements)-data.Speed(BaseSpeedRow-1,NumberOfIncrements));
+TorqueSlope=(data.Shaft_Torque(1,NumberOfIncrements)-data.Shaft_Torque(temp_BaseSpeedRow-1,NumberOfIncrements))/...
+    (data.Speed(1,NumberOfIncrements)-data.Speed(temp_BaseSpeedRow-1,NumberOfIncrements));
 BaseTorque_modified=data.Shaft_Torque(1,NumberOfIncrements)-BaseSpeed_modified*TorqueSlope;
 MaximumPower_modified=BaseTorque_modified*BaseSpeed_modified/60*2*pi;
 
-BasePointOutput=table2struct(table(MaximumPower_modified, BaseTorque_modified, BaseSpeed_modified));
+% Maximum Speed
+MaximumCurrent=round(max(data.Stator_Current_Phase_Peak(:,NumberOfIncrements)),0);
+temp_FluxWeakeningRow=max(find(round(data.Stator_Current_Phase_Peak(:,NumberOfIncrements),0)==MaximumCurrent));
+
+% FluxWeakeningSpeed=data.Speed(temp_FluxWeakeningRow,NumberOfIncrements);
+% FluxWeakeningTorque=data.Shaft_Torque(temp_FluxWeakeningRow,NumberOfIncrements);
+
+FluxWeakeningCurrentSlope=(data.Stator_Current_Phase_Peak(temp_FluxWeakeningRow+1,NumberOfIncrements)-data.Stator_Current_Phase_Peak(temp_FluxWeakeningRow+2,NumberOfIncrements))/...
+    (data.Speed(temp_FluxWeakeningRow+1,NumberOfIncrements)-data.Speed(temp_FluxWeakeningRow+2,NumberOfIncrements));
+FluxWeakeningSpeed_modified=(MaximumCurrent-data.Stator_Current_Phase_Peak(temp_FluxWeakeningRow+1,NumberOfIncrements))/FluxWeakeningCurrentSlope ...
+    +data.Speed(temp_FluxWeakeningRow+1,NumberOfIncrements);
+FluxWeakeningTorqueSlope=(data.Shaft_Torque(temp_FluxWeakeningRow+1,NumberOfIncrements)-data.Shaft_Torque(temp_FluxWeakeningRow+2,NumberOfIncrements))/ ...
+    (data.Speed(temp_FluxWeakeningRow+1,NumberOfIncrements)-data.Speed(temp_FluxWeakeningRow+2,NumberOfIncrements));
+FluxWeakeningTorque_modified=FluxWeakeningTorqueSlope*(FluxWeakeningSpeed_modified-data.Speed(temp_FluxWeakeningRow+1,NumberOfIncrements)) ...
+    +data.Shaft_Torque(temp_FluxWeakeningRow+1,NumberOfIncrements);
+
+if data.Shaft_Torque(length(data.Shaft_Torque(:,NumberOfIncrements)),NumberOfIncrements)>0
+    MaximumSpeed=max(data.Speed(:,NumberOfIncrements));
+else
+    temp_MaxSpeedRow=min(find(round(data.Shaft_Torque(:,NumberOfIncrements),0)<=0));
+    MaximumSpeed=data.Speed(temp_MaxSpeedRow-1,NumberOfIncrements);
+end
+
+% output
+BasePointOutput=table2struct(table(MaximumPower_modified, BaseTorque_modified, BaseSpeed_modified, ...
+    FluxWeakeningTorque_modified, FluxWeakeningSpeed_modified, MaximumSpeed));
 
 end
 
