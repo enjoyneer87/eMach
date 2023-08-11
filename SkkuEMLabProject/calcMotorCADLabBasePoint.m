@@ -8,7 +8,7 @@ function BasePointOutput = calcMotorCADLabBasePoint(mcad, mcad_file_dir, mcad_fi
 
 %% 셋팅
 % Calculation - General
-input.DCBusVoltage                               = 2400;      % Drive - DC Bus Voltage
+input.DCBusVoltage                               = 800;      % Drive - DC Bus Voltage
 input.ModulationIndex_MotorLAB                   = 0.95;     % Drive - Maximum Modulation Index
 input.OperatingMode_Lab                          = 0;        % Drive - Operating Mode : Motor
 input.ControlStrat_MotorLAB                      = 0;        % Drive - Control Stratey : Maximum Torque/Amp
