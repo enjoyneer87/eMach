@@ -8,7 +8,7 @@ function calcVehicleLateralDynamics(vehicleVariable,vehiclePerformData)
     no_person = 1;                                    % 탑승인원 [명]
     gvw = cvw+load+(person*no_person);                % 차량 총중량 [kg]
     
-    da =   1.225                                                     % 공기밀도 [kg/m2]              % 1.253;                      
+    da =   1.225                       ;                              % 공기밀도 [kg/m2]              % 1.253;                      
     fa =   vehicleVariable.A_f_MotorLAB;                                                       % Frontal Area [m2]            % 3.42;                        
     ca =   vehicleVariable.C_d_MotorLAB;                                                       % Air Drag Coefficient         % 0.5;                             
     tr =   vehicleVariable.R_w_MotorLAB;                                                         % Tire Radius [m]              % 0.274;                       
@@ -133,11 +133,11 @@ function calcVehicleLateralDynamics(vehicleVariable,vehiclePerformData)
     xlabel('Speed [kph]');
     title('Vehicle Gradeability');
     for m = 1 : 1 : (max_grade/dif_grade)+1
-      plot(kph, total_load(:, m), 'LineWidth',2,'Color','k')
+      plot(kph, total_load(:, m), 'LineWidth',2,'Color','k');
       hold on
     end
-      plot(kph, cont_f, 'LineWidth',2,'Color','b')
-      plot(kph, max_f, 'LineWidth',2,'Color','r')
+      plot(kph, cont_f, 'LineWidth',2,'Color','b');
+      plot(kph, max_f, 'LineWidth',2,'Color','r');
     formatter_sci
     
     figure(3)
@@ -146,7 +146,7 @@ function calcVehicleLateralDynamics(vehicleVariable,vehiclePerformData)
     ylabel('Torque [Nm]');
     xlabel('Speed [rpm]');
     % plot(rpm, motor_cont_t, 'LineWidth',2)
-    plot(rpm, motor_max_t, 'LineWidth',2,'DisplayName',['Gear Ratio:' ,num2str(gr)])
+    plot(rpm, motor_max_t, 'LineWidth',2,'DisplayName',['Gear Ratio:' ,num2str(gr)]);
     title('Total Required Motor TN');
 
     legend
@@ -160,7 +160,6 @@ function calcVehicleLateralDynamics(vehicleVariable,vehiclePerformData)
     title('Acceleration Time');
     plot(kph, apro_time_plot, 'LineWidth', 2)
     formatter_sci
-    disp('완료');
 
     figure(4)
     hold on
@@ -182,7 +181,7 @@ function calcVehicleLateralDynamics(vehicleVariable,vehiclePerformData)
     % plot(rpm, motor_cont_t, 'LineWidth',2)
     plot(rpm, motor_max_t/3, 'LineWidth',2,'DisplayName',['Front Motor -Gear Ratio:' ,num2str(gr)])
     legend
-    plot(rpm, 2*motor_max_t/3, '--','DisplayName',['Rear 2Motor - Gear Ratio:' ,num2str(gr)])
+    % plot(rpm, 2*motor_max_t/3, '--','DisplayName',['Rear 2Motor - Gear Ratio:' ,num2str(gr)])
     formatter_sci
     
     figure(7)
@@ -194,7 +193,7 @@ function calcVehicleLateralDynamics(vehicleVariable,vehiclePerformData)
     % plot(rpm, motor_cont_p, 'LineWidth',2)
     plot(rpm, motor_max_p/1000/3, 'LineWidth',2,'DisplayName',['Front Motor -Gear Ratio:' ,num2str(gr)]);
     legend
-    plot(rpm, 2*motor_max_p/1000/3, '--','DisplayName',['Rear 2Motor - Gear Ratio:' ,num2str(gr)])
+    % plot(rpm, 2*motor_max_p/1000/3, '--','DisplayName',['Rear 2Motor - Gear Ratio:' ,num2str(gr)])
 
     formatter_sci;
 

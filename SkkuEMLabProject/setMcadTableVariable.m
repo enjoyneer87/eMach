@@ -12,7 +12,7 @@ function arrayData = setMcadTableVariable(variableTable, mcad)
 
         % 'CurrentValue' 열의 값을 가져와 배열 데이터로 변환합니다
         if ischar(variableTable.CurrentValue)
-         arrayData = convertCharTypeData2ArrayData(variableTable.CurrentValue{rowIndex});
+         arrayData                          = convertCharTypeData2ArrayData(variableTable.CurrentValue{rowIndex});
         elseif iscell(variableTable.CurrentValue)
          arrayData = cell2mat(variableTable.CurrentValue(rowIndex));
         elseif isnumeric(variableTable.CurrentValue)

@@ -1,4 +1,4 @@
-set(gca,'FontName','Times New Roman','FontSize',20)
+set(gca,'FontName','Times New Roman','FontSize',20);
 % set(gca,'FontSize',14)
 grid on
 % legend

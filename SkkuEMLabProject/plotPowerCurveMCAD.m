@@ -21,7 +21,7 @@ function  [speedArray, BorderTorque]=plotPowerCurveMCAD(matdata)
     if machineMode==width(matdata.Speed) % 최대 전류만 plot
     plot(speedArray,powerLimitArray,'LineWidth',2);
     end
-    a=gca
+    a=gca;
     a.XLabel.String='Speed[RPM]';
     a.YLabel.String='Power[kW]';
     end

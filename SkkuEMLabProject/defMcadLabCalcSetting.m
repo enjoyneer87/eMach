@@ -24,7 +24,7 @@ function settingTable = defMcadLabCalcSetting()
     input.SpeedMax_MotorLAB                         = 25000;    % Calculation - Speed - Maximum
     input.Speedinc_MotorLAB                         = 200;      % Calculation - Speed - Step Size
     input.SpeedMin_MotorLAB                         = 200;      % Calculation - Speed - Minimum
-    input.Imax_MotorLAB                             = [];       %
+    input.Imax_MotorLAB                             = 0;       %
     input.Imax_RMS_MotorLAB                         = 500;      % Calculation - Current - Maximum (RMS)
     input.Iinc_MotorLAB                             = 10;       % Calculation - Current - No. of Increments
     input.Imin_MotorLAB                             = [];       %
@@ -54,6 +54,7 @@ function settingTable = defMcadLabCalcSetting()
         "SpeedMax_MotorLAB"                            , input.SpeedMax_MotorLAB;
         "Speedinc_MotorLAB"                            , input.Speedinc_MotorLAB;
         "SpeedMin_MotorLAB"                            , input.SpeedMin_MotorLAB;
+        "Imax_MotorLAB"                                , input.Imax_MotorLAB;
         "Imax_RMS_MotorLAB"                            , input.Imax_RMS_MotorLAB;
         "Iinc_MotorLAB"                                , input.Iinc_MotorLAB;
         "Imin_RMS_MotorLAB"                            , input.Imin_RMS_MotorLAB;
