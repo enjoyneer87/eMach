@@ -2,7 +2,7 @@
 
 % Define the speed range from 0 to 200 mph
 % speed_mph = 0:200;
-speed_mph = (TeslaPowerCurve.spped_mph);
+speed_mph = (TeslaPowerCurve.speed_mph);
 
 
 

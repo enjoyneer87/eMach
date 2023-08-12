@@ -1,7 +1,11 @@
 function tempPlotEfficiencyMapVehiclePerfom(caseNum,DoEStruct,vehicleData,BasePointOutput,vehiclePerformData)
 %% Plot 
 % Plot]모터 Curve와 모터 요구사양(차량) Curve 
+    if  ismember('N_d_MotorLAB', DoEStruct.DoEInputTable.Properties.VariableNames)
     vehicleData.N_d_MotorLAB=DoEStruct.DoEInputTable.N_d_MotorLAB(caseNum,:);  %[TC] 범용성 증가 필요
+    else
+    vehicleData.N_d_MotorLAB=7.56;  %[TC] 범용성 증가 필요
+    end
     calcVehicleLateralDynamics(vehicleData,vehiclePerformData);                %[TC] 변수 변경필요
 % 모터 해석 Curve
     matFilePath=BasePointOutput.matFilePath;
@@ -17,6 +21,7 @@ function tempPlotEfficiencyMapVehiclePerfom(caseNum,DoEStruct,vehicleData,BasePo
     % [TC]PN plot
     figure(7)
     plotPowerCurveMCAD(MatFileData); % MaxCurve 기능도 같이 포함
+    legend('hide'); % 범례 숨기기
 
     %[TB] % plotMaxPowerCurveMCAD(MatFileData)
 end
