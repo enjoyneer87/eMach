@@ -1,4 +1,6 @@
 % maximum_hp =1019; 
+load("TeslaSPlaidPowerCurveDigitizer.mat");   % TeslaPowerCurve Define
+load("TeslaSPlaid.mat")
 
 % Define the speed range from 0 to 200 mph
 % speed_mph = 0:200;
@@ -31,8 +33,23 @@ power_kw = power_hp * 0.7457;
 % Convert power to force
 % 1 horsepower (HP) is approximately equal to 745.7 watts
 power_watts = power_hp * 745.7;
-force_newtons = power_watts ./ (speed_kph * 1000 / 3600); % Convert kph to m/s
+force_newtons = watt2Force(power_watts, speed_kph);
 
+
+load("linearForceNewtons.mat")
+
+
+%% Power
+power_watts                 =force2Watt(linearForceNewtons,speed_kph);
+power_kw=power_watts/1000;
+power_hp                    =kw2hp(power_kw);
+% Force
+force_newtons               =watt2Force(power_watts, speed_kph);
+
+% Speed
+speed_mph                   =kph2mph(speed_kph);
+speed_ms                    =kph2ms(speed_kph);
+%%
 % Create a new figure
 figure(10);
 
@@ -49,6 +66,7 @@ yyaxis right;
 plot(speed_kph, power_kw, 'LineWidth', 2);
 ylabel('Power (kW)');
 
+
 % Set the right y-axis color to match the force curve
 ax = gca;
 ax.YAxis(2).Color = 'k';
@@ -59,8 +77,11 @@ legend('Force', 'Power');
 
 formatter_sci
 
+TeslaPowerCurve=table(speed_ms,speed_mph,speed_kph,power_hp,power_kw,power_watts,force_newtons);
+
 vehiclePerformData=struct();
 vehiclePerformData.speed_kph=speed_kph;
 vehiclePerformData.power_kw=power_kw;
 vehiclePerformData.force_newtons=force_newtons;
 
+clear("speed_ms","speed_mph","speed_kph","power_hp","power_kw","power_watts","force_newtons","linearForceNewtons")

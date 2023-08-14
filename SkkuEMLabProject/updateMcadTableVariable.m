@@ -11,8 +11,9 @@ function McadVariableTable = updateMcadTableVariable(McadVariableTable, properti
     % currentValue의 데이터 형식에 따라 newValue를 적절하게 변환하여 업데이트합니다
     if ischar(currentValue)
         newValue = convertArrayData2CharTypeData(newValue);
+        % newValue = newValue;
     elseif iscell(currentValue)
-        newValue = cell(newValue);
+        newValue = num2cell(newValue);
     elseif isnumeric(currentValue)
         McadVariableTable.CurrentValue(idx) = newValue; % 값이 숫자인 경우 newValue 그대로 사용
     end

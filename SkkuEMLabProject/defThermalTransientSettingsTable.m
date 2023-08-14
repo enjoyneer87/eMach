@@ -19,6 +19,7 @@
 % InitialTransientTemperatureOption   =[];
 
 data = {
+    "ShaftSpeed"                         ,1000;
     "ThermalCalcType"                    , 1;
     "ThermalModelSize"                   , 0;
     "ThermalModelType"                   , 0;
