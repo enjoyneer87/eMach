@@ -17,7 +17,7 @@ end
 engineerList{1,2}=[];
 
 %% 해당 인원 해석 폴더 설정
-for engineerIndex=4:numel(engineerList)
+for engineerIndex=4:4
     %% refFile
     addPathWithSubPath(engineerList{engineerIndex})
     refPath =fullfile(engineerList{engineerIndex},'MCAD');

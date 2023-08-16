@@ -27,9 +27,9 @@ function smallPoint=decideSimulationTargetPoint(newMotorCurve,motorRequiredCurve
     
     %
     smallPoint.MaxkW        = max(max(newMotorCurve.motor_max_kW),max(motorRequiredCurve.motor_max_kW));
-    smallPoint.MaxTorque    = max(max(newMotorCurve.motor_max_t),max(motorRequiredCurve.motor_max_t))
+    smallPoint.MaxTorque    = max(max(newMotorCurve.motor_max_t),max(motorRequiredCurve.motor_max_t));
     %% PN Curve
-    figure(1)
+    figure(7)
     plot(newMotorCurve.rpm,newMotorCurve.motor_max_kW,'DisplayName','DesignedMotorCurve')
     hold on
     scatter(basePoint.basePointRPM,basePoint.basePointkW,'HandleVisibility', 'off');
@@ -40,7 +40,7 @@ function smallPoint=decideSimulationTargetPoint(newMotorCurve,motorRequiredCurve
     scatter(smallPoint.basePointRPM,smallPoint.basePointkW,'x','HandleVisibility', 'off');
    
     %% TN Curve
-    figure(2)
+    figure(6)
     plot(newMotorCurve.rpm,newMotorCurve.motor_max_t,'DisplayName','DesignedMotorCurve')
     hold on
     scatter(basePoint.basePointRPM,basePoint.basePointTorque)
