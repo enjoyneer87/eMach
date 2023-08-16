@@ -12,7 +12,7 @@ speed_mph = (TeslaPowerCurve.speed_mph);
 % power_hp = zeros(size(speed_mph));
 % power_hp(speed_mph <= 60) = maximum_hp * speed_mph(speed_mph <= 60) / 60;
 % power_hp(speed_mph > 60 & speed_mph <= 200) = maximum_hp;
-power_hp = (TeslaPowerCurve.power_hp);
+power_hp = (TeslaPowerCurve.power_hp)*correctionFactor;
 
 
 %% Smoothing
@@ -37,7 +37,7 @@ force_newtons = watt2Force(power_watts, speed_kph);
 
 
 load("linearForceNewtons.mat")
-
+linearForceNewtons=linearForceNewtons*correctionFactor;
 
 %% Power
 power_watts                 =force2Watt(linearForceNewtons,speed_kph);
