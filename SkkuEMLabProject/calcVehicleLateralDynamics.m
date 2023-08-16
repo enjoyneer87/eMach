@@ -122,7 +122,7 @@ function motorSplitStruct=calcVehicleLateralDynamics(vehicleVariable,vehiclePerf
     xlabel('Speed [kph]');
     title('Maximum Vehicle Speed');
     plot(kph, total_load(:, 1), 'LineWidth' ,2,'DisplayName','Total Load')
-    plot(kph, cont_f, 'LineWidth',2,'DisplayName','')
+    % plot(kph, cont_f, 'LineWidth',2,'DisplayName','')
     plot(kph, max_f, 'LineWidth',2)
     formatter_sci;
 
@@ -136,7 +136,7 @@ function motorSplitStruct=calcVehicleLateralDynamics(vehicleVariable,vehiclePerf
       plot(kph, total_load(:, m), 'LineWidth',2,'Color','k');
       hold on
     end
-      plot(kph, cont_f, 'LineWidth',2,'Color','b');
+      % plot(kph, cont_f, 'LineWidth',2,'Color','b');
       plot(kph, max_f, 'LineWidth',2,'Color','r');
     formatter_sci
     
