@@ -1,4 +1,4 @@
-
+function devLauchDoE4EfficiencyVehiclePerformance(numCases,numPorts,BuildListResult,DoEStruct,BuildList,SettingTables)
 % 해석이 돈 Case 만 체크
 %BuildListResult
 % 덮어 씌울지 넘어갈지 선택하는 기능 추가필요
@@ -9,7 +9,24 @@ TeslaPlaidCurve
 % vehiclePowerCurve=load("TeslaSPlaidPowerCurveDigitizer.mat");   % TeslaPowerCurve Define
 % vehiclePowerCurve=vehiclePowerCurve.TeslaPowerCurve;
 
+%
+if isfield(SettingTables, 'coolingSystemTable')
+    coolingSystemTable = SettingTables.coolingSystemTable;
+    % 실행할 코드 작성
+end
+
+if isfield(SettingTables, 'thermalSettingsTable')
+    thermalSettingsTable = SettingTables.thermalSettingsTable;
+    % 실행할 코드 작성
+end
+
+if isfield(SettingTables, 'labCalcSettingTable')
+    labCalcSettingTable = SettingTables.labCalcSettingTable;
+    % 실행할 코드 작성
+end
+
 %% 워커할당
+delete(gcp('nocreate'));  % 사전에 실행 중인 병렬 풀 있을까봐 끄고 시작
 parpool(numPorts);  % 병렬 풀 생성, default가 Processes, Threads로 하면 에러
 
 spmd
@@ -66,28 +83,30 @@ for portCaseIndex = 1:1:(numCases/numPorts)
         MatFileList=findMatFiles(motFileDir)';
         elecMatFileList = contains(MatFileList, 'elecdata') & contains(MatFileList, 'm.mat');
 
-        if ~any(elecMatFileList) 
-            % BasePointOutput             = calcMotorCADLabBasePoint(mcad(spmdIndex), motFileDir,motFileName , DesignLabCalcSettingTable);
-            BasePointOutput             = calcMotorCADLabBasePoint(mcad, motFileDir,motFileName , DesignLabCalcSettingTable);
+        % if ~any(elecMatFileList) 
+        BasePointOutput             = calcMotorCADLabBasePoint(mcad(spmdIndex), motFileDir,motFileName , DesignLabCalcSettingTable);
+            % BasePointOutput             = calcMotorCADLabBasePoint(mcad, motFileDir,motFileName , DesignLabCalcSettingTable);
             % vehiclePerformData          = calcVehiclePerformance(vehiclePowerCurve);   %vehiclePerformData define
             % [TC]tempPlot
               % make vehiclePerformData
-            [matData,motorSplitStruct]=tempPlotEfficiencyMapVehiclePerfom(caseNum,DoEStruct,vehicleData,BasePointOutput,vehiclePerformData);
-            %%  요구사양 만족 - 판단 알고리즘
-            [smallPoint,vehiclePerformData]=tempCallDecideSimulationTargetPoint(matData,motorSplitStruct,dividedMotorCurve,vehiclePerformData);
-            
-            figure(6)
-            scatter(BasePointOutput.BaseSpeed_modified,BasePointOutput.BaseTorque_modified)
-            hold on
-            scatter(BasePointOutput.FluxWeakeningSpeed_modified,BasePointOutput.FluxWeakeningTorque_modified)
-        %% PNG가 있으면 넘어가도록          
-            % PNG로 저장 
-            % 현재 떠 있는 모든 figure의 handle을 얻어옴
-            folderPath =fullfile(motFileDir,motFileName,'Lab','PNG');
-            mkdir(folderPath);
-            saveFigures2png(folderPath);
-            close all
-        end
+        % end
+
+        [matData,motorSplitStruct]=tempPlotEfficiencyMapVehiclePerfom(caseNum,DoEStruct,vehicleData,BasePointOutput,vehiclePerformData);
+        %%  요구사양 만족 - 판단 알고리즘
+        [smallPoint,vehiclePerformData]=tempCallDecideSimulationTargetPoint(matData,motorSplitStruct,vehiclePerformData);
+        
+        figure(6)
+        scatter(BasePointOutput.BaseSpeed_modified,BasePointOutput.BaseTorque_modified)
+        hold on
+        scatter(BasePointOutput.FluxWeakeningSpeed_modified,BasePointOutput.FluxWeakeningTorque_modified)
+    %% PNG가 있으면 넘어가도록          
+        % PNG로 저장 
+        % 현재 떠 있는 모든 figure의 handle을 얻어옴
+        folderPath =fullfile(motFileDir,motFileName,'Lab','PNG');
+        mkdir(folderPath);
+        saveFigures2png(folderPath);
+        close all
+        
         % if portCaseIndex~=(numCases/numPorts)
         % end
         % end
@@ -115,4 +134,5 @@ end
 end
 delete(gcp);
 
-clear("caseNum", "motFileDir","motFileName","mcad","BasePointOutput","DesignLabCalcSettingTable","vehiclePerformData","newValue","portCaseIndex","folderPath","folderPath")
+clear("buildMotFileDirName","buildMotFileName","DoEStruct","currentFolder","caseNum", "motFileDir","motFileName","mcad","BasePointOutput","DesignLabCalcSettingTable","vehiclePerformData","newValue","portCaseIndex","folderPath","folderPath")
+end

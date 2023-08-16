@@ -38,52 +38,51 @@ function BasePointOutput = calcMotorCADLabBasePoint(mcad, mcad_file_dir, mcad_fi
 
     initialMatFileDir       = fullfile(mcad_file_dir, mcad_file_name, 'Lab', 'MotorLAB_elecdata');
     if exist(initialMatFileDir,"file")
-    temp_time               = datetime("now");
-    matFileDir              = strcat(initialMatFileDir, '_', num2str(temp_time.Hour), 'h', num2str(temp_time.Minute), 'm');    
-    movefile(strcat(initialMatFileDir, '.mat'), strcat(matFileDir, '.mat'));
-    matData                 = load(strcat(matFileDir, '.mat'));
+        temp_time               = datetime("now");
+        matFileDir              = strcat(initialMatFileDir, '_', num2str(temp_time.Hour), 'h', num2str(temp_time.Minute), 'm');    
+        movefile(strcat(initialMatFileDir, '.mat'), strcat(matFileDir, '.mat'));
+        matData                 = load(strcat(matFileDir, '.mat'));
     
     %% BasePoint  계산
-    matData.DC_Bus_Voltage(1, 1);
-    NumberOfIncrements      = length(matData.Voltage_Line_Peak(1, :));
+        matData.DC_Bus_Voltage(1, 1);
+        NumberOfIncrements      = length(matData.Voltage_Line_Peak(1, :));
     
     % 전압과 속도 관련 계산
-    MaximumVoltage          = round(max(matData.Voltage_Line_Peak(:, NumberOfIncrements)), 0);
-    BaseSpeedRow = min(find(round(matData.Voltage_Line_Peak(:, NumberOfIncrements), 0) == MaximumVoltage));
-    VoltageSlope = (matData.Voltage_Line_Peak(1, NumberOfIncrements) - matData.Voltage_Line_Peak(BaseSpeedRow - 1, NumberOfIncrements)) / ...
-        (matData.Speed(1, NumberOfIncrements) - matData.Speed(BaseSpeedRow - 1, NumberOfIncrements));
-    BaseSpeed_modified = (MaximumVoltage - matData.Voltage_Line_Peak(1, NumberOfIncrements)) / VoltageSlope + matData.Speed(1, NumberOfIncrements);
-    TorqueSlope = (matData.Shaft_Torque(1, NumberOfIncrements) - matData.Shaft_Torque(BaseSpeedRow - 1, NumberOfIncrements)) / ...
-        (matData.Speed(1, NumberOfIncrements) - matData.Speed(BaseSpeedRow - 1, NumberOfIncrements));
-    BaseTorque_modified = matData.Shaft_Torque(1, NumberOfIncrements) - BaseSpeed_modified * TorqueSlope;
-    MaximumPower_modified = BaseTorque_modified * BaseSpeed_modified / 60 * 2 * pi;
-    
-    % 최대 속도 관련 계산
-    MaximumCurrent = round(max(matData.Stator_Current_Phase_Peak(:, NumberOfIncrements)), 0);
-    temp_FluxWeakeningRow = max(find(round(matData.Stator_Current_Phase_Peak(:, NumberOfIncrements), 0) == MaximumCurrent));
-    FluxWeakeningCurrentSlope = (matData.Stator_Current_Phase_Peak(temp_FluxWeakeningRow + 1, NumberOfIncrements) - matData.Stator_Current_Phase_Peak(temp_FluxWeakeningRow + 2, NumberOfIncrements)) / ...
-        (matData.Speed(temp_FluxWeakeningRow + 1, NumberOfIncrements) - matData.Speed(temp_FluxWeakeningRow + 2, NumberOfIncrements));
-    FluxWeakeningSpeed_modified = (MaximumCurrent - matData.Stator_Current_Phase_Peak(temp_FluxWeakeningRow + 1, NumberOfIncrements)) / FluxWeakeningCurrentSlope ...
-        + matData.Speed(temp_FluxWeakeningRow + 1, NumberOfIncrements);
-    FluxWeakeningTorqueSlope = (matData.Shaft_Torque(temp_FluxWeakeningRow + 1, NumberOfIncrements) - matData.Shaft_Torque(temp_FluxWeakeningRow + 2, NumberOfIncrements)) / ...
-        (matData.Speed(temp_FluxWeakeningRow + 1, NumberOfIncrements) - matData.Speed(temp_FluxWeakeningRow + 2, NumberOfIncrements));
-    FluxWeakeningTorque_modified = FluxWeakeningTorqueSlope * (FluxWeakeningSpeed_modified - matData.Speed(temp_FluxWeakeningRow + 1, NumberOfIncrements)) ...
-        + matData.Shaft_Torque(temp_FluxWeakeningRow + 1, NumberOfIncrements);
-    
-    if matData.Shaft_Torque(length(matData.Shaft_Torque(:, NumberOfIncrements)), NumberOfIncrements) > 0
-        MaximumSpeed = max(matData.Speed(:, NumberOfIncrements));
-    else
-        temp_MaxSpeedRow = min(find(round(matData.Shaft_Torque(:, NumberOfIncrements), 0) <= 0));
-        MaximumSpeed = matData.Speed(temp_MaxSpeedRow - 1, NumberOfIncrements);
-    end
-    
+        MaximumVoltage          = round(max(matData.Voltage_Line_Peak(:, NumberOfIncrements)), 0);
+        BaseSpeedRow = min(find(round(matData.Voltage_Line_Peak(:, NumberOfIncrements), 0) == MaximumVoltage));
+        VoltageSlope = (matData.Voltage_Line_Peak(1, NumberOfIncrements) - matData.Voltage_Line_Peak(BaseSpeedRow - 1, NumberOfIncrements)) / ...
+            (matData.Speed(1, NumberOfIncrements) - matData.Speed(BaseSpeedRow - 1, NumberOfIncrements));
+        BaseSpeed_modified = (MaximumVoltage - matData.Voltage_Line_Peak(1, NumberOfIncrements)) / VoltageSlope + matData.Speed(1, NumberOfIncrements);
+        TorqueSlope = (matData.Shaft_Torque(1, NumberOfIncrements) - matData.Shaft_Torque(BaseSpeedRow - 1, NumberOfIncrements)) / ...
+            (matData.Speed(1, NumberOfIncrements) - matData.Speed(BaseSpeedRow - 1, NumberOfIncrements));
+        BaseTorque_modified = matData.Shaft_Torque(1, NumberOfIncrements) - BaseSpeed_modified * TorqueSlope;
+        MaximumPower_modified = BaseTorque_modified * BaseSpeed_modified / 60 * 2 * pi;
+        
+        % 최대 속도 관련 계산
+        MaximumCurrent = round(max(matData.Stator_Current_Phase_Peak(:, NumberOfIncrements)), 0);
+        temp_FluxWeakeningRow = max(find(round(matData.Stator_Current_Phase_Peak(:, NumberOfIncrements), 0) == MaximumCurrent));
+        FluxWeakeningCurrentSlope = (matData.Stator_Current_Phase_Peak(temp_FluxWeakeningRow + 1, NumberOfIncrements) - matData.Stator_Current_Phase_Peak(temp_FluxWeakeningRow + 2, NumberOfIncrements)) / ...
+            (matData.Speed(temp_FluxWeakeningRow + 1, NumberOfIncrements) - matData.Speed(temp_FluxWeakeningRow + 2, NumberOfIncrements));
+        FluxWeakeningSpeed_modified = (MaximumCurrent - matData.Stator_Current_Phase_Peak(temp_FluxWeakeningRow + 1, NumberOfIncrements)) / FluxWeakeningCurrentSlope ...
+            + matData.Speed(temp_FluxWeakeningRow + 1, NumberOfIncrements);
+        FluxWeakeningTorqueSlope = (matData.Shaft_Torque(temp_FluxWeakeningRow + 1, NumberOfIncrements) - matData.Shaft_Torque(temp_FluxWeakeningRow + 2, NumberOfIncrements)) / ...
+            (matData.Speed(temp_FluxWeakeningRow + 1, NumberOfIncrements) - matData.Speed(temp_FluxWeakeningRow + 2, NumberOfIncrements));
+        FluxWeakeningTorque_modified = FluxWeakeningTorqueSlope * (FluxWeakeningSpeed_modified - matData.Speed(temp_FluxWeakeningRow + 1, NumberOfIncrements)) ...
+            + matData.Shaft_Torque(temp_FluxWeakeningRow + 1, NumberOfIncrements);
+        
+        if matData.Shaft_Torque(length(matData.Shaft_Torque(:, NumberOfIncrements)), NumberOfIncrements) > 0
+            MaximumSpeed = max(matData.Speed(:, NumberOfIncrements));
+        else
+            temp_MaxSpeedRow = min(find(round(matData.Shaft_Torque(:, NumberOfIncrements), 0) <= 0));
+            MaximumSpeed = matData.Speed(temp_MaxSpeedRow - 1, NumberOfIncrements);
+        end
+        
     %% Return
-    BasePointOutput = table2struct(table(MaximumPower_modified, BaseTorque_modified, BaseSpeed_modified, ...
-        FluxWeakeningTorque_modified, FluxWeakeningSpeed_modified, MaximumSpeed));
-    
-    BasePointOutput.matFilePath     = strcat(matFileDir, '.mat');
-    BasePointOutput.matData         = matData;
-    BasePointOutput.matFileDir      = matFileDir;
+        BasePointOutput = table2struct(table(MaximumPower_modified, BaseTorque_modified, BaseSpeed_modified, ...
+            FluxWeakeningTorque_modified, FluxWeakeningSpeed_modified, MaximumSpeed));
+        
+        BasePointOutput.matFilePath     = strcat(matFileDir, '.mat');
+        BasePointOutput.matData         = matData;
+        BasePointOutput.matFileDir      = matFileDir;
     end 
-
 end
