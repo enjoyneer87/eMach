@@ -72,7 +72,7 @@ ax = gca;
 ax.YAxis(2).Color = 'k';
 
 % Title and legend
-title('Power and Force vs. Speed');
+title('PowerForcevsSpeed');
 legend('Force', 'Power');
 
 formatter_sci

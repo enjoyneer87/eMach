@@ -1,4 +1,5 @@
-function motorSplitStruct=calcVehicleLateralDynamics(spmdIndex,vehicleVariable,vehiclePerformData,motorRatios)
+function motorSplitStruct=calcVehicleLateralDynamics(Index4spmd ...
+    ,vehicleVariable,vehiclePerformData,motorRatios)
 
     %%%%%%%%%%%%%%%%%%%%%%%% 입력 파라미터 %%%%%%%%%%%%%%%%%%%%
     
