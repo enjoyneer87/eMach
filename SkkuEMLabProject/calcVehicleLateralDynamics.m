@@ -1,4 +1,4 @@
-function motorSplitStruct=calcVehicleLateralDynamics(vehicleVariable,vehiclePerformData,motorRatios)
+function motorSplitStruct=calcVehicleLateralDynamics(spmdIndex,vehicleVariable,vehiclePerformData,motorRatios)
 
     %%%%%%%%%%%%%%%%%%%%%%%% 입력 파라미터 %%%%%%%%%%%%%%%%%%%%
     
@@ -115,7 +115,7 @@ function motorSplitStruct=calcVehicleLateralDynamics(vehicleVariable,vehiclePerf
     
     %% 그래프
     
-    figure(1)
+    figure(spmdIndex+1)
     hold on
     % grid on
     ylabel('Force [N]');
@@ -126,7 +126,7 @@ function motorSplitStruct=calcVehicleLateralDynamics(vehicleVariable,vehiclePerf
     plot(kph, max_f, 'LineWidth',2)
     formatter_sci;
 
-    figure(2)
+    figure(spmdIndex+2)
     hold on
     grid on
     ylabel('Force [N]');
@@ -140,7 +140,7 @@ function motorSplitStruct=calcVehicleLateralDynamics(vehicleVariable,vehiclePerf
       plot(kph, max_f, 'LineWidth',2,'Color','r');
     formatter_sci
     
-    figure(3)
+    figure(spmdIndex+3)
     hold on
     grid on
     ylabel('Torque [Nm]');
@@ -190,7 +190,7 @@ function motorSplitStruct=calcVehicleLateralDynamics(vehicleVariable,vehiclePerf
     %%
     motorSplitStruct = divideMotorByRatios(motorCurve, motorRatios);
 
-    figure(6)
+    figure(spmdIndex+6)
     hold on
     grid on
     ylabel('Torque [Nm]');
@@ -202,7 +202,7 @@ function motorSplitStruct=calcVehicleLateralDynamics(vehicleVariable,vehiclePerf
     % plot(rpm, 2*motor_max_t/3, '--','DisplayName',['Rear 2Motor - Gear Ratio:' ,num2str(gr)])
     formatter_sci
     
-    figure(7)
+    figure(spmdIndex+7)
     hold on
     grid on
     ylabel('Power [kW]');

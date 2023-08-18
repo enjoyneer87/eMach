@@ -32,13 +32,13 @@ engineerList                                     ={engineerList.name}';
 %     end
     % AutoSave 제외 
     MotFileList = removeAutoSaveFiles(MotFileList);
-
+    MotFileList =MotFileList';
     %%  모든 MotFile로부터 Build Check후 mat파일로 export
     if ~isempty(MotFileList)
         BuildList                                   = getBuildListFromMotFileList(MotFileList);
-        save(fullfile(refPath,"BuildList.mat"),"BuildList");
+        save(fullfile(parentPath,"BuildList.mat"),"BuildList");
         % engineerList{engineerIndex,2}=BuildList;
-        clear BuildList
+        % clear BuildList
     end
 end
 

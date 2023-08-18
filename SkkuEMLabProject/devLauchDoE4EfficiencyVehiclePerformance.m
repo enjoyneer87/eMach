@@ -68,13 +68,14 @@ for portCaseIndex = 1:1:(numCases/numPorts)
             newValue    =   DoEStruct.DoEInputTable.Imax_MotorLAB(caseNum);
         else
             % [~,newValue]    =   mcad(spmdIndex).GetVariable('MaxModelCurrent_MotorLAB');
-              newValue    = 900; %일괄적으로
+            newValue    = 900; %일괄적으로
         end        
    %% [TC] Update Variable  전류 및 셋팅 -LabProject 교수님 일단 적층, 전류고정 해서 자료 1) 적층, 전류 perturb하면서 자료2
         DesignLabCalcSettingTable   =   updateMcadTableVariable(labCalcSettingTable,'Imax_MotorLAB',newValue);
         % DesignLabCalcSettingTable   =   updateMcadTableVariable(DesignLabCalcSettingTable,'TurnsCalc_MotorLAB',0.5);
         DesignLabCalcSettingTable   =   updateMcadTableVariable(DesignLabCalcSettingTable,'"SpeedMax_MotorLAB"',25000);
-    
+        DesignLabCalcSettingTable   =   updateMcadTableVariable(DesignLabCalcSettingTable,'"Length_Calc_Lab"',100);
+
         % Setting Variable &calc MagLab
         % [TC]Build가 된지를 확인할필요
         

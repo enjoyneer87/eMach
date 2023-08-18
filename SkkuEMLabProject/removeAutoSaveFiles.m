@@ -3,7 +3,7 @@ function MotFileList = removeAutoSaveFiles(MotFileList)
     indicesToDelete = false(size(MotFileList));
 
     for MotFileIndex = 1:numel(MotFileList)
-        if contains(MotFileList{MotFileIndex}, 'AutoSave')
+        if contains(MotFileList{MotFileIndex}, 'AutoSave')||contains(MotFileList{MotFileIndex}, 'MCAD')||contains(MotFileList{MotFileIndex}, 'NotBuild')
             indicesToDelete(MotFileIndex) = true;
         end
     end

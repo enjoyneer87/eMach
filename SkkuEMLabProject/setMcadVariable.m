@@ -1,4 +1,4 @@
-function variable=setMcadVariable(variable,mcad)
+function mcad=setMcadVariable(variable,mcad)
     % mcad = actxserver('MotorCAD.AppAutomation');
     % mcad.LoadFromFile(variable.motFile);
 

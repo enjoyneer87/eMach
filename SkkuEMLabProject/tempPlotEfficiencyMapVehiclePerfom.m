@@ -1,4 +1,4 @@
-function [MatFileData,motorSplitStruct]=tempPlotEfficiencyMapVehiclePerfom(caseNum,DoEStruct,vehicleData,BasePointOutput,vehiclePerformData)
+function [MatFileData,motorSplitStruct]=tempPlotEfficiencyMapVehiclePerfom(spmdIndex,caseNum,DoEStruct,vehicleData,BasePointOutput,vehiclePerformData)
 %% Plot 
 % Plot]모터 Curve와 모터 요구사양(차량) Curve 
     if  ismember('N_d_MotorLAB', DoEStruct.DoEInputTable.Properties.VariableNames)
@@ -10,16 +10,16 @@ function [MatFileData,motorSplitStruct]=tempPlotEfficiencyMapVehiclePerfom(caseN
 % 모터 해석 Curve
     matFilePath=BasePointOutput.matFilePath;
     % 효율맵
-    figure(6)
+    figure(spmdIndex+6)
     MatFileData=plotEfficiencyMotorcad(matFilePath);
     legend('hide'); % 범례 숨기기
 
-    figure(6)
+    figure(spmdIndex+6)
     [~,~]=plotMaxTorqueMotorCAD(MatFileData);  % 기존 코드는 전류별 plotTNperAmpMCAD()
     % figure(6)
     % plot(speedArray,BorderTorque)
     % [TC]PN plot
-    figure(7)
+    figure(spmdIndex+7)
     plotPowerCurveMCAD(MatFileData); % MaxCurve 기능도 같이 포함
     legend('hide'); % 범례 숨기기
 

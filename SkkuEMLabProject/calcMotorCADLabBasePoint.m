@@ -35,7 +35,6 @@ function BasePointOutput = calcMotorCADLabBasePoint(mcad, mcad_file_dir, mcad_fi
     mcad.SaveToFile(motFilePath);  % 임시
     
     % 결과 파일 복사 및 로드
-
     initialMatFileDir       = fullfile(mcad_file_dir, mcad_file_name, 'Lab', 'MotorLAB_elecdata');
     if exist(initialMatFileDir,"file")
         temp_time               = datetime("now");
