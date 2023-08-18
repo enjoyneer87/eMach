@@ -1,4 +1,4 @@
-function ResultStructLimitTempRise =plotTempLimitCurve(setGraphName,mcad)
+function ResultStructLimitTempRise =plotTempLimitCurve(setGraphName,OPpointName,mcad)
     ResultStructLimitTempRise=struct();
     % setGraphName = 'Wdg (Average) (C11)';
     
@@ -16,6 +16,14 @@ function ResultStructLimitTempRise =plotTempLimitCurve(setGraphName,mcad)
     end
     
     plot(List_xvalue,List_valueforGraph)
+    a=gca;
+    a.XLabel.String='Time[sec]';
+    a.YLabel.String= 'Temperature[°C]';
+    legend('Winding HotSpot')
+    title(OPpointName);
+    formatter_sci
+    
+
     dataTable = table(List_xvalue', List_valueforGraph', 'VariableNames', {'XValue', 'GraphValue'});
     LimitTempTime=max(List_xvalue);
     ResultStructLimitTempRise.TempRiseCurve=dataTable;

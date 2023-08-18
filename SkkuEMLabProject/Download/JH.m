@@ -1,13 +1,15 @@
+%% 입력
 
 MatFileDir='Z:\Simulation\LabProj2023v2\6p54V\DOE\6p54s_V_Vacodur49_Design0300\6p54s_V_Vacodur49_Design0300\Lab'
-
-addpath(genpath(MatFileDir));
 MatFilename='MotorLAB_elecdata_12h18m.mat'
+gitpath='Z:\01_Codes_Projects\git_fork_emach\SkkuEMLabProject'
 
+
+%% 실행
+addpath(genpath(MatFileDir));
 matFilePath=fullfile(MatFileDir,MatFilename)
 % matFil
 addpath(genpath(pwd))
-gitpath='Z:\01_Codes_Projects\git_fork_emach\SkkuEMLabProject'
 
 addpath(genpath(gitPath))
 vehicleData=load("TeslaSPlaid.mat");                             % TeslaPlaid Define
