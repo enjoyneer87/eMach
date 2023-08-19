@@ -1,5 +1,4 @@
-function motorSplitStruct=calcVehicleLateralDynamics(Index4spmd ...
-    ,vehicleVariable,vehiclePerformData,motorRatios)
+function motorSplitStruct=calcVehicleLateralDynamics(Index4spmd,vehicleVariable,vehiclePerformData,motorRatios)
 
     %%%%%%%%%%%%%%%%%%%%%%%% 입력 파라미터 %%%%%%%%%%%%%%%%%%%%
     
@@ -116,7 +115,7 @@ function motorSplitStruct=calcVehicleLateralDynamics(Index4spmd ...
     
     %% 그래프
     
-    figure(spmdIndex+1)
+    figure(Index4spmd+1)
     hold on
     % grid on
     ylabel('Force [N]');
@@ -127,7 +126,7 @@ function motorSplitStruct=calcVehicleLateralDynamics(Index4spmd ...
     plot(kph, max_f, 'LineWidth',2)
     formatter_sci;
 
-    figure(spmdIndex+2)
+    figure(Index4spmd+2)
     hold on
     grid on
     ylabel('Force [N]');
@@ -141,7 +140,7 @@ function motorSplitStruct=calcVehicleLateralDynamics(Index4spmd ...
       plot(kph, max_f, 'LineWidth',2,'Color','r');
     formatter_sci
     
-    figure(spmdIndex+3)
+    figure(Index4spmd+3)
     hold on
     grid on
     ylabel('Torque [Nm]');
@@ -191,26 +190,26 @@ function motorSplitStruct=calcVehicleLateralDynamics(Index4spmd ...
     %%
     motorSplitStruct = divideMotorByRatios(motorCurve, motorRatios);
 
-    figure(spmdIndex+6)
+    figure(Index4spmd+6)
     hold on
     grid on
     ylabel('Torque [Nm]');
     xlabel('Speed [rpm]');
     title('Each Required Motor TN');
     % plot(rpm, motor_cont_t, 'LineWidth',2)
-    plot(rpm, motor_max_t/3, 'LineWidth',2,'DisplayName',['Front Motor -Gear Ratio:' ,num2str(gr)])
+    plot(rpm, motor_max_t*motorRatios(1), 'LineWidth',2,'DisplayName',['Front Motor -Gear Ratio:' ,num2str(gr)])
     legend
     % plot(rpm, 2*motor_max_t/3, '--','DisplayName',['Rear 2Motor - Gear Ratio:' ,num2str(gr)])
     formatter_sci
     
-    figure(spmdIndex+7)
+    figure(Index4spmd+7)
     hold on
     grid on
     ylabel('Power [kW]');
     xlabel('Speed [rpm]');
     title('Each Required Motor PN');
     % plot(rpm, motor_cont_p, 'LineWidth',2)
-    plot(rpm, motor_max_p/1000/3, 'LineWidth',2,'DisplayName',['Front Motor -Gear Ratio:' ,num2str(gr)]);
+    plot(rpm, motor_max_p/1000*motorRatios(1), 'LineWidth',2,'DisplayName',['Front Motor -Gear Ratio:' ,num2str(gr)]);
     % plot(vehiclePerformData.speed_kph,motor_max_p/1000/3)
     legend
     % plot(rpm, 2*motor _max_p/1000/3, '--','DisplayName',['Rear 2Motor - Gear Ratio:' ,num2str(gr)])
