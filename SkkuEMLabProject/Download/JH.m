@@ -1,6 +1,6 @@
 %% 입력
 
-MatFileDir='Z:\Simulation\LabProj2023BenchMarking\TeslaSPlaid\S_Plaid_M_CAD_1335A_LossModelLSC\Lab'
+MatFileDir='Z:\Simulation\LabProj2023BenchMarking\TeslaSPlaid\S_Plaid_M_CAD_1335A_M270_35A\Lab';
 MatFilename='MotorLAB_elecdata.mat'
 gitpath='Z:\01_Codes_Projects\git_fork_emach\'
 
@@ -19,8 +19,10 @@ vehicleData.N_d_MotorLAB=7.56;  %[TC] 범용성 증가 필요
 % vehiclePowerCurve=load("TeslaSPlaidPowerCurveDigitizer.mat");   % TeslaPowerCurve Define
 % vehiclePowerCurve=vehiclePowerCurve.TeslaPowerCurve;
 % vehiclePerformData          = calcVehiclePerformance(vehiclePowerCurve);   %vehiclePerformData define
+correctionFactor=0.89;
+
 TeslaPlaidCurve
 
 figure(6)
 MatFileData=plotEfficiencyMotorcad(matFilePath);
-calcVehicleLateralDynamics(0,vehicleData,vehiclePerformData,[2/4 1/4 1/4]);                %[TC] 변수 변경필요
+% calcVehicleLateralDynamics(0,vehicleData,vehiclePerformData,[2/4 1/4 1/4]);                %[TC] 변수 변경필요

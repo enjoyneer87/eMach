@@ -13,7 +13,7 @@ mcad.LoadFromFile(filePath);
 baserpm=5100;  % 이거에 의해 결정 
 maxrpm=18000;
 kW=380;
-figure(1);
+figure(6);
 [baseTorque,MaxspeedTorque]=plotTNcurvebyBasePoint(baserpm, maxrpm, kW);
 hold on
 
@@ -73,6 +73,9 @@ setOP2Emag(baserpm,baseTorque,mcad)
 
 mcad.DoMagneticCalculation()
 
+
+
+
 % Value
 % 기본파 선간전압/ 상전압
 [~,resultBasePoint.PeakLineLineVoltageTerminal]=mcad.GetVariable('PeakLineLineVoltage');
@@ -81,16 +84,19 @@ mcad.DoMagneticCalculation()
 
 % 파형
 TerminalLineToLine={'TerminalLineToLine12','TerminalLineToLine23','TerminalLineToLine34'};    
-for i=1:length(TerminalPhase)
+for i=1:length(TerminalLineToLine)
     figure(3)
     ResultStructEmagCalcLine=DoMotorCADEmagCalc(TerminalLineToLine{i}, mcad);
     hold on
 end
     legend(TerminalLineToLine, 'Location', 'Best');
+fftReal=fft(data)
+abs(fftReal(2))
 
+data=table2array(ResultStructEmagCalcLine.dataTable(:,"GraphValue"))
 TerminalPhase={'TerminalVoltage1','TerminalVoltage2','TerminalVoltage3'};    
 for i=1:length(TerminalPhase)
-    figure(3)
+    figure
     ResultStructEmagCalcPhase=DoMotorCADEmagCalc(TerminalPhase{i}, mcad)
     hold on
 end
@@ -143,21 +149,30 @@ dqTorque= DoMotorCADEmagCalc('FluxLinkageTorqueTotal', mcad)
 
 
 w2kw(resultBasePoint.StatorToothLoss_Total)
-percent(resultBasePoint.StatorBackIronLoss_Total/resultBasePoint.IronLossTotal)
-percent(resultBasePoint.StatorToothLoss_Total/resultBasePoint.IronLossTotal)
-percent((resultBasePoint.StatorIronLoss_Total)/resultBasePoint.IronLossTotal)
-percent(resultBasePoint.RotorIronLoss_Total/resultBasePoint.IronLossTotal)
 
-percent(resultBasePoint.StatorBackIronLoss_Total/resultBasePoint.TotalEMLoss)
-percent(resultBasePoint.StatorToothLoss_Total/resultBasePoint.TotalEMLoss)
-percent((resultBasePoint.StatorIronLoss_Total)/resultBasePoint.TotalEMLoss)
-percent(resultBasePoint.RotorIronLoss_Total/resultBasePoint.TotalEMLoss)
+%% PPT 기입부
+PPT.IronLoss.kw.StatorBackIronLoss_Total=w2kw(resultBasePoint.StatorIronLoss_Total      );
+PPT.IronLoss.kw.StatorToothLoss_Total   =w2kw(resultBasePoint.RotorIronLoss_Total    );
+PPT.IronLoss.kw.StatorIronLoss_Total    =w2kw(resultBasePoint.StatorBackIronLoss_Total  );
+PPT.IronLoss.kw.RotorIronLoss_Total     =w2kw(resultBasePoint.StatorToothLoss_Total     );
+PPT.IronLoss.kw.IronLossTotal           =w2kw(resultBasePoint.IronLossTotal     );
 
 
+PPT.IronLoss.Ironpercent.StatorBackIronLoss_Total=percent(resultBasePoint.StatorBackIronLoss_Total/resultBasePoint.IronLossTotal)
+PPT.IronLoss.Ironpercent.StatorToothLoss_Total   =percent(resultBasePoint.StatorToothLoss_Total/resultBasePoint.IronLossTotal)
+PPT.IronLoss.Ironpercent.StatorIronLoss_Total    =percent(resultBasePoint.StatorIronLoss_Total/resultBasePoint.IronLossTotal)
+PPT.IronLoss.Ironpercent.RotorIronLoss_Total     =percent(resultBasePoint.RotorIronLoss_Total/resultBasePoint.IronLossTotal)
+
+PPT.IronLoss.TotalPercent.StatorBackIronLoss_Total=percent(resultBasePoint.StatorBackIronLoss_Total/resultBasePoint.TotalEMLoss)
+PPT.IronLoss.TotalPercent.StatorToothLoss_Total   =percent(resultBasePoint.StatorToothLoss_Total/resultBasePoint.TotalEMLoss)
+PPT.IronLoss.TotalPercent.StatorIronLoss_Total    =percent(resultBasePoint.StatorIronLoss_Total/resultBasePoint.TotalEMLoss)
+PPT.IronLoss.TotalPercent.RotorIronLoss_Total     =percent(resultBasePoint.RotorIronLoss_Total/resultBasePoint.TotalEMLoss)
+PPT.IronLoss.TotalPercent.IronLossTotal           =percent(resultBasePoint.IronLossTotal/resultBasePoint.TotalEMLoss)
 
 
-w2kw(resultBasePoint.StatorBackIronLoss_Total)
- 
+
+
+w2kw(resultBasePoint.StatorBackIronLoss_Total) 
 resultBasePoint.IronLossTotal =resultBasePoint.StatorIronLoss_Total+resultBasePoint.RotorIronLoss_Total;
 [~,resultBasePoint.Magloss]                           =mcad.GetVariable('MagnetLoss');
 w2kw(resultBasePoint.IronLossTotal)
@@ -227,7 +242,7 @@ mcad.DoMagneticCalculation()
 
 
 %% Load Effimap
-
+JH
 
 %% Plot Each Contour
 FEAscreenName='E-Magnetics;FEA';

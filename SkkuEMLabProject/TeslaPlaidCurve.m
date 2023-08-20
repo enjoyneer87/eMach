@@ -6,7 +6,6 @@ load("TeslaSPlaid.mat")
 % speed_mph = 0:200;
 speed_mph = (TeslaPowerCurve.speed_mph);
 
-correctionFactor=0.95;
 
 % Define the power curve in HP
 % power_hp = zeros(size(speed_mph));
