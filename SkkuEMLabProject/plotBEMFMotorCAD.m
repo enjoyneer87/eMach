@@ -1,4 +1,4 @@
-function plotBEMFMotorCAD(setGraphName, mcad)
+function ResultStructEMF=plotBEMFMotorCAD(setGraphName, mcad)
     ResultStructEMF = struct();
     
     [~, NumGraphPoints] = mcad.GetVariable('BackEMFPointsPerCycle');
