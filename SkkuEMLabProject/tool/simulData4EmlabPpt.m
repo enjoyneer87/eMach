@@ -50,6 +50,22 @@ end
 [~,BEMFphpk]=mcad.GetVariable('PeakBackEMFPhase');
 [~,BEMFTHD]=mcad.GetVariable('THDBackEMFLine');
 
+% cogging
+[~,CoggingTorqueRippleVw]=mcad.GetVariable('CoggingTorqueRippleVw');
+
+ResultStructEmagCalc=DoMotorCADEmagCalc('CoggingTorqueVW', mcad);
+
+% 무부하 철손
+
+% 동손/AC동손
+[~,resultBasePoint.DCloss]                           =mcad.GetVariable('ConductorLoss');
+[~,resultBasePoint.AClossMagneticMethod]                           =mcad.GetVariable('ACConductorLoss_MagneticMethod_Total');
+% 철손 / 자석와류손;
+[~,resultBasePoint.StatorIronLoss_Total]                          =mcad.GetVariable('StatorIronLoss_Total');
+[~,resultBasePoint.RotorIronLoss_Total]                          =mcad.GetVariable('RotorIronLoss_Total');
+resultBasePoint.IronLossTotal =resultBasePoint.StatorIronLoss_Total+resultBasePoint.RotorIronLoss_Total;
+[~,resultBasePoint.Magloss]                           =mcad.GetVariable('MagnetLoss');
+
 
 %% Load Point
 % OP1 -Base
@@ -63,13 +79,23 @@ mcad.DoMagneticCalculation()
 [~,resultBasePoint.VfundLL]                      =mcad.GetVariable();
 [~,resultBasePoint.Vfundphase]                   =mcad.GetVariable();
 
+% 파형
+TerminalLineToLine={'TerminalLineToLine12','TerminalLineToLine23','TerminalLineToLine34'};    
+for i=1:length(TerminalPhase)
+    figure(3)
+    ResultStructEmagCalcLine=DoMotorCADEmagCalc(TerminalLineToLine{i}, mcad);
+    hold on
+end
+    legend(TerminalLineToLine, 'Location', 'Best');
+
 TerminalPhase={'TerminalVoltage1','TerminalVoltage2','TerminalVoltage3'};    
 for i=1:length(TerminalPhase)
     figure(3)
-    ResultStructEmagCalc=DoMotorCADEmagCalc(TerminalPhase{i}, mcad)
+    ResultStructEmagCalcPhase=DoMotorCADEmagCalc(TerminalPhase{i}, mcad)
     hold on
 end
     legend(TerminalPhase, 'Location', 'Best');
+
 
 % 전류밀도  
 [~,resultBasePoint.Jpk]                             =mcad.GetVariable('PeakCurrentDensity');
@@ -112,8 +138,30 @@ dqTorque= DoMotorCADEmagCalc('FluxLinkageTorqueTotal', mcad)
 % 철손 / 자석와류손;
 [~,resultBasePoint.StatorIronLoss_Total]                          =mcad.GetVariable('StatorIronLoss_Total');
 [~,resultBasePoint.RotorIronLoss_Total]                          =mcad.GetVariable('RotorIronLoss_Total');
+[~,resultBasePoint.StatorBackIronLoss_Total]                          =mcad.GetVariable('StatorBackIronLoss_Total');
+[~,resultBasePoint.StatorToothLoss_Total]                          =mcad.GetVariable('StatorToothLoss_Total');
+
+
+w2kw(resultBasePoint.StatorToothLoss_Total)
+percent(resultBasePoint.StatorBackIronLoss_Total/resultBasePoint.IronLossTotal)
+percent(resultBasePoint.StatorToothLoss_Total/resultBasePoint.IronLossTotal)
+percent((resultBasePoint.StatorIronLoss_Total)/resultBasePoint.IronLossTotal)
+percent(resultBasePoint.RotorIronLoss_Total/resultBasePoint.IronLossTotal)
+
+percent(resultBasePoint.StatorBackIronLoss_Total/resultBasePoint.TotalEMLoss)
+percent(resultBasePoint.StatorToothLoss_Total/resultBasePoint.TotalEMLoss)
+percent((resultBasePoint.StatorIronLoss_Total)/resultBasePoint.TotalEMLoss)
+percent(resultBasePoint.RotorIronLoss_Total/resultBasePoint.TotalEMLoss)
+
+
+
+
+w2kw(resultBasePoint.StatorBackIronLoss_Total)
+ 
 resultBasePoint.IronLossTotal =resultBasePoint.StatorIronLoss_Total+resultBasePoint.RotorIronLoss_Total;
 [~,resultBasePoint.Magloss]                           =mcad.GetVariable('MagnetLoss');
+w2kw(resultBasePoint.IronLossTotal)
+
 
 % 총손실
 [~,resultBasePoint.TotalEMLoss]                      =mcad.GetVariable('Loss_Total');
@@ -143,6 +191,9 @@ w2kw(resultBasePoint.DCloss+resultBasePoint.AClossMagneticMethod+resultBasePoint
 % Full FEA
 w2kw(resultBasePoint.TotalEMLoss-resultBasePoint.IronLossTotal)          % 총손실 - 철손
 
+w2kw(resultBasePoint.StatorIronLoss_Total)
+w2kw(resultBasePoint.RotorIronLoss_Total)
+
 resultBasePoint.kW.EMOutputDiffer=w2kw(resultBasePoint.IronLossTotal);
 resultBasePoint.kW.ElectromagneticPower-resultBasePoint.kW.MechanicallyLoss
 resultBasePoint.kW.TotalEMLoss=resultBasePoint.TotalEMLoss/1000;
@@ -152,6 +203,10 @@ resultBasePoint.kW.TotalEMLoss=resultBasePoint.TotalEMLoss/1000;
 resultBasePoint.DCloss/resultBasePoint.TotalEMLoss
 resultBasePoint.ACloss/resultBasePoint.TotalEMLoss*100
 resultBasePoint.IronLossTotal/resultBasePoint.TotalEMLoss*100
+
+
+
+
 resultBasePoint.Magloss/resultBasePoint.TotalEMLoss*100
 
 resultBasePoint.DCloss/resultBasePoint.OutputPower*100
@@ -167,6 +222,8 @@ resultBasePoint.Magloss/resultBasePoint.ElectromagneticPower*100
 
 
 % OP2 -Maximum
+setOP2Emag(maxrpm,MaxspeedTorque,mcad)
+mcad.DoMagneticCalculation()
 
 
 %% Load Effimap
