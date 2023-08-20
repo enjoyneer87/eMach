@@ -94,10 +94,10 @@ function opData=loadSimulData(mcad)
 
 
 %% Iron Loss
-opData.PPT.IronLoss.kw.StatorBackIronLoss_Total=w2kw(tempData.StatorIronLoss_Total      );
-opData.PPT.IronLoss.kw.StatorToothLoss_Total   =w2kw(tempData.RotorIronLoss_Total    );
-opData.PPT.IronLoss.kw.StatorIronLoss_Total    =w2kw(tempData.StatorBackIronLoss_Total  );
-opData.PPT.IronLoss.kw.RotorIronLoss_Total     =w2kw(tempData.StatorToothLoss_Total     );
+opData.PPT.IronLoss.kw.StatorBackIronLoss_Total=w2kw(tempData.StatorBackIronLoss_Total      );
+opData.PPT.IronLoss.kw.StatorToothLoss_Total   =w2kw(tempData.StatorToothLoss_Total    );
+opData.PPT.IronLoss.kw.StatorIronLoss_Total    =w2kw(tempData.StatorIronLoss_Total  );
+opData.PPT.IronLoss.kw.RotorIronLoss_Total     =w2kw(tempData.RotorIronLoss_Total     );
 opData.PPT.IronLoss.kw.IronLossTotal           =w2kw(tempData.IronLossTotal     );
 
 opData.PPT.IronLoss.Ironpercent.StatorBackIronLoss_Total=percent(tempData.StatorBackIronLoss_Total/tempData.IronLossTotal)
@@ -115,7 +115,7 @@ opData.PPT.IronLoss.TotalPercent.IronLossTotal           =percent(tempData.IronL
 
 % tempData.kW.EMOutputDiffer=w2kw(tempData.IronLossTotal);
 % tempData.kW.ElectromagneticPower-tempData.kW.MechanicallyLoss
-
+opData.PPT.Loss.kw.Efficiency         =tempData.Efficiency
 opData.PPT.Loss.kw.DCloss             = w2kw(tempData.DCloss         )
 opData.PPT.Loss.kw.AClossMagneticMethod  = w2kw(tempData.AClossMagneticMethod         )
 opData.PPT.Loss.kw.IronLossTotal      = w2kw(tempData.IronLossTotal  )      

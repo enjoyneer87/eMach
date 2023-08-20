@@ -26,7 +26,7 @@ function [baseTorque,maxSpeedTorque]=plotTNcurvebyBasePoint(baserpm, maxrpm, kW)
     
     % maxrpm과 해당 토크에 점과 텍스트 추가
     scatter(maxrpm, kW * 1000 / (maxrpm * (2 * pi / 60)),'filled', 'go');
-    text(maxrpm, kW * 1000 / (maxrpm * (2 * pi / 60)), sprintf('%.2f Nm @ %d RPM', kW * 1000 / (maxrpm * (2 * pi / 60)), maxrpm), 'VerticalAlignment', 'bottom','Position',[maxrpm-0.2*maxrpm,kW * 1000 / (maxrpm * (2 * pi / 60))] ,'FontName', 'Times New Roman','FontSize', fontsize);
+    text(maxrpm, kW * 1000 / (maxrpm * (2 * pi / 60)), sprintf('%.2f Nm @ %d RPM', kW * 1000 / (maxrpm * (2 * pi / 60)), maxrpm), 'VerticalAlignment', 'bottom','Position',[maxrpm-0.35*maxrpm,kW * 1000 / (maxrpm * (2 * pi / 60))] ,'FontName', 'Times New Roman','FontSize', fontsize);
 
     ylim([0, max(torque)*1.2]);
     legend('RequiredTN')

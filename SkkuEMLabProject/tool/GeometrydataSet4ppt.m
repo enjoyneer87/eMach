@@ -40,8 +40,9 @@ PlaidMotorDimension.ActiveAirGap    =  PlaidMotorDimension.Banding_Thickness- Pl
 [~,PlaidMotorDimension.ActiveVolume]           =mcad.GetVariable('ActiveVolume')  %mm^3 
 PlaidMotorDimension.ActiveVolume=PlaidMotorDimension.ActiveVolume %m^3
 
+[~,CurrentMotFilePath_MotorLAB]           =mcad.GetVariable('CurrentMotFilePath_MotorLAB') 
 % Volume Density
-kwPower/PlaidMotorDimension.ActiveVolume
+746/2/(PlaidMotorDimension.ActiveVolume*0.001^3)/1000
 
 % Weight
 Weight=getMCADWeight(mcad)
