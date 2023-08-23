@@ -1,26 +1,26 @@
-function [Mat_File_Data]=plotEfficiencyMotorcad(Mat_File_Path)
+function data=plotAnyContourByNameinMotorcad(Mat_File_Path,objectName)
     %% 데이터 로드
-    Mat_File_Data       =            load(Mat_File_Path)                ; % MAT 파일 로드
-    Speed               =            Mat_File_Data.Speed                ; % 속도
-    Shaft_Torque        =            Mat_File_Data.Shaft_Torque         ; % 축 토크         
-    Efficiency          =            Mat_File_Data.Efficiency           ; % 효율     
+    data       =            load(Mat_File_Path)                ; % MAT 파일 로드
+    Speed               =            data.Speed                ; % 속도
+    Shaft_Torque        =            data.Shaft_Torque         ; % 축 토크         
+    Efficiency          =            data.(objectName)           ; % 효율     
     %% MotorCad 그래프 작성
     % plot3(Shaft_Torque,Speed,Efficiency,'o')
     % contourf(Speed,Shaft_Torque,Efficiency);
 
     % 등고선 설정
-    cntrs = [92:2:96 96:0.25:round(max(max(Efficiency)))];
-    h = zeros(1,3);
-
-    % 효율성 등고선 플롯
-    [~,h(1)]=contourf(Speed, Shaft_Torque, Efficiency, 'levels', 0.25, 'EdgeColor', 'none', 'DisplayName', 'Efficiency Contour');
-    hold on
-    [~,h(2)] = contour3(Speed, Shaft_Torque, Efficiency, cntrs, 'EdgeColor', 'k', 'ShowText', 'on', 'TextStep', 2,'DisplayName','Contour3');
-    % [a, b] = contour3(Speed, Shaft_Torque, Efficiency, cntrs, 'EdgeColor', 'k', 'ShowText', 'on', 'TextStep', 2,'DisplayName','Contour3');
+    % cntrs = [92:2:96 96:0.25:round(max(max(Efficiency)))];
     
+    % 효율성 등고선 플롯
+     h = zeros(1,3);
+     [~,h(1)]=contourf(Speed, Shaft_Torque, Efficiency, 'EdgeColor', 'none', 'DisplayName', objectName);
+    hold on
+    % [~, ~] = contour3(Speed, Shaft_Torque, Efficiency, cntrs, 'EdgeColor', 'k', 'ShowText', 'on', 'TextStep', 2);
+    [~,h(2)]  = contour3(Speed, Shaft_Torque, Efficiency, 'EdgeColor', 'k', 'ShowText', 'on', 'TextStep', 2);
+
     
     %% Plot 양식
-    clim([80 100]);
+    % clim([80 100]);
     xlabel('Speed, [RPM]'); 
     ylabel('Torque, [Nm]'); 
     set(gcf, 'renderer', 'zbuffer');
@@ -41,14 +41,13 @@ function [Mat_File_Data]=plotEfficiencyMotorcad(Mat_File_Path)
     
     % 컬러바 위치 설정
     cb = colorbar('Location', 'eastoutside');
-    cb.Label.String = 'Efficiency [%]';
+    cb.Label.String = 'value';
     
-    % legend('Efficiency Contour', 'Location', 'northeast');
-    % legends = legend;
-    % legendsToHide = [2]; % 숨길 legend의 인덱스 지정   
+    % legend(replaceSpacesWithUnderscores(objectName), 'Location', 'northeast');
+    % legend();
 
     legend(h(1)); % Only display last two legend titles
-    legend(h(1),'Efficiency Contour'); % Only display last two legend titles
+    legend(strrep(objectName,'_',' '), 'Location', 'northeast'); % Only display last two legend titles
 
     % 과학적 표기법 포맷
     formatter_sci;

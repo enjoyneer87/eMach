@@ -16,6 +16,10 @@ function saveFigures2png(folderPath)
             figName = titleAx.Title.String;           
             figName = strrep(figName, ' ', '_');        % 공백을 언더바로 변경
             figName = strrep(figName, '.', '');         % '.'을 제거
+            
+            if contains(figName,'=')
+            figName = strrep(figName, '=', '');         % '.'을 제거
+            end
             filename = fullfile(folderPath, ['pic_' figName '.png']);    % 저장할 파일명과 경로를 합침
             
             % 그래프를 PNG로 저장

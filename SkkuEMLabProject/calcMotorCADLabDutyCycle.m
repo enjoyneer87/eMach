@@ -55,7 +55,7 @@ end
     end
     
     SumOfTotalLoss=sum(matData.Total_Loss)*TimeStep;
-    
+    EnergyConsumptioninWh=SumOfTotalLoss/3600;
     ApparentPower=matData.Terminal_Power./matData.Power_Factor;
     SumOfApparentPower=0;
     for j=1:length(ApparentPower)
@@ -76,5 +76,5 @@ end
     DutyCycleOutput.ShaftTorque=matData.Shaft_Torque;
     DutyCycleOutput.Speed=matData.Speed;
     DutyCycleOutput.matData=matData;
-
+    DutyCycleOutput.EnergyConsumptioninWh;
 end

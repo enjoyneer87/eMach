@@ -46,6 +46,10 @@ PlaidMotorDimension.ActiveVolume=PlaidMotorDimension.ActiveVolume %m^3
 
 % Weight
 Weight=getMCADWeight(mcad)
+sample.Weight=Weight.o_Weight_Wdg
+[~,sample.Length.ArmatureWindingResistancePh]             =mcad.GetVariable('ArmatureWindingResistancePh')   
+overhang1=sample
+save('overhang1.mat',"overhang1")
 % 파트별 무게
 
 [~,PlaidMotorDimension.Weight.WeightStatorCore]             =mcad.GetVariable('Weight_Total_Stator_Lam')   

@@ -18,7 +18,7 @@ end
 
 for i = 1:length(LLEMF)
    figure(2)
-     NoloadSimul.EMFwave.Line=plotBEMFMotorCAD(LLEMF{i},mcad)
+     NoloadSimul.EMFwave.Line=plotBEMFMotorCAD(LLEMF{i},mcad);
     hold on
 end
     legend(LLEMF, 'Location', 'Best');
@@ -27,6 +27,10 @@ end
 [~,NoloadSimul.BEMFLLrms]=mcad.GetVariable('RMSBackEMFLine');
 [~,NoloadSimul.BEMFphpk]=mcad.GetVariable('PeakBackEMFPhase');
 [~,NoloadSimul.BEMFTHD]=mcad.GetVariable('THDBackEMFLine');
+[~,NoloadSimul.PeakBackEMFLine_Fundamental]=mcad.GetVariable('PeakBackEMFLine_Fundamental');
+[~,NoloadSimul.Ke]=mcad.GetVariable('Ke');
+[~,NoloadSimul.Ke_Fundamental]=mcad.GetVariable('Ke_Fundamental');
+
 
 % cogging
 [~,NoloadSimul.Cogging.CoggingTorqueRippleVw]=mcad.GetVariable('CoggingTorqueRippleVw');

@@ -9,7 +9,7 @@ function [baseTorque,maxSpeedTorque]=plotTNcurvebyBasePoint(baserpm, maxrpm, kW)
     maxSpeedTorque=kW * 1000 / (maxrpm * (2 * pi / 60));
     % figure('Position', [100, 100, 1200, 600]);  % 너비 800, 높이 600으로 고정
 
-    plot(rpm, torque, 'b', 'LineWidth', 2);  % 그래프 그리기
+    [h(1)]=plot(rpm, torque, 'b', 'LineWidth', 2);  % 그래프 그리기
     title('TN Curve');
     grid on;
     
@@ -21,15 +21,16 @@ function [baseTorque,maxSpeedTorque]=plotTNcurvebyBasePoint(baserpm, maxrpm, kW)
     hold on;  % 그래프 유지
 
     % baserpm과 해당 토크에 점과 텍스트 추가
-    scatter(baserpm, baseTorque, 'filled','ro');
-    text(baserpm, baseTorque, sprintf('%.2f Nm @ %d RPM', baseTorque, baserpm), 'VerticalAlignment', 'bottom', 'FontName', 'Times New Roman','FontSize', fontsize);
+    [h(2)]=scatter(baserpm, baseTorque, 'filled','ro');
+    % text(baserpm, baseTorque, sprintf('%.2f Nm @ %d RPM', baseTorque, baserpm), 'VerticalAlignment', 'bottom', 'FontName', 'Times New Roman','FontSize', fontsize);
     
     % maxrpm과 해당 토크에 점과 텍스트 추가
-    scatter(maxrpm, kW * 1000 / (maxrpm * (2 * pi / 60)),'filled', 'go');
-    text(maxrpm, kW * 1000 / (maxrpm * (2 * pi / 60)), sprintf('%.2f Nm @ %d RPM', kW * 1000 / (maxrpm * (2 * pi / 60)), maxrpm), 'VerticalAlignment', 'bottom','Position',[maxrpm-0.35*maxrpm,kW * 1000 / (maxrpm * (2 * pi / 60))] ,'FontName', 'Times New Roman','FontSize', fontsize);
+    [h(3)]=scatter(maxrpm, kW * 1000 / (maxrpm * (2 * pi / 60)),'filled', 'go');
+    % text(maxrpm, kW * 1000 / (maxrpm * (2 * pi / 60)), sprintf('%.2f Nm @ %d RPM', kW * 1000 / (maxrpm * (2 * pi / 60)), maxrpm), 'VerticalAlignment', 'bottom','Position',[maxrpm-0.35*maxrpm,kW * 1000 / (maxrpm * (2 * pi / 60))] ,'FontName', 'Times New Roman','FontSize', fontsize);
 
     ylim([0, max(torque)*1.2]);
-    legend('RequiredTN')
+    % legend('EfficiencyMap')
+    % legend(h(1))
     formatter_sci()
     hold off;  % 그래프 종료
 

@@ -7,11 +7,11 @@ data = {
     "EWdg_Overhang_[F]_Used"             , [];
     "EWdg_Overhang_[R]_Used"             , [];
     "Housing_Water_Jacket"               , 1;
-    "Shaft_Spiral_Groove"                , 1;
+    "Shaft_Spiral_Groove"                , 0;
     "Spray_Cooling"                      , 1;
-    "FloodedCooling"                     , 1;
+    "FloodedCooling"                     , 0;
     "HousingWJ_Volume_Flow_Rate_Total"   , 20;
-    "WJ_Parallel_Paths"                  , 1;
+    "WJ_Parallel_Paths"                  , 2;
     "AxialSliceDefinition"               , 3;
     "CuboidalkValueDefinition"           , [];
     "SprayCoolingSubmerged"              , 0;
