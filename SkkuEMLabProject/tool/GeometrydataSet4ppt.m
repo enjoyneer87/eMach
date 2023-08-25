@@ -1,9 +1,8 @@
 function PlaidMotorDimension=GeometrydataSet4ppt(fileDir,fileName,Rating,mcad)
 % mcad=actxserver('motorcad.appautomation');
-%% 
 filePath=fullfile(fileDir,fileName)
 
-mcad.LoadFromFile(filePath);
+% mcad.LoadFromFile(filePath);
 
 PlaidMotorDimension=struct();
 kwPower=Rating.maxkW;  % kW
@@ -54,6 +53,7 @@ Weight=getMCADWeight(mcad)
 [~,PlaidMotorDimension.Weight.Weight_Total_Banding]  =mcad.GetVariable('Weight_Total_Banding')      % carbon sleeve   
 
 
+PlaidMotorDimension.Weight.ActivePart=Weight.o_Weight_Stat_Core+Weight.o_Weight_Mag+Weight.o_Weight_Rot_Core+Weight.o_Weight_Wdg
 
 PlaidMotorDimension.Weight.StatorAssembly       = Weight.o_Weight_Stat_Core + Weight.o_Weight_Wdg
 PlaidMotorDimension.Weight.RotorAssembly        = Weight.o_Weight_Mag+Weight.o_Weight_Rot_Core+Weight.Weight_Shaft+PlaidMotorDimension.Weight.Weight_Total_Banding
@@ -77,7 +77,7 @@ kw2hp(kwPower)/(23.8+16.3)  % Active Mass
 kw2hp(kwPower)/(134) % Mass Density with Large Unit
 kw2hp(kwPower)/(92)  % Mass Density with Small Unit
 % Comp
-670/73      % Lucid
+% 670/73      % Lucid
 
 
 % 

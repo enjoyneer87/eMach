@@ -9,7 +9,7 @@ function [baseTorque,maxSpeedTorque]=plotTNcurvebyBasePoint(baserpm, maxrpm, kW)
     maxSpeedTorque=kW * 1000 / (maxrpm * (2 * pi / 60));
     % figure('Position', [100, 100, 1200, 600]);  % 너비 800, 높이 600으로 고정
 
-    plot(rpm, torque, 'b', 'LineWidth', 2);  % 그래프 그리기
+    plot(rpm, torque,  'LineWidth', 2);  % 그래프 그리기
     title('TN Curve');
     grid on;
     

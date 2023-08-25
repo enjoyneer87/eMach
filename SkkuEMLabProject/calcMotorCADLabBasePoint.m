@@ -14,8 +14,8 @@ function BasePointOutput = calcMotorCADLabBasePoint(mcad, mcad_file_dir, mcad_fi
 
     % MotorCADLab 서버 연결 및 초기 설정
     % mcad=actxserver('motorcad.appautomation');
-    % mcad_file_dir='E:\2023_Task\etc\14_EMLAB_TractionMotor\04_CODE\MCADSpary';
-    % mcad_file_name='Model1e2Spray2023';
+    % mcad_file_dir='I:\KDH\LabProject2023V3\6p54s_V_Vacodur49_Design0002';
+    % mcad_file_name='6p54s_V_Vacodur49_Design0002';
     % matData=load('E:\2023_Task\etc\14_EMLAB_TractionMotor\04_CODE\MCADSpary\Model1e2Spray2023\Lab\MotorLAB_elecdata_copy.mat');
     
     % 파일 경로 설정 및 로드
@@ -36,12 +36,13 @@ function BasePointOutput = calcMotorCADLabBasePoint(mcad, mcad_file_dir, mcad_fi
     
     % 결과 파일 복사 및 로드
     initialMatFileDir       = fullfile(mcad_file_dir, mcad_file_name, 'Lab', 'MotorLAB_elecdata');
-    if exist(initialMatFileDir,"file")
-        temp_time               = datetime("now");
-        matFileDir              = strcat(initialMatFileDir, '_', num2str(temp_time.Hour), 'h', num2str(temp_time.Minute), 'm');    
-        movefile(strcat(initialMatFileDir, '.mat'), strcat(matFileDir, '.mat'));
-        matData                 = load(strcat(matFileDir, '.mat'));
-    
+    % if exist(initialMatFileDir,"file")
+    %     temp_time               = datetime("now");
+    %     matFileDir              = strcat(initialMatFileDir, '_', num2str(temp_time.Hour), 'h', num2str(temp_time.Minute), 'm');    
+    %     movefile(strcat(initialMatFileDir, '.mat'), strcat(matFileDir, '.mat'));
+        % matData                 = load(strcat(matFileDir, '.mat'));
+            matData                 = load(strcat(initialMatFileDir, '.mat'));
+
     %% BasePoint  계산
         matData.DC_Bus_Voltage(1, 1);
         NumberOfIncrements      = length(matData.Voltage_Line_Peak(1, :));
@@ -80,8 +81,8 @@ function BasePointOutput = calcMotorCADLabBasePoint(mcad, mcad_file_dir, mcad_fi
         BasePointOutput = table2struct(table(MaximumPower_modified, BaseTorque_modified, BaseSpeed_modified, ...
             FluxWeakeningTorque_modified, FluxWeakeningSpeed_modified, MaximumSpeed));
         
-        BasePointOutput.matFilePath     = strcat(matFileDir, '.mat');
+        BasePointOutput.matFilePath     = strcat(initialMatFileDir, '.mat');
         BasePointOutput.matData         = matData;
-        BasePointOutput.matFileDir      = matFileDir;
+        BasePointOutput.matFileDir      = initialMatFileDir;
     end 
-end
+% end
