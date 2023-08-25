@@ -22,14 +22,14 @@ function [baseTorque,maxSpeedTorque]=plotTNcurvebyBasePoint(baserpm, maxrpm, kW)
 
     % baserpm과 해당 토크에 점과 텍스트 추가
     [h(2)]=scatter(baserpm, baseTorque, 'filled','ro');
-    % text(baserpm, baseTorque, sprintf('%.2f Nm @ %d RPM', baseTorque, baserpm), 'VerticalAlignment', 'bottom', 'FontName', 'Times New Roman','FontSize', fontsize);
+    text(baserpm, baseTorque, sprintf('%.2f Nm @ %d RPM', baseTorque, baserpm), 'VerticalAlignment', 'bottom', 'FontName', 'Times New Roman','FontSize', fontsize);
     
     % maxrpm과 해당 토크에 점과 텍스트 추가
     [h(3)]=scatter(maxrpm, kW * 1000 / (maxrpm * (2 * pi / 60)),'filled', 'go');
-    % text(maxrpm, kW * 1000 / (maxrpm * (2 * pi / 60)), sprintf('%.2f Nm @ %d RPM', kW * 1000 / (maxrpm * (2 * pi / 60)), maxrpm), 'VerticalAlignment', 'bottom','Position',[maxrpm-0.35*maxrpm,kW * 1000 / (maxrpm * (2 * pi / 60))] ,'FontName', 'Times New Roman','FontSize', fontsize);
+    text(maxrpm, kW * 1000 / (maxrpm * (2 * pi / 60)), sprintf('%.2f Nm @ %d RPM', kW * 1000 / (maxrpm * (2 * pi / 60)), maxrpm), 'VerticalAlignment', 'bottom','Position',[maxrpm-0.35*maxrpm,kW * 1000 / (maxrpm * (2 * pi / 60))] ,'FontName', 'Times New Roman','FontSize', fontsize);
 
     ylim([0, max(torque)*1.2]);
-    % legend('EfficiencyMap')
+    legend('RequiredTN')
     % legend(h(1))
     formatter_sci()
     hold off;  % 그래프 종료

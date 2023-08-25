@@ -19,18 +19,18 @@ mcad.CalculateDutyCycle_Lab();
 
 %% 결과 파일 복사 및 로드
 initialMatFileDir       = fullfile(mcad_file_dir, mcad_file_name, 'Lab', 'MotorLAB_drivecycledata');
-if exist(initialMatFileDir,"file")
-    temp_time               = datetime("now");
-    matFileDir              = strcat(initialMatFileDir, '_', num2str(temp_time.Hour), 'h', num2str(temp_time.Minute), 'm');    
-    movefile(strcat(initialMatFileDir, '.mat'), strcat(matFileDir, '.mat'));
-else
-    matFileDir=[];
-end
-if ~isempty(matFileDir)||exist(matFileDir,"file")
-    matData                 = load(strcat(matFileDir, '.mat'));
-else
+% if exist(initialMatFileDir,"file")
+%     temp_time               = datetime("now");
+%     matFileDir              = strcat(initialMatFileDir, '_', num2str(temp_time.Hour), 'h', num2str(temp_time.Minute), 'm');    
+%     movefile(strcat(initialMatFileDir, '.mat'), strcat(matFileDir, '.mat'));
+% else
+%     matFileDir=[];
+% end
+% if ~isempty(matFileDir)||exist(matFileDir,"file")
+%     matData                 = load(strcat(matFileDir, '.mat'));
+% else
     matData                 = load(strcat(initialMatFileDir,'.mat'));
-end
+% end
 %% 계산
     % 전자계 토크 무의미
     % 효율 = 샤프트 토크 / (샤프트 토크 + 토탈 로스)

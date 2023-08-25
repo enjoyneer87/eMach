@@ -16,5 +16,5 @@ function newFolder = createNewFolder(refMotFilePath, CaseNumber)
     [filepath, name, ext] = fileparts(refMotFilePath);
     
     % 새 폴더 경로 생성: 부모 경로 / 'DOE' / 파일명_Design_케이스번호
-    newFolder = fullfile(parentPath, 'DOE', [name, '_Design', sprintf('%03d', CaseNumber)]);
+    newFolder = fullfile(parentPath, 'DOE', [name, '_Design', sprintf('%04d', CaseNumber)]);
 end

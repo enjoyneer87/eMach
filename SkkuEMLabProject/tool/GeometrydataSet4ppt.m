@@ -1,6 +1,5 @@
 function PlaidMotorDimension=GeometrydataSet4ppt(fileDir,fileName,Rating,mcad)
 % mcad=actxserver('motorcad.appautomation');
-%% 
 filePath=fullfile(fileDir,fileName)
 
 % mcad.LoadFromFile(filePath);
