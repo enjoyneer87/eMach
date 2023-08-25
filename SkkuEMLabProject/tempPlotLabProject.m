@@ -1,5 +1,6 @@
 function tempPlotLabProject(dataIndex,DesignNumber,fileDir,DataName,matFilePath,maxrpm,kW,baserpm,Imax_rms_MotorLab,PhaseAdvance,RMSCurrentDensity,DCvoltage,ActiveTurn,Length_Calc_Lab)
     figure(dataIndex)
+    
     if strcmpi(DataName,'Effi map')
     [MatFileData]=plotEfficiencyMotorcad(matFilePath);
     elseif strcmpi(DataName,'Copper Loss')
@@ -33,9 +34,8 @@ function tempPlotLabProject(dataIndex,DesignNumber,fileDir,DataName,matFilePath,
     lgd = legend;
     % lgd.Position(2) = lgd.Position(2); % 범례 위치 조정
     text(lgd.Position(1)+0.05, lgd.Position(2), legend_str, 'Units', 'normalized', 'HorizontalAlignment', 'left', 'VerticalAlignment', 'bottom','FontName', 'Times New Roman');
-    title(['Design89 ', 'Effimap', ' I=',num2str(CurrentLimit),'A_{rms} Limit']);
+    % title(['Design89 ', 'Effimap', ' I=',num2str(CurrentLimit),'A_{rms} Limit']);
     % set(gcf, 'Visible', 'on'); % figure의 Visible 속성을 'off'로 설정
     lgd.String={strrep(DataName,'_',' '),'Required TN'};
-    saveFigures2png(fileDir);
     % close all
 end

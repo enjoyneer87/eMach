@@ -10,7 +10,7 @@ function data=plotAnyContourByNameinMotorcad(Mat_File_Path,objectName)
 
     % 등고선 설정
     % cntrs = [92:2:96 96:0.25:round(max(max(Efficiency)))];
-    
+
     % 효율성 등고선 플롯
      h = zeros(1,3);
      [~,h(1)]=contourf(Speed, Shaft_Torque, Efficiency, 'EdgeColor', 'none', 'DisplayName', objectName);
@@ -18,13 +18,23 @@ function data=plotAnyContourByNameinMotorcad(Mat_File_Path,objectName)
     % [~, ~] = contour3(Speed, Shaft_Torque, Efficiency, cntrs, 'EdgeColor', 'k', 'ShowText', 'on', 'TextStep', 2);
     [~,h(2)]  = contour3(Speed, Shaft_Torque, Efficiency, 'EdgeColor', 'k', 'ShowText', 'on', 'TextStep', 2);
 
+    % 효율성 등고선 플롯    
+    % contourf(Speed, Shaft_Torque, Efficiency, 'levels', 1000, 'EdgeColor', 'none', 'DisplayName', objectName);
+
+
+    contourf(Speed, Shaft_Torque, Efficiency,  'EdgeColor', 'none', 'DisplayName', objectName);
+    hold on
+    % [~, ~] = contour3(Speed, Shaft_Torque, Efficiency, cntrs, 'EdgeColor', 'k', 'ShowText', 'on', 'TextStep', 2);
+        [~, ~] = contour3(Speed, Shaft_Torque, Efficiency, 'EdgeColor', 'k', 'ShowText', 'on', 'TextStep', 2);
+
     
     %% Plot 양식
     % clim([80 100]);
     xlabel('Speed, [RPM]'); 
     ylabel('Torque, [Nm]'); 
     set(gcf, 'renderer', 'zbuffer');
-    
+
+
     %% 컬러맵 설정
     % 색상값 범위 설정
     cmin = 0;
@@ -42,12 +52,17 @@ function data=plotAnyContourByNameinMotorcad(Mat_File_Path,objectName)
     % 컬러바 위치 설정
     cb = colorbar('Location', 'eastoutside');
     cb.Label.String = 'value';
-    
+
     % legend(replaceSpacesWithUnderscores(objectName), 'Location', 'northeast');
     % legend();
 
     legend(h(1)); % Only display last two legend titles
     legend(strrep(objectName,'_',' '), 'Location', 'northeast'); % Only display last two legend titles
+
+
+    % legend(replaceUnderscoresWith(objectName), 'Location', 'northeast');
+     % title(objectName,'Visible','off');
+        
 
     % 과학적 표기법 포맷
     formatter_sci;
