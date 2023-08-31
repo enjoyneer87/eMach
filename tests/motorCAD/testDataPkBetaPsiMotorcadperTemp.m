@@ -1,3 +1,6 @@
+%% Function 
+% compMatiFilePsi()
+% plotScatter3TempPost
 %% MotorCADData object make temp=65
 HDEVMotorCADTemp65=MotorcadData(12);
 HDEVMotorCADTemp65.motorcadMotPath='Z:\Thesis\Optislang_Motorcad\Validation'
@@ -56,8 +59,9 @@ HDEVMotorCADTemp65.matfileFindList=what(HDEVMotorCADTemp65.motocadLabPath);
 
 % mcad = actxserver('MotorCAD.AppAutomation');
 HDEVMotorCADTemp65.matfileFindList.mat
-i=7
-HDEVdata.MotorcadMat=load(HDEVMotorCADTemp65.matfileFindList.mat{i})
+i=5
+MatFilePath=fullfile(HDEVMotorCADTemp65.motocadLabPath,HDEVMotorCADTemp65.matfileFindList.mat{i})
+HDEVdata.MotorcadMat=load(MatFilePath)
 HDEVdata=HDEVdata.compMatiFilePsi()
 
 %% Plot Mat flux from Saturation (High Fidel)

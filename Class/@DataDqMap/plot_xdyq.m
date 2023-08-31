@@ -1,4 +1,4 @@
-function td=plot_xdxq(td,data)
+function td=plot_xdyq(td,data)
 %% 1d array
 %     plot all
     propertiesData=properties(td);

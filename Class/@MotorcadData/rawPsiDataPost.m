@@ -44,6 +44,8 @@ if exist(proj, 'file') ~= 2
 
 %     mcad.Quit()
 end
+
+%% 
 mcad.LoadFromFile(proj);
 
 NcurrentVec=6;
@@ -52,6 +54,7 @@ inputobj.ModelParameters_MotorLAB.PsiDModel_Lab=[];
 inputobj.ModelParameters_MotorLAB.PsiQModel_Lab=[];
 motorLABFieldsNames=fieldnames(inputobj.ModelParameters_MotorLAB);
 %% Lab Calc Temperature Import
+%% [TB] getMcadVariable로 변경
 [success,inputobj.ArmatureConductor_Temperature]=invoke(mcad,'GetVariable','ArmatureConductor_Temperature');
 [success,inputobj.Magnet_Temperature]=invoke(mcad,'GetVariable','Magnet_Temperature');
 [success,inputobj.Shaft_Temperature]=invoke(mcad,'GetVariable','Shaft_Temperature');
@@ -60,7 +63,7 @@ motorLABFieldsNames=fieldnames(inputobj.ModelParameters_MotorLAB);
 [success,inputobj.Airgap_Temperature]=invoke(mcad,'GetVariable','Airgap_Temperature');
 
 
-
+%% get Lab Psi모델 
 
 % 1:length(motorLABFieldsNames)
 [success,charPsiDModel_Lab]=invoke(mcad,'GetVariable',motorLABFieldsNames{1});
