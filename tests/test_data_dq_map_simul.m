@@ -2,7 +2,7 @@
 
 % object make
 HDEVdata=DataDqMap(8);
-
+% C:\Program Files\MATLAB\R2023a\toolbox\physmod\elec\eedemos
 ee_ece_table % maxwell
 
 PmsmFem.NumPolePairs = HDEVdata.p/2;
