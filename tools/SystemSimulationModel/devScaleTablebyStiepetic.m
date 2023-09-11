@@ -21,7 +21,7 @@ function [ScaledMachineData,ScaledSatuMapTable] = devScaleTablebyStiepetic(scali
     
     NonActivePartLength                      = MachineData.Motor_Length -l_stk_ref;
     ScaledMachineData.Motor_Length           =ScaledMachineData.Stator_Lam_Length+NonActivePartLength;
-    NonActivePartDia                         =MachineData.Housing_Dia  - MachineData.Stator_Lam_Dia;
+    NonActivePartDia                         = MachineData.Housing_Dia  - MachineData.Stator_Lam_Dia;
     ScaledMachineData.Housing_Dia            =ScaledMachineData.Stator_Lam_Dia   +NonActivePartDia;
 
    %% Winding
