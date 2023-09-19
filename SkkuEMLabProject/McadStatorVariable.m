@@ -1,6 +1,6 @@
 function variable = McadStatorVariable(fileName)
     variable = struct(); 
-    variable.motFile=fileName;
+    % variable.motFile=fileName;
     variable.SlotType                             =[];
 
     %% Axial

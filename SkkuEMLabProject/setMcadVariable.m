@@ -18,10 +18,11 @@ function mcad=setMcadVariable(variable,mcad)
             elseif length(variable.(fieldName))==2
                 mcad.SetArrayVariable(fieldName, 0,variable.(fieldName)(1));
                 mcad.SetArrayVariable(fieldName, 1,variable.(fieldName)(2));
-            elseif length(variable.(fieldName))==3
+            else 
                 mcad.SetArrayVariable(fieldName, 0,variable.(fieldName)(1));
                 mcad.SetArrayVariable(fieldName, 1,variable.(fieldName)(2));
                 mcad.SetArrayVariable(fieldName, 2,variable.(fieldName)(3));
+                mcad.SetArrayVariable(fieldName, 3,variable.(fieldName)(4));
             end
         else
             if length(variable.(fieldName))==1 

@@ -8,12 +8,22 @@ function [ScaledMachineData,ScaledSatuMapTable] = devScaleTablebyStiepetic(scali
     %% 형상  K_Winding 정의하는거 추가 (n_c_ref있는지 확인해서)    
     l_stk_ref = MachineData.Stator_Lam_Length; % l_stk,ref의 값
     D_out_ref = MachineData.Stator_Lam_Dia; % D_out,ref의 값
+    if MachineData.Armature_CoilStyle==0
     n_c_ref  =  MachineData.MagTurnsConductor; % turn per Coil
+    elseif MachineData.Armature_CoilStyle==1
+    n_c_ref  =  MachineData.WindingLayers; % turn per Coil
+    end
     a_p_ref  =  MachineData.ParallelPaths; % Parallel Path  
 
+    ScaledMachineData.NumberOfCuboids_LossModel_Lab =MachineData.NumberOfCuboids_LossModel_Lab;
+    ScaledMachineData.NumberStrandsHand =MachineData.NumberStrandsHand;
+    ScaledMachineData.ACConductorLossProportion_Lab=MachineData.ACConductorLossProportion_Lab;
+
+    %% Stator
     ScaledMachineData.Stator_Lam_Length        = k_Axial * l_stk_ref;
     ScaledMachineData.Stator_Lam_Dia           = k_Radial * D_out_ref;    
-
+    
+    %% Axial
     % Thermal Housing    
     ScaledMachineData.Rotor_Lam_Length       =ScaledMachineData.Stator_Lam_Length ;
     ScaledMachineData.Stator_Lam_Length      =ScaledMachineData.Stator_Lam_Length ;
@@ -23,11 +33,31 @@ function [ScaledMachineData,ScaledSatuMapTable] = devScaleTablebyStiepetic(scali
     ScaledMachineData.Motor_Length           =ScaledMachineData.Stator_Lam_Length+NonActivePartLength;
     NonActivePartDia                         = MachineData.Housing_Dia  - MachineData.Stator_Lam_Dia;
     ScaledMachineData.Housing_Dia            =ScaledMachineData.Stator_Lam_Dia   +NonActivePartDia;
+    %% Detaild Geometric
+
+    MachineData.MagnetSeparation_Array
+    % ScaledMachineData.MagnetThickness_Array=MachineData.MagnetThickness_Array;
+    ScaledMachineData.MagnetThickness_Array=k_Radial*MachineData.MagnetThickness_Array;
+
+
+ 
 
    %% Winding
     ScaledMachineData.n_c_per_ap               = k_Winding * (n_c_ref / a_p_ref);    
+    if MachineData.Armature_CoilStyle==0
     ScaledMachineData.MagTurnsConductor        = scalingFactorStruct.n_c;
+    elseif MachineData.Armature_CoilStyle==1
+    ScaledMachineData.WindingLayers        = scalingFactorStruct.n_c;
+    end
     ScaledMachineData.ParallelPaths            = scalingFactorStruct.a_p;
+    
+  %% [Geometric]Winding  
+  if MachineData.Armature_CoilStyle==0
+    % n_c_ref  =  MachineData.MagTurnsConductor; % turn per Coil
+  elseif MachineData.Armature_CoilStyle==1
+    ScaledMachineData.Copper_Width =MachineData.Copper_Width  *k_Radial ;
+    ScaledMachineData.Copper_Height=MachineData.Copper_Height *k_Radial ;
+  end
 
     %% 저항은 별도로 End 부분이랑 Active Part 분리 필요
     % R_Cuco_ref            = SatuMapData.Phase_Resistance_DC_at_20C; % R_Cuco,ref의 값
@@ -52,6 +82,7 @@ function [ScaledMachineData,ScaledSatuMapTable] = devScaleTablebyStiepetic(scali
     ScaledSatuMapTable.Id_Peak                   = 1./k_Winding.*k_Radial.*SatuMapTable.Id_Peak ;
     ScaledSatuMapTable.Iq_Peak                   = 1./k_Winding.*k_Radial.*SatuMapTable.Iq_Peak ;
     % Ampere/m2
+    SatuMapTable.CurrentDensityRMS=calcCurrentDensity(SatuMapTable.Stator_Current_Line_RMS,MachineData.ParallelPaths,double(MachineData.NumberStrandsHand),MachineData.ArmatureConductorCSA);
     ScaledSatuMapTable.CurrentDensityRMS            = 1./k_Winding*SatuMapTable.CurrentDensityRMS;
     %% [Vs]
     Psi_ew_ref =0;

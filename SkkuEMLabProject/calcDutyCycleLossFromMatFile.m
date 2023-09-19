@@ -1,6 +1,6 @@
  
-function DutyCycleOutput=calcDutyCycleLossFromMatFile(initialMatFileDir)
-    matData                 = load(strcat(initialMatFileDir,'.mat'));
+function DutyCycleOutput=calcDutyCycleLossFromMatFile(driveMatPath)
+    matData                 = load(strcat(driveMatPath,'.mat'));
 
 %% 계산
     % 전자계 토크 무의미
@@ -8,16 +8,22 @@ function DutyCycleOutput=calcDutyCycleLossFromMatFile(initialMatFileDir)
     % 터미널 파워 = 샤프트 토크 / 효율 = 샤프트 토크 + 토탈 로스
     % 드라이빙 사이클 파워 = ? / 역률 아님, 가속 아님
     % 파워 팩터 미사용 ?
-    SumOfTerminalPower=sum(matData.Terminal_Power);
+    secondsInHour=3600;
+    SumOfTerminalPower=sum(matData.Terminal_Power)/secondsInHour;
     PositiveSumOfTerminalPower=0;
+    
+    % Terminal Power
     for j=1:length(matData.Terminal_Power(:,1))
         if matData.Terminal_Power(j,1)>0
             PositiveSumOfTerminalPower=PositiveSumOfTerminalPower+matData.Terminal_Power(j,1);
         end
     end
-    TimeStep=matData.Time(end-1)-matData.Time(end-2);    
 
-    SumOfDriveCyclePower=sum(matData.Drive_Cycle_Power)*TimeStep;
+    TimeStep=matData.Time(end-1)-matData.Time(end-2);    
+    % Shaft Power
+
+    % DriveCyclePower
+    SumOfDriveCyclePower=sum(matData.Drive_Cycle_Power)*TimeStep/secondsInHour;
     PositiveSumOfDriveCyclePower=0;
     for j=1:length(matData.Drive_Cycle_Power(:,1))
         if matData.Drive_Cycle_Power(j,1)>0
@@ -25,7 +31,7 @@ function DutyCycleOutput=calcDutyCycleLossFromMatFile(initialMatFileDir)
         end
     end
     
-    SumOfTotalLoss=sum(matData.Total_Loss)*TimeStep;
+    SumOfTotalLoss=sum(matData.Total_Loss)*TimeStep/secondsInHour;
     
     ApparentPower=matData.Terminal_Power./matData.Power_Factor;
     SumOfApparentPower=0;

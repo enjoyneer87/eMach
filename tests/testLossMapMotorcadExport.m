@@ -24,8 +24,8 @@ HDEV_motorcad.matfileFindList=what(HDEV_motorcad.motocadLabPath);
 
 % mcad = actxserver('MotorCAD.AppAutomation');
 HDEV_motorcad.matfileFindList.mat
-i=3
-HDEVdata.MotorcadMat=load(HDEV_motorcad.matfileFindList.mat{i})
+i=2
+HDEVdata.MotorcadMat=load(fullfile(HDEV_motorcad.motocadLabPath,HDEV_motorcad.matfileFindList.mat{i}))
 
 %% Compute the LossCoefficient 
 HDEVdata=HDEVdata.compMatFileLoss()

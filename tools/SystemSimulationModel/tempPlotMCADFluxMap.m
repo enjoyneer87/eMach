@@ -36,12 +36,12 @@ function tempPlotMCADFluxMap(MotorCADFEA)
     ylabel('I_q [A]')
     title('\lambda_d'); grid on;
     % Plot the sweeping current points used to collect the data
-    for i = 1:length(FEAdata.current.d)
-        for j = 1:1:length(FEAdata.current.q)
-        plot(FEAdata.current.d(i),FEAdata.current.q(j),'b*');
-        hold on
-        end
-    end
+    % for i = 1:length(FEAdata.current.d)
+    %     for j = 1:1:length(FEAdata.current.q)
+    %     plot(FEAdata.current.d(i),FEAdata.current.q(j),'b*');
+    %     hold on
+    %     end
+    % end
     
     figure(2);
     hold on

@@ -19,7 +19,11 @@ function variable=getMcadVariable(variable,mcad)
         end       
         % Use the original field name for assignment
         [~, fieldData] = mcad.GetVariable(fieldName);
+        if strcmp(fieldName,'CurrentMotFilePath_MotorLAB')
+        variable.(originalFieldName)=fieldData;    
+        else
         fieldData = convertCharTypeData2ArrayData(fieldData); % char형을 배열로
         variable.(originalFieldName) = fieldData;
+        end
     end
 end

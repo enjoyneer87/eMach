@@ -5,10 +5,10 @@ function Scaled = devScaleMethodStiepetic(scalingFactorStruct,SatuMapData,Machin
     
     %% K_Winding 정의하는거 추가 (n_c_ref있는지 확인해서)
     
-    l_stk_ref = MachineData.ll; % l_stk,ref의 값
-    D_out_ref = MachineData.D_out; % D_out,ref의 값
-    n_c_ref = MachineData.turnperCoil; % turn per Coil
-    a_p_ref = MachineData.ParallelPath; % Parallel Path
+    l_stk_ref = MachineData.Stator_Lam_Length; % l_stk,ref의 값
+    D_out_ref = MachineData.Stator_Lam_Dia; % D_out,ref의 값
+    n_c_ref = MachineData.MagTurnsConductor; % turn per Coil
+    a_p_ref = MachineData.ParallelPaths; % Parallel Path
     
     % % 레퍼런스 값들
     Psi_dco_ref             = SatuMapData.Flux_Linkage_D; % Psi_dco,ref의 값
@@ -41,6 +41,7 @@ function Scaled = devScaleMethodStiepetic(scalingFactorStruct,SatuMapData,Machin
     
     
     %
+    SatuMapData.CurrentDensityRMS=calcCurrentDensity(max(max(SatuMapData.Stator_Current_Line_RMS)),MachineData.ParallelPaths,double(MachineData.NumberStrandsHand),MachineData.ArmatureConductorCSA);
     Scaled.CurrentDensity = 1./k_Winding*SatuMapData.CurrentDensityRMS;
     Scaled.Stator_Current_Line_Peak  = 1./k_Winding.*k_Radial.*SatuMapData.Stator_Current_Line_Peak; 
     

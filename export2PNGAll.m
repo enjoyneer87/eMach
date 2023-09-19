@@ -27,10 +27,23 @@ function export2PNGAll(folderPath)
     
     for i = 1:length(figHandles)
         figHandle = figHandles(i);
-        figAxis=figHandle.Children;
-        figName = figAxis.Title.String;
+        if ~isprop(figHandle,'Title')
+            figAxis=figHandle.Children;
+            % figName = figAxis.Title.String;
+            % if ~isempty(figAxis.ZLabel.String)
+            % label=removeAllSpecialCharacters(figAxis.ZLabel.String);
+            % elseif ~isempty(figAxis.YLabel.String)
+            % label=removeAllSpecialCharacters(figAxis.YLabel.String);
+            % else
+            label='figure';
+            % end
+            figName=[label,'_',num2str(i)];
+        else
+        titleChildren = findAxesWithTitles(figHandle);
+        figName = titleChildren.Title.String;
         figName = strrep(figName, ' ', '_'); % 공백을 언더바로 변경
         figName = strrep(figName, '.', ''); % '.'을 제거
+        end
         filename = fullfile(folderPath, [figName '.png']); % 저장할 파일명과 경로를 합칩니다.
         exportgraphics(figHandle, filename, 'Resolution', 600,'BackgroundColor', 'none');
     end
