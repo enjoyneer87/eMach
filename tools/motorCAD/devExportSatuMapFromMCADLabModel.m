@@ -60,8 +60,8 @@ mcad.SetVariable('SaturationMap_CalculationMethod',     0);
 
 
 if SaturationMap_InputDefinition==0
-mcad.SetVariable('SaturationMap_StatorCurrentMax',       Imax);
-mcad.SetVariable('SaturationMap_StatorCurrentStep',      Imax/30);
+mcad.SetVariable('SaturationMap_StatorCurrentMax',       Imaxpk);
+mcad.SetVariable('SaturationMap_StatorCurrentStep',      Imaxpk/30);
 mcad.SetVariable('SaturationMap_StatorCurrentMin',       0);
 mcad.SetVariable('SaturationMap_PhaseAdvanceMax',       90);
 mcad.SetVariable('SaturationMap_PhaseAdvanceStep',      5);
@@ -69,10 +69,10 @@ mcad.SetVariable('SaturationMap_PhaseAdvanceMin',       0);
 elseif SaturationMap_InputDefinition==1
 %
 mcad.SetVariable('SaturationMap_Current_D_Max',       0);
-mcad.SetVariable('SaturationMap_Current_D_Step',      Imax/100);
-mcad.SetVariable('SaturationMap_Current_D_Min',       -Imax);
-mcad.SetVariable('SaturationMap_Current_Q_Max',       Imax);
-mcad.SetVariable('SaturationMap_Current_Q_Step',      Imax/100);
+mcad.SetVariable('SaturationMap_Current_D_Step',      Imaxpk/100);
+mcad.SetVariable('SaturationMap_Current_D_Min',       -Imaxpk);
+mcad.SetVariable('SaturationMap_Current_Q_Max',       Imaxpk);
+mcad.SetVariable('SaturationMap_Current_Q_Step',      Imaxpk/100);
 mcad.SetVariable('SaturationMap_Current_Q_Min',       0);
 end
 mcad.SetVariable('SaturationMap_Export',      1);

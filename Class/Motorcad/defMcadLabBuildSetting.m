@@ -10,7 +10,10 @@ function settingTable = defMcadLabBuildSetting()
     
     input.LossModel_Lab                             = 1;
     input.ACLossMethod_Lab                          = 0; % Hybrid, 1: Full Fea
-
+    
+    %
+    input.BuildSatModel_MotorLAB                    =1;
+    input.BuildLossModel_MotorLAB                   =1;
     % Loss Model
     if input.LossModel_Lab == 2
         input.CalcTypeCuLoss_MotorLAB               = [];
@@ -21,7 +24,10 @@ function settingTable = defMcadLabBuildSetting()
     end
     
     % Machine Parameters
+    input.ModelBuildSpeed_MotorLAB                  =[];
+    input.MaxModelCurrent_MotorLAB              =[];
 
+    input.MaxModelCurrent_RMS_MotorLAB              =[];
     % Setting
     input.CurrentSpec_MotorLAB                      = 0;
     
@@ -48,6 +54,12 @@ function settingTable = defMcadLabBuildSetting()
         "SatModelPoints_MotorLAB"                   , input.SatModelPoints_MotorLAB;
         "LossModel_Lab"                             , input.LossModel_Lab;
         "ACLossMethod_Lab"                          , input.ACLossMethod_Lab;
+        "BuildSatModel_MotorLAB"          , input.BuildSatModel_MotorLAB;
+        "BuildLossModel_MotorLAB"          , input.BuildLossModel_MotorLAB;
+        "ModelBuildSpeed_MotorLAB"          , input.ModelBuildSpeed_MotorLAB;
+        "MaxModelCurrent_RMS_MotorLAB"          , input.MaxModelCurrent_RMS_MotorLAB;
+        "MaxModelCurrent_MotorLAB"          , input.MaxModelCurrent_MotorLAB;
+
         "CurrentSpec_MotorLAB"                      , input.CurrentSpec_MotorLAB;
         "NonSalient_MotorLAB"                       , input.NonSalient_MotorLAB;
         "SaturationModelMethod_Lab"                 , input.SaturationModelMethod_Lab;

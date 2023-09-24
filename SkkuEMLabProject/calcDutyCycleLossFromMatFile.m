@@ -1,6 +1,11 @@
  
 function DutyCycleOutput=calcDutyCycleLossFromMatFile(driveMatPath)
-    matData                 = load(strcat(driveMatPath,'.mat'));
+    if contains(driveMatPath,'.mat')
+    matData                 = load(driveMatPath);
+    else
+    matData                 = load(strcat(driveMatPath),'mat');
+    end
+
 
 %% 계산
     % 전자계 토크 무의미
@@ -23,7 +28,7 @@ function DutyCycleOutput=calcDutyCycleLossFromMatFile(driveMatPath)
     % Shaft Power
 
     % DriveCyclePower
-    SumOfDriveCyclePower=sum(matData.Drive_Cycle_Power)*TimeStep/secondsInHour;
+    SumofDriveCyclePower=sum(matData.Drive_Cycle_Power)*TimeStep/secondsInHour;
     PositiveSumOfDriveCyclePower=0;
     for j=1:length(matData.Drive_Cycle_Power(:,1))
         if matData.Drive_Cycle_Power(j,1)>0
@@ -31,7 +36,7 @@ function DutyCycleOutput=calcDutyCycleLossFromMatFile(driveMatPath)
         end
     end
     
-    SumOfTotalLoss=sum(matData.Total_Loss)*TimeStep/secondsInHour;
+    SumofTotalLoss=sum(matData.Total_Loss)*TimeStep/secondsInHour;
     
     ApparentPower=matData.Terminal_Power./matData.Power_Factor;
     SumOfApparentPower=0;
@@ -47,7 +52,7 @@ function DutyCycleOutput=calcDutyCycleLossFromMatFile(driveMatPath)
         end
     end
     
-    DutyCycleOutput=table2struct(table(SumOfTerminalPower, PositiveSumOfTerminalPower, SumOfTotalLoss, ...
+    DutyCycleOutput=table2struct(table(SumOfTerminalPower, PositiveSumOfTerminalPower, SumofTotalLoss, ...
         SumOfApparentPower, PositiveSumOfApparentPower));
     % DutyCycleOutput.ShaftPower=data.Shaft_Power;
     DutyCycleOutput.ShaftTorque=matData.Shaft_Torque;

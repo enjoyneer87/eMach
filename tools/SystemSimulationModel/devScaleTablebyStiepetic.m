@@ -72,7 +72,7 @@ function [ScaledMachineData,ScaledSatuMapTable] = devScaleTablebyStiepetic(scali
     ScaledMachineData.ArmatureWindingResistancePh = (k_Winding^2 / k_Radial^2) * (k_Axial * R_Cuco_ref + k_Radial * R_Cuew_ref);
     ScaledMachineData.ArmatureConductor_Temperature= 20;
     %% unit으로 분리해야할듯 
-
+    
     % Ampere [A]
     CurrentVariables = variableNames(contains(variableNames, 'Current'));
     % 각 "Current" 변수에 대해 연산 수행
@@ -84,6 +84,10 @@ function [ScaledMachineData,ScaledSatuMapTable] = devScaleTablebyStiepetic(scali
     % Ampere/m2
     SatuMapTable.CurrentDensityRMS=calcCurrentDensity(SatuMapTable.Stator_Current_Line_RMS,MachineData.ParallelPaths,double(MachineData.NumberStrandsHand),MachineData.ArmatureConductorCSA);
     ScaledSatuMapTable.CurrentDensityRMS            = 1./k_Winding*SatuMapTable.CurrentDensityRMS;
+
+    ScaledMachineData.Ipk=max(ScaledSatuMapTable.Stator_Current_Phase_Peak);
+    ScaledMachineData.Irms=max(ScaledSatuMapTable.Stator_Current_Phase_RMS);
+
     %% [Vs]
     Psi_ew_ref =0;
     Flux_Linkage = variableNames(contains(variableNames, 'Flux_Linkage'));

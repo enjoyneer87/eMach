@@ -8,7 +8,7 @@ function DOE=createDOEstructFromMotFileList(readMotFileList)
     
         if ~isempty(startIndex)
                 % DesignNumber가 시작하고 끝나는 Index 찾기
-            startIndex=startIndex(2)
+            startIndex=startIndex(2);
             endIndex = strfind(str, '.mot') - 1;
             % DesignNumber의 Str
             numberStr = str(startIndex:endIndex);

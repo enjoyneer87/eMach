@@ -19,7 +19,7 @@ table4txt=sortrows(table4txt,'Current Angle',"ascend");
 
 if nargin==3
     LabMatFileDir=varargin{1};
-    [~,b,~]=fileparts(fileparts(fileparts(LabMatFileDir)));
+    [~,b,~]=fileparts(LabMatFileDir);
     LabLinkTxtPath=fullfile(LabMatFileDir,[b,'LabLink.txt']);
 else    
     LabLinkTxtPath=fullfile(pwd,'LabLink.txt');

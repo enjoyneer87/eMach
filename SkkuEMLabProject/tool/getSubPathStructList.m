@@ -5,4 +5,5 @@ function myStruct=getSubPathStructList(parentPath)
     indicesToRemove = strcmp(names, '.') | strcmp(names, '..');  % .과 ..에 해당하는 인덱스 찾기
     myStruct(indicesToRemove) = [];  % 해당 인덱스의 행 삭제    
     % disp(myStruct);  % .과 ..이 삭제된 구조체 출력
+    
 end
