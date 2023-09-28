@@ -10,14 +10,23 @@ function matFileListStruct=getDOEResultMatFiles(directory)
 
                 if isfile(sourceFilePath)  % 파일이 있으면 실행하는 코드
                     destinationFileName=[strrep(itemInDIRStruct(dirIndex).name,'.mat',''),strrep(removeAllSpecialCharacters(itemInDIRStruct(dirIndex).date),' ','_'),'.mat'];
-                    destinationDir=strrep(itemInDIRStruct(dirIndex).folder,'DOE','DOEResult');
-                    destinationDir=fileparts(fileparts(destinationDir));
-            
+%                     if contains(itemInDIRStruct(dirIndex).folder,'DOE')
+%                     destinationDir=strrep(itemInDIRStruct(dirIndex).folder,'DOE','DOEResult');
+%                     destinationDir=fileparts(fileparts(destinationDir));
+% 
+%                     else
+                    [~,DesignName,~]        =fileparts(fileparts(itemInDIRStruct(dirIndex).folder));
+                    destinationDir=fullfile(directory,'DOEResult');
+                    destinationFileDir=fullfile(destinationDir,DesignName);
+%                     end            
                     if ~isfolder(destinationDir)  % destinationDir이 없으면 폴더 만드는 코드
                      mkdir(destinationDir)
                     end
+                    if ~isfolder(destinationFileDir)  % destinationDir이 없으면 폴더 만드는 코드
+                     mkdir(destinationFileDir)
+                    end
             
-                    destinationFilePath=fullfile(destinationDir,destinationFileName);
+                    destinationFilePath=fullfile(destinationFileDir,destinationFileName);
                     if ~isfile(destinationFilePath) % 없으면 copy하는 코드
                         copyfile(sourceFilePath, destinationFilePath);
                     end

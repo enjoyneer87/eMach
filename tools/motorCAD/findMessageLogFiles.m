@@ -28,8 +28,11 @@ function MessageLogFiles = findMessageLogFiles(directory)
             [~, ~, ext] = fileparts(file.name);
             if strcmpi(ext, '.txt')
                 % csv 파일인 경우 경로를 리스트에 추가
+
                 MessageLogFiles = [MessageLogFiles, fullfile(directory, file.name)];
             end
         end
     end
+    MessageLogFilesCheck=contains(MessageLogFiles,"messageLog");
+    MessageLogFiles=MessageLogFiles(MessageLogFilesCheck);
 end

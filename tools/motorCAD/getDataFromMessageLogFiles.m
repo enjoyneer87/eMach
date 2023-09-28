@@ -4,8 +4,12 @@ function CalcCheckStruct = getDataFromMessageLogFiles(MessageLogFiles)
     AutoSaveChecker = ~contains(MessageLogFiles, 'AutoSave');
     NotAutoFileSaveLog = MessageLogFiles(AutoSaveChecker);
 
-    DesignNumberList = fileparts(fileparts(NotAutoFileSaveLog));
+    % 
+    DesignListChecker= contains(NotAutoFileSaveLog,'Design');
+    DesignList       = NotAutoFileSaveLog(DesignListChecker);
+    DesignNumberList = fileparts(fileparts(DesignList));
     DesignNumberList = unique(DesignNumberList);
+
 
     CalcCheckStruct = struct(); % 빈 구조체 생성
 
@@ -20,13 +24,13 @@ function CalcCheckStruct = getDataFromMessageLogFiles(MessageLogFiles)
 
         for MessageLogPerDesignIndex = 1:length(NotAutoFileSaveLogPerDesign)
             lines = readlines(NotAutoFileSaveLogPerDesign{MessageLogPerDesignIndex});
-            [~, messageName, ~] = fileparts(NotAutoFileSaveLogPerDesign);
-            CalcChecker = contains(lines, 'completed');
+            [~, messageName, ~] = fileparts(NotAutoFileSaveLogPerDesign{MessageLogPerDesignIndex});
+            CalcChecker = contains(lines, 'completed' |"GetVariable IMAX_MOTORLAB" );
             CalcLines = lines(CalcChecker);
 
             % 테이블에 데이터 추가
             for StringLineIndex=1:length(CalcLines)
-            newRow= table(messageName(MessageLogPerDesignIndex), {CalcLines{StringLineIndex}}, 'VariableNames', {'LoggName', 'LogContents'});
+            newRow= table({messageName}, {CalcLines{StringLineIndex}}, 'VariableNames', {'LoggName', 'LogContents'});
             CalcCheckStruct.(strcat('field', DesignNumber)).CalcLines = [CalcCheckStruct.(strcat('field', DesignNumber)).CalcLines; newRow];
             end
 
