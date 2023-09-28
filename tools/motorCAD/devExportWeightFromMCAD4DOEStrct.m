@@ -27,7 +27,7 @@ for i=1:length(motFileList4Weight)
                 DOEScaledBuild.(structName).Weight=DesignWeight;
                 % Gear Mass 무게 계산
                 [~,N_d_MotorLAB]=mcad.GetVariable('N_d_MotorLAB');
-%                 TeslaSPlaidDutyCycleTable=defMcadDutyCycleSetting
+                TeslaSPlaidDutyCycleTable=defMcadDutyCycleSetting
                 RefGearRatio = findMcadTableVariableFromAutomationName(TeslaSPlaidDutyCycleTable, 'N_d_MotorLAB');
                 ModifiedGearWeight=calculateModifiedGearMass(7, N_d_MotorLAB,7, RefGearRatio,RefGearMass);
                 ModifiedGearBoxMass=HousingMass+ModifiedGearWeight;

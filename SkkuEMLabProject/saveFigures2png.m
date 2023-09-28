@@ -16,7 +16,7 @@ function saveFigures2png(folderPath)
             figName = titleAx.Title.String;
             if isempty(figName)
             label='figure';
-            figName=[label,'_',num2str(i)];
+            figName=[label,'_',num2str(figureIndex)];
             % figName = 'figure';
             else
             figName = strrep(figName, ' ', '_');        % 공백을 언더바로 변경

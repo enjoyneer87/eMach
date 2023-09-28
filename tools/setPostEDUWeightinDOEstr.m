@@ -5,10 +5,10 @@ function DOEstr=setPostEDUWeightinDOEstr(DOEstr,TeslaSPlaidDutyCycleTable,N_d_Mo
 %     else
 %         DOEScaledBuild=struct();
 %     end
-    fieldnameCellList=fieldnames(DOEstr)
+    fieldnameCellList=fieldnames(DOEstr);
 
     for i=1:length(fieldnameCellList)
-    fieldname=fieldnameCellList{i}
+    fieldname=fieldnameCellList{i};
     RefGearRatio = findMcadTableVariableFromAutomationName(TeslaSPlaidDutyCycleTable, 'N_d_MotorLAB');
     ModifiedGearWeight=calculateModifiedGearMass(7, N_d_MotorLAB,7, RefGearRatio,RefGearMass);
     ModifiedGearBoxMass=HousingMass+ModifiedGearWeight;

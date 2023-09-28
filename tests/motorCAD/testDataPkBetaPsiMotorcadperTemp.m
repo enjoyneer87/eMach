@@ -1,6 +1,7 @@
 %% Function 
 % compMatiFilePsi()
 % plotScatter3TempPost
+addpath(genpath(pwd))
 %% MotorCADData object make temp=65
 HDEVMotorCADTemp65=MotorcadData(12);
 HDEVMotorCADTemp65.motorcadMotPath='Z:\Thesis\Optislang_Motorcad\Validation'
@@ -8,10 +9,12 @@ HDEVMotorCADTemp65.motocadLabPath=strcat('Z:\01_Codes_Projects\git_Motor_System_
 HDEVMotorCADTemp65.proj_path=HDEVMotorCADTemp65.motorcadMotPath;
 HDEVMotorCADTemp65.file_path=HDEVMotorCADTemp65.proj_path;
 HDEVMotorCADTemp65.matfileFindList=what(HDEVMotorCADTemp65.motocadLabPath);
+a=dir(HDEVMotorCADTemp65.file_path)
 HDEVMotorCADTemp65.file_name='HDEV_Model2';
+'HDEV_Model2Temp115.mot'
+'HDEV_Model2.mot'
 
-
-
+inputobj=HDEVMotorCADTemp65
 
 % temp=115
 
@@ -116,7 +119,7 @@ for i = 1:length(figHandles)
     figAxis=figHandle.Children;
 %     figName = strrep(figName, ' ', '_'); % 공백을 언더바로 변경
 %     figName = strrep(figName, '.', ''); % '.'을 제거
-    filename = fullfile(folderPath, [figName 'TempFluxlinkage.png']); % 저장할 파일명과 경로를 합칩니다.
+    filename = fullfile(folderPath, [figName 'ACLossPerCuboid.png']); % 저장할 파일명과 경로를 합칩니다.
     exportgraphics(figHandle, filename, 'Resolution', 600,'BackgroundColor', 'none');
 
 end

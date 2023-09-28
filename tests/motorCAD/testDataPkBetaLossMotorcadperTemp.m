@@ -37,16 +37,20 @@ HDEVMotorCADTemp65.matfileFindList=what(HDEVMotorCADTemp65.motocadLabPath);
 
 HDEVMotorCADTemp65.matfileFindList.mat
 i=9
-HDEVdata.MotorcadMat=load(HDEVMotorCADTemp65.matfileFindList.mat{i})
+
+HDEVdata.MotorcadMat=load(fullfile(HDEVMotorCADTemp65.matfileFindList.path,HDEVMotorCADTemp65.matfileFindList.mat{i}))
 HDEVdata=HDEVdata.compMatiFilePsi()
 HDEVdata=HDEVdata.compMatFileLoss()
 
 
-HDEVdata.LossMap.HysCoeff.CoeffValue;
+HDEVdata.LossMap.HysCoeff.CoeffValue
 
 %% Plot Mat loss from ? (High Fidel)
+inputobj=HDEVMotorCADTemp65;
+
 tempLoss=inputobj.LossParameters_MotorLAB.RawLossMap;
 HDEVMotorCADTemp65=HDEVMotorCADTemp65.exportRawLossMap()
+
 figure(1)
 ax=gca;
 CoeffIndex=2

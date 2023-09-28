@@ -1,4 +1,4 @@
-function arrayData = setMcadTableVariable(variableTable, mcad)
+function setMcadTableVariable(variableTable, mcad)
     % Motor-CAD 변수 값을 설정하는 함수
     % variableTable: 설정할 변수 정보가 담긴 테이블
     % mcad: Motor-CAD ActiveX 객체
@@ -14,11 +14,18 @@ function arrayData = setMcadTableVariable(variableTable, mcad)
         if ischar(variableTable.CurrentValue)
          arrayData                          = convertCharTypeData2ArrayData(variableTable.CurrentValue{rowIndex});
         elseif iscell(variableTable.CurrentValue)
-         arrayData = cell2mat(variableTable.CurrentValue(rowIndex));
+         arrayData=variableTable.CurrentValue{rowIndex};
+         typeofArrayData=class(arrayData);
+         switch typeofArrayData
+             case 'double'
+             case 'char'
+             arrayData     = convertCharTypeData2ArrayData(arrayData);
+         end   
+         % arrayData = cell2mat(variableTable.CurrentValue(rowIndex));
         elseif isnumeric(variableTable.CurrentValue)
          arrayData =   variableTable.CurrentValue(rowIndex);
         end
-
+        
         % 단일 값인 경우
         if length(arrayData) == 1
             % 비어있지 않거나 NaN이 아닌 경우 변수 값을 설정합니다

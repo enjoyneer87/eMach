@@ -42,7 +42,6 @@ FieldsNamesModelParameters=fieldnames(inputobj.ModelParameters_MotorLAB.RawLossM
 mcad = actxserver('MotorCAD.AppAutomation');
 proj=strcat(inputobj.file_path,'\',inputobj.file_name,'.mot');
 refProj=strcat(inputobj.file_path,'\',inputobj.refFile,'.mot');
-
 mcad.LoadFromFile(proj);
 
 [success,ModelBuildPoints_Current_Lab]=mcad.GetVariable('ModelBuildPoints_Current_Lab')
