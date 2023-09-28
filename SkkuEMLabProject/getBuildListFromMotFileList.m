@@ -17,4 +17,5 @@ function BuildList = getBuildListFromMotFileList(MotFileList)
             index = index + 1; % 색인 업데이트
         end
     end
+   BuildList(:,3)= MotFileList(:,1);
 end

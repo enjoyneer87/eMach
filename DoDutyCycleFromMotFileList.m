@@ -13,9 +13,9 @@ for portCaseIndex = 1:1:lastPortCaseIndex
     i = ((spmdIndex-1)*lastPortCaseIndex)+portCaseIndex;
     BuildScaledMotFilePath=readMotFileList{i};
 %     BuildScaledMotFilePath=readMotFileList{i};
-    [FileDir,MotFileName,FileExt]=fileparts(BuildScaledMotFilePath);
-    LabMatFileDir=fullfile(FileDir,MotFileName,'Lab');
-    SatuMapFilePath = fullfile(LabMatFileDir,[MotFileName,'SatuMapExport.mat']);      
+%     [FileDir,MotFileName,FileExt]=fileparts(BuildScaledMotFilePath);
+%     LabMatFileDir=fullfile(FileDir,MotFileName,'Lab');
+%     SatuMapFilePath = fullfile(LabMatFileDir,[MotFileName,'SatuMapExport.mat']);      
 %     [MotorCADGeo,SatuMapData,LabBuildingData]=devExportSatuMapFromMCADLabModel(SatuMapFilePath,mcad(spmdIndex),0);
 %     [SatuMapTable,SatuMapInfo]=createTableFromMCADSatuMapStr(SatuMapData);
 %     [ScaledMachineData,ScaledSatuMapTable] = devScaleTablebyStiepetic(Factor,SatuMapTable,MotorCADGeo);
@@ -25,14 +25,28 @@ for portCaseIndex = 1:1:lastPortCaseIndex
     end
     [~,BuildCheck]=mcad(spmdIndex).GetModelBuilt_Lab();
     if BuildCheck==0
-    mcad(spmdIndex).BuildModel_Lab();
-    mcad(spmdIndex).SaveToFile(BuildScaledMotFilePath);
+    mcad(spmdIndex).SetVariable("LossModel_Lab",2);
+    mcad(spmdIndex).SetVariable("MagnetLossCalc_Lab",0);
+
     end
-    MachineData=tempDefMCADMachineData4Scaling(mcad(spmdIndex));
+    [~,BuildCheck]=mcad(spmdIndex).GetModelBuilt_Lab();
+    
+    if BuildCheck==1
+%     mcad(spmdIndex).BuildModel_Lab();
+%     mcad(spmdIndex).SaveToFile(BuildScaledMotFilePath);
+%     end
+%     MachineData=tempDefMCADMachineData4Scaling(mcad(spmdIndex));
 
     % settingLabBuildTable = defMcadLabBuildSetting()    
     labDriveSettingTable=defMcadLabCalcSetting(); % 이게 잘안된것도 있네    
     mcad(spmdIndex).SetVariable("CurrentSpec_MotorLAB",0);
+    [~,Armature_CoilStyle]=mcad(spmdIndex).GetVariable("Armature_CoilStyle");
+
+    if Armature_CoilStyle==0
+    [~,TurnsCalc_MotorLAB]=mcad(spmdIndex).GetVariable("TurnsRef_MotorLAB");
+    labDriveSettingTable=updateMcadTableVariable(labDriveSettingTable,"TurnsCalc_MotorLAB",TurnsCalc_MotorLAB);        
+    end
+    labDriveSettingTable=updateMcadTableVariable(labDriveSettingTable,"Iinc_MotorLAB",100);
     labDriveSettingTable=updateMcadTableVariable(labDriveSettingTable,"Imax_MotorLAB",900);
 
      
@@ -42,11 +56,14 @@ for portCaseIndex = 1:1:lastPortCaseIndex
             % Vehicle Setting 기어비 변경 
     TeslaSPlaidDutyCycleTable=defMcadDutyCycleSetting;
     setMcadTableVariable(TeslaSPlaidDutyCycleTable,mcad(spmdIndex));
-    RefGearRatio = findMcadTableVariableFromAutomationName(TeslaSPlaidDutyCycleTable, 'N_d_MotorLAB');
+%     RefGearRatio = findMcadTableVariableFromAutomationName(TeslaSPlaidDutyCycleTable, 'N_d_MotorLAB');
     mcad(spmdIndex).SetVariable('N_d_MotorLAB',3);
+    mcad(spmdIndex).SetVariable('SaturationModelMethod_Lab',1);
+   
     mcad(spmdIndex).CalculateDutyCycle_Lab();
     
     mcad(spmdIndex).SaveToFile(BuildScaledMotFilePath);
+    end
 end
 end
 end
