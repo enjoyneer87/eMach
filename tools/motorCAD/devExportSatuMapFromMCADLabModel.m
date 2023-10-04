@@ -1,4 +1,4 @@
-function [MotorCADGeo,SatuMapData,BuildingData]=devExportSatuMapFromMCADLabModel(SatuMapFilePath,mcad,varargin)
+function [MotorCADGeo,satuMpData,BuildingData]=devExportSatuMapFromMCADLabModel(SatuMapFilePath,mcad,varargin)
 
 
 %% Get Lab Model Data
@@ -25,13 +25,10 @@ MotorCADGeo.LabMaxRMSCurrentDensity =calcCurrentDensity(Imaxrms,double(MotorCADG
 
 %% Lab Model Build 정보
 [~,BuildingData.Twdg_MotorLAB]                        =mcad.GetVariable('Twdg_MotorLAB'                     )   ;                             
-% [~,BuildingData.TwindingCalc_MotorLAB]                =mcad.GetVariable('TwindingCalc_MotorLAB'             ) ;                                               
-% [~,BuildingData.WindingAlpha_MotorLAB]                =mcad.GetVariable('WindingAlpha_MotorLAB'             ) ;                                               
+[~,BuildingData.TwindingCalc_MotorLAB]                =mcad.GetVariable('TwindingCalc_MotorLAB'             ) ;                                               
 [~,BuildingData.WindingTemp_ACLoss_Ref_Lab]           =mcad.GetVariable('WindingTemp_ACLoss_Ref_Lab'        )   ;                                                          
-% [~,BuildingData.StatorCopperFreqCompTempExponent]     =mcad.GetVariable('StatorCopperFreqCompTempExponent'  )  ;                                                                      
 [~,BuildingData.Tmag_MotorLAB]                        =mcad.GetVariable('Tmag_MotorLAB'                     )   ;                             
-% [~,BuildingData.TmagnetCalc_MotorLAB]                 =mcad.GetVariable('TmagnetCalc_MotorLAB'              ) ;                   
-% [~,BuildingData.BrTempCoeff_MotorLAB]                 =mcad.GetVariable('BrTempCoeff_MotorLAB'              ) ;                                              
+[~,BuildingData.TmagnetCalc_MotorLAB]                 =mcad.GetVariable('TmagnetCalc_MotorLAB'              ) ;                   
 [~,BuildingData.Airgap_Temperature]                   =mcad.GetVariable('Airgap_Temperature'                )   ;                                          
 [~,BuildingData.Bearing_Temperature_F]                =mcad.GetVariable('Bearing_Temperature_F'             )   ;             
 [~,BuildingData.Bearing_Temperature_R]                =mcad.GetVariable('Bearing_Temperature_R'             )   ;       
@@ -41,13 +38,25 @@ MotorCADGeo.LabMaxRMSCurrentDensity =calcCurrentDensity(Imaxrms,double(MotorCADG
 [~,BuildingData.coeffi.StatorCopperFreqCompTempExponent]     =mcad.GetVariable('StatorCopperFreqCompTempExponent'  ) ;                                                                       
 [~,BuildingData.coeffi.BrTempCoeff_MotorLAB]                 =mcad.GetVariable('BrTempCoeff_MotorLAB'              ) ;                                               
 
-
-
+ % Loss Model
+[~,BuildingData.Resistance_MotorLAB       ]      =mcad.GetVariable('Resistance_MotorLAB');
+[~,BuildingData.EndWindingResistance_Lab  ]      =mcad.GetVariable('EndWindingResistance_Lab');        
+[~,BuildingData.EndWindingInductance_Lab  ]      =mcad.GetVariable('EndWindingInductance_Lab');     
 %% Lab Calc 정보
 [~,BuildingData.PostCalcTemp.TwindingCalc_MotorLAB]                =mcad.GetVariable('TwindingCalc_MotorLAB'             );                                                  
 [~,BuildingData.PostCalcTemp.TmagnetCalc_MotorLAB]                 =mcad.GetVariable('TmagnetCalc_MotorLAB'              );                      
+[~,a]=mcad.GetVariable('CurrentMotFilePath_MotorLAB');
+BuildingData.CurrentMotFilePath_MotorLAB={a};
+BuildingData.T0data.Twdg_MotorLAB=BuildingData.Twdg_MotorLAB;
+BuildingData.T0data.Resistance_MotorLAB=BuildingData.Resistance_MotorLAB;
+BuildingData.T0data.EndWindingResistance_Lab=BuildingData.EndWindingResistance_Lab;
+BuildingData.T0data.ResistanceActivePart=BuildingData.Resistance_MotorLAB-BuildingData.EndWindingResistance_Lab;
 
-%%
+%% Lossparameter
+% RacRdc_MotorLAB
+[~,BuildingData.RacRdc_MotorLAB]                 =mcad.GetVariable('RacRdc_MotorLAB'              );                      
+
+%% SaturationMap Export
 if nargin>2
     SaturationMap_InputDefinition=varargin{1};
 else 
@@ -81,9 +90,9 @@ mcad.SetVariable('LossMap_Speed',             referenceSpeed);
 
 mcad.SetVariable('SaturationMap_ExportFile',            SatuMapFilePath);
 mcad.CalculateSaturationMap();
-SatuMapData=load(SatuMapFilePath);
-SatuMapData.BuildingData=BuildingData;
-SatuMapData.MotorCADGeo=MotorCADGeo;
+satuMpData=load(SatuMapFilePath);
+satuMpData.BuildingData=BuildingData;
+satuMpData.MotorCADGeo=MotorCADGeo;
 clear('mcad','referenceSpeed','Imax','Imaxrms','Imaxpk','ans','SpeedMax_MotorLAB')
 save(SatuMapFilePath,'-mat');
 end

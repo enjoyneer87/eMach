@@ -62,15 +62,17 @@ function [ScaledMachineData,ScaledSatuMapTable] = devScaleTablebyStiepetic(scali
     %% 저항은 별도로 End 부분이랑 Active Part 분리 필요
     % R_Cuco_ref            = SatuMapData.Phase_Resistance_DC_at_20C; % R_Cuco,ref의 값
     R_Cuco_ref              = MachineData.ResistanceActivePart;
-    R_Cuew_ref              = MachineData.ResistanceEndWinding;     % R_Cuew,ref의 값 
-    R_Cuco_ref=scaleResistance(R_Cuco_ref,20,MachineData.ArmatureConductor_Temperature);
-    R_Cuew_ref=scaleResistance(R_Cuew_ref,20,MachineData.ArmatureConductor_Temperature);
+    R_Cuew_ref              = MachineData.EndWindingResistance_Lab;     % R_Cuew,ref의 값 
+    R_Cuco_ref=scaleResistancebyTemp(R_Cuco_ref,20,MachineData.ArmatureConductor_Temperature);
+    R_Cuew_ref=scaleResistancebyTemp(R_Cuew_ref,20,MachineData.ArmatureConductor_Temperature);
     % 20도 기준으로 변경
     ScaledMachineData.ResistanceActivePart        = (k_Winding^2 / k_Radial^2) * (k_Axial * R_Cuco_ref);
-    ScaledMachineData.ResistanceEndWinding        = (k_Winding^2 / k_Radial^2) * (k_Radial* R_Cuew_ref);
+    ScaledMachineData.EndWindingResistance_Lab    = (k_Winding^2 / k_Radial^2) * (k_Radial* R_Cuew_ref);
     ScaledMachineData.Resistance_MotorLAB         = (k_Winding^2 / k_Radial^2) * (k_Axial * R_Cuco_ref + k_Radial * R_Cuew_ref);
     ScaledMachineData.ArmatureWindingResistancePh = (k_Winding^2 / k_Radial^2) * (k_Axial * R_Cuco_ref + k_Radial * R_Cuew_ref);
+    ScaledMachineData.EndWindingInductance_Lab    = k_Radial*MachineData.EndWindingInductance_Lab
     ScaledMachineData.ArmatureConductor_Temperature= 20;
+
     %% unit으로 분리해야할듯 
     
     % Ampere [A]

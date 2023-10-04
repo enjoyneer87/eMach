@@ -53,15 +53,17 @@ function MachineData=tempDefMCADMachineData4Scaling(mcad)
     %%
     
     %% Winding Loss
-    [~,MachineData.ResistanceEndWinding         ]              =mcad.GetVariable('EndWindingResistance_Lab');
-    [~,MachineData.EndWindingInductance_Lab     ]              =mcad.GetVariable('EndWindingInductance_Lab');    
-    [~,MachineData.ArmatureConductor_Temperature]              =mcad.GetVariable('ArmatureConductor_Temperature');      %
+    % Loss Model
     [~,MachineData.Resistance_MotorLAB          ]              =mcad.GetVariable('Resistance_MotorLAB');
+    [~,MachineData.EndWindingResistance_Lab     ]              =mcad.GetVariable('EndWindingResistance_Lab');
+    [~,MachineData.EndWindingInductance_Lab     ]              =mcad.GetVariable('EndWindingInductance_Lab');    
+
+    [~,MachineData.ArmatureConductor_Temperature]              =mcad.GetVariable('ArmatureConductor_Temperature');      %
     [~,MachineData.ACConductorLossProportion_Lab]              =mcad.GetVariable('ACConductorLossProportion_Lab');
     [~,MachineData.NumberOfCuboids_LossModel_Lab]              =mcad.GetVariable('NumberOfCuboids_LossModel_Lab');
      
     % [~,MachineData.ArmatureWindingResistancePh]                =mcad.GetVariable('ArmatureWindingResistancePh');
-    MachineData.ResistanceActivePart=MachineData.Resistance_MotorLAB-MachineData.ResistanceEndWinding;
+    MachineData.ResistanceActivePart=MachineData.Resistance_MotorLAB-MachineData.EndWindingResistance_Lab;
 
     %% Int32 2 double
 

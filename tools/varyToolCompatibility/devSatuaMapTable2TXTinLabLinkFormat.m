@@ -1,7 +1,13 @@
 function LabLinkTxtPath=devSatuaMapTable2TXTinLabLinkFormat(ScaledSatuMapTable,MachineData,varargin)
+%% devSatuaMapTable2TXTinLabLinkFormat -> convertSatuMapTable2TXTinLabLinkFormat
+% Used Function
 % replaceUnderscoresWithSpace
+% changeIronLossCell2LabLinkFormat
 % defMCADLabLinkFortCell
-%
+% replaceTableNamebyCell
+% replaceMCADSatuMapTableName2LabLinkName
+% filterAndSortVarTablebyNameCell
+
 newTable               =replaceUnderscoresWithSpace(ScaledSatuMapTable);
 newTable               = sortrows(newTable,19,"ascend");
 WIndex                 =find(contains(newTable.Properties.VariableUnits,'W')&~strcmp('W',newTable.Properties.VariableUnits));
@@ -19,6 +25,9 @@ table4txt=sortrows(table4txt,'Current Angle',"ascend");
 
 if nargin==3
     LabMatFileDir=varargin{1};
+    if ~isfolder(LabMatFileDir)
+    mkdir(LabMatFileDir)
+    end
     [~,b,~]=fileparts(LabMatFileDir);
     LabLinkTxtPath=fullfile(LabMatFileDir,[b,'LabLink.txt']);
 else    

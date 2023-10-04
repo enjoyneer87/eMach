@@ -33,7 +33,7 @@ dc_voltage = Udc; % example value
     freq_carrier=10000;
     freq_s=freq_carrier;
     freq_mech=rpm/60;
-    rpm=freq2rpm(f_e,HDEVdata.p);
+    rpm=freqE2rpm(f_e,HDEVdata.p);
 
 %  omega (rad/s)
 % omega_mech=freq_mech*2*pi;

@@ -1,4 +1,4 @@
-function scaledResistance = scaleResistance(resistance, temperature, varargin)
+function scaledResistance = scaleResistancebyTemp(resistance, temperature, varargin)
     % resistance: 원래 저항 값
     % temperature: 스케일링할 온도 값
     % varargin: 추가 인자 (alpha, T0)
