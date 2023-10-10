@@ -1,4 +1,4 @@
-function newDesignFolderTable = createNewDesignFolderTable(refMotFilePath, DoETable, Type)
+function newDesignFolderTable = createNewDesignFolderFromTable(refMotFilePath, DoETable, Type)
     % DoETable의 길이를 얻어옴
     numFolders = height(DoETable);
     

@@ -3,9 +3,9 @@ function newDesignFolderTable = createDoECheckTable(refMotFilePath, DoETable, Ty
     MotFileList                       =findMOTFiles(fileparts(refMotFilePath));
     removeAutoSaveFiles(MotFileList)
     if nargin == 3
-        newDesignFolderTable = createNewDesignFolderTable(refMotFilePath, DoETable, Type);
+        newDesignFolderTable = createNewDesignFolderFromTable(refMotFilePath, DoETable, Type);
     elseif nargin == 2
-        newDesignFolderTable = createNewDesignFolderTable(refMotFilePath, DoETable);
+        newDesignFolderTable = createNewDesignFolderFromTable(refMotFilePath, DoETable);
     else
         error('Invalid number of input arguments.');
     end

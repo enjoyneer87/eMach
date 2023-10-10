@@ -6,8 +6,8 @@ end
 % 서브플롯 배치를 적절하게 조정합니다.
 lastfigure=length(subPlotList);
 numFigure=lastfigure-startfigure+1;
-numRows = ceil(sqrt(numFigure));
-numCols = ceil(numFigure / numRows);
+numCols = ceil(sqrt(numFigure));
+numRows = ceil(numFigure / numCols);
 
     figure
     for i = startfigure:lastfigure
