@@ -18,8 +18,8 @@ function plotFitResultWithoutValidation(fitresult, DataSet,plotDatatype)
             hold on
             hold off            
             legend(a, 'Interpolation Surface', [originDqTable.Properties.Description], 'Location', 'NorthEast', 'Interpreter', 'none');
-            xlabel('Id', 'Interpreter', 'none');
-            ylabel('Iq', 'Interpreter', 'none');
+            xlabel('Id pk[A]', 'Interpreter', 'none');
+            ylabel('Iq pk[A]', 'Interpreter', 'none');
             autoZlabel(varName)
             title([replaceUnderscoresWithSpace(varName)]);
             grid on
@@ -33,8 +33,8 @@ function plotFitResultWithoutValidation(fitresult, DataSet,plotDatatype)
 
             view(-40, 30)
             hold off
-            xlabel('Id', 'Interpreter', 'none');
-            ylabel('Iq', 'Interpreter', 'none');
+            xlabel('Id pk[A]', 'Interpreter', 'none');
+            ylabel('Iq pk[A]', 'Interpreter', 'none');
             zlabel('Residual', 'Interpreter', 'none');
             title(replaceUnderscoresWithSpace(varName));
             % title([replaceUnderscoresWithSpace(varName), newline,'RMSE=',num2str(statics.rmse)]);
@@ -47,8 +47,8 @@ function plotFitResultWithoutValidation(fitresult, DataSet,plotDatatype)
             hold on
             hold off
             legend(c, 'Interpolation Surface', [originDqTable.Properties.Description], 'Location', 'NorthEast', 'Interpreter', 'none');
-            xlabel('Id', 'Interpreter', 'none');
-            ylabel('Iq', 'Interpreter', 'none');
+            xlabel('Id pk[A]', 'Interpreter', 'none');
+            ylabel('Iq pk[A]', 'Interpreter', 'none');
             title([replaceUnderscoresWithSpace(varName)]);
             grid on
             formatter_sci
@@ -59,8 +59,8 @@ function plotFitResultWithoutValidation(fitresult, DataSet,plotDatatype)
             hold on
             hold off
             legend(h, 'Interpolation Surface', [originDqTable.Properties.Description], 'Location', 'NorthEast', 'Interpreter', 'none');
-            xlabel('Id', 'Interpreter', 'none');
-            ylabel('Iq', 'Interpreter', 'none');
+            xlabel('Id pk[A]', 'Interpreter', 'none');
+            ylabel('Iq pk[A]', 'Interpreter', 'none');
             zlabel(replaceUnderscoresWithSpace(varName), 'Interpreter', 'none');
             grid on
             formatter_sci
@@ -70,8 +70,8 @@ function plotFitResultWithoutValidation(fitresult, DataSet,plotDatatype)
             hold on
             
             hold off
-            xlabel('Id', 'Interpreter', 'none');
-            ylabel('Iq', 'Interpreter', 'none');
+            xlabel('Id pk[A]', 'Interpreter', 'none');
+            ylabel('Iq pk[A]', 'Interpreter', 'none');
             zlabel([replaceUnderscoresWithSpace(varName), ' residual'], 'Interpreter', 'none');
             grid on
             formatter_sci
@@ -80,8 +80,8 @@ function plotFitResultWithoutValidation(fitresult, DataSet,plotDatatype)
             h = plot(fitresult, [xData, yData], zData, 'Style', 'Contour', 'XLim', xlim, 'YLim', ylim);
             hold on
             hold off
-            xlabel('Id', 'Interpreter', 'none');
-            ylabel('Iq', 'Interpreter', 'none');
+            xlabel('Id pk[A]', 'Interpreter', 'none');
+            ylabel('Iq pk[A]', 'Interpreter', 'none');
             grid on
             formatter_sci
     end

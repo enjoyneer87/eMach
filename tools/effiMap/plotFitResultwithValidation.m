@@ -47,8 +47,8 @@ function plotFitResultwithValidation(fitresult, DataSet,plotDatatype)
             hold off
             % legend(b,[ValidationDqTable.Properties.Description], 'Location', 'NorthEast', 'Interpreter', 'none');
             % legend(b, [originDqTable.Properties.Description], [ValidationDqTable.Properties.Description], 'Location', 'NorthEast', 'Interpreter', 'none');
-            xlabel('Id', 'Interpreter', 'none');
-            ylabel('Iq', 'Interpreter', 'none');
+            xlabel('Id pk[A]', 'Interpreter', 'none');
+            ylabel('Iq pk[A]', 'Interpreter', 'none');
             zlabel('Absolute Error', 'Interpreter', 'none');
             title([replaceUnderscoresWithSpace(varName), newline,'RMSE=',num2str(statics.rmse)]);
             grid on
@@ -61,8 +61,8 @@ function plotFitResultwithValidation(fitresult, DataSet,plotDatatype)
             c(end+1) = plot(xValidation, yValidation, 'bo', 'MarkerFaceColor', 'w');
             hold off
             legend(c, 'Interpolation Surface', [originDqTable.Properties.Description], [ValidationDqTable.Properties.Description], 'Location', 'NorthEast', 'Interpreter', 'none');
-            xlabel('Id', 'Interpreter', 'none');
-            ylabel('Iq', 'Interpreter', 'none');
+            xlabel('Id pk[A]', 'Interpreter', 'none');
+            ylabel('Iq pk[A]', 'Interpreter', 'none');
             title([replaceUnderscoresWithSpace(varName)]);
             grid on
             formatter_sci
@@ -74,8 +74,8 @@ function plotFitResultwithValidation(fitresult, DataSet,plotDatatype)
             h(end+1) = plot3(xValidation, yValidation, zValidation, 'bo', 'MarkerFaceColor', 'w');
             hold off
             legend(h, 'Interpolation Surface', [originDqTable.Properties.Description], [ValidationDqTable.Properties.Description], 'Location', 'NorthEast', 'Interpreter', 'none');
-            xlabel('Id', 'Interpreter', 'none');
-            ylabel('Iq', 'Interpreter', 'none');
+            xlabel('Id pk[A]', 'Interpreter', 'none');
+            ylabel('Iq pk[A]', 'Interpreter', 'none');
             zlabel(replaceUnderscoresWithSpace(varName), 'Interpreter', 'none');
             grid on
             formatter_sci
@@ -89,8 +89,8 @@ function plotFitResultwithValidation(fitresult, DataSet,plotDatatype)
             hold off
             legend(b,['Absolute Error',newline,originDqTable.Properties.Description,'-',ValidationDqTable.Properties.Description], 'Location', 'NorthEast', 'Interpreter', 'none');
             % legend(h, [originDqTable.Properties.Description], [ValidationDqTable.Properties.Description], 'Location', 'NorthEast', 'Interpreter', 'none');
-            xlabel('Id', 'Interpreter', 'none');
-            ylabel('Iq', 'Interpreter', 'none');
+            xlabel('Id pk[A]', 'Interpreter', 'none');
+            ylabel('Iq pk[A]', 'Interpreter', 'none');
             zlabel([replaceUnderscoresWithSpace(varName), ' residual'], 'Interpreter', 'none');
             grid on
             formatter_sci
@@ -101,8 +101,8 @@ function plotFitResultwithValidation(fitresult, DataSet,plotDatatype)
             h(end+1) = plot(xValidation, yValidation, 'bo', 'MarkerFaceColor', 'w');
             hold off
             legend(h, 'Interpolation Surface', [originDqTable.Properties.Description], [ValidationDqTable.Properties.Description], 'Location', 'NorthEast', 'Interpreter', 'none');
-            xlabel('Id', 'Interpreter', 'none');
-            ylabel('Iq', 'Interpreter', 'none');
+            xlabel('Id pk[A]', 'Interpreter', 'none');
+            ylabel('Iq pk[A]', 'Interpreter', 'none');
             grid on
             formatter_sci
     end

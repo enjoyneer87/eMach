@@ -1,9 +1,8 @@
-function MotFileDirList=mkSubFolderFromFileList(FileList,targetDir)
-
+function MotFileDirList=mkMotFileDirListFromFileList(FileList,targetDir)
     folderNameList=fieldnames(FileList.DOE);
-    newSubFolderPath = createSubFolderList(folderNameList, targetDir);
-    for folderIndex=1:length(newSubFolderPath)
-    folderName=newSubFolderPath{folderIndex};    
+    MotFileDirList = createSubFolderList(folderNameList, targetDir);
+    for folderIndex=1:length(MotFileDirList)
+    folderName=MotFileDirList{folderIndex};    
         if ~isfolder(folderName)
             mkdir(folderName)
         end

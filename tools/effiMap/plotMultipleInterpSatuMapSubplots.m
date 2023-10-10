@@ -17,7 +17,7 @@ function plotMultipleInterpSatuMapSubplots(plotFunction, Data4Interp,Data4Interp
         varNames=InputTable.Properties.VariableNames;
         varUnits=InputTable.Properties.VariableUnits;
         if ~isempty(varUnits)
-        nonAmpereIndex=~strcmp(varUnits,'A');
+        nonAmpereIndex=(~strcmp(varUnits,'A')&~strcmp(varUnits,'Amps'))&(~strcmp(varUnits,'EDeg'));
         subPlotList=varNames(nonAmpereIndex);
         else
         subPlotList=varNames;

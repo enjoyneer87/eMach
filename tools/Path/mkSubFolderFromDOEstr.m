@@ -1,4 +1,4 @@
-function DOEstr=mkSubFolderFromFilest(DOEstr)
+function DOEstr=mkSubFolderFromDOEstr(DOEstr)
     % New Folder  Name & Path
     DOEstr=DOEstr;
     parentPath=DOEstr.path;

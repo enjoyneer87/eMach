@@ -13,7 +13,7 @@ function Factor = defScalingFactor(k_radial, k_axial, defineType, varargin)
         end
         Factor.turns_per_coil = varargin{1};  % 턴당 코일 수
         Factor.a_p = varargin{2};  % a_p (병렬 경로)
-    elseif defineType == 2
+    elseif defineType == 2 % 전체턴수 입력
         if nargin < 7
             error('defineType 2에 대한 충분한 입력 인수가 없습니다.');
         end

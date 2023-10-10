@@ -5,13 +5,16 @@ function newFolder = createNewDesignFolder(refMotFilePath, CaseNumber)
     % - CaseNumber: 새로운 폴더의 경우 번호
     % 출력:
     % - newFolder: 생성된 새 폴더의 경로
-
+    if isfile(refMotFilePath)
+    refMotFilePath=SatuMapFilePath;
     % refMotFilePath를 파일 경로 구분자(filesep)를 기준으로 분할
     parts = strsplit(refMotFilePath, filesep);
     
     % 부모 경로는 마지막 두 부분을 제외한 나머지 부분들을 합쳐서 생성
     parentPath = fullfile(parts{1:end-2});
-    
+    else isfolder(refMotFilePath)
+    parentPath=refMotFilePath;
+    end
     % refMotFilePath의 경로, 파일명, 확장자를 추출
     % [filepath, name, ext] = fileparts(refMotFilePath);
     
