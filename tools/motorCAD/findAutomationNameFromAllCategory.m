@@ -1,12 +1,12 @@
-function [filteredTable, MatchedcategoryName] = findAutomationNameFromAllCategory(ActiveXStr, filterCriteria)
-    categoryNameList = fieldnames(ActiveXStr.ActiveXParametersStruct);
+function [filteredTable, MatchedcategoryName] = findAutomationNameFromAllCategory(ActiveXParametersStruct, filterCriteria)
+    categoryNameList = fieldnames(ActiveXParametersStruct);
     filteredTable = table();
     MatchedcategoryName = {};
 
     % Find matching indices for the given filterCriteria
     for categoryIndex = 1:length(categoryNameList)
         categoryName = categoryNameList{categoryIndex};
-        MCADsomeTable = ActiveXStr.ActiveXParametersStruct.(categoryName);    
+        MCADsomeTable = ActiveXParametersStruct.(categoryName);    
         matchingIndices = findMatchingIndex(MCADsomeTable.AutomationName, filterCriteria);
         
         % Filter the table using the matching indices

@@ -1,4 +1,5 @@
 function filteredTable = filterMCADAutomationNameTable(MCADMagneticsTable, filterCriteria)
+    
     % Find matching indices for the given filterCriteria
     matchingIndices = findMatchingIndex(MCADMagneticsTable.AutomationName, filterCriteria);
     

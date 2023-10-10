@@ -36,4 +36,6 @@ function variableTable = getMcadTableVariable(variableTable, mcad)
          variableTable.CurrentValue{rowIndex}=valueFromMCAD;
     end 
     end
+
+    
 end

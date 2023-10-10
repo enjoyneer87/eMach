@@ -12,6 +12,9 @@ function arrayData = convertCharTypeData2ArrayData(charTypeData)
         arrayData = str2double(charTypeData);                % 가져온 데이터를 숫자로 변환하여 변수에 저장
     elseif isa(charTypeData, 'int32')           
         arrayData = double(charTypeData);
+    elseif iscell(charTypeData)
+        arrayCell=charTypeData{:};
+        arrayData=convertCharTypeData2ArrayData(arrayCell);
     else
         arrayData=charTypeData;
     end

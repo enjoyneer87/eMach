@@ -1,7 +1,7 @@
 function hybridACLossModelStr=devCalcHybridACLossModelwithSlotB(mcad)
 %% Define ActiveXParameter
-ActiveXStr=loadMCadActiveXParameter;
-
+ActiveXStr=loadMCadActiveXParameter();
+ActiveXStr=ActiveXStr.ActiveXParametersStruct;
 % filter
 matchingTable = getMCADTableValueFromActiveXstr(ActiveXStr, 'Magnetics', mcad,'FluxDensity','AC');
 n2ac_MotorLAB                   = getMCADTableValueFromActiveXstr(ActiveXStr, 'LossParameters_MotorLAB', mcad,'n2ac_MotorLAB');

@@ -1,5 +1,10 @@
 function  [fitresult, gof,statics]=createFluxLinkageInterp(originDqTable,ValidationDqTable)
+    if isvarofTable(originDqTable,'FluxLinkageD')
     [xData, yData, zData] = prepareSurfaceData( originDqTable.Id_Peak, originDqTable.Iq_Peak, originDqTable.FluxLinkageD );
+    elseif isvarofTable(originDqTable,'Flux_Linkage_D')
+    [xData, yData, zData] = prepareSurfaceData( originDqTable.Id_Peak, originDqTable.Iq_Peak, originDqTable.Flux_Linkage_D );
+    end
+
     % fittype과 옵션을 설정하십시오.
     ft = 'cubicinterp';
     opts = fitoptions( 'Method', 'CubicSplineInterpolant' );
@@ -7,7 +12,13 @@ function  [fitresult, gof,statics]=createFluxLinkageInterp(originDqTable,Validat
     opts.Normalize = 'on';
     [fitresult, gof] = fit( [xData, yData], zData, ft, opts );
     % 검증 데이터와 비교하십시오.
+
+    if isvarofTable(ValidationDqTable,'FluxLinkageD')
     [xValidation, yValidation, zValidation] = prepareSurfaceData(ValidationDqTable.Id_Peak,ValidationDqTable.Iq_Peak,ValidationDqTable.FluxLinkageD );
+    elseif isvarofTable(ValidationDqTable,'Flux_Linkage_D')
+    [xValidation, yValidation, zValidation] = prepareSurfaceData(ValidationDqTable.Id_Peak,ValidationDqTable.Iq_Peak,ValidationDqTable.Flux_Linkage_D );
+    end
+
     residual = zValidation - fitresult( xValidation, yValidation );
     statics.nNaN = nnz( isnan( residual ) );
     residual(isnan( residual )) = [];
@@ -46,7 +57,7 @@ function  [fitresult, gof,statics]=createFluxLinkageInterp(originDqTable,Validat
     formatter_sci
     % 잔차 플로팅.
     figure(2)
-    h = plot( fitresult, [xData, yData], zData, 'Style', 'Residual', 'XLim', xlim, 'YLim', ylim );
+    % h = plot( fitresult, [xData, yData], zData, 'Style', 'Residual', 'XLim', xlim, 'YLim', ylim );
     % 플롯에 검증 데이터를 추가하십시오.
     hold on
     h(end+1) = plot3( xValidation, yValidation, zValidation - fitresult( xValidation, yValidation ), 'bo', 'MarkerFaceColor', 'w' );

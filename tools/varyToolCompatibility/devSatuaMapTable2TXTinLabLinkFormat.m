@@ -1,4 +1,4 @@
-function LabLinkTxtPath=devSatuaMapTable2TXTinLabLinkFormat(ScaledSatuMapTable,MachineData,varargin)
+function LabLinkTxtPath=devSatuaMapTable2TXTinLabLinkFormat(SatuMapTable,MachineData,varargin)
 %% devSatuaMapTable2TXTinLabLinkFormat -> convertSatuMapTable2TXTinLabLinkFormat
 % Used Function
 % replaceUnderscoresWithSpace
@@ -8,18 +8,24 @@ function LabLinkTxtPath=devSatuaMapTable2TXTinLabLinkFormat(ScaledSatuMapTable,M
 % replaceMCADSatuMapTableName2LabLinkName
 % filterAndSortVarTablebyNameCell
 
-newTable               =replaceUnderscoresWithSpace(ScaledSatuMapTable);
-newTable               = sortrows(newTable,19,"ascend");
+% SatuMapTable can be SatumapTable or ScaledSatuMapTable
+
+newTable               =replaceUnderscoresWithSpace(SatuMapTable);
+newTable               = sortrows(newTable,'Phase Advance',"ascend");
+%% Iron Loss 이름 
 WIndex                 =find(contains(newTable.Properties.VariableUnits,'W')&~strcmp('W',newTable.Properties.VariableUnits));
 LossCoefficientCell    =newTable.Properties.VariableNames(WIndex)';
 LabLinkCell            =changeIronLossCell2LabLinkFormat(LossCoefficientCell);
-NewTable               =replaceTableNamebyCell(newTable,LossCoefficientCell,LabLinkCell);
-NewTable               =replaceMCADSatuMapTableName2LabLinkName(NewTable);
+%이름 바꾸기
+changedOriginalTable               =replaceTableNamebyCell(newTable,LossCoefficientCell,LabLinkCell);
+changedOriginalTable               =replaceMCADSatuMapTableName2LabLinkName(changedOriginalTable);
 
+%%
 LabLinkFormatNameCell  =defMCADLabLinkFortCell(MachineData);
-table4txt               =filterAndSortVarTablebyNameCell(NewTable,LabLinkFormatNameCell);
+% table 4 txt
+table4txt               =filterAndMergeTables(changedOriginalTable,LabLinkFormatNameCell,MachineData);
+%
 table4txt=sortrows(table4txt,'Is',"ascend");
-
 table4txt.("Current Angle")=abs(table4txt.("Current Angle"));
 table4txt=sortrows(table4txt,'Current Angle',"ascend");
 

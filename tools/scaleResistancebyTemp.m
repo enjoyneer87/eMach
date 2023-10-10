@@ -22,5 +22,5 @@ function scaledResistance = scaleResistancebyTemp(resistance, temperature, tempI
     end
     
     % 스케일링된 저항 계산
-    scaledResistance = resistance * (1 + WindingAlpha_MotorLAB * (temperature - T0));
+    scaledResistance = resistance .* (1 + WindingAlpha_MotorLAB * (temperature - T0));
 end

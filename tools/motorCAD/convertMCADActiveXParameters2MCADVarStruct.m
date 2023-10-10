@@ -1,8 +1,8 @@
-function convertMCADActiveXParameters2MCADVarStruct(categoryName)
+function myStruct=convertMCADActiveXParameters2MCADVarStruct(categoryName)
     % categoryName을 구조체 이름으로 사용하여 구조체 필드에 접근합니다.
-    ActiveXParametersStruct=loadMCadActiveXParameter();
-    ActiveXParametersStruct=ActiveXParametersStruct.ActiveXParametersStruct;
-    structFieldName = ActiveXParametersStruct.(categoryName).AutomationName;
+    ActiveXStr=loadMCadActiveXParameter();
+    ActiveXStr=ActiveXStr.ActiveXParametersStruct;
+    structFieldName = ActiveXStr.(categoryName).AutomationName;
     
     % categoryName을 사용하여 구조체를 생성하고 필드에 값을 할당합니다.
     myStruct = struct();
@@ -11,7 +11,7 @@ function convertMCADActiveXParameters2MCADVarStruct(categoryName)
     end
     
     % categoryName을 구조체의 이름으로 사용하여 구조체를 생성합니다.
-    eval([categoryName ' = myStruct;']);
+    % eval([categoryName ' = myStruct;']);
     
     % categoryName을 반환합니다.
 end

@@ -1,7 +1,7 @@
-function h = plotDifferenceBetweenTwoMCADElec(Mat_File_Path1, Mat_File_Path2, objectName, errorType, addText)
+function h = plotDifferenceBetweenTwoMCADElec(mcadMatData1, mcadMatData2, objectName, errorType, addText)
     % 기본적으로 절대 오차를 사용
     if nargin < 4
-        errorType = 1;
+        errorType = 0;
     end
     
     % 기본적으로 등고선 텍스트를 추가
@@ -10,13 +10,13 @@ function h = plotDifferenceBetweenTwoMCADElec(Mat_File_Path1, Mat_File_Path2, ob
     end
 
     % 첫 번째 데이터셋 로드
-    mcadMatData1 = load(Mat_File_Path1);
+    % mcadMatData1 = load(Mat_File_Path1);
     Speed1 = mcadMatData1.Speed;
     Shaft_Torque1 = mcadMatData1.Shaft_Torque;
     data1 = mcadMatData1.(objectName);
 
     % 두 번째 데이터셋 로드
-    mcadMatData2 = load(Mat_File_Path2);
+    % mcadMatData2 = load(Mat_File_Path2);
     Speed2 = mcadMatData2.Speed;
     Shaft_Torque2 = mcadMatData2.Shaft_Torque;
     data2 = mcadMatData2.(objectName);
@@ -51,14 +51,16 @@ function h = plotDifferenceBetweenTwoMCADElec(Mat_File_Path1, Mat_File_Path2, ob
     % 등고선에 색상 추가 (contourf 함수 사용)
     contourf(Speed1, Shaft_Torque1, dataDiff, cntrs, 'EdgeColor', 'none', 'DisplayName', ['Difference in ' replaceUnderscoresWithSpace(objectName)]);
 
-    % 등고선 텍스트 추가
+    % % 등고선 텍스트 추가
     if addText
         [~, h(2)] = contour3(Speed1, Shaft_Torque1, dataDiff, cntrs, 'EdgeColor', 'k', 'ShowText', 'on', 'TextStep', 4, 'DisplayName', 'Contour3');
+    else
+        [~, h(2)] = contour3(Speed1, Shaft_Torque1, dataDiff, cntrs, 'EdgeColor', 'k', 'ShowText', 'off', 'TextStep', 4, 'DisplayName', 'Contour3');
     end
 
     % 플롯 양식 설정
     xlabel('Speed, [RPM]');
-    ylabel('Torque, [Nm]');
+    ylabel('Shaft Torque, [Nm]');
     title(['Difference in ' replaceUnderscoresWithSpace(objectName) ' (' errorTypeName ')']);
     colorbar('Location', 'eastoutside');
     legend(['Difference in ' replaceUnderscoresWithSpace(objectName)], 'Location', 'northeast');

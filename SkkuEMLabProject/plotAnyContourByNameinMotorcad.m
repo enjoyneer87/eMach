@@ -1,6 +1,11 @@
-function data=plotAnyContourByNameinMotorcad(Mat_File_Path,objectName)
+function data=plotAnyContourByNameinMotorcad(Mat_File_Path,objectName,plotType)
     %% 데이터 로드
+    if ischar(Mat_File_Path)&&contains(Mat_File_Path,'.mat')
     data       =            load(Mat_File_Path)                ; % MAT 파일 로드
+    elseif isstruct(Mat_File_Path)
+        data=Mat_File_Path;
+    end
+
     Speed               =            data.Speed                ; % 속도
     Shaft_Torque        =            data.Shaft_Torque         ; % 축 토크         
     Efficiency          =            data.(objectName)           ; % 효율     
@@ -13,7 +18,7 @@ function data=plotAnyContourByNameinMotorcad(Mat_File_Path,objectName)
 
     % 효율성 등고선 플롯
      h = zeros(1,3);
-     [~,h(1)]=contourf(Speed, Shaft_Torque, Efficiency, 'EdgeColor', 'none', 'DisplayName', objectName);
+    [~,h(1)]=contourf(Speed, Shaft_Torque, Efficiency, 'EdgeColor', 'none', 'DisplayName', objectName);
     hold on
     % [~, ~] = contour3(Speed, Shaft_Torque, Efficiency, cntrs, 'EdgeColor', 'k', 'ShowText', 'on', 'TextStep', 2);
     [~,h(2)]  = contour3(Speed, Shaft_Torque, Efficiency, 'EdgeColor', 'k', 'ShowText', 'on', 'TextStep', 2);
@@ -22,17 +27,18 @@ function data=plotAnyContourByNameinMotorcad(Mat_File_Path,objectName)
     % contourf(Speed, Shaft_Torque, Efficiency, 'levels', 1000, 'EdgeColor', 'none', 'DisplayName', objectName);
 
 
-    contourf(Speed, Shaft_Torque, Efficiency,  'EdgeColor', 'none', 'DisplayName', objectName);
-    hold on
-    % [~, ~] = contour3(Speed, Shaft_Torque, Efficiency, cntrs, 'EdgeColor', 'k', 'ShowText', 'on', 'TextStep', 2);
-        [~, ~] = contour3(Speed, Shaft_Torque, Efficiency, 'EdgeColor', 'k', 'ShowText', 'on', 'TextStep', 2);
-
-    
+    % contourf(Speed, Shaft_Torque, Efficiency,  'EdgeColor', 'none', 'DisplayName', objectName);
+    % hold on
+    % % [~, ~] = contour3(Speed, Shaft_Torque, Efficiency, cntrs, 'EdgeColor', 'k', 'ShowText', 'on', 'TextStep', 2);
+    % [~, ~] = contour3(Speed, Shaft_Torque, Efficiency, 'EdgeColor', 'k', 'ShowText', 'on', 'TextStep', 2);
+    % 
+    % 
     %% Plot 양식
     % clim([80 100]);
     xlabel('Speed, [RPM]'); 
     ylabel('Torque, [Nm]'); 
     set(gcf, 'renderer', 'zbuffer');
+    title([replaceUnderscoresWithSpace(objectName)]);
 
 
     %% 컬러맵 설정
@@ -68,6 +74,9 @@ function data=plotAnyContourByNameinMotorcad(Mat_File_Path,objectName)
     formatter_sci;
     view(0,90); % 시야각 조절
     
+    if nargin<3    
+    title('')
+    end
     
     %% (예시) 기존 그래프 설정 로드
     % InfoMat=load('EffimapMeasureInfo.mat')

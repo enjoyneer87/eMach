@@ -1,6 +1,6 @@
 function LabLinkFormatNameCell=defMCADLabLinkFortCell(varargin)
     LabLinkFormatNameCell = {
-    'Is'
+    'Is',
     'Current Angle',
     'Flux Linkage D',
     'Flux Linkage Q',
@@ -34,20 +34,24 @@ function LabLinkFormatNameCell=defMCADLabLinkFortCell(varargin)
   if nargin > 0
       if ~isempty(varargin{1})
           MachineData = varargin{1};
+          CuboidName=  LabLinkFormatNameCell{end};
+          strIndex=strfind(CuboidName, '(C');
+          lastCuboidIndex=CuboidName(strIndex+2:end-1);
+          lastCuboidIndex=str2double(lastCuboidIndex);
           if isfield(MachineData,'NumberOfCuboids_LossModel_Lab')
-             NumberofCuboids=MachineData.NumberOfCuboids_LossModel_Lab;
-             CuboidName=  LabLinkFormatNameCell{end};
-             strIndex=strfind(CuboidName, '(C');
-             lastCuboidIndex=CuboidName(strIndex+2:end-1);
-             lastCuboidIndex=str2num(lastCuboidIndex);
-             for i=lastCuboidIndex+1:length(convertCharTypeData2ArrayData(MachineData.ACConductorLossProportion_Lab))
-                newVariableName = ['AC Copper Loss', ' (C', num2str(i), ')'];
-                LabLinkFormatNameCell{end+1} = newVariableName;
-             end
+             totalCuboidNumber=MachineData.NumberOfCuboids_LossModel_Lab;
+             % totalCuboidNumber=length(convertCharTypeData2ArrayData(MachineData.ACConductorLossProportion_Lab));
+          else ,isnumeric(MachineData)
+             totalCuboidNumber=MachineData;
           end
+         for i=lastCuboidIndex+1:totalCuboidNumber
+            newVariableName = ['AC Copper Loss', ' (C', num2str(i), ')'];
+            LabLinkFormatNameCell{end+1} = newVariableName;
+         end
       end
   end
-             
+
+       
 
 
 % 
