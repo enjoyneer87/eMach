@@ -41,6 +41,7 @@ engineerList                                     ={engineerList.name}';
     %%  모든 MotFile로부터 Build Check후 mat파일로 export
     if ~isempty(MotFileList)
         BuildList                                   = getBuildListFromMotFileList(MotFileList);
+        BuildList=makeNewBuildListWithCheckLabBuild(BuildList); 
         BuilListMatFilePath=fullfile(parentPath,"BuildList.mat");
         disp([BuilListMatFilePath,'output is Str Cell List'])
         save(BuilListMatFilePath,"BuildList");

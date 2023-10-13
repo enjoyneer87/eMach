@@ -9,13 +9,14 @@ function BuildList = getBuildListFromMotFileList(MotFileList)
             if contains(modifiedData{cellRowIndex}, 'LabModel_Saturation_Date')
                 BuildList{index, 1} = modifiedData{cellRowIndex}; % 색인 위치에 값을 할당
             end
-            if contains(modifiedData{cellRowIndex}, 'CurrentMotFilePath_MotorLAB')
-                BuildList{index, 2} = modifiedData{cellRowIndex}; % 색인 위치에 값을 할당
-            end
+            % if contains(modifiedData{cellRowIndex}, 'CurrentMotFilePath_MotorLAB')
+            %     BuildList{index, 2} = modifiedData{cellRowIndex}; % 색인 위치에 값을 할당
+            %     BuildList{index, 2} = MotFileList{cellRowIndex}; % 색인 위치에 값을 할당
+            % end
         end
         if any(~cellfun(@isempty, BuildList(index, :))) % 현재 행에 값이 있는 경우에만 인덱스 증가
             index = index + 1; % 색인 업데이트
         end
     end
-   BuildList(:,3)= MotFileList(:,1);
+   BuildList(:,3)= MotFileList;
 end

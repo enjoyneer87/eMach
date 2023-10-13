@@ -5,14 +5,18 @@ path=FileList.path;
             BuildMotFileNameList             =[];  
             BuildListMotFilePathList         =[];      
             BuildMotFileDirList              =[];  
-   FileList.BuildMotResultDirList            =[];  
-   FileList.BuildMotResultLabDirList         =[]; 
-   FileList.BuildDOE                         =[];
+   FileList.MotResultDirList                 =[];  
+   FileList.MotResultLabDirList              =[]; 
+   FileList.DOE                              =[];
 
 %% 
     [BuildListMatPath,BuildList]=checkBuildList(path,1);  % check Saturation_Dat & CurrentMotFilePath &MotFileList(:,3)
+  
+    % BuildList = getBuildListFromMotFileList(FileList.MotFilePathList');
+    % BuildList=makeNewBuildListWithCheckLabBuild(BuildList);
     BuildCheck = getBuildListResultFromBuildList(BuildList);
   
+
 %% 
 
     for BuildListIndex=1:height(BuildCheck)
@@ -21,14 +25,24 @@ path=FileList.path;
             BuildListMotFilePathList{end+1} = BuildCheck{BuildListIndex, 5};
             BuildMotFileDirList{end+1}      = BuildCheck{BuildListIndex, 6};
         end
-    end
-    FileList.BuildListMatPath           = BuildListMatPath';
-    FileList.BuildMotFileNameList       = BuildMotFileNameList';
-    FileList.BuildListMotFilePathList   = BuildListMotFilePathList';
-    FileList.BuildMotFileDirList        = BuildMotFileDirList';
-    FileList.BuildMotResultDirList      = getMotResultDirFromMotFilePath(BuildListMotFilePathList)';
-    FileList.BuildMotResultLabDirList   = getMotResultLabDirFromMotFilePath(BuildListMotFilePathList)';
+    % end
+    % 
+    % [motFileList,~,~,~]=getDriveMatList(FileList.path);
+    % [MotFileDirList,fileNameList,~]=fileparts(motFileList);
+    % 
+    % MotNameIndex=contains(BuildMotFileNameList,fileNameList);
+    % CheckMotFileList=motFileList(MotNameIndex);
+    % if length(CheckMotFileList)==length(BuildListMotFilePathList)
+            
+    % FileList.BuildListMatPath           = BuildListMatPath';
+    FileList.MotFileNameList            = BuildMotFileNameList';
+    FileList.MotFilePathList            = BuildListMotFilePathList';
+    FileList.MotFileDirList             = BuildMotFileDirList';
+    FileList.MotResultDirList           = getMotResultDirFromMotFilePath(BuildListMotFilePathList)';
+    FileList.MotResultLabDirList        = getMotResultLabDirFromMotFilePath(BuildListMotFilePathList)';
     FileList.DOE                        =createDOEstructFromMotFileList(BuildListMotFilePathList);
     % FileList.MotResultLabDirList=allSubfolders(LabFolderIndex);
-
+    % else
+        % error('Build안된게 포함되어있습니다')
+    end
 end

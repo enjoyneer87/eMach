@@ -4,16 +4,16 @@ function result = getBuildListResultFromBuildList(BuildList)
     %% 결과가 있는   
     % BuildData4Check 추출
     BuildDate4Check = strsplit(BuildList{caseNum, 1}, '=');
-    buildListMotFilePath = strsplit(BuildList{caseNum, 2}, '=');
+    buildListMotFilePath = strsplit(BuildList{caseNum, 3}, '=');
 
     % motFileName, motFileDir 추출
     % partsNameBuildList = strsplit(BuildList{caseNum, 2}, filesep);
-    if length(buildListMotFilePath) > 1 && ~isempty(buildListMotFilePath{2})
+    if ~isempty(buildListMotFilePath{1})
 
         BuildDate = BuildDate4Check{end};
-        buildListMotFilePath            = buildListMotFilePath{2};
+        buildListMotFilePath            = buildListMotFilePath{1};
         buildListMotFileDir             = fileparts(buildListMotFilePath);
-        [~, buildListMotFileName, ~]    = fileparts(BuildList{caseNum, 2});
+        [~, buildListMotFileName, ~]    = fileparts(BuildList{caseNum, 3});
         result{end+1, 1} = BuildDate;
         result{end, 5} = buildListMotFilePath;
         result{end, 6} = buildListMotFileDir;

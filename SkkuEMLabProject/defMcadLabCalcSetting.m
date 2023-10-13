@@ -16,6 +16,8 @@ function settingTable = defMcadLabCalcSetting()
     input.StatorCopperFreqCompTempExponent           = 1;        % Temperatures - Stator Winding Temperature - AC Loss Temperature Scailing - Temperature Exponent
     input.TmagnetCalc_MotorLAB                       = 65;       % Temperatures - Magnet Temperature - Calculation temperature
 
+    %
+    input.CurrentSpec_MotorLAB                      =0;
     % Elecromagnetic
     input.EmagneticCalcType_Lab                     = 1;        % Calculation - Calculation Type : Efficiency Map
     input.SmoothMap_MotorLAB                        = true;     % Calculation - Options - Smooth Map : "On"
@@ -58,6 +60,7 @@ function settingTable = defMcadLabCalcSetting()
         "Imax_RMS_MotorLAB"                            , input.Imax_RMS_MotorLAB;
         "Iinc_MotorLAB"                                , input.Iinc_MotorLAB;
         "Imin_RMS_MotorLAB"                            , input.Imin_RMS_MotorLAB;
+        "CurrentSpec_MotorLAB"                         , input.CurrentSpec_MotorLAB;
     };
     
     % 조건에 따라 필요한 변수 추가

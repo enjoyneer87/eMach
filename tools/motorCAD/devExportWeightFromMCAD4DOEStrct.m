@@ -1,4 +1,4 @@
-function DOEScaledBuild = devExportWeightFromMCAD4DOEStrct(motFileList4Weight,TeslaSPlaidDutyCycleTable,RefGearMass,HousingMass, mcad,varagin)
+function DOEScaledBuild = devExportWeightFromMCAD4DOEStrct(motFileList,RefGearMass,HousingMass, mcad,varagin)
 
 if nargin==6
     DOEScaledBuild=varagin;
@@ -6,8 +6,8 @@ else
     DOEScaledBuild=struct();
 end
 
-for i=1:length(motFileList4Weight)
-    str = motFileList4Weight{i};
+for i=1:length(motFileList)
+    str = motFileList{i};
     startIndex = strfind(str, 'Design') + length('Design');
     if ~isempty(startIndex)
         startIndex=startIndex(end);
@@ -22,12 +22,12 @@ for i=1:length(motFileList4Weight)
             % 빈 구조체 생성 및 DOE 구조체에 추가
 
             % MotorCAd 호출 
-                mcad.LoadFromFile(motFileList4Weight{i})
+                mcad.LoadFromFile(motFileList{i})
                 DesignWeight=getMCADWeight(mcad);
                 DOEScaledBuild.(structName).Weight=DesignWeight;
                 % Gear Mass 무게 계산
                 [~,N_d_MotorLAB]=mcad.GetVariable('N_d_MotorLAB');
-                TeslaSPlaidDutyCycleTable=defMcadDutyCycleSetting
+                TeslaSPlaidDutyCycleTable=defMcadDutyCycleSetting;
                 RefGearRatio = findMcadTableVariableFromAutomationName(TeslaSPlaidDutyCycleTable, 'N_d_MotorLAB');
                 ModifiedGearWeight=calculateModifiedGearMass(7, N_d_MotorLAB,7, RefGearRatio,RefGearMass);
                 ModifiedGearBoxMass=HousingMass+ModifiedGearWeight;

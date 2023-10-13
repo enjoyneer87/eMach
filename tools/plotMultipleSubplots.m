@@ -5,11 +5,16 @@ function plotMultipleSubplots(plotFunction, matList, subPlotList, lastfigure,sta
         startfigure = 1;
     end
     if nargin <3
-    matData1=load(matList.ElecMatFileList{1});
-    matData2=load(matList.ElecMatFileList{2});
-    subPlotList=fieldnames(matData1);
+        if ischar(matList)
+            % |length(matList)<2
+        matData1=load(matList);
+        subPlotList=fieldnames(matData1);
+        else
+        matData1=load(matList.ElecMatFileList{1});
+        matData2=load(matList.ElecMatFileList{2});
+        subPlotList=fieldnames(matData1);
+        end
     end
-    
     %% deleteCell
     subPlotList = removeCellwithMatchingStr(subPlotList, 'Sleeve_Loss');
     subPlotList = removeCellwithMatchingStr(subPlotList, 'Coefficient');      
@@ -30,10 +35,15 @@ function plotMultipleSubplots(plotFunction, matList, subPlotList, lastfigure,sta
         typeStrt=rmfield(typeStrt,"LossCell");
     end
     % Other cell
-    otherCell = removeCellwithMatchingStr(subPlotList, 'Loss');      
+    otherCell = removeCellwithMatchingStr(subPlotList, 'Loss');    
+    if ischar(matList)
+    charCell = getVarNameFromMatfileByType(matList,'char');
+    varsStrWithHeight1 = getVariablesHeight1FromMatFile(matList);
+    else
     charCell = getVarNameFromMatfileByType(matList(1).ElecMatFileList{1},'char');
-    [uniqueStringsInCell1, uniqueStringsInCell2, nonUniqueStrings] =findUniqueAndNonUniqueStrings(otherCell,charCell);
     varsStrWithHeight1 = getVariablesHeight1FromMatFile(matList(1).ElecMatFileList{1});
+    end
+    [uniqueStringsInCell1, uniqueStringsInCell2, nonUniqueStrings] =findUniqueAndNonUniqueStrings(otherCell,charCell);
     [uniqueStringsInCell1,matDataFieldName,c]=findUniqueAndNonUniqueStrings(uniqueStringsInCell1,varsStrWithHeight1);
     otherCell = removeCellwithMatchingStr(uniqueStringsInCell1, 'Temp');      
     otherCell = removeCellwithMatchingStr(otherCell, 'Speed');              

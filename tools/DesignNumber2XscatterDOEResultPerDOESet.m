@@ -19,8 +19,8 @@ function [legend_colorsh1,legend_colorsh2]=DesignNumber2XscatterDOEResultPerDOES
     end
 
     figure(1)
-    zlabel('Motor Active Weight[kg]');
-    ylabel('WLTP3 Motor Engery Consumption [Wh]');
+    ylabel('Motor Active Weight[kg]');
+    zlabel('WLTP3 Motor Engery Consumption [Wh]');
     xlabel('Design Number');
 
     for i = 1:length(Fieldlist1)
@@ -52,8 +52,8 @@ function [legend_colorsh1,legend_colorsh2]=DesignNumber2XscatterDOEResultPerDOES
 
     figure(2)
     xlabel('Design Number');
-    zlabel('Motor and GearBox Weight[kg]');
-    ylabel('WLTP3 Motor Engery Consumption [Wh]');
+    ylabel('Motor and GearBox Weight[kg]');
+    zlabel('WLTP3 Motor Engery Consumption [Wh]');
 
     for i = 1:length(Fieldlist1)
         FieldName = Fieldlist1{i};
