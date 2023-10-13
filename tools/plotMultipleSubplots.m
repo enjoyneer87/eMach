@@ -9,16 +9,40 @@ function plotMultipleSubplots(plotFunction, matList, subPlotList, lastfigure,sta
             % |length(matList)<2
         matData1=load(matList);
         subPlotList=fieldnames(matData1);
+        elseif isstruct(matList)
+        matData1=matList;
+        subPlotList=fieldnames(matData1);
         else
         matData1=load(matList.ElecMatFileList{1});
         matData2=load(matList.ElecMatFileList{2});
         subPlotList=fieldnames(matData1);
         end
     end
+    %%
+    if ischar(matList)
+    charCell = getVarNameFromMatfileByType(matList,'char');
+    varsStrWithHeight1 = getVariablesHeight1FromMatFile(matList);
+    elseif isstruct(matList)
+    charCell = getVarNameFromMatData(matList,'char');
+    varsStrWithHeight1=getVariablesHeight1FromMatData(matList); 
+    else
+    charCell = getVarNameFromMatfileByType(matList(1).ElecMatFileList{1},'char');
+    varsStrWithHeight1 = getVariablesHeight1FromMatFile(matList(1).ElecMatFileList{1});
+    end
     %% deleteCell
     subPlotList = removeCellwithMatchingStr(subPlotList, 'Sleeve_Loss');
     subPlotList = removeCellwithMatchingStr(subPlotList, 'Coefficient');      
-        % Voltage Cell
+    subPlotList = removeCellwithMatchingStr(subPlotList, 'rms');      
+    subPlotList = removeCellwithMatchingStr(subPlotList, 'RMS');      
+    subPlotList = removeCellwithMatchingStr(subPlotList, 'Unit');      
+    subPlotList = removeCellwithMatchingStr(subPlotList, 'Constant');      
+    subPlotList = removeCellwithMatchingStr(subPlotList, 'Line');    
+    subPlotList = removeCellwithMatchingStr(subPlotList, 'var');    
+    subPlotList = removeCellwithMatchingStr(subPlotList, 'Temp');      
+    subPlotList = removeCellwithMatchingStr(subPlotList, 'Speed');              
+    subPlotList = removeCellwithMatchingStr(subPlotList, 'Frequency');              
+    subPlotList = removeCellwithMatchingStr(subPlotList, 'Idc');              
+    % Voltage Cell
     typeStrt.voltageCell = getCellwithMatchingStr(subPlotList, 'V');
     if isempty(typeStrt.voltageCell)
         typeStrt=rmfield(typeStrt,"voltageCell");
@@ -34,45 +58,46 @@ function plotMultipleSubplots(plotFunction, matList, subPlotList, lastfigure,sta
     if isempty(typeStrt.LossCell)
         typeStrt=rmfield(typeStrt,"LossCell");
     end
-    % Other cell
-    otherCell = removeCellwithMatchingStr(subPlotList, 'Loss');    
-    if ischar(matList)
-    charCell = getVarNameFromMatfileByType(matList,'char');
-    varsStrWithHeight1 = getVariablesHeight1FromMatFile(matList);
-    else
-    charCell = getVarNameFromMatfileByType(matList(1).ElecMatFileList{1},'char');
-    varsStrWithHeight1 = getVariablesHeight1FromMatFile(matList(1).ElecMatFileList{1});
+    %% TorqueCell
+    typeStrt.TorqueCell= getCellwithMatchingStr(subPlotList, 'torque');
+    if isempty(typeStrt.TorqueCell)
+        typeStrt=rmfield(typeStrt,"TorqueCell");
     end
-    [uniqueStringsInCell1, uniqueStringsInCell2, nonUniqueStrings] =findUniqueAndNonUniqueStrings(otherCell,charCell);
-    [uniqueStringsInCell1,matDataFieldName,c]=findUniqueAndNonUniqueStrings(uniqueStringsInCell1,varsStrWithHeight1);
-    otherCell = removeCellwithMatchingStr(uniqueStringsInCell1, 'Temp');      
-    otherCell = removeCellwithMatchingStr(otherCell, 'Speed');              
-    typeStrt.otherCell = removeCellwithMatchingStr(otherCell, 'V');      
-    if isempty(typeStrt.otherCell)
-        typeStrt=rmfield(typeStrt,"otherCell");
-    end
+    %% Other cell
 
+    [otherCell, ~, ~]                               =findUniqueAndNonUniqueStrings(subPlotList,typeStrt.voltageCell);
+    [otherCell, ~, ~]                               =findUniqueAndNonUniqueStrings(otherCell,typeStrt.IronLossCell);
+    [otherCell, ~, ~]                               =findUniqueAndNonUniqueStrings(otherCell,typeStrt.LossCell);
+    [otherCell, ~, ~]                               =findUniqueAndNonUniqueStrings(otherCell,typeStrt.TorqueCell);
+    [typeStrt.otherCell, string2Delete, ~]          =findUniqueAndNonUniqueStrings(otherCell,varsStrWithHeight1);
+    %% string2Delete
+    [typeStrt.voltageCell, ~, ~]              =findUniqueAndNonUniqueStrings(typeStrt.voltageCell, string2Delete);
+    [typeStrt.IronLossCell, ~, ~]             =findUniqueAndNonUniqueStrings(typeStrt.IronLossCell,string2Delete);
+    [typeStrt.LossCell, ~, ~]                 =findUniqueAndNonUniqueStrings(typeStrt.LossCell,    string2Delete);  
+    [typeStrt.TorqueCell, ~, ~]               =findUniqueAndNonUniqueStrings(typeStrt.TorqueCell,    string2Delete);  
     %% 
     % importMatfile(matList.ElecMatFileList{1}, matDataFieldName)
     % matData1=rmfieldByType(matData1,'char');
     % matData2=rmfieldByType(matData2,'char');
     % varNamesCell = getVariablesHeight1FromMatFile(matFileName)
-    %% figure 생성
+    %% Data입력
     typestrtNames=fieldnames(typeStrt);
     for cellIndex=1:length(typestrtNames)
         cellName=typestrtNames{cellIndex};        
-        if ~isempty(typeStrt.(cellName))             
+        if ~isempty(typeStrt.(cellName))          
             structbyType.(cellName) = filterFieldwithStrCellFromStruct(matData1,typeStrt.(cellName) );
+            structbyType.(cellName) = filterFieldNanorZeros(structbyType.(cellName));
             structbyType.(cellName).Speed=matData1.Speed;
-            structbyType.(cellName).Shaft_Torque=matData1.Shaft_Torque;
+            structbyType.(cellName).Shaft_Torque=matData1.Shaft_Torque;               
             structbyTypeNames=fieldnames(structbyType);     
         end
     end
-      
+    %% figure 생성
     for strctIndex=1:length(structbyTypeNames)
         structName=structbyTypeNames{strctIndex};
-        cellName=typestrtNames{strctIndex};
-        plotSubPlotTNContour(plotFunction,structbyType.(cellName),typeStrt.(cellName)); 
+        % cellName=typestrtNames{strctIndex};
+        [~, ~, nonUniqueStrings] = findUniqueAndNonUniqueStrings(fieldnames(structbyType.(structName)), typeStrt.(structName));
+        plotSubPlotTNContour(plotFunction,structbyType.(structName),nonUniqueStrings); 
     end
 
     % plotSubPlotTNContour
