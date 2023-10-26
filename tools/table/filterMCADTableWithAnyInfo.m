@@ -11,12 +11,12 @@ function matchingRows2Table = filterMCADTableWithAnyInfo(MCADTable, filterCriter
             if iscategorical(MCADTable.(FilterVar))
             col1 = MCADTable.(FilterVar);
             col1=cellstr(col1);            
-            isNonMatching = cellfun(@(x) ~any(strcmp(x, filterCriteria)), col1);                 
+            isNonMatching = cellfun(@(x) ~any(contains(x, filterCriteria)), col1);                 
             matchingRows2Table = MCADTable(isNonMatching, :);
             matchingRows2Table.(FilterVar)=categorical(matchingRows2Table.(FilterVar));     
             else
             col1 = MCADTable.(FilterVar);
-            isNonMatching = cellfun(@(x) ~any(strcmp(x, filterCriteria)), col1);                 
+            isNonMatching = cellfun(@(x) ~any(contains(x, filterCriteria)), col1);                 
             matchingRows2Table = MCADTable(isNonMatching, :);    
             end
     end

@@ -1,7 +1,9 @@
 function matchingIndices = findMatchingIndex(cellNameorCategorical, str)
     % 주어진 조건에 따라 인덱스를 찾는 함수
     matchingIndices = [];
-    
+    if ~iscell(cellNameorCategorical)
+        cellNameorCategorical=cellstr(cellNameorCategorical);
+    end
     if iscell(cellNameorCategorical) || iscategorical(cellNameorCategorical)
         for i = 1:numel(cellNameorCategorical)
             if iscell(cellNameorCategorical)
