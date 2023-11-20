@@ -13,8 +13,8 @@ tempMagLayer=length(MagArea);
         % 오차 범위 내에 있는 행을 선택하여 필터링
         filteredT = MagnetTable(logicalIndices, :);
         MagStruct(LayerIndex).MagnetTable=filteredT;
-        for MagnetIndex=1:height(filteredT.CentroidPosition)
-        MagnetR(MagnetIndex)=filteredT.CentroidPosition(MagnetIndex).R;
+        for MagnetIndex=1:height(filteredT)
+        MagnetR(MagnetIndex)=filteredT.CentroidR(MagnetIndex);
         end
         MagStruct(LayerIndex).MinimumRadiusMagnet=min(MagnetR);
         MagStruct(LayerIndex).MagnetCenterRadius=MagnetR;

@@ -1,7 +1,7 @@
 classdef JmagData <emlab_MachineData
     properties
     jproj_path
-    jmag_version ='210'
+    jmag_version ='222'
     jmagcall
 
     %Model

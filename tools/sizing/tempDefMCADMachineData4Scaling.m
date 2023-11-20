@@ -11,10 +11,23 @@ function MachineData=tempDefMCADMachineData4Scaling(mcad)
     [~,MachineData.Stator_Lam_Length            ]              =mcad.GetVariable('Stator_Lam_Length'    );    
     [~,MachineData.Motor_Length]                               =mcad.GetVariable('Motor_Length');
     [~,MachineData.Housing_Dia]                                =mcad.GetVariable('Housing_Dia');
-    %% Winding
-    [~,MachineData.Area_Slot]                                   =mcad.GetVariable('Area_Slot'    );    
-    [~,MachineData.ParallelPaths                ]              =mcad.GetVariable('ParallelPaths'        );
     
+    %% Winding
+    [~,MachineData.ArmatureConductorLengthPh]                  =mcad.GetVariable('ArmatureConductorLengthPh');
+    [~,MachineData.ArmatureMLT]                                =mcad.GetVariable('ArmatureMLT');
+    [~,MachineData.ArmatureEWdgMLT_Calculated]                 =mcad.GetVariable('ArmatureEWdgMLT_Calculated');
+
+
+    [~,MachineData.Area_Slot]                                   =mcad.GetVariable('Area_Slot'    );    
+    [~,MachineData.Area_Slot_NoWedge]                           =mcad.GetVariable('Area_Slot_NoWedge'    );    
+    [~,MachineData.Area_Winding_With_Liner]                     =mcad.GetVariable('Area_Winding_With_Liner'    );    
+
+    MachineData.Area_Slot_NoWedge               =str2double(MachineData.Area_Slot_NoWedge)   ;
+    MachineData.Area_Winding_With_Liner         =str2double(MachineData.Area_Winding_With_Liner)   ;
+    [~,MachineData.ParallelPaths                ]              =mcad.GetVariable('ParallelPaths'        );
+    [~,MachineData.MagThrow                ]              =mcad.GetVariable('MagThrow'        );
+    MachineData.MagThrow              = double(MachineData.MagThrow  );
+
     MachineData.Area_Slot  =str2double(MachineData.Area_Slot);
     MachineData.ParallelPaths=double(MachineData.ParallelPaths);
     [~,MachineData.Armature_CoilStyle]                         =mcad.GetVariable('Armature_CoilStyle'    );    
@@ -26,12 +39,16 @@ function MachineData=tempDefMCADMachineData4Scaling(mcad)
     MachineData.WindingLayers =double(MachineData.WindingLayers);
     [~,MachineData.Copper_Width]            =mcad.GetVariable('Copper_Width'    ); 
     [~,MachineData.Copper_Height]            =mcad.GetVariable('Copper_Height'    );    
-    
+    [~,MachineData.ArmatureConductorCSA]                       =mcad.GetVariable('ArmatureConductorCSA');
+    MachineData.Area4Resistance                           =MachineData.ArmatureConductorCSA;
     elseif double(MachineData.Armature_CoilStyle)==0
     disp('환선')
     [~,MachineData.MagTurnsConductor            ]              =mcad.GetVariable('MagTurnsConductor'    ); 
     MachineData.MagTurnsConductor =double(MachineData.MagTurnsConductor);
-
+    [~,MachineData.WindingLayers            ]              =mcad.GetVariable('WindingLayers'    ); 
+    MachineData.WindingLayers =double(MachineData.WindingLayers);
+    [~,MachineData.ArmatureTurnCSA]                       =mcad.GetVariable('ArmatureTurnCSA');
+    MachineData.Area4Resistance                           =MachineData.ArmatureTurnCSA;
     end
 
     % [~,MachineData.GrossSlotFillFactor_IM1PH    ]            =mcad.GetVariable('GrossSlotFillFactor_IM1PH'        );

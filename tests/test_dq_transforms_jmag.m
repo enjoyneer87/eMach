@@ -1,6 +1,6 @@
 %% precondition
 global jmag_version
-jmag_version='210'
+jmag_version='222'
 result_list_bydata=struct();
 i=1;
 % define object
@@ -33,7 +33,7 @@ HDEV_jmag.outputName=o_data_name;
 length(o_data_name);
 
 %% data import
-out=HDEV_jmag.jmagFcnResultExport;
+HDEV_jmag=HDEV_jmag.jmagFcnResultExport;
 
 Jmag_Current=readtable(HDEV_jmag.res{1});
 % t1=readtable('Torque1.csv')

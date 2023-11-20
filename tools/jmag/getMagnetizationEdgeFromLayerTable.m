@@ -13,8 +13,11 @@ for LayerIndex=1:height(LayerTable)
             EdgeIdTable.MagnetMagnetizeEdge(EdgeIdIndex)=0;
             StartPositionObj=Model.GetEdgeStartPosition(EdgeId);
             EndPositionObj=Model.GetEdgeEndPosition(EdgeId);    % %   cf - geomApp  EndVertexobj=CurItem.GetEndVertex;
-            StartPosition=getPositionStructFromPostionObj(StartPositionObj);
-            EndPosition=getPositionStructFromPostionObj(EndPositionObj);
+            
+            % StartPosition=getPositionStructFromPostionObj(StartPositionObj);
+            StartPosition=getPositionStructFromDesignerPostionObj(StartPositionObj);
+            EndPosition=getPositionStructFromDesignerPostionObj(EndPositionObj);
+            %
             CenterBarrierpoint1=oneLayer.PointOuter;
             CenterBarrierpoint2=oneLayer.PointInner;
             StartPositionVertexangle = calculateAngleBetweenThreePoints(CenterBarrierpoint1, CenterBarrierpoint2, StartPosition);

@@ -16,19 +16,19 @@ function [ScaledMachineData,ScaledSatuMapTable] = devScaleTablebyStiepetic(scali
     l_stk_ref = MotorCADGeo.Stator_Lam_Length; % l_stk,ref의 값
     D_out_ref = MotorCADGeo.Stator_Lam_Dia; % D_out,ref의 값
     if MotorCADGeo.Armature_CoilStyle==0
-    n_c_ref  =  MotorCADGeo.MagTurnsConductor; % turn per Coil
+        n_c_ref  =  MotorCADGeo.MagTurnsConductor; % turn per Coil
     elseif MotorCADGeo.Armature_CoilStyle==1
-    n_c_ref  =  MotorCADGeo.WindingLayers; % turn per Coil
+        n_c_ref  =  MotorCADGeo.WindingLayers; % turn per Coil
     end
-    a_p_ref  =  MotorCADGeo.ParallelPaths; % Parallel Path  
 
-    ScaledMachineData.refMachineData=MotorCADGeo;
-    ScaledMachineData.refBuildingData=BuildingData;
-    ScaledMachineData.refSatuMapTable=SatuMapTable;
-    ScaledMachineData.scalingFactor =scalingFactorStruct;
-    ScaledMachineData.NumberOfCuboids_LossModel_Lab =MotorCADGeo.NumberOfCuboids_LossModel_Lab;
-    ScaledMachineData.NumberStrandsHand =MotorCADGeo.NumberStrandsHand;
-    ScaledMachineData.ACConductorLossProportion_Lab=MotorCADGeo.ACConductorLossProportion_Lab;
+    a_p_ref  =  MotorCADGeo.ParallelPaths; % Parallel Path  
+    ScaledMachineData.refMachineData                                 =MotorCADGeo;
+    ScaledMachineData.refBuildingData                                =BuildingData;
+    ScaledMachineData.refSatuMapTable                                =SatuMapTable;
+    ScaledMachineData.scalingFactor                                  =scalingFactorStruct;
+    ScaledMachineData.NumberOfCuboids_LossModel_Lab                  =MotorCADGeo.NumberOfCuboids_LossModel_Lab;
+    ScaledMachineData.NumberStrandsHand                              =MotorCADGeo.NumberStrandsHand;
+    ScaledMachineData.ACConductorLossProportion_Lab                  =MotorCADGeo.ACConductorLossProportion_Lab;
 
     %% Stator
     ScaledMachineData.Stator_Lam_Length        = k_Axial * l_stk_ref;
@@ -84,17 +84,16 @@ function [ScaledMachineData,ScaledSatuMapTable] = devScaleTablebyStiepetic(scali
     R_Cuco_ref20=scaleResistancebyTemp(R_Cuco_ref,20,BuildingData.Twdg_MotorLAB);
     R_Cuew_ref20=scaleResistancebyTemp(R_Cuew_ref,20,BuildingData.Twdg_MotorLAB);
    % testR=scaleResistancebyTemp(    0.004285,65,20);
-    % 
     ScaledMachineData.ResistanceActivePart20        = (k_Winding^2 / k_Radial^2) * (k_Axial * R_Cuco_ref20);
     ScaledMachineData.EndWindingResistance_Lab20    = (k_Winding^2 / k_Radial^2) * (k_Radial* R_Cuew_ref20);
     ScaledMachineData.Resistance_MotorLAB20         = (k_Winding^2 / k_Radial^2) * (k_Axial * R_Cuco_ref20 + k_Radial * R_Cuew_ref20);
     ScaledMachineData.ArmatureWindingResistancePh20 = (k_Winding^2 / k_Radial^2) * (k_Axial * R_Cuco_ref20 + k_Radial * R_Cuew_ref20);
     
-    ScaledMachineData.ResistanceActivePart             =ScaledMachineData.ResistanceActivePart20            ;
-    ScaledMachineData.EndWindingResistance_Lab            =ScaledMachineData.EndWindingResistance_Lab20     ;
-    ScaledMachineData.Resistance_MotorLAB                 =ScaledMachineData.Resistance_MotorLAB20          ;
-    ScaledMachineData.ArmatureWindingResistancePh           =ScaledMachineData.ArmatureWindingResistancePh20 ;     %% Inductance
-    ScaledMachineData.EndWindingInductance_Lab    = k_Radial*MotorCADGeo.EndWindingInductance_Lab;
+    ScaledMachineData.ResistanceActivePart              =ScaledMachineData.ResistanceActivePart20            ;
+    ScaledMachineData.EndWindingResistance_Lab          =ScaledMachineData.EndWindingResistance_Lab20     ;
+    ScaledMachineData.Resistance_MotorLAB               =ScaledMachineData.Resistance_MotorLAB20          ;
+    ScaledMachineData.ArmatureWindingResistancePh       =ScaledMachineData.ArmatureWindingResistancePh20 ;     %% Inductance
+    ScaledMachineData.EndWindingInductance_Lab          =k_Radial*MotorCADGeo.EndWindingInductance_Lab;
     
     %% unit으로 분리해야할듯 
     
@@ -107,17 +106,17 @@ function [ScaledMachineData,ScaledSatuMapTable] = devScaleTablebyStiepetic(scali
     ScaledSatuMapTable.Id_Peak                   = 1./k_Winding.*k_Radial.*SatuMapTable.Id_Peak ;
     ScaledSatuMapTable.Iq_Peak                   = 1./k_Winding.*k_Radial.*SatuMapTable.Iq_Peak ;
     % Ampere/m2
-    SatuMapTable.CurrentDensityRMS=calcCurrentDensity(SatuMapTable.Stator_Current_Line_RMS,MotorCADGeo.ParallelPaths,double(MotorCADGeo.NumberStrandsHand),MotorCADGeo.ArmatureConductorCSA);
-    ScaledSatuMapTable.CurrentDensityRMS            = 1./k_Winding*SatuMapTable.CurrentDensityRMS;
+    SatuMapTable.CurrentDensityRMS               =calcCurrentDensity(SatuMapTable.Stator_Current_Line_RMS,MotorCADGeo.ParallelPaths,double(MotorCADGeo.NumberStrandsHand),MotorCADGeo.ArmatureConductorCSA);
+    ScaledSatuMapTable.CurrentDensityRMS         = 1./k_Winding*SatuMapTable.CurrentDensityRMS;
 
-    ScaledMachineData.Ipk=max(ScaledSatuMapTable.Stator_Current_Phase_Peak);
-    ScaledMachineData.Irms=max(ScaledSatuMapTable.Stator_Current_Phase_RMS);
+    ScaledMachineData.Ipk                        =max(ScaledSatuMapTable.Stator_Current_Phase_Peak);
+    ScaledMachineData.Irms                       =max(ScaledSatuMapTable.Stator_Current_Phase_RMS);
 
     %% [Vs]
-    Psi_ew_ref =0;
-    Flux_Linkage = variableNames(contains(variableNames, 'Flux_Linkage'));
+    Psi_ew_ref                                   =0;
+    Flux_Linkage                                 = variableNames(contains(variableNames, 'Flux_Linkage'));
     for i = 1:length(Flux_Linkage)
-        ScaledSatuMapTable.(Flux_Linkage{i}) = k_Winding * k_Radial *(k_Axial*SatuMapTable.(Flux_Linkage{i}) + k_Radial * Psi_ew_ref);
+        ScaledSatuMapTable.(Flux_Linkage{i})     = k_Winding * k_Radial *(k_Axial*SatuMapTable.(Flux_Linkage{i}) + k_Radial * Psi_ew_ref);
     end    
     % Scaled.Flux_Linkage_D            = k_Winding * k_Radial * (k_Axial * Scaled.Flux_Linkage_D + k_Radial * Psi_ew_ref);
     % Scaled.Flux_Linkage_Q            = k_Winding * k_Radial * (k_Axial * Scaled.Flux_Linkage_Q + k_Radial * Psi_ew_ref); 
@@ -125,29 +124,29 @@ function [ScaledMachineData,ScaledSatuMapTable] = devScaleTablebyStiepetic(scali
     % Resistance_MotorLAB
     % EndWindingResistance_Lab
     % EndWindingInductance_Lab
-    P_Cuco_ref20              =3.*R_Cuco_ref20.* (SatuMapTable.Stator_Current_Phase_RMS).^2;
-    P_Cuew_ref20              =3.*R_Cuew_ref20.* (SatuMapTable.Stator_Current_Phase_RMS).^2;
+    P_Cuco_ref20                                 =3.*R_Cuco_ref20.* (SatuMapTable.Stator_Current_Phase_RMS).^2;
+    P_Cuew_ref20                                 =3.*R_Cuew_ref20.* (SatuMapTable.Stator_Current_Phase_RMS).^2;
     % ScaledSatuMapTable.Stator_Copper_Loss_DC             = k_Axial * P_Cuco_ref20 + k_Radial * P_Cuew_ref20;
-   R_Cuco20=ScaledMachineData.ResistanceActivePart20    ;
-   R_Cuew20=ScaledMachineData.EndWindingResistance_Lab20;
-   R_Cu20 =ScaledMachineData.Resistance_MotorLAB20  ;   
-    ScaledSatuMapTable.Stator_Copper_Loss_DC          =3*(R_Cuco20+R_Cuew20)*(ScaledSatuMapTable.Stator_Current_Phase_RMS).^2;
-    ScaledSatuMapTable.Stator_Copper_Loss_DC20=ScaledSatuMapTable.Stator_Copper_Loss_DC;
+    R_Cuco20                                     =ScaledMachineData.ResistanceActivePart20    ;
+    R_Cuew20                                     =ScaledMachineData.EndWindingResistance_Lab20;
+    R_Cu20                                       =ScaledMachineData.Resistance_MotorLAB20  ;   
+    ScaledSatuMapTable.Stator_Copper_Loss_DC     =3*(R_Cuco20+R_Cuew20)*(ScaledSatuMapTable.Stator_Current_Phase_RMS).^2;
+    ScaledSatuMapTable.Stator_Copper_Loss_DC20   =ScaledSatuMapTable.Stator_Copper_Loss_DC;
   %% [WIP] AC Los Scaling
    ScaledMachineData.HybridAdjustmentFactor_ACLosses  =1;
-   ScaledMachineData.WindingTemp_ACLoss_Ref_Lab=BuildingData.TwindingCalc_MotorLAB;
+   ScaledMachineData.WindingTemp_ACLoss_Ref_Lab       =BuildingData.TwindingCalc_MotorLAB;
    % tempScalingFactor=createTempScalingFactor(BuildingData.TwindingCalc_MotorLAB,BuildingData.WindingTemp_ACLoss_Ref_Lab,0.00393);
    tempScalingFactor=1;
-   ScaledSatuMapTable.Stator_Copper_Loss_AC             =k_Radial^4 * k_Axial*  SatuMapTable.Stator_Copper_Loss_AC*tempScalingFactor;   
+   ScaledSatuMapTable.Stator_Copper_Loss_AC           =k_Radial^4 * k_Axial*  SatuMapTable.Stator_Copper_Loss_AC*tempScalingFactor;   
    % ACConductorLossProportion_Lab=convertCharTypeData2ArrayData(MotorCADGeo.ACConductorLossProportion_Lab);
    % Stator_Copper_Loss_AC=generateCuboidalACLossVariables(SatuMapTable.Stator_Copper_Loss_AC,ACConductorLossProportion_Lab);
    % ScaledSatuMapTable =horzcat (ScaledSatuMapTable,Stator_Copper_Loss_AC);
  
-   ScaledSatuMapTable.Stator_Copper_Loss=ScaledSatuMapTable.Stator_Copper_Loss_DC +ScaledSatuMapTable.Stator_Copper_Loss_AC; 
+   ScaledSatuMapTable.Stator_Copper_Loss              =ScaledSatuMapTable.Stator_Copper_Loss_DC +ScaledSatuMapTable.Stator_Copper_Loss_AC; 
    %% Mechanical 하게 처리되는 Loss들   
-    ScaledSatuMapTable.Magnet_Loss                       =k_Radial^2 * k_Axial*  SatuMapTable.Magnet_Loss             ;                
-    ScaledSatuMapTable.Sleeve_Loss                       =k_Radial^2 * k_Axial*  SatuMapTable.Sleeve_Loss             ;                
-    ScaledSatuMapTable.Banding_Loss                      =k_Radial^2 * k_Axial*  SatuMapTable.Banding_Loss            ;   
+    ScaledSatuMapTable.Magnet_Loss                    =k_Radial^2 * k_Axial*  SatuMapTable.Magnet_Loss             ;                
+    ScaledSatuMapTable.Sleeve_Loss                    =k_Radial^2 * k_Axial*  SatuMapTable.Sleeve_Loss             ;                
+    ScaledSatuMapTable.Banding_Loss                   =k_Radial^2 * k_Axial*  SatuMapTable.Banding_Loss            ;   
     % Iron Loss
     % "Iron_Loss"가 포함된 변수 이름 필터링
     

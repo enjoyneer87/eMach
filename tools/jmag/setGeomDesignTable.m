@@ -1,4 +1,5 @@
-function setGeomDesignTable(setString,value,geomApp)
+function setGeomDesignTable(setString,value,app)
+geomApp=app.CreateGeometryEditor(0);
 geomDocu=geomApp.GetDocument;
 geomDesignTable=geomDocu.GetDesignTable;
 geomDesignTable.EditStart()

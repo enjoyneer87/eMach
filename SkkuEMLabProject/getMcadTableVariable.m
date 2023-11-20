@@ -22,19 +22,19 @@ function variableTable = getMcadTableVariable(variableTable, mcad)
         end
         
     % 가져온 배열 데이터를 str Cell로 변환하여 'CurrentValue' 열 값을 업데이트합니다
-    typeofArrayData=class(valueFromMCAD);
-    switch typeofArrayData
-        case 'logical'
-        variableTable.CurrentValue{rowIndex}=(valueFromMCAD);
-        case 'double'
-        variableTable.CurrentValue{rowIndex} = convertArrayData2CharTypeData(valueFromMCAD);
-        case 'int32'
-        variableTable.CurrentValue{rowIndex} = double(valueFromMCAD);
-        case 'Cell'
-         variableTable.CurrentValue{rowIndex}= valueFromMCAD;
-        case 'char'
-         variableTable.CurrentValue{rowIndex}=valueFromMCAD;
-    end 
+        typeofArrayData=class(valueFromMCAD);
+        switch typeofArrayData
+            case 'logical'
+            variableTable.CurrentValue{rowIndex}=(valueFromMCAD);
+            case 'double'
+            variableTable.CurrentValue{rowIndex} = convertArrayData2CharTypeData(valueFromMCAD);
+            case 'int32'
+            variableTable.CurrentValue{rowIndex} = double(valueFromMCAD);
+            case 'Cell'
+             variableTable.CurrentValue{rowIndex}= valueFromMCAD;
+            case 'char'
+             variableTable.CurrentValue{rowIndex}=valueFromMCAD;
+        end 
     end
 
     

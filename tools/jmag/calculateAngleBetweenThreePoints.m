@@ -1,15 +1,12 @@
 function angle = calculateAngleBetweenThreePoints(point1, point2, point3)
     % point1, point2, point3는 [x, y] 형식의 2차원 좌표입니다.
 
-    if isstruct(point1)
-    point1 = [point1.x, point1.y,point1.z];
-    end
-    if isstruct(point2)
-    point2 = [point2.x, point2.y,point2.z];
-    end
-    if isstruct(point3)
-    point3 = [point3.x, point3.y,point3.z];
-    end
+    point1=convertXYZData2Array(point1);
+    point2=convertXYZData2Array(point2);
+    point3=convertXYZData2Array(point3);
+
+  
+
     % 벡터 1을 계산합니다.
     vector1 = point1 - point2;
 

@@ -7,6 +7,7 @@ MagnetTable              =table();
 SlotTable                =table();
 ConductorTable           =table();
 InsulationTable          =table();
+CenterAirPostTable       =table();
 OtherTable               =table();
 PartTable = struct2table(PartStruct);
 NumberofPart = length(PartStruct);
@@ -36,6 +37,9 @@ for partIndex = 1:NumberofPart
     elseif contains(PartTable.Name(partIndex), 'Insulation')
         newRow = PartTable(partIndex, :);
         InsulationTable = [InsulationTable; newRow];
+    elseif contains(PartTable.Name(partIndex), 'CenterAirPost')
+        newRow = PartTable(partIndex, :);
+        CenterAirPostTable = [CenterAirPostTable; newRow];
     else
         newRow = PartTable(partIndex, :);
         OtherTable = [OtherTable; newRow];
@@ -51,6 +55,8 @@ PartStructByType.MagnetTable       =MagnetTable       ;
 PartStructByType.SlotTable         =SlotTable         ;
 PartStructByType.ConductorTable    =ConductorTable    ;
 PartStructByType.InsulationTable   =InsulationTable   ;
+PartStructByType.CenterAirPostTable        =CenterAirPostTable   ;
+
 PartStructByType.OtherTable        =OtherTable   ;
 
 end

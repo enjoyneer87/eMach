@@ -13,7 +13,7 @@
 
 # Simulink Code Generation
 slprj/
-
+*.slxc
 # Session info
 octave-workspace
 
@@ -33,9 +33,20 @@ octave-workspace
 tests/LineCurrent.csv
 Class/LineCurrent.csv
 LineCurrent.csv
-
+*.png
 *.csv
 *.gif
+
+# 
+*.xml
+*.dxf
+
+#
+*.txt
+*.xlsx
+temp**
+review**
+*.mat
 tests/validation_w_map_motorcad_osilo.m
 Class/getFieldNames.m
 fcnExportGraphicGif.m
