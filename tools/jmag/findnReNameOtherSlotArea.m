@@ -29,7 +29,15 @@ TableIndex4RegionTable =table();
     cellStringArray         = repmat({Name4Object}, numRepeats, 1);
     otherSlotAreaTable.Name =cellStringArray;
     % 가장큰 영역 Insulation으로 지정
-    otherSlotAreaTable(otherSlotAreaTable.Area>ConductorTable.Area(1),:).Name{:}='Insulation';   
+    if numRepeats==1
+    otherSlotAreaTable(otherSlotAreaTable.Area>ConductorTable.Area(1),:).Name{:}='Insulation'; 
+    else
+            for indexOtherRegion=1:numRepeats
+            otherSlotAreaTable.Name{(1)}='Insulation';      
+            otherSlotAreaTable.Name{(indexOtherRegion)}='otherSlotArea';   
+            end
+    end
+
 % RegionDataTable도 이름 변경
     for i=1:height(TableIndex4RegionTable)
     Index4RegionTable=TableIndex4RegionTable.Index4RegionTable(i);

@@ -9,10 +9,14 @@
 from win32com import client
 app=client.dynamic.Dispatch('designer.Application.222')
 # app = designer.GetApplication()
-# app.SetCurrentStudy(u"Test1")
-Study=app.GetCurrentStudy()
-# Study.GetWindingRegion(u"HairPinWave").SetSlots(48)
-# # Study.GetWindingRegion(u"HairPinWave").SetPoles(8)
+app.Show
+#app.SetCurrentStudy(u"Test1")
+
+Study=app.GetModel(0).GetStudy(0)
+Study.IsValid
+Study.GetName()
+#Study.GetWindingRegion(u"Coil").SetSlots(48)
+#Study.GetWindingRegion(u"Coil").SetPoles(8)
 # app.GetModel(u"devModellerwithConductor_59").GetStudy(u"Test1")
 # app.GetModel(u"devModellerwithConductor_59").GetStudy(u"Test1")
 Study.GetWindingRegion(u"HairPinWave").SetSlots(u"Slots")

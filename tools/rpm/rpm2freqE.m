@@ -5,5 +5,6 @@ function freqE = rpm2freqE(rpm,polePair)
 omega=rpm2radsec(rpm);
 omegaE = mech2elec(omega,polePair);
 freqE=omega2freq(omegaE);
-
+% radsec=
+% rpm/60*2*pi()*polePair/(2*pi);
 end

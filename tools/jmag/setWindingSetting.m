@@ -1,6 +1,6 @@
-function CoilWindingInfo=setWindingSetting(app,CoilWindingInfo,WindingTable)
+function CoilWindingInfo=setWindingSetting(app,CoilWindingInfo,fileName)
 
-    Study=app.GetCurrentStudy;
+    Study=app.GetModel(0).GetStudy(0);
     % WindingDefinition Obj
     GetWinding=Study.CreateWinding("ThreePhase", "WaveWinding");
     %% Get Circuit Info
@@ -35,11 +35,14 @@ function CoilWindingInfo=setWindingSetting(app,CoilWindingInfo,WindingTable)
     CoilWindingInfo.PhaseResistance=Resistance;
     %% 3D
     % Import CSV 
-    % GetWinding.ExportCoilSetting(testExportCSVPath)
-
+    % if Study.GetWinding("WaveWinding").IsValid==0
+    % Study.GetWinding("WaveWinding").ImportCoilSetting(testExportCSVPath)
+    % exportFilePath=strcat(fileparts(testExportCSVPath),'\export.csv');
+    % GetWinding.ExportCoilSetting(exportFilePath)
+    % end
     %% 2D
-
-    
+    % importJMAGCoilsFromCSV(fname,app);
+    importJMAGCoilsFromCSV(fileName)
 
     %%
     if nargin<3

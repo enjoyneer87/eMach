@@ -1,6 +1,6 @@
 function sketchs=ImportDXF2Geom(dxfList2Import,app)
-    app.LaunchGeometryEditor();
-    geomApp = app.CreateGeometryEditor(1);
+    % app.LaunchGeometryEditor();
+    geomApp = app.CreateGeometryEditor(0);
     geomApp.Show;
     geomDocu=geomApp.GetDocument();
     geomAssem=geomDocu.GetAssembly();
