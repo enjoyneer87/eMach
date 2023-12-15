@@ -1,9 +1,19 @@
 number_of_poles =8
 number_of_slots =48
-stack_length    =200
+coilend_area=524259
+coilend_surface_area    = 1.365e7
+stack_length            = 3940/scaleFactor
+% stack_length    =200
+coilend_height          = 35*scaleFactor
 gap_length      =0.9
 rotor_radius    =65.8
 rotor_speed     = 3000
+core_stator_area=    1304034.77685435
+SLOTS=48
+core_rotor_area=4675350.58026779
+POLES=8
+%% Housing -Core 
+% housing_Core_ThermalConductivity = 0.02
 
 % Shaft
 shaft_diameter               = 60  
@@ -14,16 +24,18 @@ shaft_specific_heat          = 450
 % Housing
 housing_height               = 400    
 housing_outer_diameter       = 232    
-housing_inner_diameter       = 212    
+housing_inner_diameter       = 212   
+% SOD =212
 housing_conductivity         = 25    
+
 housing_density              = 7800    
 housing_specific_heat        = 450
 
 %% Coil End
-coilend_height               = 35    
-coilend_conductivity         = 400    
-coilend_density              = 8960    
-coilend_specific_heat        = 380  
+coilend_height               = 35     % mm
+coilend_conductivity         = 400    % W/m/degC
+coilend_density              = 8960   % kg/m^3 
+coilend_specific_heat        = 380    % J/kg/degC
 %% Magnet 
 contact_magnet_length        = 0.01     
 contact_magnet_conductivity  = 0.02    
