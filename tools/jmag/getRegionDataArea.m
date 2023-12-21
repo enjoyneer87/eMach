@@ -16,8 +16,12 @@ NumSelections=sel.Count;
         % sel=geomDocu.GetSelection;
         sel.Clear;
         sel.AddReferenceObject(refObjDataStruct(SelIndex).ReferenceObj);
+        if strcmp(refObjDataStruct(SelIndex).Type,'RegionItem')
         geomDocuVolManager=geomDocu.GetVolumeCalculationManager();
         newStruct(SelIndex).Area=geomDocuVolManager.CalculateArea;
+        else
+        newStruct(SelIndex).Area=0;
+        end
         % RegionArray(SelIndex,1)=refObjTable(SelIndex).Area;
     end
 sel.Clear

@@ -1,31 +1,40 @@
-function NewLineTable=getLineDataTable(RegionDataTable,app)
+function NewLineTable=getLineDataTable(RegionDataTable,geomApp)
 %% Init
 StartVertexTable    =table();
 % CenterVertexTable   =table();         
 EndVertexTable      =table();     
 LineDirectionalTable=table();
+%% check App or Geometry Editor
+    AppDir=geomApp.GetAppDir;
+    AppDirStr=split(AppDir,'/');
+    if ~strcmp(AppDirStr{end},'Modeller')
+    geomApp=geomApp.CreateGeometryEditor(0);
+    geomApp.visible
+    end
+
 % Get ArcTable
 sketchLineTable=getLineTable(RegionDataTable);
+
 %% Get Vertex Table and Arc Radius
     for IndexofArc=1:height(sketchLineTable)
-        CurItem=convertRefObj2Item(sketchLineTable.ReferenceObj(IndexofArc),app);
+        CurItem=convertRefObj2Item(sketchLineTable.ReferenceObj(IndexofArc),geomApp);
         if CurItem.IsValid
         %% VertexTable
         StartVertex                                     =CurItem.GetStartVertex   ;   
         % CenterVertex                                    =CurItem.GetCenterVertex  ;     
         EndVertex                                       =CurItem.GetEndVertex     ; 
         % temporary Table
-        tempStartVertexTable        =getVertexTable(StartVertex,app);
+        tempStartVertexTable        =getVertexTable(StartVertex,geomApp);
         % tempCenterVertexTable       =getVertexTable(CenterVertex,app);
-        tempEndVertexTable          =getVertexTable(EndVertex,app);
+        tempEndVertexTable          =getVertexTable(EndVertex,geomApp);
                 % VertexTable Row
-        StartVertexTable    =[StartVertexTable;tempStartVertexTable];
-        % CenterVertexTable   =[CenterVertexTable;tempCenterVertexTable];
-        EndVertexTable      =[EndVertexTable;tempEndVertexTable];
+        StartVertexTable    =[StartVertexTable;  tempStartVertexTable];
+        % CenterVertexTable =[CenterVertexTable; tempCenterVertexTable];
+        EndVertexTable      =[EndVertexTable;    tempEndVertexTable];
 
-        tempLineDirectionalTable             =array2table(getDirectionalVector(tempStartVertexTable, tempEndVertexTable));
-        tempLineDirectionalTable.Properties.VariableNames={'vecX','vexY','VecZ'};
-        LineDirectionalTable=[LineDirectionalTable;tempLineDirectionalTable];
+        tempLineDirectionalTable                            =array2table(getDirectionalVector(tempStartVertexTable, tempEndVertexTable));
+        tempLineDirectionalTable.Properties.VariableNames   ={'vecX','vexY','VecZ'};
+        LineDirectionalTable                                =[LineDirectionalTable;tempLineDirectionalTable];
         %% Line Data
         % sketchLineTable.Radius(IndexofArc)                     =CurItem.GetRadius;
         % ArcTable.Angle(IndexofArc)     

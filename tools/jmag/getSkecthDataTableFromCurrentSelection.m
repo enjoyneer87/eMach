@@ -1,18 +1,18 @@
-function RegionData=getSkecthDataTableFromCurrentSelection(app)
-    geomApp=app.CreateGeometryEditor(0);
+function AssemObjStruct=getSkecthDataTableFromCurrentSelection(app)
+   geomApp=app.CreateGeometryEditor(0);
    geomDocu=geomApp.GetDocument();
     %%
-   sel      =mkSelectionObj(app,1);
+   sel      =mkSelectionObj(geomApp,1);
     NumSelections=sel.Count;
-    RegionData=struct();
+    AssemObjStruct=struct();
     for SelIndex=1:NumSelections
         Item=sel.Item(SelIndex-1);
         if Item.IsValid==1
-        RegionData(SelIndex).ReferenceObj        =geomDocu.CreateReferenceFromItem(Item);
-        RegionData(SelIndex).Name                =Item.GetName;
-        RegionData(SelIndex).Type                =Item.GetScriptTypeName;
-        RegionData(SelIndex).IdentifierName      =RegionData(SelIndex).ReferenceObj.GetIdentifier;
-        RegionData(SelIndex).Id                  =RegionData(SelIndex).ReferenceObj.GetId;
+        AssemObjStruct(SelIndex).ReferenceObj        =geomDocu.CreateReferenceFromItem(Item);
+        AssemObjStruct(SelIndex).Name                =Item.GetName;
+        AssemObjStruct(SelIndex).Type                =Item.GetScriptTypeName;
+        AssemObjStruct(SelIndex).IdentifierName      =AssemObjStruct(SelIndex).ReferenceObj.GetIdentifier;
+        AssemObjStruct(SelIndex).Id                  =AssemObjStruct(SelIndex).ReferenceObj.GetId;
         % sel.AddReferenceObject(RegionData(SelIndex).ReferenceObj)
         end
     end

@@ -1,4 +1,4 @@
-function RegionData=getStatorGeomSketchData(app,AssembleName)
+function AssemObjStruct=getStatorGeomSketchData(app,AssembleName)
 % Fields
 % Name          (selection Class)
 % ReferenceObj
@@ -12,7 +12,7 @@ end
     geomApp=app.CreateGeometryEditor(0);
     geomApp.GetDocument().GetAssembly().GetItem(AssembleName).OpenSketch();
     % geomView.SetSelectionFilter('Region')
-    RegionData=getSkecthDataTableFromCurrentSelection(app);
+    AssemObjStruct=getSkecthDataTableFromCurrentSelection(app);
     
     geomApp.GetDocument().GetAssembly().GetItem(AssembleName).CloseSketch();
 

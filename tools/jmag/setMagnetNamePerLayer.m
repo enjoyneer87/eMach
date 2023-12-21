@@ -8,7 +8,10 @@ MagnetName=LayerName;
 end
     if LayerNumbers<3
         for LayerIndex=1:height(NewLayerTable)
-            InnnerMagnetTable=NewLayerTable.MagnetTable{LayerIndex};
+            InnnerMagnetTable=NewLayerTable.MagnetTable(LayerIndex,:);
+            if iscell(InnnerMagnetTable) && length(InnnerMagnetTable)==1
+            InnnerMagnetTable=InnnerMagnetTable{:};
+            end
             selMagnetInner=Model.CreateSelection();
             for partIndex=1:height(InnnerMagnetTable.partIndex)
                 selMagnetInner.SelectPart(InnnerMagnetTable.partIndex(partIndex))
