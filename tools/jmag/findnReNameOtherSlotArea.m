@@ -51,10 +51,12 @@ TableIndex4RegionTable =table();
     RegionDataTable(Index4RegionTable,:)=otherSlotAreaTable(i,:);
     end
 %% [TB]면적이 unique한지 아니냐에 따라 분류할것
+if ~isempty(otherSlotAreaTable)
 InsulationAreaTable = otherSlotAreaTable(1,:);
 otherSlotAreaTable(1,:) = [];
-
-%%
+end
+%% if 
+RegionTablePerType= struct();
 RegionTablePerType.InsulationAreaTable=InsulationAreaTable;
 RegionTablePerType.otherSlotAreaTable =otherSlotAreaTable ;         
 RegionTablePerType.CoreAreaTable      =CoreAreaTable      ;
