@@ -1,7 +1,17 @@
-function sketchs=ImportDXF2Geom(dxfList2Import,app)
+function sketchs=ImportDXF2Geom(dxfList2Import,geomApp)
     % app.LaunchGeometryEditor();
-    geomApp = app.CreateGeometryEditor(0);
+    
+%% Init
+%% check App or Geometry Editor
+    AppDir=geomApp.GetAppDir;
+    AppDirStr=split(AppDir,'/');
+    if ~strcmp(AppDirStr{end},'Modeller')
+    geomApp=geomApp.CreateGeometryEditor(0);
     geomApp.Show;
+    end
+
+
+    %%
     geomDocu=geomApp.GetDocument();
     geomAssem=geomDocu.GetAssembly();
 
@@ -69,5 +79,5 @@ function sketchs=ImportDXF2Geom(dxfList2Import,app)
         end
     end
 
-
+  end
 end

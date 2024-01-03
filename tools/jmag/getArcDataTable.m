@@ -9,8 +9,9 @@ EndVertexTable      =table();
     AppDirStr=split(AppDir,'/');
     if ~strcmp(AppDirStr{end},'Modeller')
     geomApp=geomApp.CreateGeometryEditor(0);
-    geomApp.visible
+    % geomApp.visible
     end
+geomApp.Hide;
 
 %% Get ArcTable
 ArcTable            =getArcTable(RegionDataTable);
@@ -46,5 +47,8 @@ addTableName2VarNameInFunction('StartVertexTable');
 addTableName2VarNameInFunction('CenterVertexTable');
 addTableName2VarNameInFunction('EndVertexTable');
 NewArcTable=[ArcTable StartVertexTable CenterVertexTable EndVertexTable ];
+geomApp.Show
+
+
 end
 

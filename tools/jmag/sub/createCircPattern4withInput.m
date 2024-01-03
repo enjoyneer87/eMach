@@ -6,7 +6,8 @@ function createCircPattern4withInput(MachineData,StatorGeomAssemTable,AreaName,a
     NSPP               =MachineData.NSPP                ;
     q                  =MachineData.q                   ;
     slots              =MachineData.slots               ;
-
+    RotorOnePoleAngle=360/Poles;
+    % Poles       = 360/RotorOnePoleAngle;
     geomApp=app.CreateGeometryEditor(0);
 
    

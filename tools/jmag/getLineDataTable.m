@@ -11,6 +11,7 @@ LineDirectionalTable=table();
     geomApp=geomApp.CreateGeometryEditor(0);
     geomApp.visible
     end
+geomApp.Hide;
 
 % Get ArcTable
 sketchLineTable=getLineTable(RegionDataTable);
@@ -51,5 +52,7 @@ addTableName2VarNameInFunction('StartVertexTable');
 % addTableName2VarNameInFunction('CenterVertexTable');
 addTableName2VarNameInFunction('EndVertexTable');
 NewLineTable=[sketchLineTable LineDirectionalTable StartVertexTable EndVertexTable ];
+geomApp.Show
+
 end
 
