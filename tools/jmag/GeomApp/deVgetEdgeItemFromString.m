@@ -1,4 +1,4 @@
-function getEdgeItemFromString(testString)
+function TBdevgetEdgeItemFromString(testString)
 
     
  testString= 'edge(TFaceExtrudeSolid308+edge(TFaceExtrudeSolid308+edge(TExtrudeSolid306+edge(TExtrudeSolid306+edge(TRegionItem305+TSketchLine303)))))'
