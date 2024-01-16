@@ -6,8 +6,12 @@ function AssemPartStruct=getAssemPartListStruct(geomApp)
     %% AssemPart
     for AssemItemIndex=1:height(AssemTable)
         if ~contains(AssemTable.AssemItemName{AssemItemIndex},'Plane')
+        %% PartData
         AssemPartStruct(AssemItemIndex).AssemPartTable=getSGeomPartData(geomApp,AssemTable.AssemItemName{AssemItemIndex})
         AssemPartStruct(AssemItemIndex).AssemPartName =AssemTable.AssemItemName{AssemItemIndex};
+        %% Get PartItems
+        PartObj=geomApp.GetDocument().GetAssembly().GetItem(AssemPartStruct(AssemItemIndex).AssemPartName);
+
         end
     end
 

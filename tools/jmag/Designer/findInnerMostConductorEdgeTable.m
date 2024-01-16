@@ -1,7 +1,15 @@
 function InnerMostConductorEdgeTable=findInnerMostConductorEdgeTable(PartStruct)
     tolerance=1e-5;
-    isConductor=contains({PartStruct.Name},'Conductor');
-    conductorStruct=PartStruct(isConductor);
+    
+    isConductor=contains({PartStruct.Name},'Conductor','IgnoreCase',true);
+    if any(isConductor)==1
+       conductorStruct=PartStruct(isConductor);
+ 
+    else 
+        isConductor=contains({PartStruct.Name},'Coil','IgnoreCase',true);
+        conductorStruct=PartStruct(isConductor);
+    end
+    
     clear isConductor
     [~,index] = sortrows([conductorStruct.CentroidR].', "descend");
     conductorStruct = conductorStruct(index);    
@@ -29,4 +37,5 @@ function InnerMostConductorEdgeTable=findInnerMostConductorEdgeTable(PartStruct)
     InnerMostConductorEdgeTable.ConductorID=OutMostConductorStruct.partIndex;
     InnerMostConductorEdgeTable.ConductorName=OutMostConductorStruct.Name;
 
+    
 end

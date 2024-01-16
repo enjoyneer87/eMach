@@ -25,11 +25,11 @@ R_housing_axial = (1 / housing_conductivity) * (housing_height / 1000) / (pi * (
 %% % Housing Heat Capacity
 % Housing Volume
 % V_housing = (((pi * (housing_outer_diameter / 2)^2 - pi * (housing_inner_diameter / 2)^2) * housing_height) + (pi * (housing_outer_diameter / 2)^2) * (housing_outer_diameter - housing_inner_diameter)) / 1000000000;
-% C_housing = housing_density * housing_specific_heat * V_housing;
-V_housing  = calcHousingVolume(housing_outer_diameter*scaleF, housing_inner_diameter, housing_height)
-C_housing  = calcHeatCapHousing(housing_density,housing_specific_heat,V_housing)
+V_housing  = calcHousingVolume(housing_outer_diameter*scaleFactor, housing_inner_diameter, housing_height)
+% C_housing  = calcHeatCapHousing(housing_density,housing_specific_heat,V_housing)
+C_housing = housing_density * housing_specific_heat * V_housing;
 
 %% Housing Side Convection Natural
+A_housing=calcCylinderSideArea(housing_height,housing_outer_diameter);
 R_housing_to_ambient = 1 / HTC_air / A_housing;
 % A_housing = housing_height * housing_outer_diameter * pi / 1000000;
-A_housing=calcCylinderSideArea(housing_height,housing_outer_diameter);
