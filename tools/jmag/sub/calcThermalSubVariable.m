@@ -25,6 +25,7 @@ R_housing_axial = (1 / housing_conductivity) * (housing_height / 1000) / (pi * (
 %% % Housing Heat Capacity
 % Housing Volume
 % V_housing = (((pi * (housing_outer_diameter / 2)^2 - pi * (housing_inner_diameter / 2)^2) * housing_height) + (pi * (housing_outer_diameter / 2)^2) * (housing_outer_diameter - housing_inner_diameter)) / 1000000000;
+%% [m^3]
 V_housing  = calcHousingVolume(housing_outer_diameter*scaleFactor, housing_inner_diameter, housing_height)
 % C_housing  = calcHeatCapHousing(housing_density,housing_specific_heat,V_housing)
 C_housing = housing_density * housing_specific_heat * V_housing;

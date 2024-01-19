@@ -20,7 +20,8 @@ function InnerMostConductorEdgeTable=findInnerMostConductorEdgeTable(PartStruct)
     % Start and End Vertex Position is Max  
     [startPosition,StartPosIndex]=sort(OutMostConductorStruct.Edge.startPosition(:,4),"descend");
     [endPosition,EndPosIndex]=sort(OutMostConductorStruct.Edge.endPosition(:,4),"descend");
-    if StartPosIndex(1)==EndPosIndex(1) && startPosition(1)-endPosition(1)<tolerance
+    % if StartPosIndex(1)==EndPosIndex(1) && startPosition(1)-endPosition(1)<tolerance
+    if startPosition(1)-endPosition(1)<tolerance
         InnerMostConductorEdgeTable=OutMostConductorStruct.Edge(EndPosIndex(1),:);
     end
 
