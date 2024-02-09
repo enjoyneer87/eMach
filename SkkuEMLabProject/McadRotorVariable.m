@@ -1,7 +1,11 @@
 function variable = McadRotorVariable(fileName)
+  
     variable = struct(); 
+    
+    if nargin==1
     variable.CurrentMotFilePath_MotorLAB=fileName;
-        %Axial
+    end
+    %Axial
     variable.Motor_Length              =[]   ;       
     variable.Rotor_Lam_Length          =[]   ;                   % Rotor lamination pack length
     variable.Magnet_Length             =[]   ;                   % Magnet length
