@@ -15,6 +15,8 @@ else
     LabLinkTxtPath=fullfile(pwd,'LabLink.txt');
 end
 
+checkFileNMove(LabLinkTxtPath)
+
 writetable(SatuMapTable,LabLinkTxtPath,'Delimiter','\t')
 
 end

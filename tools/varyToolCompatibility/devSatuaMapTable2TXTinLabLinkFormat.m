@@ -1,12 +1,12 @@
 function LabLinkTxtPath=devSatuaMapTable2TXTinLabLinkFormat(SatuMapTable,MachineData,varargin)
 %% devSatuaMapTable2TXTinLabLinkFormat -> convertSatuMapTable2TXTinLabLinkFormat
 % Used Function
-% replaceUnderscoresWithSpace
-% changeIronLossCell2LabLinkFormat
-% defMCADLabLinkFortCell
-% replaceTableNamebyCell
-% replaceMCADSatuMapTableName2LabLinkName
-% filterAndSortVarTablebyNameCell
+    % replaceUnderscoresWithSpace
+    % changeIronLossCell2LabLinkFormat
+    % defMCADLabLinkFortCell -> defMCADLabLinkFormatCell
+    % replaceTableNamebyCell
+    % replaceMCADSatuMapTableName2LabLinkName
+    % filterAndSortVarTablebyNameCell
 
 % SatuMapTable can be SatumapTable or ScaledSatuMapTable
 
@@ -21,7 +21,7 @@ changedOriginalTable               =replaceTableNamebyCell(newTable,LossCoeffici
 changedOriginalTable               =replaceMCADSatuMapTableName2LabLinkName(changedOriginalTable);
 
 %%
-LabLinkFormatNameCell  =defMCADLabLinkFortCell(MachineData);
+LabLinkFormatNameCell  =defMCADLabLinkFormatCell(MachineData);
 % table 4 txt
 table4txt               =filterAndMergeTables(changedOriginalTable,LabLinkFormatNameCell,MachineData);
 %

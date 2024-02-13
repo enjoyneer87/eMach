@@ -86,7 +86,7 @@ ax = gca; % 현재 그래프의 축 가져오기
 ax.ZLabel.String='AC Loss of Cuboid [W]';
 
 for i=1:height(AClossMap)
-    ACLossMap(i).data=reshape(Map(i,:),6,5)
+    ACLossMap(i).data=reshape(AClossMap(i,:),6,5)
 end
 
 

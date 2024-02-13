@@ -1,4 +1,4 @@
-function scaledResistance = scaleResistancebyTemp(resistance, temperature, varargin)
+function scaledResistance = scaleResistance(resistance, temperature, varargin)
     % resistance: 원래 저항 값
     % temperature: 스케일링할 온도 값
     % varargin: 추가 인자 (alpha, T0)
@@ -16,10 +16,9 @@ function scaledResistance = scaleResistancebyTemp(resistance, temperature, varar
     if nargin > 3
         if ~isempty(varargin{2})
             alpha = varargin{2};
-
         end
     end
     
-    % 스케일링된 저항 계산
-    scaledResistance = resistance * (1 + alpha * (temperature - T0));
+    % 두 번째 함수 'scaleResistancebyTemp'를 호출하여 스케일링된 저항 계산
+    scaledResistance = scaleResistancebyTemp(resistance, temperature, T0, alpha);
 end

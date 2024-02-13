@@ -11,6 +11,7 @@ function ImportExternalTXTLabModel(LabLinkTxtPath,BuildData,mcad,ScaledMachineDa
     %% Lab Build Variable
     mcad.SetVariable('ElectroLink_MotorLAB','Custom (Advanced)');
     mcad.SetMotorLABContext()
+    
     mcad.SetVariable('CalcTypeCuLoss_MotorLAB',     LabBuildData.CalcTypeCuLoss_MotorLAB);
 
     % AC Loss
@@ -26,18 +27,11 @@ function ImportExternalTXTLabModel(LabLinkTxtPath,BuildData,mcad,ScaledMachineDa
     mcad.SetVariable('BandingLossCalc_Lab',         LabBuildData.BandingLossCalc_Lab);
     mcad.SetVariable('BandingLossCoefficient_Lab',  LabBuildData.BandingLossCoefficient_Lab);
     
-    %%    
+    %% ScaledMachineData    
     if nargin>3
+    mcad.SetVariable('GeometryParameterisation',1);   
     setMcadVariable(ScaledMachineData,mcad);
     mcad.ShowMagneticContext()
-    if MotorCADGeo.Armature_CoilStyle==0  % 환선
-        mcad.SetVariable('Armature_Winding_Definition',2); 
-        mcad.SetVariable('RequestedGrossSlotFillFactor',MotorCADGeo.GrossSlotFillFactor);
-        mcad.SetVariable('GeometryParameterisation',1);
-    elseif MotorCADGeo.Armature_CoilStyle==1
-        mcad.SetVariable('Copper_Width',ScaledMachineData.Copper_Width );
-        mcad.SetVariable('Copper_Height',ScaledMachineData.Copper_Height);
-    end
     end
 
     mcad.ClearModelBuild_Lab();

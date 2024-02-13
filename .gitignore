@@ -45,7 +45,6 @@ LineCurrent.csv
 *.txt
 *.xlsx
 temp**
-review**
 *.mat
 tests/validation_w_map_motorcad_osilo.m
 Class/getFieldNames.m
