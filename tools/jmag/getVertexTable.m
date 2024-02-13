@@ -4,8 +4,9 @@ function vertexTable=getVertexTable(StartVertex,app)
 % Obj Handle
 % Name
 % Type
-% X Y Position
+% X Y Z Position [CC] & R theta
 StartVertexTable    =getPositionTableFromPostionObj( StartVertex );
+
 %% RefObj
 % refObj Handle
 %  Id
