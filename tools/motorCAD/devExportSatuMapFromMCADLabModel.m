@@ -3,6 +3,7 @@ function [BuildingData]=devExportSatuMapFromMCADLabModel(SatuMapFilePath,mcad,Sa
 % isBuilt=mcad.GetModelBuilt_Lab
 
 BuildingData=getMCADBuildingData(mcad);
+referenceSpeed=BuildingData.MotorCADGeo.referenceSpeed ;
 
 %% SaturationMap Export Using Tool
 SaturationMap_PhaseAdvanceMax=90;
