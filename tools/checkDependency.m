@@ -30,7 +30,7 @@ for i = 1:length(fileList)
     fclose(fid);
     
     % 검색 문자열이 파일 내용에 포함되어 있는지 확인
-    if contains(fileContent, searchStr)
+    if contains(fileContent, searchStr,"IgnoreCase",true)
         
         % 포함되어 있다면 파일 이름을 리스트에 추가
         matchedFiles{end+1} = fileList(i).name;

@@ -1,9 +1,8 @@
-function fft_1d_gif(file_name,data,p,orderEnd)
+function fft_1d_gif(file_name,data,p)
 load(file_name);
 
-% for i=1:height(data)
-%     clf;
-i=1
+for i=1:height(data)
+    clf;
     B_rad_X = fft(data(i,:)); 
     N=length(data);
     Side = B_rad_X(1:N/2);
@@ -16,18 +15,17 @@ i=1
     end
     
 %     figure 
-    bar(fft_Br(1:orderEnd));
-%     xticks(ticks)
+    bar(fft_Br(1:124));
+    xticks(ticks)
 
 % %     formatter
     set(gca,'FontName','Times New Roman','FontSize',12)
-    xlabel('Order','FontName','Times New Roman', 'FontSize',12,'FontWeight','B');
-    ylabel('Voltage[V]','FontName','Times New Roman', 'FontSize',12,'FontWeight','B');
+    xlabel('Wavenumber','FontName','Times New Roman', 'FontSize',12,'FontWeight','B');
+    ylabel('B_{rad}[T]','FontName','Times New Roman', 'FontSize',12,'FontWeight','B');
     box on
-%     title('Spatial FFT Br')
-%     text(80,0.5,strcat("Time","[sec]-",num2str(time(i)) ));
-%     drawnow limitrate
-%     getframe(gcf); 
-% end
-hold on
+    title('Spatial FFT Br')
+    text(80,0.5,strcat("Time","[sec]-",num2str(time(i)) ));
+    drawnow limitrate
+    getframe(gcf); 
+end
 end

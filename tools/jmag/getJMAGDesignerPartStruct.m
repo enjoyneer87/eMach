@@ -1,5 +1,9 @@
 function PartStruct=getJMAGDesignerPartStruct(app,NumGroups)
+    if strcmp(class(app),'COM.designer_Application_222') 
     Model=app.GetCurrentModel();
+    else
+    Model=app;
+    end
     if nargin<2
     PartIds=Model.GetPartIDs();
     % elseif        IsGroup==1

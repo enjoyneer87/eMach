@@ -1,37 +1,43 @@
-function propertiesTableWithValue=getJMagStudyProperties(Study)
+function [propertiesTable, StepTable]=getJMagStudyProperties(Study)
 
-StudyProperties =Study.GetStudyProperties();
-propertiesTable=defJMAG2DStudyPropertiesTable(Study);
+% •typeName
+% gtypeNameh is the type name used for conditions and circuit components.
+% 
+% •propName
+% “propName” is the name of the property that is used for various settings.
 
-AutomationNameColName        =propertiesTable.propertiesName;
-typeofCurrentValueVarData    =propertiesTable.Category;
+% •Flag
+% “Flag” is an argument that is used to turn on/off the property. A flag is used to categorize patterns, such as A-1, B-2, and C-3. A flag is an integer that does not have a unit (cannot be converted to a unit).
+% 
+% •Double
+% “Double” is the property of a real number type including decimal numbers.
+% 
+% 
+% •String
+% “String” is the property of the string type.
+% 
+% 
+% •Table
+% “Table” is the property of the point sequence type.
+% 
+% 
+% •TableList
+% “TableList” is the point sequence of the multidimensional type.
+% 
+% 
+% •Vector
+% “Vector” is the property of the Point type.
 
-%% For문
-    for rowIndex = 1:length(AutomationNameColName)
-        columnName = AutomationNameColName{rowIndex};
-        % if isempty(columnName) == 0 || ~isnan(columnName)
-        %     [~, valueFromMCAD] = mcad.GetVariable(columnName);
-        % end        
 
-    % 가져온 배열 데이터를 str Cell로 변환하여 'CurrentValue' 열 값을 업데이트합니다
-        typeofArrayData=typeofCurrentValueVarData{rowIndex};
-        switch typeofArrayData
-            case 'Flag'
-            propertiesTable.('PropertiesValue(KeyValue)'){rowIndex}=StudyProperties.GetFlagAsString(columnName);
-            case 'Double'
-            % variableTable.CurrentValue{rowIndex} = StudyProperties.GetValueWithUnit(columnName);
-            propertiesTable.('PropertiesValue(KeyValue)'){rowIndex} =StudyProperties.GetValue(columnName);
-            case 'Coordinate System'
-            propertiesTable.('PropertiesValue(KeyValue)'){rowIndex} = StudyProperties.GetCoordinateSystemName(columnName);
-            % propertiesTable.('PropertiesValue(KeyValue)'){rowIndex} = StudyProperties.GetCoordinateSystemIndex(columnName);
-            case 'Table'
-            propertiesTable.('PropertiesValue(KeyValue)'){rowIndex}= StudyProperties.GetTable(columnName);
-            case 'String'
-            propertiesTable.('PropertiesValue(KeyValue)'){rowIndex}=StudyProperties.GetStringValue(columnName);
-        end 
-    end
 
-%% Value Out
-propertiesTableWithValue=propertiesTable;
+StudyPropertiesObj =Study.GetStudyProperties();
+propertiesTable=defJMAG2DStudyPropertiesTable(StudyPropertiesObj);
+propertiesTable=getJMagStudyPropertiesTableValue(propertiesTable,StudyPropertiesObj);
+
+StepObj= Study.GetStep;
+StepTable=defJMAG2DStudyPropertiesTable(StepObj);
+StepTable=getJMagStudyPropertiesTableValue(StepTable,StepObj);
+
+
 
 end

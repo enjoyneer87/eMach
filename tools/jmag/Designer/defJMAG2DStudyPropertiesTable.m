@@ -1,6 +1,6 @@
-function propertiesTable=defJMAG2DStudyPropertiesTable(Study)
+function propertiesTable=defJMAG2DStudyPropertiesTable(StudyProperties)
     % Study           =app.GetCurrentStudy;
-    StudyProperties =Study.GetStudyProperties();
+    % StudyProperties =Study.GetStudyProperties();
     JmagPropertyTableFormat=StudyProperties.GetPropertyTable();
     % 데이터 샘플과 카테고리컬 리스트 선언
     categoricalList = {'Flag', 'Double', 'Coordinate System', 'Table','String'}; % 카테고리컬 변수 목록
