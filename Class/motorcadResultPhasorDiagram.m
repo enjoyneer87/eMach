@@ -3,7 +3,7 @@ function ResultMotorcadEmagPhasorDiagram= motorcadResultPhasorDiagram(ResultMoto
 %   Detailed explanation goes here
 % 1
 % RmsBackEMFPhase
-mcad = actxserver('MotorCAD.AppAutomation');
+% mcad = actxserver('MotorCAD.AppAutomation');
 
 [success,ResultMotorcadEmagPhasorDiagram.ShaftSpeed]=invoke(mcad,'GetVariable','ShaftSpeed');
 [success,ResultMotorcadEmagPhasorDiagram.RMSBackEMFPhase] = invoke(mcad,'GetVariable','RmsBackEMFPhase');

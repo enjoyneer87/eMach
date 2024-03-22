@@ -1,11 +1,14 @@
-function variable=getMcadVariable(variable,mcad)    
+function StructData=getMcadVariable(StructData,mcad)    
 %%  dependency Check
     % convertCharTypeData2FieldData
-
-    variableFieldsName = fieldnames(variable);
+    if isstruct(StructData)
+    variableFieldsName = fieldnames(StructData);
+    elseif ischar(StructData)
+    variableFieldsName=StructData;   
+    end
     %% fieldIndex 1은 motFile Path
     
-    for fieldIndex = 1:length(fieldnames(variable))
+    for fieldIndex = 1:length(fieldnames(StructData))
         fieldName = variableFieldsName{fieldIndex};
         originalFieldName = fieldName; % Store the original field name
         
@@ -20,10 +23,10 @@ function variable=getMcadVariable(variable,mcad)
         % Use the original field name for assignment
         [~, fieldData] = mcad.GetVariable(fieldName);
         if strcmp(fieldName,'CurrentMotFilePath_MotorLAB')
-        variable.(originalFieldName)=fieldData;    
+        StructData.(originalFieldName)=fieldData;    
         else
         fieldData = convertCharTypeData2ArrayData(fieldData); % char형을 배열로
-        variable.(originalFieldName) = fieldData;
+        StructData.(originalFieldName) = fieldData;
         end
     end
 end

@@ -5,16 +5,15 @@ function plotMultipleSubplots(plotFunction, matList, subPlotList, lastfigure,sta
         startfigure = 1;
     end
     if nargin <3
-        if ischar(matList)
-            % |length(matList)<2
+        if ischar(matList) |length(matList)<2
         matData1=load(matList);
         subPlotList=fieldnames(matData1);
-        elseif isstruct(matList)
+        elseif isstruct(matList)&length(matList)<2
         matData1=matList;
         subPlotList=fieldnames(matData1);
-        else
-        matData1=load(matList.ElecMatFileList{1});
-        matData2=load(matList.ElecMatFileList{2});
+        elseif isstruct(matList)&length(matList)==2
+        matData1=load(matList(1).ElecMatFileList{1});
+        matData2=load(matList(2).ElecMatFileList{1});
         subPlotList=fieldnames(matData1);
         end
     end
@@ -22,10 +21,10 @@ function plotMultipleSubplots(plotFunction, matList, subPlotList, lastfigure,sta
     if ischar(matList)
     charCell = getVarNameFromMatfileByType(matList,'char');
     varsStrWithHeight1 = getVariablesHeight1FromMatFile(matList);
-    elseif isstruct(matList)
-    charCell = getVarNameFromMatData(matList,'char');
+    elseif isstruct(matList)&length(matList)<2
+    charCell = getVarNameFromMatData(matList(1).ElecMatFileList{1},'char');
     varsStrWithHeight1=getVariablesHeight1FromMatData(matList); 
-    else
+    elseif isstruct(matList)&length(matList)==2
     charCell = getVarNameFromMatfileByType(matList(1).ElecMatFileList{1},'char');
     varsStrWithHeight1 = getVariablesHeight1FromMatFile(matList(1).ElecMatFileList{1});
     end
@@ -76,7 +75,7 @@ function plotMultipleSubplots(plotFunction, matList, subPlotList, lastfigure,sta
     [typeStrt.LossCell, ~, ~]                 =findUniqueAndNonUniqueStrings(typeStrt.LossCell,    string2Delete);  
     [typeStrt.TorqueCell, ~, ~]               =findUniqueAndNonUniqueStrings(typeStrt.TorqueCell,    string2Delete);  
     %% 
-    % importMatfile(matList.ElecMatFileList{1}, matDataFieldName)
+    % importMatfile(matList(1).ElecMatFileList{1})
     % matData1=rmfieldByType(matData1,'char');
     % matData2=rmfieldByType(matData2,'char');
     % varNamesCell = getVariablesHeight1FromMatFile(matFileName)

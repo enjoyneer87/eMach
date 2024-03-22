@@ -19,6 +19,7 @@ function newStruct = filterWithFieldValueStruct(structArray, FieldName, stringCe
             matchedStruct{end + 1} = structArray(i);
         end
     end
+    
     for i=1:length(matchedStruct)
      newStruct(i)=matchedStruct{i};
     end

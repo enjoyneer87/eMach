@@ -41,7 +41,9 @@ function h = plotDifferenceBetweenTwoMCADElec(Mat_File_Path1, Mat_File_Path2, ob
 
     % 등고선 설정
     cmin = min(dataDiff(:));
-    cmax = max(dataDiff(:));
+   cmax = max(dataDiff(:));
+    % cmin = -0.3;
+    % cmax = 0.3;
     cntrs = linspace(cmin, cmax, 20); % 등고선 레벨 수를 조절할 수 있습니다.
 
     % 효율성 차이 등고선 플롯 (contour 함수 사용)

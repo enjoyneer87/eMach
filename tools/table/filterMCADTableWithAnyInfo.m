@@ -5,6 +5,8 @@ function matchingRows2Table = filterMCADTableWithAnyInfo(MCADTable, filterCriter
     
     % Filter the table using the matching indices
     matchingRows2Table = MCADTable(matchingIndices, :);
+    
+    
     elseif filterType==1 % filterOut
         % switch class(MCADTable.(FilterVar))
             % case 'categorical'
