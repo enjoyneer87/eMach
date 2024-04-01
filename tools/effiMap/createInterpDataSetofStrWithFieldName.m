@@ -15,7 +15,7 @@ function [fitresult, gof, DataSet] = createInterpDataSetofStrWithFieldName(build
     % end
 
     if ~isvarofTable(inputTable,'Id_Peak')
-        [inputTable.Id_Peak, inputTable.Iq_Peak]=pkbeta2dq(inputTable.Is, inputTable.("Current Angle"));
+        [inputTable.Id_Peak, inputTable.Iq_Peak]=pkgamma2dq(inputTable.Is, inputTable.("Current Angle"));
     end
     % 데이터 준비
     
