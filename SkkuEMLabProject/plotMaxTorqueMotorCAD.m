@@ -1,4 +1,11 @@
 function  [speedArray, BorderTorque]=plotMaxTorqueMotorCAD(matdata,onlyMaxLine)
+    %% 데이터 로드
+    if ischar(matdata)&&contains(matdata,'.mat')
+    matdata       =            load(matdata)                ; % MAT 파일 로드
+    elseif isstruct(matdata)
+        matdata=matdata;
+    end
+
     if nargin>1
     widthPlot=width(matdata.Speed);
     startline=widthPlot;
