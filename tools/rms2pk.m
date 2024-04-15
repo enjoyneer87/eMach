@@ -1,3 +1,3 @@
 function pkvalue=rms2pk(rmsvalue)
-    pkvalue=rmsvalue*sqrt(2);
+    pkvalue=rmsvalue.*sqrt(2);
 end

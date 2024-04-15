@@ -1,4 +1,6 @@
 function [LdFitResult, LqFitResult,PMFit2DReulst,FitMCADTable] = fitLdLqMapsFromMCADTable(MCADLinkTable)
+
+    %% 수정필요
     % mcadTable에서 Is와 CurrentAngle 추출
     Is = MCADLinkTable.Is;
     CurrentAngle = MCADLinkTable.("Current Angle");   
@@ -15,9 +17,10 @@ function [LdFitResult, LqFitResult,PMFit2DReulst,FitMCADTable] = fitLdLqMapsFrom
     [PMFit2DReulst,~,DataSet]=createInterpDataSet(MCadIdIqTable,"PM Flux Linkage");
     % plotFitResult(PMFit2DReulst,DataSet,0)
 
+  
     %% Table 4 Inductance
     nonZeroCurrentIndex=(~difftol(idm,0) &(~difftol(iqm,0)));
-    NonZeroITable=table()
+    NonZeroITable=table();
     NonZeroITable.Is=MCadIdIqTable.Is(nonZeroCurrentIndex);
     NonZeroITable.("Current Angle")=MCadIdIqTable.("Current Angle")(nonZeroCurrentIndex);
     NonZeroITable.idm=MCadIdIqTable.idm(nonZeroCurrentIndex);
