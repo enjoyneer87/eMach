@@ -4,15 +4,15 @@ function BuildingData=getMCADBuildingData(mcad)
 %% MotorCADGeo Get Lab Model Data
 BuildingData.MotorCADGeo=tempDefMCADMachineData4Scaling(mcad);
 
-[~,referenceSpeed   ]          =mcad.GetVariable('FEALossMap_RefSpeed_Lab' );
-[~,SpeedMax_MotorLAB]          =mcad.GetVariable('SpeedMax_MotorLAB');
-[~,CurrentSpec_MotorLAB]       =mcad.GetVariable('CurrentSpec_MotorLAB');
+[~,referenceSpeed   ]                   =mcad.GetVariable('FEALossMap_RefSpeed_Lab' );
+[~,SpeedMax_MotorLAB]                   =mcad.GetVariable('SpeedMax_MotorLAB');
+[~,CurrentSpec_MotorLAB]                =mcad.GetVariable('CurrentSpec_MotorLAB');
 if CurrentSpec_MotorLAB==0
-    [~,Imaxpk             ]          =mcad.GetVariable('MaxModelCurrent_MotorLAB');
+    [~,Imaxpk             ]             =mcad.GetVariable('MaxModelCurrent_MotorLAB');
     Imaxrms= Imaxpk/sqrt(2);
     Imax=Imaxpk;
 elseif double(CurrentSpec_MotorLAB)==1    
-    [~,Imaxrms             ]          =mcad.GetVariable('MaxModelCurrent_RMS_MotorLAB');
+    [~,Imaxrms             ]            =mcad.GetVariable('MaxModelCurrent_RMS_MotorLAB');
     Imaxpk = Imaxrms*sqrt(2);
     Imax=Imaxrms;
 end

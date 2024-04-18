@@ -128,29 +128,24 @@ ax.YLim=[0 1785.5]
 % ref MotFile에서 정보를 읽어서 Table형태로 변환, [eetLUTdq호환은 이 테이블기준으로 추후 추가], 
 % JMAG, Pyleecan
 %% 입력창
-parentPath                      = 'Z:\Simulation\LabProject2023v3MDPI\ValidationDesign89Temp65';
-[motFileMDPI,matFileListMDPI]   = getResultMotMatList(parentPath);
+% parentPath                      = 'Z:\Simulation\LabProject2023v3MDPI\ValidationDesign89Temp65';
+% parentPath ='D:\KangDH\Optislang_Motorcad\HDEV_CODE2'
+% parentPath ='D:\KangDH\Optislang_Motorcad\'
+% parentPath                          = 'G:\KangDH\LabProj2023v3'    
+% motMatFileListTable                 = getMotMatFileListTable(parentPath);
+% NotScaled=find(~contains(motMatFileListTable.FileDir,'Scale'))
+% NotScaledList=motMatFileListTable(NotScaled,:)
 
-motMatFileListTable = getMotMatFileListTable(parentPath);
+
+%%
+% subParentPath                       =getSubPathStructList(parentPath)
+% poleslotPath                        =getSubPathStructList([parentPath,'\',subParentPath{4}])
+% poleslotPath                        =getSubPathStructList([parentPath,'\',subParentPath{5}])
 
 %% FileTool
 % getFileNameFromCell.mlx
                  
 %% File 분류 
-% MotFile
-    % FilePath나 이름 관련
-        % getCurrentMCADFilePath.m
-        % getBuildListFromMotFileList.m
-        % getMotResultLabDirFromMotFilePath.m
-        % getMotResultDirFromMotFilePath.m
-        % getMotFileDirNameFromBuildList.m
-
-    
-    % 데이터 추출
-        % getDataFromMotFiles.m
-        % getMcadActiveXTableFromMotFile.m
-% MCAD Log File
-        % getDataFromMessageLogFiles.m
 
 % MatFile
     % 용도별 Mat파일
@@ -169,10 +164,37 @@ motMatFileListTable = getMotMatFileListTable(parentPath);
         % getVarNameFromMatfileByType.m
         % getVariablesHeight1FromMatFile.m
 
+% MotFile
+    % FilePath나 이름 관련
+        % getCurrentMCADFilePath.m
+        % getBuildListFromMotFileList.m
+        % getMotResultLabDirFromMotFilePath.m
+        % getMotResultDirFromMotFilePath.m
+        % getMotFileDirNameFromBuildList.m
+
+    
+    % 데이터 추출
+        % getDataFromMotFiles.m
+        % getMcadActiveXTableFromMotFile.m
+% MCAD Log File
+        % getDataFromMessageLogFiles.m
+
+%% 
+parentPath='E:\KDH\8p48sVV\DOECubicSpline'
+motMatFileListTable                    =getMotMatFileListTable(parentPath);
+[BuilListMatFilePath,BuildList]        =checkBuildList(parentPath,1)
+xxxFileList(1).path=parentPath
+for i=1:1
+xxxNewFileList(i)=getBuildMotHierList(xxxFileList(i))
+end
 
 %% Factor 정의
+scaleFactor=defScalingFactor(400/220,1,0,1);
 
 %% ref Mot 파일 가져오기
+% [refLABBuildData]=getMCADBuildingData(mcad(originModelIndex));
+
+
 [SLScaledMachineData,SLLabTable,refTable] = scaleTable4LabTable(Factor,originTable,BuildData);
 
     % sc파일및 폴더 삭제
