@@ -25,7 +25,6 @@ originModelIndex=1
 % calculate_max_current(Id, Iq): 전류 벡터 Id와 Iq로부터 최대 전류를 계산합니다.
 % calculate_voltage(Rs, Id, Iq, Phid, Phiq, ws): 주어진 저항 Rs, 전류 Id, Iq, 플럭스 
 % calculate_torque(qs, p, Phid, Iq, Phiq, Id): 주어진 스테이터 위상 qs, 극 쌍 수 p, 플럭스 
-
 % calculate_power(Ud, Id, Uq, Iq, qs): 입력 전압 Ud, Uq와 전류 Id, Iq, 스테이터 위상 qs를 이용해 입력 및 출력 전력을 계산합니다.
 
 
@@ -71,11 +70,11 @@ end
 % comp_MTPA
 % 
 
-%% DOE Code
+%% 1. DOE Code
 % 
 % 
 % 
-%% PostCode
+%% -PostCode
 % 
 % DOE  데이터정리
 %     폴더정보 넣기
@@ -101,7 +100,7 @@ originLabTable=devGetMotoLabParameterData(mcad(originModelIndex));
 
 
 
-%% TN Curve Plot
+%% - TN Curve Plot
 for MatFileIndex=1:length(HDEVMat.ElecMatFileList)
 [~, ~]=plotMaxTorqueMotorCAD(HDEVMat.ElecMatFileList{MatFileIndex});
 hold on
@@ -115,13 +114,91 @@ ax=gca
 ax.XLim=[0 18000]
 ax.YLim=[0 1785.5]
 
-%% Duty Cycle Scatter
+%% - Duty Cycle Scatter
 
 
-%% 온도 Scatter
+%% - 온도 Scatter
 
-
-%% 각 해석 Setting Getter 
+%% - 각 해석 Setting Getter 
 % 결과로부터 Get
 
-%% scale Function
+%% [WIP]2. scale
+% 2024. 4 코드 변경 사항
+% reference Mot File은 Open x
+% ref MotFile에서 정보를 읽어서 Table형태로 변환, [eetLUTdq호환은 이 테이블기준으로 추후 추가], 
+% JMAG, Pyleecan
+%% 입력창
+parentPath                      = 'Z:\Simulation\LabProject2023v3MDPI\ValidationDesign89Temp65';
+[motFileMDPI,matFileListMDPI]   = getResultMotMatList(parentPath);
+
+motMatFileListTable = getMotMatFileListTable(parentPath);
+
+%% FileTool
+% getFileNameFromCell.mlx
+                 
+%% File 분류 
+% MotFile
+    % FilePath나 이름 관련
+        % getCurrentMCADFilePath.m
+        % getBuildListFromMotFileList.m
+        % getMotResultLabDirFromMotFilePath.m
+        % getMotResultDirFromMotFilePath.m
+        % getMotFileDirNameFromBuildList.m
+
+    
+    % 데이터 추출
+        % getDataFromMotFiles.m
+        % getMcadActiveXTableFromMotFile.m
+% MCAD Log File
+        % getDataFromMessageLogFiles.m
+
+% MatFile
+    % 용도별 Mat파일
+         % FilePath나 이름, list추출 관련
+        % getDOEResultMatFiles.m
+        filename=matFileListMDPI.ElecMatFileList{1};
+        varinfo=getVarInfoFromMatFile(filename) ;  
+        % getNameCellofTableFormatInMatFile.m
+        % getEnergyLossWhFromMatFileList.m
+        % getMCADLabFilePath.m
+        % getMCADLabDataFromMotFile.mlx
+        % getMatDataFromMatFileList.m
+
+        % 데이터 추출
+        % getvarNameofMatfile.m
+        % getVarNameFromMatfileByType.m
+        % getVariablesHeight1FromMatFile.m
+
+
+%% Factor 정의
+
+%% ref Mot 파일 가져오기
+[SLScaledMachineData,SLLabTable,refTable] = scaleTable4LabTable(Factor,originTable,BuildData);
+
+    % sc파일및 폴더 삭제
+
+%% 2.1- ref Mot 파일 복사(SCFEA) 및 셋팅
+    % SCFEA Mot 파일 복사 (SCLaw)
+
+% FileList
+filePath(1).motfilePath=refFilePath;
+filePath(2).motfilePath=refScaledBuildFilePath;
+filePath(3).motfilePath=SLLAwScaledModelDirMotFilePath;
+
+    
+%% 2.2 맵구성
+    %% - SCFEA 맵 구성 (FEA 해석)
+    %% - SCLaw 맵 구성 (땡겨오기)
+
+%% 2.3 성능 계산
+    %% 무게 계산
+    %% Duty Cycle
+    %% TN curve
+      %% Feasibility 판별 TN Curve 판별
+
+
+%% ref 2.4 Reference 모델과 비교 
+    % - mass, EC, 
+    % - Current Density
+    
+
