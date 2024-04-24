@@ -2,7 +2,7 @@ function BuildingData=getMCADBuildingData(mcad)
 
 
 %% MotorCADGeo Get Lab Model Data
-BuildingData.MotorCADGeo=tempDefMCADMachineData4Scaling(mcad);
+BuildingData.MotorCADGeo=devDefMCADMachineData4Scaling(mcad);
 
 [~,referenceSpeed   ]                   =mcad.GetVariable('FEALossMap_RefSpeed_Lab' );
 [~,SpeedMax_MotorLAB]                   =mcad.GetVariable('SpeedMax_MotorLAB');
@@ -17,15 +17,13 @@ elseif double(CurrentSpec_MotorLAB)==1
     Imax=Imaxrms;
 end
 % [~,Imax]          =mcad.GetVariable('MaxModelCurrent_MotorLAB');
-BuildingData.MotorCADGeo.Imaxpk              = Imaxpk             ;
-BuildingData.MotorCADGeo.Imaxrms             = Imaxrms             ;
-BuildingData.MotorCADGeo.referenceSpeed    = referenceSpeed   ;
-BuildingData.MotorCADGeo.FEALossMap_RefSpeed_Lab    = referenceSpeed;
-BuildingData.MotorCADGeo.SpeedMax_MotorLAB = SpeedMax_MotorLAB;
-BuildingData.MotorCADGeo.LabMaxRMSCurrentDensity =calcCurrentDensity(Imaxrms,double(BuildingData.MotorCADGeo.ParallelPaths),double(BuildingData.MotorCADGeo.NumberStrandsHand),BuildingData.MotorCADGeo.ArmatureConductorCSA);
+BuildingData.MotorCADGeo.Imaxpk                          = Imaxpk             ;
+BuildingData.MotorCADGeo.Imaxrms                         = Imaxrms             ;
 
-
-
+BuildingData.MotorCADGeo.referenceSpeed                  = referenceSpeed   ;
+BuildingData.MotorCADGeo.FEALossMap_RefSpeed_Lab         = referenceSpeed;
+BuildingData.MotorCADGeo.SpeedMax_MotorLAB               = SpeedMax_MotorLAB;
+BuildingData.MotorCADGeo.LabMaxRMSCurrentDensity         =calcCurrentDensity(Imaxrms,double(BuildingData.MotorCADGeo.ParallelPaths),double(BuildingData.MotorCADGeo.NumberStrandsHand),BuildingData.MotorCADGeo.ArmatureConductorCSA);
 
 
 %% Lab Model Build 정보
@@ -60,16 +58,15 @@ BuildingData.LabBuildData=defLabBuildData(mcad);
 
 
 %% PostCalcTemp Lab Calc 정보
-    [~,BuildingData.PostCalcTemp.TwindingCalc_MotorLAB]                =mcad.GetVariable('TwindingCalc_MotorLAB'             );                                                  
-    [~,BuildingData.PostCalcTemp.TmagnetCalc_MotorLAB]                 =mcad.GetVariable('TmagnetCalc_MotorLAB'              );                      
-    [~,a]=mcad.GetVariable('CurrentMotFilePath_MotorLAB');
-    BuildingData.CurrentMotFilePath_MotorLAB={a}
+    [~,BuildingData.PostCalcTemp.TwindingCalc_MotorLAB]     =mcad.GetVariable('TwindingCalc_MotorLAB'             );                                                  
+    [~,BuildingData.PostCalcTemp.TmagnetCalc_MotorLAB]      =mcad.GetVariable('TmagnetCalc_MotorLAB'              );                      
+    [~,a]                                                   =mcad.GetVariable('CurrentMotFilePath_MotorLAB');
+    BuildingData.CurrentMotFilePath_MotorLAB                ={a};
     %% Data sort By Temperature
     BuildingData.T0data.Twdg_MotorLAB           =BuildingData.Twdg_MotorLAB;
     BuildingData.T0data.Resistance_MotorLAB     =BuildingData.Resistance_MotorLAB;
     BuildingData.T0data.EndWindingResistance_Lab=BuildingData.EndWindingResistance_Lab;
     BuildingData.T0data.ResistanceActivePart    =BuildingData.Resistance_MotorLAB-BuildingData.EndWindingResistance_Lab;
-
 %% Lossparameter
 % RacRdc_MotorLAB
 [~,BuildingData.RacRdc_MotorLAB]                 =mcad.GetVariable('RacRdc_MotorLAB'              );                      

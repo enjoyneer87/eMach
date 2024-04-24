@@ -25,7 +25,7 @@ function modifiedDataStruct = getMcadActiveXTableFromMotFile(MotFilePath)
             tableName = strtrim(line(1:dotIndex-1)); % '.' 이전 부분
             restOfLine = strtrim(line(dotIndex+1:end)); % '.' 이후 부분
             
-            if isfield(modifiedDataStruct, tableName)  
+            if isfield(modifiedDataStruct, tableName)   % Catergory Check
                 expressionParts = strsplit(restOfLine, '=');
                 if numel(expressionParts) == 2
                     AutomationName = strtrim(expressionParts{1});
@@ -43,16 +43,16 @@ function modifiedDataStruct = getMcadActiveXTableFromMotFile(MotFilePath)
                         end
                     end
     
-                    Index = findMatchingIndex(modifiedDataStruct.(tableName).AutomationName, AutomationName, 'exact');
+                    AutomationNameIndex = findMatchingIndex(modifiedDataStruct.(tableName).AutomationName, AutomationName, 'exact');
                     
-                    if ~isempty(Index)
-                        currentValues = modifiedDataStruct.(tableName).CurrentValue{Index};
+                    if ~isempty(AutomationNameIndex)
+                        currentValues = modifiedDataStruct.(tableName).CurrentValue{AutomationNameIndex};
                         if isempty(currentValues)
                             newValues = value;  
                         else
                             newValues = strjoin([currentValues(:)', {value}], ':');
                         end
-                        modifiedDataStruct.(tableName).CurrentValue{Index} = {newValues};
+                        modifiedDataStruct.(tableName).CurrentValue{AutomationNameIndex} = {newValues};
                     end
                 end
             end

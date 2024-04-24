@@ -1,6 +1,6 @@
 
-mcad(1)=callMCAD
-originModelIndex=1
+mcad(1)             =callMCAD
+originModelIndex    =1
 %% TODO List
 
 
@@ -39,14 +39,14 @@ MCADLinkTable           = originLabLinkTable;
 
 
 %% dev McADLinkTable Post(LUT)
-MCADLinkTable=originLabLinkTable
-MachineData=refLABBuildData
-nTarget=500
-nTargetList=[500:500:1500]
+MCADLinkTable       = originLabLinkTable    ;             
+MachineData         = refLABBuildData       ;             
+nTarget             = 500                   ; 
+nTargetList         = [500:500:1500]        ;         
 %%    
 plotMultipleInterpSatuMapSubplots(@plotFitResult, MCADLinkTable);
 
-[Ploss_dqh, scaledDataInfo] =interpLossFitResultSpeedFromMcadTable(MCADLinkTable,MachineData,nTargetList)
+[Ploss_dqh, scaledDataInfo] =interpLossFitResultSpeedFromMcadTable(MCADLinkTable,MachineData,nTargetList);
     
 
 %% InterPolate 
@@ -54,7 +54,7 @@ plotMultipleInterpSatuMapSubplots(@plotFitResult, MCADLinkTable);
 %McadLink Table 에서 손실 interpolation 함수 생성
 % [PLossfitResult, scaledDataInfo] =interpLossdqhSpeedSetFromMCADTable(MCADLinkTable,MachineData,nTarget);
 for nIndex=1:1:length(nTargetList)
-    nTarget=nTargetList(nIndex)
+    nTarget=nTargetList(nIndex);
     [Ploss_dqh(nIndex).fitResult,scaledDataInfo]=interpLossdqhSpeedSetFromMCADTable(MCADLinkTable,MachineData,nTarget);
 end
     
@@ -97,7 +97,7 @@ HDEVModelPath='C:\Thesis\HDEV_Code3\OPD';
 originLabTable=devGetMotoLabParameterData(mcad(originModelIndex));
 % LabBuildData
 [refLABBuildData]=getMCADBuildingData(mcad(originModelIndex));
-
+MachineData = getMcadMachineDataFromMotFile(MotFilePath);
 
 
 %% - TN Curve Plot
@@ -110,9 +110,9 @@ plotTNContour('C:\Thesis\HDEV_Code3\OPD\HDEV_ob2o24i28si1f1.py.opd\Sensitivity\D
 figure(1)
 plotAnyContourByNameinMotorcad(HDEVMat.ElecMatFileList{2},'Efficiency');
 hold on
-ax=gca
-ax.XLim=[0 18000]
-ax.YLim=[0 1785.5]
+ax=gca;
+ax.XLim=[0 18000];
+ax.YLim=[0 1785.5];
 
 %% - Duty Cycle Scatter
 
@@ -125,8 +125,10 @@ ax.YLim=[0 1785.5]
 %% [WIP]2. scale
 % 2024. 4 코드 변경 사항
 % reference Mot File은 Open x
-% ref MotFile에서 정보를 읽어서 Table형태로 변환, [eetLUTdq호환은 이 테이블기준으로 추후 추가], 
+% ref MotFile에서 정보를 읽어서 Table형태로 변환, 
+% [eetLUTdq호환은 이 테이블기준으로 추후 추가] 이게 훨씬 편할꺼같긴한데... 
 % JMAG, Pyleecan
+
 %% 입력창
 % parentPath                      = 'Z:\Simulation\LabProject2023v3MDPI\ValidationDesign89Temp65';
 % parentPath ='D:\KangDH\Optislang_Motorcad\HDEV_CODE2'
@@ -180,43 +182,91 @@ ax.YLim=[0 1785.5]
         % getDataFromMessageLogFiles.m
 
 %% 
-parentPath='E:\KDH\8p48sVV\DOECubicSpline'
-motMatFileListTable                    =getMotMatFileListTable(parentPath);
-[BuilListMatFilePath,BuildList]        =checkBuildList(parentPath,1)
-xxxFileList(1).path=parentPath
-for i=1:1
-xxxNewFileList(i)=getBuildMotHierList(xxxFileList(i))
-end
+% parentPath              ='E:\KDH\8p48sVV\DOECubicSpline'                   ; 
+parentPath                ='Z:\Simulation\LabProj2023v3\230819_8P48S_Vtype'  ;             
+motMatFileListTable       = getMotMatFileListTable(parentPath);
 
-%% Factor 정의
-scaleFactor=defScalingFactor(400/220,1,0,1);
+% %% Factor 정의
+scaleFactor             =defScalingFactor(400/220,1,2,10,2,10,2);
+BuildList=getMCADData4ScalingList(parentPath,scaleFactor);
 
-%% ref Mot 파일 가져오기
-% [refLABBuildData]=getMCADBuildingData(mcad(originModelIndex));
+% 
+% %
+% [BuilListMatFilePath,BuildList]        =checkBuildList(parentPath,1);
+% %
+% xxxFileList(1).path     =parentPath;
+% for i=1:1
+% xxxNewFileList(i)       =getBuildMotHierList(xxxFileList(i));
+% end
 
+% %% ref Mot 파일 가져오기
+% FileIndex               =1;
+% MotFilePath             =mkMotFilePathFromMotFileListTable(motMatFileListTable,FileIndex);
+% %% GetMCADStruct From MotFile 4 Scale
+% % [refLABBuildData]                       =getMCADBuildingData(mcad);
+% [BuildingData,filteredTable]              = getMCADData4ScalingFromMotFile(MotFilePath);
+% [SLScaledMachineData,SLLabTable,refTable] = scaleTable4LabTable(scaleFactor,filteredTable,BuildData);
+% 
 
-[SLScaledMachineData,SLLabTable,refTable] = scaleTable4LabTable(Factor,originTable,BuildData);
-
-    % sc파일및 폴더 삭제
 
 %% 2.1- ref Mot 파일 복사(SCFEA) 및 셋팅
-    % SCFEA Mot 파일 복사 (SCLaw)
+% makeNewBuildListWithCheckLabBuild
+% SLFEAMotFilePath= mkMCADFileFromRefPath(SLFEAMotFilePath,'SLLAW');
+MotFileParentPath=[parentPath,'\','SLLAW'];
+deleteDir(MotFileParentPath)
+
+
+%% SLFEA Mot 파일 복사 (SLFEA)
+[BuildList,MotFileParentPath]=mkMCADScaledFilesFromList(BuildList,'SLFEA',parentPath);
+
+
+%% Parallel Computation Code
+[BuildList,MotFileParentPath]=mkMCADScaledFilesFromList(BuildList,'SLLAW',parentPath);
+motorCADManager = MCADLabManager(numMCAD, BuildList);
+motorCADManager.LabBuildSettingTable=defMcadLabBuildSetting();
+McadLabConditionVariable
+settingLabBuildTable = defMcadLabBuildSetting()
+
+motorCADManager.setupParallelPool();
+motorCADManager.processFiles();
+%% 턴별로 생성한뒤, 동일전류밀도에서 큰거와 작은거 비교를 위해서는 다른 턴수로 전류범위를 맞춘뒤 비교가능
+%% 정수 턴수별 AC Loss를 Plot해서 연속적인 함수로 Interpolation한뒤, Surrogate모델을 만드는것도 방법인듯
+
+% SLFEA가 먼저 없으면 SetVariable하고
+% 있으면 SetVariable 하기
 
 % FileList
-filePath(1).motfilePath=refFilePath;
-filePath(2).motfilePath=refScaledBuildFilePath;
+filePath(1).motfilePath=MotFilePath;
+filePath(2).motfilePath=SLFEAMotFilePath;
 filePath(3).motfilePath=SLLAwScaledModelDirMotFilePath;
-
     
-%% 2.2 맵구성
+%% 2.2 MCAD에 맵구성
     %% - SCFEA 맵 구성 (FEA 해석)
     %% - SCLaw 맵 구성 (땡겨오기)
 
+
 %% 2.3 성능 계산
+% Build
+% CalcTN
+% CalculateMagnetic_Lab
+setMcadTableVariable(refDriveSettingTable,mcad(3));
+mcad(3).CalculateMagnetic_Lab();
+% CalculateDutyCycle_Lab
+TeslaSPlaidDutyCycleTable=defMcadDutyCycleSetting;
+RefGearRatio  = findMcadTableVariableFromAutomationName(TeslaSPlaidDutyCycleTable, 'N_d_MotorLAB')
+DutyCycleTable= updateMcadTableVariable(TeslaSPlaidDutyCycleTable,'N_d_MotorLAB',3)
+setMcadTableVariable(DutyCycleTable,mcad(3))
+mcad(3).CalculateDutyCycle_Lab();
     %% 무게 계산
-    %% Duty Cycle
+DOE8p48sVVScaledBuild = devExportWeightFromMCAD4DOEStrct(motFileList4Weight,TeslaSPlaidDutyCycleTable,40,10, mcad);
+
+    %% Duty Cycle (EC)
+    % calc DutyCycle in devReBuildDOE.mlx
+
+        %% EC계산 Setting 입력
     %% TN curve
-      %% Feasibility 판별 TN Curve 판별
+        %% TN계산 Setting 입력
+        %% Feasibility 판별 TN Curve 판별
 
 
 %% ref 2.4 Reference 모델과 비교 

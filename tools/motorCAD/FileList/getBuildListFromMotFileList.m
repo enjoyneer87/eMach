@@ -22,7 +22,7 @@ function BuildList = getBuildListFromMotFileList(MotFileList)
         %     % end
         % end
         if any(~cellfun(@isempty, BuildList(index, :))) % 현재 행에 값이 있는 경우에만 인덱스 증가
-            index = index + 1 % 색인 업데이트
+            index = index + 1; % 색인 업데이트
         end
     end
 end

@@ -1,7 +1,5 @@
 function combinedStruct=mergestruct(struct1,struct2)
 
-mergeStruct
-
 % 구조체 합치기
 fieldNames1 = fieldnames(struct1);
 fieldNames2 = fieldnames(struct2);

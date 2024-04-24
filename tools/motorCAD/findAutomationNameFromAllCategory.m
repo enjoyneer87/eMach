@@ -7,7 +7,7 @@ function [filteredTable, MatchedcategoryName] = findAutomationNameFromAllCategor
     for categoryIndex = 1:length(categoryNameList)
         categoryName = categoryNameList{categoryIndex};
         MCADsomeTable = ActiveXParametersStruct.(categoryName);    
-        matchingIndices = findMatchingIndex(MCADsomeTable.AutomationName, filterCriteria);
+        matchingIndices = findMatchingIndex(MCADsomeTable.AutomationName, filterCriteria,'exact');
         
         % Filter the table using the matching indices
         if ~isempty(matchingIndices)
