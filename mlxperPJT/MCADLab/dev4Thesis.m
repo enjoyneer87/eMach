@@ -106,7 +106,7 @@ for MatFileIndex=1:length(HDEVMat.ElecMatFileList)
 hold on
 end
 % Effimap 계산
-plotTNContour('C:\Thesis\HDEV_Code3\OPD\HDEV_ob2o24i28si1f1.py.opd\Sensitivity\Design0600\HDEV_Model2_Design0600\Lab\MotorLAB_elecdata.mat',)
+plotTNContour('C:\Thesis\HDEV_Code3\OPD\HDEV_ob2o24i28si1f1.py.opd\Sensitivity\Design0600\HDEV_Model2_Design0600\Lab\MotorLAB_elecdata.mat')
 figure(1)
 plotAnyContourByNameinMotorcad(HDEVMat.ElecMatFileList{2},'Efficiency');
 hold on
@@ -182,53 +182,44 @@ ax.YLim=[0 1785.5];
         % getDataFromMessageLogFiles.m
 
 %% 
-% parentPath              ='E:\KDH\8p48sVV\DOECubicSpline'                   ; 
-parentPath                ='Z:\Simulation\LabProj2023v3\230819_8P48S_Vtype'  ;             
+%% 
+parentPath              ='E:\KDH\8p48sVV\'                   ; 
+% parentPath                ='Z:\Simulation\LabProj2023v3\230819_8P48S_Vtype'  ;             
 motMatFileListTable       = getMotMatFileListTable(parentPath);
 
 % %% Factor 정의
 scaleFactor             =defScalingFactor(400/220,1,2,10,2,10,2);
 BuildList=getMCADData4ScalingList(parentPath,scaleFactor);
 
-% 
-% %
-% [BuilListMatFilePath,BuildList]        =checkBuildList(parentPath,1);
-% %
-% xxxFileList(1).path     =parentPath;
-% for i=1:1
-% xxxNewFileList(i)       =getBuildMotHierList(xxxFileList(i));
-% end
-
-% %% ref Mot 파일 가져오기
-% FileIndex               =1;
-% MotFilePath             =mkMotFilePathFromMotFileListTable(motMatFileListTable,FileIndex);
-% %% GetMCADStruct From MotFile 4 Scale
-% % [refLABBuildData]                       =getMCADBuildingData(mcad);
-% [BuildingData,filteredTable]              = getMCADData4ScalingFromMotFile(MotFilePath);
-% [SLScaledMachineData,SLLabTable,refTable] = scaleTable4LabTable(scaleFactor,filteredTable,BuildData);
-% 
 
 
 %% 2.1- ref Mot 파일 복사(SCFEA) 및 셋팅
-% makeNewBuildListWithCheckLabBuild
-% SLFEAMotFilePath= mkMCADFileFromRefPath(SLFEAMotFilePath,'SLLAW');
-MotFileParentPath=[parentPath,'\','SLLAW'];
-deleteDir(MotFileParentPath)
-
+SLFEAMotFileParentPath=[parentPath,'\','SLFEA'];
+SLLAWMotFileParentPath=[parentPath,'\','SLLAW'];
+deleteDir(SLLAWMotFileParentPath)
+deleteDir(SLFEAMotFileParentPath)
 
 %% SLFEA Mot 파일 복사 (SLFEA)
-[BuildList,MotFileParentPath]=mkMCADScaledFilesFromList(BuildList,'SLFEA',parentPath);
+[BuildList,SLFEAMotFileParentPath]=mkMCADScaledFilesFromList(BuildList,'SLFEA',parentPath);
 
+%% 재시작할때 Lab Folder가 있는지 체크하고 없고, SatDate가 reMotFile 이랑 다르면 Build
 
 %% Parallel Computation Code
-[BuildList,MotFileParentPath]=mkMCADScaledFilesFromList(BuildList,'SLLAW',parentPath);
-motorCADManager = MCADLabManager(numMCAD, BuildList);
+motorCADManager = MCADLabManager(12, BuildList);
 motorCADManager.LabBuildSettingTable=defMcadLabBuildSetting();
-McadLabConditionVariable
-settingLabBuildTable = defMcadLabBuildSetting()
+% motorCADManager=motorCADManager.setupParallelPool();
+% mcad=motorCADManager.MCADInstances{1}
+% mcad.LoadFromFile(motFileData.SLFEAMotFilePath);
 
-motorCADManager.setupParallelPool();
-motorCADManager.processFiles();
+motorCADManager=motorCADManager.processSLFEA();
+
+
+% McadLabConditionVariable
+% settingLabBuildTable = defMcadLabBuildSetting()
+
+% motorCADManager.processSLFEA();
+% setPythonEnv('mcad')
+
 %% 턴별로 생성한뒤, 동일전류밀도에서 큰거와 작은거 비교를 위해서는 다른 턴수로 전류범위를 맞춘뒤 비교가능
 %% 정수 턴수별 AC Loss를 Plot해서 연속적인 함수로 Interpolation한뒤, Surrogate모델을 만드는것도 방법인듯
 

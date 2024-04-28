@@ -9,7 +9,7 @@ function checkFileNMove(FilePath)
         newFilePath = fullfile(filePath, [fileName, '_', backupDateTime, fileExt]);
         movefile(FilePath, newFilePath);
         % delete(FilePath)
-        disp(['파일이 존재하여 백업하고 다시 생성하였습니다.',newFilePath]);
+        disp(['파일이 존재하여 백업하였습니다.',newFilePath]);
     end
 
 end

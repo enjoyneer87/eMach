@@ -5,7 +5,7 @@ function [BuildList, MotFileParentPath] = mkMCADScaledFilesFromList(BuildList, A
     end
     
     % 출력 파일 경로 설정
-    AddName='SLLAW'
+    % AddName='SLLAW'
     MotFileParentPath = fullfile(parentPath, AddName);
     
     % 병렬 처리를 위한 parfor 루프
@@ -14,4 +14,5 @@ function [BuildList, MotFileParentPath] = mkMCADScaledFilesFromList(BuildList, A
         SLFEAMotFilePath = mkMCADFileFromRefPath(refModelPath, AddName);
         BuildList(MotFileIndex).([AddName, 'MotFilePath']) = SLFEAMotFilePath;
     end
+
 end

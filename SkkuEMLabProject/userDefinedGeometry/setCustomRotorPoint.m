@@ -1,11 +1,19 @@
 function setCustomRotorPoint(mcad)
+    pymotorcad = py.importlib.import_module('ansys.motorcad.core');
+    if ~contains(class(mcad),'COM.motorcad')
+        if py.isinstance(mcad, pymotorcad.MotorCAD)
+        disp('This is a PyMCAD');
+        setCustomRotorPointPyCAD(mcad)
+        end
+    else
+    disp('This is ActiveX MCAD');
     mcad.InitiateGeometryFromScript()
     mcad.SetVariable('UseCustomFEARegions_Magnetic',1)
     [~,VMagnet_Layers]=mcad.GetVariable('VMagnet_Layers');
     [~,BandingThickness]   =mcad.GetVariable('Banding_Thickness');
     mcad.ResetRegions();
     
-    [~,TotalString4Default]     =mcad.GetVariable('CustomFEARegions_Magnetic');
+    [~,TotalString4Default]     = mcad.GetVariable('CustomFEARegions_Magnetic');
     magnetTable                 = extractMagnetPositions(TotalString4Default,'Magnet');
     PocketTable                 = extractMagnetPositions(TotalString4Default,'Rotor Pocket');
     
@@ -101,6 +109,8 @@ function setCustomRotorPoint(mcad)
         end
     end
 
+   
+    end
 end
 
 

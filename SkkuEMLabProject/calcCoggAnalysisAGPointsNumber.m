@@ -16,3 +16,4 @@ function NPointsofAGMotorCAD=calcCoggAnalysisAGPointsNumber(Pole,Slots,PointPer1
     NPointsofAGJMAG =NPointsofAG/ModelPeriodicNumber;   
 
 end
+
