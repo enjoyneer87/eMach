@@ -184,7 +184,7 @@ ax.YLim=[0 1785.5];
 %% 
 %% 
 parentPath              ='E:\KDH\8p48sVV\'          ; 
-parentPath              ='E:\KDH\230819_8P48S_Vtype';
+% parentPath              ='E:\KDH\230819_8P48S_Vtype';
 % parentPath                ='Z:\Simulation\LabProj2023v3\230819_8P48S_Vtype'  ;             
 motMatFileListTable       = getMotMatFileListTable(parentPath);
 
@@ -195,12 +195,13 @@ BuildTable              =struct2table(BuildList)                ;
 
 %% 2.1- ref Mot 파일 복사(SCFEA) 및 셋팅
 DOEDIR               =fullfile(parentPath,'DOECubicSpline');
-DOEPath_8P48SV        =fullfile(parentPath,'DOE');
+DOEDIR        =fullfile(parentPath,'DOE');
 
 SLFEAMotFileParentPath=fullfile(parentPath,'SLFEA');
-SLLAWMotFileParentPath=fullfile(parentPath,'SLLAW');
+SLLAWMotFileParentPath=fullfile(parentPath,'SLLAW\');
 deleteDir(SLLAWMotFileParentPath)
 deleteDir(SLFEAMotFileParentPath)
+
 
 
 %% Build Check
@@ -210,11 +211,9 @@ LabList_8p48sVVBuildFromClass=LabList_8p48sVV.toTable;
 %% SLFEA Mot 파일 복사 (SLFEA)
 [SLFEAList2BuildFromMKList,SLFEAMotFileParentPath]=mkMCADScaledFilesFromList(LabList_8p48sVVBuildFromClass,'SLFEA',parentPath);
 
-Obj_SLFEALabList_8p48sVV                               =MCADBuildList(SLFEAMotFileParentPath);
-SLFEALabListTable_8p48sVVBuildFromClass                =Obj_SLFEALabList_8p48sVV.toTable;
-mergeSLFEATable      =mergeTables(BuildTable,SLFEALabListTable_8p48sVVBuildFromClass);
 
-
+%% 2.2 MCAD에 맵구성
+    %% - SCFEA 맵 구성 (FEA 해석)
 %% Parallel Computation Code
 motorCADManager = MCADLabManager(12, mergeSLFEATable);
 motorCADManager.LabBuildSettingTable=defMcadLabBuildSetting();
@@ -223,60 +222,118 @@ motorCADManager=motorCADManager.processSLFEA();
 % SLLAW 파일 복사
 [SLLAWList2BuildFromClass,SLLAWMotFileParentPath]      =mkMCADScaledFilesFromList(SLFEALabListTable_8p48sVVBuildFromClass,'SLLAW',parentPath);
 
+    %% - SCLaw 맵 구성 (땡겨오기)
 %% 재시작할때 Lab Folder가 있는지 체크하고 없고, SatDate가 reMotFile 이랑 다르면 Build
 runMCADIterativeProcess(SLFEAMotFileParentPath,BuildTable, 'SLFEA')
 runMCADIterativeProcess(SLLAWMotFileParentPath,BuildTable, 'SLLAW')
 
-% FileList            =getBuildMotHierList(mergeSLFEATable)
+%%  SLLAW vs SLFEA 검증 비교
+Obj_SLLAWLabList_8p48sVV                               =MCADBuildList(SLLAWMotFileParentPath);
+SLLAWLabListTable_8p48sVVBuildFromClass                =Obj_SLLAWLabList_8p48sVV.toTable;
+
+Obj_SLFEALabList_8p48sVV                               =MCADBuildList(SLFEAMotFileParentPath);
+SLFEALabListTable_8p48sVVBuildFromClass                =Obj_SLFEALabList_8p48sVV.toTable;
+mergeSLFEATable      =mergeTables(BuildTable,SLFEALabListTable_8p48sVVBuildFromClass);
+
+SLLAWBuildList               =getMCADData4ScalingList(SLLAWMotFileParentPath,scaleFactor);
+SLFEABuildList               =getMCADData4ScalingList(SLFEAMotFileParentPath,scaleFactor);
+
+% LabBuildData Check - MagLossCoeff_MotorLAB, 
+% IronLossCalculationType - Bertotti로 변경필요
+BuildList(2).BuildingData.LabBuildData
+SLLAWBuildList(2).BuildingData.LabBuildData
+SLFEABuildList(2).BuildingData.LabBuildData
+
+SLLAWTable=SLLAWBuildList(2).refTable;
+SLFEATable=SLFEABuildList(2).refTable;
+SLLAWTable.Properties.Description='SL Law';
+SLFEATable.Properties.Description='SL FEA';
+
+% Plot
+plotMultipleInterpSatuMapSubplots(@plotFitResult, SLLAWTable,SLFEATable);
 
 
-%% 
 DOE=createDOEstructFromMotFileList(mergeSLFEATable.MotFilePath);
-FileList=getBuildMotHierList(mergeSLFEATable.MotFilePath)
+FileList=getBuildMotHierList(mergeSLFEATable.MotFilePath)      ;
 
-
-%% 턴별로 생성한뒤, 동일전류밀도에서 큰거와 작은거 비교를 위해서는 다른 턴수로 전류범위를 맞춘뒤 비교가능
-%% 정수 턴수별 AC Loss를 Plot해서 연속적인 함수로 Interpolation한뒤, Surrogate모델을 만드는것도 방법인듯
-
-% SLFEA가 먼저 없으면 SetVariable하고
-% 있으면 SetVariable 하기
-
-% FileList
-filePath(1).motfilePath=MotFilePath;
-filePath(2).motfilePath=SLFEAMotFilePath;
-filePath(3).motfilePath=SLLAwScaledModelDirMotFilePath;
-    
-%% 2.2 MCAD에 맵구성
-    %% - SCFEA 맵 구성 (FEA 해석)
-    %% - SCLaw 맵 구성 (땡겨오기)
-
-
+%  temp  명령어
+mcad=callMCAD;
+mcad.ShowMagneticContext()
+% "Electromagnetic", "Thermal", "Generator", "Duty Cycle", and "Calibration".
+mcad.SetMotorLABContext();
+mcad.InitialiseTabNames;
+mcad.DisplayScreen('Calculation');
 %% 2.3 성능 계산
-% Build
-% CalcTN
-% CalculateMagnetic_Lab
-setMcadTableVariable(refDriveSettingTable,mcad(3));
-mcad(3).CalculateMagnetic_Lab();
-% CalculateDutyCycle_Lab
-TeslaSPlaidDutyCycleTable=defMcadDutyCycleSetting;
-RefGearRatio  = findMcadTableVariableFromAutomationName(TeslaSPlaidDutyCycleTable, 'N_d_MotorLAB')
-DutyCycleTable= updateMcadTableVariable(TeslaSPlaidDutyCycleTable,'N_d_MotorLAB',3)
-setMcadTableVariable(DutyCycleTable,mcad(3))
-mcad(3).CalculateDutyCycle_Lab();
-    %% 무게 계산
-DOE8p48sVVScaledBuild = devExportWeightFromMCAD4DOEStrct(motFileList4Weight,TeslaSPlaidDutyCycleTable,40,10, mcad);
-
-    %% Duty Cycle (EC)
-    % calc DutyCycle in devReBuildDOE.mlx
-
-        %% EC계산 Setting 입력
     %% TN curve
         %% TN계산 Setting 입력
-        %% Feasibility 판별 TN Curve 판별
+% CalcTN & 효율맵(TN만 하고 DutyCycle로 그냥계산하면될꺼같은데)
+% CalculateMagnetic_Lab - LabManager
+refDriveSettingTable=defMcadLabCalcSetting();  
+setMcadTableVariable(refDriveSettingTable,mcad);
+tic
+mcad.CalculateMagnetic_Lab();
+toc % 10.512sec
+mcad.ShowResultsViewer_Lab("Electromagnetic")
+        %% [TB] Feasibility 판별 TN Curve 판별
 
+%% Duty Cycle (EC)
+% CalculateDutyCycle_Lab - LabManager 
+% [DONE]calc DutyCycle in devReBuildDOE.mlx
+%% EC계산 Setting 입력
+TeslaSPlaidDutyCycleTable=defMcadDutyCycleSetting();
+RefGearRatio  = findMcadTableVariableFromAutomationName(TeslaSPlaidDutyCycleTable, 'N_d_MotorLAB');
+DutyCycleTable= updateMcadTableVariable(TeslaSPlaidDutyCycleTable,'N_d_MotorLAB',3);
+setMcadTableVariable(DutyCycleTable,mcad);
+tic
+mcad.CalculateDutyCycle_Lab();
+toc
+% 29sec
+[motFileList4Weight, DutyCycleMatFileList,ElecMatFileList,matFileList] = getDriveMatList(DOE8p48sVVPath)
+fileList(3).DOE = getEnergyLossWhFromMatFileList(DutyCycleMatFileList, fileList(3).DOE);
+
+%dev
+xxxFileList(3).MatFile{loopIndex}.DutyMatData=calcDutyCycleLossFromMatFile(xxxFileList(3).MatFile{loopIndex}.DutyMatFilePath)
+xxxFileList(3).DOE.(designN3).SumofTotalLoss=xxxFileList(3).MatFile{loopIndex}.DutyMatData;
+      
+%% 무게 계산
+DOE8p48sVVScaledBuild = devExportWeightFromMCAD4DOEStrct(motFileList4Weight,TeslaSPlaidDutyCycleTable,40,10, mcad);
+
+MotFilePath=getCurrentMCADFilePath(mcad)
+modifiedData = getDataFromMotFiles(MotFilePath);
+
+%% gear
+computeMotorGearWeight2DOEStruct
+
+    modifiedData(find(contains(modifiedData,'Weight')))
+modifiedDataStruct = getMcadActiveXTableFromMotFile(MotFilePath)
+a=modifiedDataStruct.Weight_Total
+idx = contains(modifiedData,'Material_Weight_Notes')
+idx = contains(modifiedData,'Mat_Weight_Notes')
+Material_Weight_Notes=modifiedData(idx)
+value=getValuesMotDatainCellFormat(Material_Weight_Notes)
+%% 턴별로 생성한뒤, 동일전류밀도에서 큰거와 작은거 비교를 위해서는 다른 턴수로 전류범위를 맞춘뒤 비교가능
+%% 정수 턴수별 AC Loss를 Plot해서 연속적인 함수로 Interpolation한뒤, Surrogate모델을 만드는것도 방법인듯
 
 %% ref 2.4 Reference 모델과 비교 
     % - mass, EC, 
     % - Current Density
     
 
+%% Scatter DOE
+
+
+% FileList            =getBuildMotHierList(mergeSLFEATable)
+
+
+% FileList
+% filePath(1).motfilePath=MotFilePath;
+% filePath(2).motfilePath=SLFEAMotFilePath;
+% filePath(3).motfilePath=SLLAwScaledModelDirMotFilePath;
+
+
+DesignNumber2XscatterDOEResultPerDOESet(DOE8p48sVVAGapScaledBuild, 'g', 'Scaled DOE8p48sVV reBuild', 1)
+% scatterDOEResultPerDOESet(DOE8p48sVVAGapScaledBuild,'g','Scaled DOE8p48sVV reBuild',1); 
+DesignNumber2XscatterDOEResultPerDOESet(DOE8p48sVVScaled,'g','Scaled DOE8P48sVV reBuild',0); 
+DesignNumber2XscatterDOEResultPerDOESet(DOE8P48sVV,'g','DOE8P48sVV',0); 
+%% If Efficiency Map
+plotAnyContourByNameinMotorcad(matFileListMDPI.ElecMatFileList{3},'Power_Factor')

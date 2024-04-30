@@ -1,3 +1,4 @@
 function value=getValuesMotDatainCellFormat(celldata)
-    value=str2double(extractAfter(celldata,'='));
+    a=extractAfter(celldata,'=');
+    value=str2double(a);
 end

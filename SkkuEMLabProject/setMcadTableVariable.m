@@ -10,22 +10,26 @@ function setMcadTableVariable(variableTable, mcad)
     for rowIndex = 1:length(AutomationNameColName)
         mcadVariableName = AutomationNameColName{rowIndex};
 
-        % 'CurrentValue' 열의 값을 가져와 배열 데이터로 변환합니다
+        %% 'CurrentValue' 열의 값을 가져와 배열 데이터로 변환합니다
         if ischar(variableTable.CurrentValue)
          arrayData                          = convertCharTypeData2ArrayData(variableTable.CurrentValue{rowIndex});
         elseif iscell(variableTable.CurrentValue)
          arrayData=variableTable.CurrentValue{rowIndex};
          typeofArrayData=class(arrayData);
          switch typeofArrayData
-             case 'double'
+             % case 'double'
+             % arrayData     = arrayData;
+             case 'cell'
+             arrayData=variableTable.CurrentValue{rowIndex};
              case 'char'
              arrayData     = convertCharTypeData2ArrayData(arrayData);
          end   
          % arrayData = cell2mat(variableTable.CurrentValue(rowIndex));
         elseif isnumeric(variableTable.CurrentValue)
-         arrayData =   variableTable.CurrentValue(rowIndex);
+        arrayData =   variableTable.CurrentValue(rowIndex);
         end
         
+        %% 실제 입력 
         % 단일 값인 경우
         if length(arrayData) == 1
             % 비어있지 않거나 NaN이 아닌 경우 변수 값을 설정합니다

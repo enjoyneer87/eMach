@@ -38,7 +38,7 @@ function settingTable = defMcadDutyCycleSetting()
         "B_cont_MotorLAB"          , input.B_cont_MotorLAB;
         "A_f_MotorLAB"             , input.A_f_MotorLAB;
         "C_d_MotorLAB"             , input.C_d_MotorLAB;
-        "N_d_MotorLAB"        , input.N_d_MotorLAB ;
+        "N_d_MotorLAB"             , input.N_d_MotorLAB ;
         "TorqueCapTrue_MotorLAB"   , input.TorqueCapTrue_MotorLAB;
         % input.TorqueCap_MotorLAB , [];
         "R_w_MotorLAB"             , input.R_w_MotorLAB;
@@ -62,4 +62,6 @@ function settingTable = defMcadDutyCycleSetting()
     
     % 테이블을 생성하고 반환
     settingTable = cell2table(data, 'VariableNames', {'AutomationName', 'CurrentValue'});
+    settingTable = mkMCADTablesFind5ActX(settingTable);
+
 end

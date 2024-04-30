@@ -3,7 +3,7 @@ function BuildList = getMCADData4ScalingList(parentPath, scaleFactor)
     MotFileList = removeAutoSaveFiles(MotFileList);
     MotFileList = MotFileList';
     MotFileList = MotFileList(~contains(MotFileList, 'Scale'));
-    MotFileList = MotFileList(~contains(MotFileList, 'SL'));
+    % MotFileList = MotFileList(~contains(MotFileList, 'SL'));
     MotFileList = MotFileList(~contains(MotFileList, 'MCAD'));
 
     % 빌드 리스트를 미리 초기화

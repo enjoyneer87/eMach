@@ -77,4 +77,7 @@ function settingTable = defMcadLabBuildSetting()
 
     % Create the table
     settingTable = cell2table(data, 'VariableNames', {'AutomationName', 'CurrentValue'});
+
+    settingTable = mkMCADTablesFind5ActX(settingTable);
+    
 end

@@ -45,6 +45,7 @@ function BuildingData = getMCADBuildingDataFromMotFile(ActiveXParametersStruct)
     'MagLossCoeff_MotorLAB'     ,
     'BandingLossCoefficient_Lab',
     'BandingLossCalc_Lab'       ,
+    'IronLossCalculationType'   ,
      };
      categories.coeffi={
     'HybridAdjustmentFactor_ACLosses'  ,

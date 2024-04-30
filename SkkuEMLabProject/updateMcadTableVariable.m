@@ -17,6 +17,7 @@ function McadVariableTable = updateMcadTableVariable(McadVariableTable, properti
     elseif isnumeric(currentValue)
         McadVariableTable.CurrentValue(idx) = newValue; % 값이 숫자인 경우 newValue 그대로 사용
     end
-
+    if ~isempty(newValue)
     McadVariableTable.CurrentValue(idx) = newValue;
+    end
 end
