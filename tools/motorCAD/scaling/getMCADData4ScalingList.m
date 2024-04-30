@@ -7,7 +7,7 @@ function BuildList = getMCADData4ScalingList(parentPath, scaleFactor)
     MotFileList = MotFileList(~contains(MotFileList, 'MCAD'));
 
     % 빌드 리스트를 미리 초기화
-    BuildList = repmat(struct('MotFileName', [], 'SatDate', [], 'SLScaledMachineData', [], 'SLLabTable', [], 'BuildingData', [], 'refTable', []), numel(MotFileList), 1);
+    BuildList = repmat(struct('MotFilePath', [], 'SatDate', [], 'SLScaledMachineData', [], 'SLLabTable', [], 'BuildingData', [], 'refTable', []), numel(MotFileList), 1);
 
     % MATLAB 병렬 풀을 시작 (필요한 경우)
     if isempty(gcp('nocreate'))
@@ -22,7 +22,7 @@ function BuildList = getMCADData4ScalingList(parentPath, scaleFactor)
 
         % 결과 구조체 업데이트
         if ~isempty(BuildingData.LabModel_Saturation_Date{:})
-            BuildList(MotFileIndex).MotFileName = MotFileList{MotFileIndex};
+            BuildList(MotFileIndex).MotFilePath = MotFileList{MotFileIndex};
             BuildList(MotFileIndex).SatDate = BuildingData.LabModel_Saturation_Date{:};
             BuildList(MotFileIndex).SLScaledMachineData = SLScaledMachineData;
             BuildList(MotFileIndex).SLLabTable = SLLabTable;

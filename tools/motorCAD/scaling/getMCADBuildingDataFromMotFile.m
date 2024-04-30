@@ -100,7 +100,7 @@ function BuildingData = getMCADBuildingDataFromMotFile(ActiveXParametersStruct)
         end
     end
     
-    BuildingData=checkMCADLABMaxModelCurrent(BuildingData)
+    BuildingData=checkMCADLABMaxModelCurrent(BuildingData);
 
 
 

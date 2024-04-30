@@ -3,10 +3,17 @@ function NewMotFilePath= mkMCADFileFromRefPath(refModelPath,AddName)
     
     if strcmp(AddName,'normal')
     NewMotFileDIR=fullfile(fileparts(refModelDir),AddName);
+    NewMotFileName=[refModelMotFileName,AddName];
     elseif strcmp(AddName,'SLLAW')
     PathStr=strsplit(refModelDir,'\');
     Str2Change=PathStr(contains(PathStr,'DOE'));
-    SLLAWMotFileDIR=strrep(refModelDir,Str2Change{:},AddName);
+        if ~isempty(Str2Change)
+        SLLAWMotFileDIR=strrep(refModelDir,Str2Change{:},AddName);
+        NewMotFileName =strrep(refModelMotFileName,Str2Change{:},AddName);
+        else
+        SLLAWMotFileDIR=strrep(refModelDir,'SLFEA',AddName);
+        NewMotFileName =strrep(refModelMotFileName,'SLFEA',AddName);
+        end
     NewMotFileDIR   =SLLAWMotFileDIR;
     elseif strcmp(AddName,'SLFEA')
     PathStr=strsplit(refModelDir,'\');
@@ -14,9 +21,13 @@ function NewMotFilePath= mkMCADFileFromRefPath(refModelPath,AddName)
     SLLAWMotFileDIR=strrep(refModelDir,Str2Change{:},AddName);
     SLFEAMotFileDIR=strrep(SLLAWMotFileDIR,'SLLAW',AddName);
     NewMotFileDIR  = SLFEAMotFileDIR;
+    %%FileName
+    refModelMotFileName=strrep(refModelMotFileName,'SLLAW','');
+    refModelMotFileName=strrep(refModelMotFileName,'SLFEA','');
+    NewMotFileName=[refModelMotFileName,AddName];
     end
 
-    NewMotFileName=[refModelMotFileName,AddName];
+
     NewMotFilePath=fullfile(NewMotFileDIR,[NewMotFileName,FileExt]);
     
     % NewMotFile 의  Lab Folder Dir

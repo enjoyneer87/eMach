@@ -169,7 +169,7 @@ ax.YLim=[0 1785.5];
 % MotFile
     % FilePath나 이름 관련
         % getCurrentMCADFilePath.m
-        % getBuildListFromMotFileList.m
+        % getBuildListFromMotFileList.m -> backup
         % getMotResultLabDirFromMotFilePath.m
         % getMotResultDirFromMotFilePath.m
         % getMotFileDirNameFromBuildList.m
@@ -183,42 +183,57 @@ ax.YLim=[0 1785.5];
 
 %% 
 %% 
-parentPath              ='E:\KDH\8p48sVV\'                   ; 
+parentPath              ='E:\KDH\8p48sVV\'          ; 
+parentPath              ='E:\KDH\230819_8P48S_Vtype';
 % parentPath                ='Z:\Simulation\LabProj2023v3\230819_8P48S_Vtype'  ;             
 motMatFileListTable       = getMotMatFileListTable(parentPath);
 
 % %% Factor 정의
 scaleFactor             =defScalingFactor(400/220,1,2,10,2,10,2);
-BuildList=getMCADData4ScalingList(parentPath,scaleFactor);
-
-
+BuildList               =getMCADData4ScalingList(parentPath,scaleFactor);
+BuildTable              =struct2table(BuildList)                ;        
 
 %% 2.1- ref Mot 파일 복사(SCFEA) 및 셋팅
-SLFEAMotFileParentPath=[parentPath,'\','SLFEA'];
-SLLAWMotFileParentPath=[parentPath,'\','SLLAW'];
+DOEDIR               =fullfile(parentPath,'DOECubicSpline');
+DOEPath_8P48SV        =fullfile(parentPath,'DOE');
+
+SLFEAMotFileParentPath=fullfile(parentPath,'SLFEA');
+SLLAWMotFileParentPath=fullfile(parentPath,'SLLAW');
 deleteDir(SLLAWMotFileParentPath)
 deleteDir(SLFEAMotFileParentPath)
 
-%% SLFEA Mot 파일 복사 (SLFEA)
-[BuildList,SLFEAMotFileParentPath]=mkMCADScaledFilesFromList(BuildList,'SLFEA',parentPath);
 
-%% 재시작할때 Lab Folder가 있는지 체크하고 없고, SatDate가 reMotFile 이랑 다르면 Build
+%% Build Check
+LabList_8p48sVV=MCADBuildList(DOEDIR);
+LabList_8p48sVVBuildFromClass=LabList_8p48sVV.toTable;
+
+%% SLFEA Mot 파일 복사 (SLFEA)
+[SLFEAList2BuildFromMKList,SLFEAMotFileParentPath]=mkMCADScaledFilesFromList(LabList_8p48sVVBuildFromClass,'SLFEA',parentPath);
+
+Obj_SLFEALabList_8p48sVV                               =MCADBuildList(SLFEAMotFileParentPath);
+SLFEALabListTable_8p48sVVBuildFromClass                =Obj_SLFEALabList_8p48sVV.toTable;
+mergeSLFEATable      =mergeTables(BuildTable,SLFEALabListTable_8p48sVVBuildFromClass);
+
 
 %% Parallel Computation Code
-motorCADManager = MCADLabManager(12, BuildList);
+motorCADManager = MCADLabManager(12, mergeSLFEATable);
 motorCADManager.LabBuildSettingTable=defMcadLabBuildSetting();
-% motorCADManager=motorCADManager.setupParallelPool();
-% mcad=motorCADManager.MCADInstances{1}
-% mcad.LoadFromFile(motFileData.SLFEAMotFilePath);
-
 motorCADManager=motorCADManager.processSLFEA();
 
+% SLLAW 파일 복사
+[SLLAWList2BuildFromClass,SLLAWMotFileParentPath]      =mkMCADScaledFilesFromList(SLFEALabListTable_8p48sVVBuildFromClass,'SLLAW',parentPath);
 
-% McadLabConditionVariable
-% settingLabBuildTable = defMcadLabBuildSetting()
+%% 재시작할때 Lab Folder가 있는지 체크하고 없고, SatDate가 reMotFile 이랑 다르면 Build
+runMCADIterativeProcess(SLFEAMotFileParentPath,BuildTable, 'SLFEA')
+runMCADIterativeProcess(SLLAWMotFileParentPath,BuildTable, 'SLLAW')
 
-% motorCADManager.processSLFEA();
-% setPythonEnv('mcad')
+% FileList            =getBuildMotHierList(mergeSLFEATable)
+
+
+%% 
+DOE=createDOEstructFromMotFileList(mergeSLFEATable.MotFilePath);
+FileList=getBuildMotHierList(mergeSLFEATable.MotFilePath)
+
 
 %% 턴별로 생성한뒤, 동일전류밀도에서 큰거와 작은거 비교를 위해서는 다른 턴수로 전류범위를 맞춘뒤 비교가능
 %% 정수 턴수별 AC Loss를 Plot해서 연속적인 함수로 Interpolation한뒤, Surrogate모델을 만드는것도 방법인듯

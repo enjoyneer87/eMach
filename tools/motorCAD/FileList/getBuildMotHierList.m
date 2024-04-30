@@ -1,6 +1,6 @@
 function FileList=getBuildMotHierList(FileList)
 %% 7개 field를 가지는 구조체가 만들어집니다. mkDOEListWithHierarchy상호참조
-path=FileList.path;
+   path=FileList.path;
     % allSubfolders = getAllSubfoldersRecursive(path);
             BuildMotFileNameList             =[];  
             BuildListMotFilePathList         =[];      
