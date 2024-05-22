@@ -19,7 +19,7 @@ TableIndex4RegionTable =table();
             ConductorTable=[ConductorTable;RegionDataTable(Index4RegionTable,:)];
             end
             %% Other
-            if ~strcmp(RegionDataTable.Name{Index4RegionTable},'StatorCore')&&~contains(RegionDataTable.Name{Index4RegionTable},'Conductor') contains(RegionDataTable.Name{Index4RegionTable},'Housing') 
+            if ~strcmp(RegionDataTable.Name{Index4RegionTable},'StatorCore')&&~contains(RegionDataTable.Name{Index4RegionTable},'Conductor') &&~contains(RegionDataTable.Name{Index4RegionTable},'Housing') 
             TableIndex4RegionTable = [TableIndex4RegionTable; table(Index4RegionTable) ];    
             otherSlotAreaTable=[otherSlotAreaTable;RegionDataTable(Index4RegionTable,:) ];
 

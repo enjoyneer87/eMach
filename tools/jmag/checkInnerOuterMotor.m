@@ -1,9 +1,9 @@
 function runnerType=checkInnerOuterMotor(StatorGeomArcTable,RotorGeomArcTable)
 
-StatorMaxRadius=max(StatorGeomArcTable.Radius);
-StatorMinRadius=min(StatorGeomArcTable.Radius);
-RotorMaxRadius=max(RotorGeomArcTable.Radius);
-RotorMinRadius=min(RotorGeomArcTable.Radius);
+StatorMaxRadius=max(StatorGeomArcTable.StartVertexTabler);
+StatorMinRadius=min(StatorGeomArcTable.StartVertexTabler);
+RotorMaxRadius=max(RotorGeomArcTable.StartVertexTabler);
+RotorMinRadius=min(RotorGeomArcTable.StartVertexTabler);
 
 if StatorMaxRadius<RotorMinRadius
     runnerType='OuterRotor';

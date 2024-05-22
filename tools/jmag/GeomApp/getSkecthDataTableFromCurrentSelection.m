@@ -20,11 +20,9 @@ function AssemObjStruct=getSkecthDataTableFromCurrentSelection(geomApp)
         % Item=sel.Item(SelIndex-1);
         % if Item.IsValid==1                
             % AssemObjStruct(SelIndex).ReferenceObj        =geomDocu.CreateReferenceFromItem(Item);
-            AssemObjStruct(SelIndex).ReferenceObj        =sel.GetReferenceObject(SelIndex-1);
-          
+            AssemObjStruct(SelIndex).ReferenceObj        =sel.GetReferenceObject(SelIndex-1);          
             AssemObjStruct(SelIndex).IdentifierName      =AssemObjStruct(SelIndex).ReferenceObj.GetIdentifier;
             AssemObjStruct(SelIndex).Id                  =AssemObjStruct(SelIndex).ReferenceObj.GetId;
-            % 
             % AssemObjStruct(SelIndex).Name              =Item.GetName;
             % AssemObjStruct(SelIndex).Type              =Item.GetScriptTypeName;
             % sel.AddReferenceObject(RegionData(SelIndex).ReferenceObj)

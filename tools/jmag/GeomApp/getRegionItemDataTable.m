@@ -7,8 +7,8 @@ function AssemRegionTable=getRegionItemDataTable(refObjTable,AssembleName,geomAp
         geomApp=geomApp.CreateGeometryEditor(0);
         % geomApp.Show
     end
-
-
+     % Area
+      % distance
 geomApp.Hide;
 geomApp.GetDocument().GetAssembly().GetItem(AssembleName).OpenSketch();
 geomDocu=geomApp.GetDocument();
@@ -29,10 +29,16 @@ NumSelections=height(AssemRegionTable);
         % if CurItem.IsValid
         if strcmp(AssemRegionTable.Type(SelIndex),'RegionItem') 
            geomDocu=geomApp.GetDocument;
-           sel=geomDocu.GetSelection  ;           
-           sel.AddReferenceObject(AssemRegionTable.ReferenceObj(SelIndex));                           % Selection Object    
+           sel=geomDocu.GetSelection  ;     
+           selObj=AssemRegionTable.ReferenceObj(SelIndex);
+           sel.AddReferenceObject(selObj);                           % Selection Object    
+           % Area
            geomDocuVolManager             =geomDocu.GetVolumeCalculationManager();
-           AssemRegionTable.Area(SelIndex)=geomDocuVolManager.CalculateArea;        
+           AssemRegionTable.Area(SelIndex)=geomDocuVolManager.CalculateArea;      
+           % distance
+           distanceRFromCenter=getDistanceFromZero(selObj,geomApp);
+           AssemRegionTable.distanceRFromCenter(SelIndex)=distanceRFromCenter;       
+
         else
             AssemRegionTable.Area(SelIndex)=0;
         end
