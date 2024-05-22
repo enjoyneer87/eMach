@@ -275,7 +275,12 @@ mcad.CalculateMagnetic_Lab();
 toc % 10.512sec
 mcad.ShowResultsViewer_Lab("Electromagnetic")
         %% [TB] Feasibility 판별 TN Curve 판별
+% calcVehiclePerformance[del]
 
+[MatFileData,motorSplitStruct]=tempPlotEfficiencyMapVehiclePerfom(Index4spmd,caseNum,DoEStruct,vehicleData,BasePointOutput,vehiclePerformData)
+calcVehicleLateralDynamics
+devLauchDoE4EffiVehicleDutyCycle
+devLauchDoE4EfficiencyVehiclePerformance
 %% Duty Cycle (EC)
 % CalculateDutyCycle_Lab - LabManager 
 % [DONE]calc DutyCycle in devReBuildDOE.mlx

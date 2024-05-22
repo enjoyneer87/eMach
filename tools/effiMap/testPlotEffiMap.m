@@ -5,17 +5,17 @@
 % MotorAnalysis format
 % filename = 'Z:\01_Codes_Projects\motoranalysis-pm_v1.1_matlab\SimFiles\Priu.mat';
 % Katech csv (from tempImportEffimapHDEV)
-% filepath="Z:\01_Codes_Projects\Testdata_post\수소동력 65도 부분부하 효율 평균정리_V5.csv"
+filepath="Z:\01_Codes_Projects\Testdata_post\수소동력 65도 부분부하 효율 평균정리_V5.csv"
 
 % Emlab Code
 % filepath='Z:\01_Codes_Projects\Testdata_post\Total_Effy_skew_rework_HDEV.csv'
 % Jmag format(TBD)
 
 % MotorCAD Mat
-    filepath='Z:\Thesis\HDEV\02_MotorCAD\MOT\12P72S_N42EH_Maxis_Br_95pro_LScoil_11T_op1\Lab\MotorLAB_elecdata_650v_780a_65deg_MTPA_Lossf_st1_5.mat'
+    % filepath='Z:\Thesis\HDEV\02_MotorCAD\MOT\12P72S_N42EH_Maxis_Br_95pro_LScoil_11T_op1\Lab\MotorLAB_elecdata_650v_780a_65deg_MTPA_Lossf_st1_5.mat'
 %     filepath='Z:\Thesis\HDEV\02_MotorCAD\backup\12P72S_N42EH_Br_95pro_11T_Fidelity_study\Lab\MotorLAB_elecdataTemp65.mat'
 %     load(filepath)
-    load(filepath,'Speed','Shaft_Torque','Efficiency','Shaft_Power','DC_Bus_Voltage')
+    % load(filepath,'Speed','Shaft_Torque','Efficiency','Shaft_Power','DC_Bus_Voltage')
 %     postMotorCADMatEffi(Speed, Shaft_Torque, Efficiency, Shaft_Power, DC_Bus_Voltage);
 
 
@@ -37,10 +37,13 @@ speedMeasArray=replaceSimilarData(speedVar);
 torqueMeasArray=replaceSimilarData(torquevar);
 efficiencyMeasArray=replaceSimilarData(effiVar);
 
-% torqueMeasArray=replaceSimilarData(dataTable.("Dynamo 토크"));
+
+    speedMeasArray=replaceSimilarData(dataTable.("Dynamo 속도"))
+
+torqueMeasArray=replaceSimilarData(dataTable.("Dynamo 토크"));
 efficiencyMeasArray=dataTable.("모터 효율");
 
-%     speedMeasArray=replaceSimilarData(dataTable.RPM)
+    % speedMeasArray=replaceSimilarData(dataTable.RPM)
 %     torqueMeasArray=replaceSimilarData(dataTable.Torque);
 %     efficiencyMeasArray=dataTable.Efficiency
 

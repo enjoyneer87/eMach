@@ -58,7 +58,7 @@ function propertiesTable=defJMAG2DStudyPropertiesTable(StudyProperties)
     
     % 셀 배열을 테이블로 변환
         propertiesTable = cell2table(dataCells, 'VariableNames', ...
-                                     {'propertiesName','Category', 'PropertiesValue(KeyValue)', 'Unit','description', 'KeyOption'});
+                                     {'PropertiesName','Category', 'PropertiesValue', 'Unit','description', 'KeyOption'});
     
     % dataCells = dataCells(~cellfun('isempty', dataCells));
 

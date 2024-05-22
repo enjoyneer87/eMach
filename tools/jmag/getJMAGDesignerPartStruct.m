@@ -1,5 +1,5 @@
 function PartStruct=getJMAGDesignerPartStruct(app,NumGroups)
-    if strcmp(class(app),'COM.designer_Application_222') 
+    if contains(class(app),'COM.designer_Application') 
     Model=app.GetCurrentModel();
     else
     Model=app;
