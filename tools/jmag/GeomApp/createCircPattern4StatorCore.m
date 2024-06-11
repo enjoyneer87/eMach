@@ -1,4 +1,4 @@
-function createCircPattern4StatorCore(MachineData,StatorGeomAssemTable,app)
+function createCircPattern4StatorCore(MachineData,StatorGeomAssemRegionTable,app)
 
     Poles              =MachineData.Poles               ;
     StatorOneSlotAngle =MachineData.StatorOneSlotAngle  ;
@@ -9,9 +9,11 @@ function createCircPattern4StatorCore(MachineData,StatorGeomAssemTable,app)
 
     geomApp=app.CreateGeometryEditor(0);
 
+    %% CoreIndex
+    STcoreIndex=contains(StatorGeomAssemRegionTable.Name,'StatorCore');
+    
     %%
-    STcoreIndex=contains(StatorGeomAssemTable.Name,'StatorCore');
-    StatorCoreAssemTable=StatorGeomAssemTable(STcoreIndex,:);
+    StatorCoreAssemTable=StatorGeomAssemRegionTable(STcoreIndex,:);
     geomApp.GetDocument().GetAssembly().GetItem("Stator").OpenSketch()
     Item=geomApp.GetDocument().GetAssembly().GetItem("Stator").CreateRegionCircularPattern();
     Item.GetName

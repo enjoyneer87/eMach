@@ -1,4 +1,6 @@
-function setWireRegion(app,firstSlotWirePartsTable,ConductorNumber)
+function setWireRegion(StudyObj,firstSlotWirePartsTable,ConductorNumber)
+if contains(class(StudyObj),'designer')
+    app=StudyObj;
     NumModels=app.NumModels;
     NumStudies=app.NumStudies;
     if NumStudies==1 && NumModels==1
@@ -7,7 +9,13 @@ function setWireRegion(app,firstSlotWirePartsTable,ConductorNumber)
     Study=app.GetModel(0).GetStudy(0);
     % if Study.IsValid==1
     Study.GetName;
+    else 
+    disp('study와 모델이 여러개입니다.')
     end
+else
+    app  = callJmag;
+    Study=StudyObj;
+end
     % end
     % Model=app.GetCurrentModel;
     % Study=app.GetCurrentStudy;
@@ -18,6 +26,7 @@ if nargin<3
         ConductorNumber=WireTemplateObj.GetProperty("WireCount");
     end
 end
+   
     WindingRegionObj=devmkWindingRegion(app);
     % Model=app.GetCurrentModel;
     % Study=app.GetCurrentStudy;
@@ -54,8 +63,13 @@ end
     Study.GetWindingRegion(NameWindingRegion).SetIsWireTemplateRegion(true);   
 
     if WindingRegion.IsValid==1
-    WindingRegion.SetSlots("Slots")
-    WindingRegion.SetPoles("Poles")
+    Model=app.GetCurrentModel;
+    SLOTSEq=Model.GetEquation("SLOTS");
+    SLOTS=int32(str2double(SLOTSEq.GetExpression));
+    POLEEq=Model.GetEquation("POLES");
+    POLES=int32(str2double(POLEEq.GetExpression));
+    WindingRegion.SetPoles(POLES);
+    WindingRegion.SetSlots(SLOTS);
     end
     % a=Study.GetWindingRegion("HairPinWave")
     % a.IsValid
@@ -65,10 +79,8 @@ end
     % Study.GetWindingRegion("HairPinWave").SetSlots("Slots")    
     % WindingRegionObj.SetPoles("Poles")
     % % if 
-    pyrunfile("pySlotPoleWireTemplate.py")
-    
-
-    WindingRegion.NumSlots
-    WindingRegion.NumPoles
-
+    % pyrunfile("pySlotPoleWireTemplate.py")
+    % 
+    % WindingRegion.NumSlots
+    % WindingRegion.NumPoles
 end

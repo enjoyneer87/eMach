@@ -35,10 +35,7 @@ function sketchs=ImportDXF2Geom(dxfList2Import,geomApp)
   if length(dxfList2Import)==2
  
       % 현재 geomAssem의  item 갯수 확인
-      % merge하고 이름동시에 
-
-
-   
+      % merge하고 이름동시에
     % i가 유효 해당 dxf이어야됨
 
     %% Stator

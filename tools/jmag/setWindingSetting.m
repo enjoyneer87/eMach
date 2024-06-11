@@ -1,6 +1,6 @@
-function CoilWindingInfo=setWindingSetting(app,CoilWindingInfo,fileName)
+function CoilWindingInfo=setWindingSetting(Study,CoilWindingInfo,fileName)
 
-    Study=app.GetModel(0).GetStudy(0);
+    % Study=app.GetModel(0).GetStudy(0);
     % WindingDefinition Obj
     GetWinding=Study.CreateWinding("ThreePhase", "WaveWinding");
     %% Get Circuit Info

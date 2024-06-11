@@ -30,8 +30,10 @@ selCore=geomDocu.GetSelection;
             whatis.SetName(RegionDataTable.Name{Index2NameImport})
         end
     end
-end
 
+sel.Clear;
+
+end
 
 % setRegionGeomNameWithAreaValue(Regiontable,AreaValue,RegionName,geomApp)
   % setGeomNamewithTableIndex(Regiontable,Index2NameImport,RegionName,geomApp)  

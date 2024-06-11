@@ -17,6 +17,8 @@ ShaftTable   =table();
             CoreAreaTable=[CoreAreaTable;RegionDataTable(Index4RegionTable,:)];
             end
             %% Conductor
+            
+            %% Magnet
             if contains(RegionDataTable.Name{Index4RegionTable},'Magnet')
             MagnetTable=[MagnetTable;RegionDataTable(Index4RegionTable,:)];
             end

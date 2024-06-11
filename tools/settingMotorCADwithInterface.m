@@ -460,10 +460,10 @@ InitialRotorTemperature                            =   65;      %The initial tem
 InitialMagnetTemperature                           =   65;      %The initial temperature of the magnets for the transient calculation 
 % InitialRotorCopperTemperature                      =         %The initial temperature of the rotor copper (field winding or rotor bars) for the transient thermal calculation  
 % InitialFlangeTemperature                           =         %The initial temperature of the flange for the transient calculation 
-InitialTransientMagTempMethod                      =         % Method used to set initial magnet temperatures for thermal transient calculation..
+InitialTransientMagTempMethod                      =    0;     % Method used to set initial magnet temperatures for thermal transient calculation..
 
 %% Regarding Contact Resistance
-Stator_Lam_-_Housing= 0.03;
+Stator_Lam_Housing= 0.03;
 
 %% WJ
 IncludeWJDuctWallFriction

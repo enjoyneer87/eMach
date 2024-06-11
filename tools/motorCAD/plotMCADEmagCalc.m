@@ -23,6 +23,8 @@ function ResultStructEmagCalc=plotMCADEmagCalc(setGraphName, mcad,FigureData)
         YlabelName ='[Nm]';
     elseif contains(setGraphName,'ConductorFlux','IgnoreCase',true)
         YlabelName ='B[T]';
+    elseif contains(setGraphName,'FluxLinkageOC','IgnoreCase',true)
+        YlabelName ='B[T]';
     elseif contains(setGraphName,'FluxLinkage','IgnoreCase',true)
         YlabelName ='[mWb]';
     elseif contains(setGraphName,'Loss','IgnoreCase',true)
@@ -42,11 +44,10 @@ function ResultStructEmagCalc=plotMCADEmagCalc(setGraphName, mcad,FigureData)
     for dataIndex = 0:NumGraphPoints
         [success, x, y] = mcad.GetMagneticGraphPoint(setGraphName, dataIndex);
         if success == 0
-            List_xvalue(dataIndex + 1) = x;
+            List_xvalue(dataIndex + 1) = x/3;
             List_valueforGraph(dataIndex + 1) = y;
         end
     end
-    
     %% Plot
     plot(List_xvalue, List_valueforGraph, 'LineWidth', 2,'LineStyle',LineStyle)
     a = gca;

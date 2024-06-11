@@ -2,11 +2,9 @@ function matchingRows2Table = filterMCADTableWithAnyInfo(MCADTable, filterCriter
     if nargin<4
     % Find matching indices for the given filterCriteria
     matchingIndices = findMatchingIndex(MCADTable.(FilterVar), filterCriteria);
-    
     % Filter the table using the matching indices
     matchingRows2Table = MCADTable(matchingIndices, :);
-    
-    
+ 
     elseif filterType==1 % filterOut
         % switch class(MCADTable.(FilterVar))
             % case 'categorical'
@@ -22,4 +20,7 @@ function matchingRows2Table = filterMCADTableWithAnyInfo(MCADTable, filterCriter
             matchingRows2Table = MCADTable(isNonMatching, :);    
             end
     end
+
+
+    
 end

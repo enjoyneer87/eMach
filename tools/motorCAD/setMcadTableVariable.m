@@ -15,7 +15,11 @@ function setMcadTableVariable(variableTable, mcad)
          arrayData                          = convertCharTypeData2ArrayData(variableTable.CurrentValue{rowIndex});
         elseif iscell(variableTable.CurrentValue)
          arrayData=variableTable.CurrentValue{rowIndex};
+         if contains(mcadVariableName,'name','IgnoreCase',true)
+         typeofArrayData= 'cell';
+         else
          typeofArrayData=class(arrayData);
+         end
          switch typeofArrayData
              % case 'double'
              % arrayData     = arrayData;
@@ -36,11 +40,12 @@ function setMcadTableVariable(variableTable, mcad)
             if isempty(arrayData) == 0 || ~isnan(arrayData)
                 mcad.SetVariable(mcadVariableName, arrayData);
             end
-
         % 여러 값인 경우
         elseif length(arrayData) > 1    
             % 비어있지 않거나 NaN이 아닌 경우 각 배열 값을 변수에 설정합니다
-            if isempty(arrayData) == 0 || ~isnan(arrayData)
+            if ischar(arrayData) 
+                mcad.SetVariable(mcadVariableName, arrayData);              
+            elseif isempty(arrayData) == 0 || ~isnan(arrayData)
                 for arrayIndex = 1:length(arrayData)
                     mcad.SetArrayVariable(mcadVariableName, arrayIndex-1, arrayData(arrayIndex));
                 end

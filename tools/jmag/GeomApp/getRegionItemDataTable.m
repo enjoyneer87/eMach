@@ -24,11 +24,9 @@ NumSelections=height(AssemRegionTable);
 %% Selection Object
         % mk current Selection
         % CurItem=convertRefObj2Item(AssemRegionTable.ReferenceObj(SelIndex),geomApp);     
-        %% 면적 구하기 
-                
+        %% 면적 구하기               
         % if CurItem.IsValid
         if strcmp(AssemRegionTable.Type(SelIndex),'RegionItem') 
-           geomDocu=geomApp.GetDocument;
            sel=geomDocu.GetSelection  ;     
            selObj=AssemRegionTable.ReferenceObj(SelIndex);
            sel.AddReferenceObject(selObj);                           % Selection Object    
@@ -48,7 +46,7 @@ NumSelections=height(AssemRegionTable);
         % end
         sel.Clear;
     end
-% sel.Clear
 geomApp.Show
+sel.Clear
 
 end

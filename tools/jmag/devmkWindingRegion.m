@@ -1,11 +1,13 @@
 function WindingRegionObj=devmkWindingRegion(app,ConductorNumber)
     Model=app.GetCurrentModel;
     Study=app.GetCurrentStudy;
+    WindingRegionObj=Study.GetWindingRegion(0);
    % Study.CreateWindingRegion("HairPinWave",1)  % Coil Template
+   if ~WindingRegionObj.IsValid
     WindingRegionObj=Study.CreateWindingRegion("HairPinWave",0);  % Wire (Geometry) Template
     % Study.CreateWinding("HairPinWave")
     % equationStruct=getJmagDesignerEquationStruct(app);
-    
+   end
     %% GetWindingRegion WindingRegion object는 매번 호출해야됨 아직 matlab으로 객체인식이 잘안됨
     % Study.GetWindingRegion("HairPinWave");
     Study.GetWindingRegion("HairPinWave").SetOriginXYZ(0, 0, 0);

@@ -4,6 +4,7 @@ function valueIndicesStruct = findSimilarValuesWithinTolerance(valueArray, toler
         tolerance=1e-5;
     end
     % 검색할 열 추출
+    % valueArray=RegionDataTable.Area
     columnData = valueArray;
 
     % uniquetol 함수를 사용하여 중복된 값을 처리하고 중복을 제거한 결과와 인덱스를 반환
@@ -26,9 +27,13 @@ function valueIndicesStruct = findSimilarValuesWithinTolerance(valueArray, toler
         end
     end
 
+    if ~isempty(fields(valueIndicesStruct))
     % 빈 구조체 제거
     emptyStructs = arrayfun(@(x) isempty(x.Values), valueIndicesStruct);
     valueIndicesStruct(emptyStructs) = [];
+    else
+    valueIndicesStruct=[];    
+    end
 end
 
 

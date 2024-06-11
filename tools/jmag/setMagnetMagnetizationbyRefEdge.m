@@ -7,7 +7,11 @@ function setMagnetMagnetizationbyRefEdge(NewLayerTable,app,MagNetMaterial)
 % 이 옵션을 사용할 때는 자석 자화 패턴을 설정하기 전에 두 영역의 자석을 포함하는 부품 그룹을 만들어야 합니다.
 % if nargin<3
 if isstruct(NewLayerTable)
-NewLayerTable=NewLayerTable.NewLayerTable;
+    if isfield(NewLayerTable,'NewLayerTable')
+    NewLayerTable=NewLayerTable.NewLayerTable;
+    else
+    NewLayerTable=NewLayerTable;
+    end
 elseif istable(NewLayerTable)
 NewLayerTable=NewLayerTable;
 end

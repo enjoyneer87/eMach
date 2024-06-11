@@ -1,6 +1,7 @@
 function resultCategoricalTable = char2CategoricalPropertiesTable(charVariable)
     % 주어진 char 변수를 categorical 정보로 변환하는 함수
-
+    
+    if ~isempty(charVariable)
     % 주어진 char 변수를 줄 단위로 분할
     lines = strsplit(charVariable, '\n');
 
@@ -13,10 +14,10 @@ function resultCategoricalTable = char2CategoricalPropertiesTable(charVariable)
     for lineIndex = 1:length(lines)
         % 각 행의 데이터 추출
         data = strsplit(lines{lineIndex}, ' ', 'CollapseDelimiters', true);
-
+        if ~isempty(data{1})
         % convertcharCellArray2PropertiesCell 함수 호출하여 결과를 저장
         resultCell = convertcharCellArray2PropertiesCell(data);
-
+        end
         % 결과 데이터를 conditionPropertiesTable에 추가
         % PropertiesName과 dataType를 그대로 저장
         conditionPropertiesTable.PropertiesName{end+1, 1} = resultCell{1};
@@ -35,4 +36,7 @@ function resultCategoricalTable = char2CategoricalPropertiesTable(charVariable)
 
     % 최종 결과
     resultCategoricalTable = conditionPropertiesTable;
+    else
+    resultCategoricalTable=table();
+    end
 end
