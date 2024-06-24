@@ -13,7 +13,7 @@ function mcad=setMcadVariable(variable,mcad)
         if ~isstruct(variable.(fieldName)) && ~istable(variable.(fieldName))
             % Magnet Layer 2 이상사용할려면 아래 수정할것
             if contains(fieldName, 'Array')
-                if length(variable.(fieldName))==1
+                if isscalar(variable.(fieldName))
                     mcad.SetArrayVariable(fieldName, 0,variable.(fieldName)(1));
                 elseif length(variable.(fieldName))==2
                     mcad.SetArrayVariable(fieldName, 0,variable.(fieldName)(1));
@@ -25,7 +25,7 @@ function mcad=setMcadVariable(variable,mcad)
                     mcad.SetArrayVariable(fieldName, 3,variable.(fieldName)(4));
                 end
             else
-                if length(variable.(fieldName))==1 
+                if isscalar(variable.(fieldName)) 
                     fieldName=replaceMLABvar2MCADvar(fieldName); % 일괄적으로 매틀랩에서 허용하지 않는 변수명을 모터캐드 변수명을 변환
                     if isempty(variable.(originalFieldName))==0 || ~isnan(variable.(originalFieldName)) % 비어있지 않은 Field값만 입력
                        mcad.SetVariable(fieldName,double(variable.(originalFieldName)));

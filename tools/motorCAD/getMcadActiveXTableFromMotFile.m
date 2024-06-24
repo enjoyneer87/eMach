@@ -1,5 +1,5 @@
 function modifiedDataStruct = getMcadActiveXTableFromMotFile(MotFilePath)
-    load("mcadActiveXparameterList.mat");
+    load("Z:\01_Codes_Projects\git_fork_emach\tools\mcadActiveXparameterList.mat");
     modifiedData = getDataFromMotFiles(MotFilePath);
     % modifiedDataStruct 구조체 초기화
     modifiedDataStruct = struct();
@@ -15,7 +15,7 @@ function modifiedDataStruct = getMcadActiveXTableFromMotFile(MotFilePath)
         % modifiedDataStruct.(tableName).DefaultValue = repmat({'This is From Mot File'}, nVariables, 1);
     end
 
-%%  
+%%   할당 
     for lineIndex = 1:numel(modifiedData)
         line = modifiedData{lineIndex};
         dotIndex = find(line == '.', 1, 'first'); % 첫 번째 '.'의 위치 찾기

@@ -1,4 +1,4 @@
-function runMCADIterativeProcess(SLLAWMotFileParentPath,BuildTable, type)
+function runMCADIterativeProcess(SLLAWMotFileParentPath,BuildListTable, type)
     maxAttempts = 5;
     attempt = 0;
     success = false;
@@ -11,15 +11,15 @@ function runMCADIterativeProcess(SLLAWMotFileParentPath,BuildTable, type)
                 success = true;  % 에러가 발생하지 않았으므로 성공적으로 완료
                 break;
             end
-            % 첫 번째 명령
+            % MCADSLLAWList2Build 객체 만들기 
             Obj_SLLAWLabList = MCADBuildList(SLLAWMotFileParentPath);
-            SLLAWLabListTable = Obj_SLLAWLabList.toTable;
+            SLLAWLabListTable = Obj_SLLAWLabList.toTable;  % MCADBuildList class를 테이블로
             
-            % 두 번째 명령
-            mergeSLLAWTable = mergeTables(BuildTable, SLLAWLabListTable);
+            % BuildTable과 MCADBuildList 객체 테이블 합치기
+            mergeSLLAWTable = mergeTables(BuildListTable, SLLAWLabListTable);
             
-            % 세 번째 명령
-            SLLAWmotorCADManager = MCADLabManager(12, mergeSLLAWTable);
+            % MCADLabManager 만들기
+            SLLAWmotorCADManager = MCADLabManager(6, mergeSLLAWTable);
             SLLAWmotorCADManager.LabBuildSettingTable = defMcadLabBuildSetting();
             
             % 네 번째 명령

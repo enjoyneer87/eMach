@@ -7,13 +7,13 @@ classdef MCADBuildList
     end
 
     methods
-        function obj = MCADBuildList(DOEPath)
+        function obj = MCADBuildList(DOEDIR)
         % 병렬 풀 설정
         if isempty(gcp('nocreate'))
             parpool;  % 기본 설정으로 병렬 풀 시작
         end
         %% MOTFilePath
-        MotFileList = findMOTFiles(DOEPath)';
+        MotFileList = findMOTFiles(DOEDIR)';
         MotFileList = removeAutoSaveFiles(MotFileList);
         MotFileList = removeBackupFiles(MotFileList);
         % MotFileList = MotFileList';  

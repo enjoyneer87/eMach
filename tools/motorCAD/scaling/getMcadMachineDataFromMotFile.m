@@ -6,8 +6,7 @@ function MachineData = getMcadMachineDataFromMotFile(ActiveXParametersStruct)
     categories.Geometry = {'Pole_Number', 'Slot_Number', 'DCBusVoltage', 'Stator_Lam_Dia', 'Stator_Lam_Length', 'Motor_Length', 'Housing_Dia'};
     
     % Winding 카테고리
-    categories.Winding = {'Armature_CoilStyle','GrossSlotFillFactor','RMSCurrent','NumberStrandsHand','ArmatureConductorLengthPh', 'ArmatureMLT', 'ArmatureEWdgMLT_Calculated', 'Area_Slot', 'Area_Slot_NoWedge', 'Area_Winding_With_Liner', 'ParallelPaths', 'MagThrow', 'WindingLayers', 'HairpinWindingPatternMethod', 'Copper_Width', 'Copper_Height', 'ArmatureConductorCSA', 'MagTurnsConductor', 'ArmatureTurnCSA','RMSCurrentDensity'};
-
+    categories.Winding = {'Armature_CoilStyle','Copper_Diameter','GrossSlotFillFactor','RMSCurrent','NumberStrandsHand','ArmatureConductorLengthPh', 'ArmatureMLT', 'ArmatureEWdgMLT_Calculated', 'Area_Slot', 'Area_Slot_NoWedge', 'Area_Winding_With_Liner', 'ParallelPaths', 'MagThrow', 'WindingLayers', 'HairpinWindingPatternMethod', 'Copper_Width', 'Copper_Height', 'ArmatureConductorCSA', 'MagTurnsConductor', 'ArmatureTurnCSA','RMSCurrentDensity'};
 
     % Winding Definition 카테고리
     categories.WindingDefinition = {'Insulation_Thickness', 'Liner_Thickness', 'ConductorSeparation'};
@@ -72,7 +71,15 @@ function MachineData = getMcadMachineDataFromMotFile(ActiveXParametersStruct)
         elseif MachineData.Winding.Armature_CoilStyle == 0
             disp('환선');
             if isfield(MachineData.Winding, 'ArmatureTurnCSA')
-            MachineData.Winding.Area4Resistance = MachineData.Winding.ArmatureTurnCSA;
+                %% 전류, 전류밀도로 역산 (CSA는 도체의 면적)
+            Irms                =MachineData.Winding.RMSCurrent             ;
+            ParallelPath        =MachineData.Winding.ParallelPaths          ;    
+            Nstrand             =MachineData.Winding.NumberStrandsHand      ;        
+            Jrms                =MachineData.Winding.RMSCurrentDensity      ;  
+            MachineData.Winding.ArmatureConductorCSA=calcConductorCSAFromJ(Irms,ParallelPath,Nstrand,Jrms);
+            
+            %% 도체 경으로 계산
+             MachineData.Winding.ArmatureTurnCSA=calcCircleArea(MachineData.Winding.Copper_Diameter);
             end
         end
     end

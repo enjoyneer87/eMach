@@ -2,6 +2,7 @@ function modifiedData=getDataFromMotFiles(MotFilePath)
     % 파일 읽기
     fileID = fopen(MotFilePath, 'r');
     data = textscan(fileID, '%s', 'Delimiter', '\n');
+    % data = textscan(fileID,'%s');
     fclose(fileID);
     
     % 수정된 데이터와 [] 안의 텍스트, [] 안의 텍스트 리스트를 저장할 변수 초기화
