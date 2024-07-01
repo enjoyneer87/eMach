@@ -16,7 +16,8 @@ InitialStudyName='FullPyFeedBackLoss'
 % File 새로 (1. 셋팅을 하나씩, 2. setting 정보를 mat으로 가지고 있다가 입력) or Setting File로부터?
 % testDXFPath="Z:\Simulation\LabProj2023Evaluation\EqualFillFactor\A1_60"
 
-%% Coil
+%% [export했으면 다음으로]export Coil
+
 settingDXFTable=defMCADDXFExportSettingVariable('Stator',0);
 testStatorDXFPath='Z:\Simulation\JEETACLossValid_e10_v23\refModel\e10_User_statorCoils.dxf';
 settingDXFTable.CurrentValue(contains(settingDXFTable.AutomationName,'DXFFileName'))={testStatorDXFPath};
@@ -26,21 +27,25 @@ mcad.GeometryExport()
 
 %% Rotor
 settingDXFTable=defMCADDXFExportSettingVariable('Rotor');
-settingDXFTable.CurrentValue(contains(settingDXFTable.AutomationName,'FileName'))={'Z:\Simulation\JEETACLossValid_e10_v23\refModel\e10_User_Rotor.dxf'};
+testRotorDXFPath='Z:\Simulation\JEETACLossValid_e10_v23\refModel\e10_User_Rotor.dxf'
+settingDXFTable.CurrentValue(contains(settingDXFTable.AutomationName,'FileName'))={testRotorDXFPath};
 setMcadTableVariable(settingDXFTable,mcad)
 mcad.GeometryExport()
 
 
+%%
+dxfFiles = findDXFFiles('Z:\Simulation\JEETACLossValid_e10_v23\refModel')';
 
 
 %% Syre Model 2 Dxf
+load('Z:\01_Codes_Projects\Torino_syRe\motorExamples\mot_01.mat')
 syreToDxf(motorModel.geo.stator,motorModel.geo.rotor,pwd,'refModel')
 pathname=pwd
 filename='refModel'
 stator=motorModel.geo.stator
 rotor=motorModel.geo.rotor
 
-%% WriteDXF
+%% WriteDXF 주기모델로 자르기
 entitiesStatorStruct = readDXF(testStatorDXFPath)
 entitiesStatorStruct = arrayfun(@(x) setfield(x, 'layer', 'stator'), entitiesStatorStruct);
 % StatrDxf = filterEntitiesByAngle(entitiesStatorStruct, 45);
@@ -61,7 +66,7 @@ NewtestRotorDXFPath=strsplit(testRotorDXFPath,'.')
 NewtestRotorDXFPath=[NewtestRotorDXFPath{1},'Periodic','.dxf']
 
 writeDXF(NewtestRotorDXFPath, RotorDxf)
-%%
+%% JMAG 모델링
 % DXFtool(testRotorDXFPath)
 % dxfList2Import(1).dxfPath=testStatorDXFPath
 % dxfList2Import(2).dxfPath=testRotorDXFPath
@@ -88,7 +93,7 @@ RotorGeomAssembleTable  =getGeomSketchAssembleTable('Rotor',geomApp);
 
 geomApp.Hide;
 geomApp.Show
-% 정보 가져오기 -Arc/Line/Region별 정보가져오기 
+%% 정보 가져오기 -Arc/Line/Region별 정보가져오기 
 
 
 
@@ -97,7 +102,7 @@ geomApp.Show
 % selObj=StatorGeomAssemTable.ReferenceObj(end)
 % distanceFromCenter=getDistanceFromZero(selObj,geomApp)
 [StatorAssemRegionTable,StatorGeomArcTable]=setGetGeomStatorNameNTable(StatorGeomAssemTable,geomApp);
-% Rotor Table
+%% Rotor Table
 RotorGeomArcTable          =getArcDataTable(RotorGeomAssembleTable,geomApp);
 RotorAssemRegionTable      =getRegionItemDataTable(RotorGeomAssembleTable,'Rotor',geomApp);
 RotorAssemRegionTable=allocateSubSketchList2AssemRegionTable(RotorGeomAssembleTable,RotorAssemRegionTable,geomApp);
@@ -400,25 +405,89 @@ TotalDataN42EH.MagnetTable
 
 
 
-%% Lambda Result
+%% [2] Scale Model
+%% 1. e10 model 2 JMAG (완전 자동화는 아니지만 만들어져있음)
+jprojPath="Z:\Simulation\JMAGDev\e10JFT047FeedbackControlCoil.jproj"
+
+%% 2. AC Loss JMAG MODEL Scale Validation
+    %% 2.1 geoAPP scale 
+Model.RestoreCadLink()
+geomApp=app.CreateGeometryEditor(0);
+scaleJMAGGeom(geomApp)
+Model.UpdateCadModel()
+
+    %%[Skip] 2.2 app mesh scale
+
+
+%% 2.3 부하 스터디를 찾아서, circuit의 Amplitude값이 stringvalue인지 value인지에 따라 2배하기
+NumStudies=Model.NumStudies;
+for StudyIndex=1:NumStudies
+StudyName=Model.GetStudy(StudyIndex-1).GetName;
+    if contains(StudyName,'load',IgnoreCase=true)&&contains(StudyName,'noload',IgnoreCase=true)
+        StudyObj=Model.GetStudy(StudyName);
+        CircuitCompObj=StudyObj.GetCircuit().GetComponent("CS1 copy");
+        compPropertyTable=CircuitCompObj.GetPropertyTable;
+        StringValueObj=CircuitCompObj.GetStringValue('Amplitude');
+        if ~isempty(StringValueObj)
+        CircuitCompObj.SetValue('Amplitude',['2*',StringValueObj])
+        else
+        ValueObj= CircuitCompObj.GetValue('Amplitude');
+        CircuitCompObj.SetValue('Amplitude',ValueObj*2)
+        end
+    end
+end
+%%  Plot Result [MCAD > JMAG]
+% [TC]MCAD Plot -plotMCADEmagCalc ,defMCADGraphName
+ setGraphNameCellArray=defMCADGraphName()
 setGraphName='FluxLinkageOCPh1'
-ResultStructEmagCalc=plotMCADEmagCalc(setGraphName, mcad)
+setGraphName='FluxLinkageLoadPh'
+graphIndex=5
+% for graphIndex=1:length(setGraphNameCellArray)
+
+FluxLinkageLoadPh=setGraphNameCellArray(contains(setGraphNameCellArray,setGraphName))
+for graphIndex=5:6
+    % setGraphName=setGraphNameCellArray{graphIndex}
+%     if graphIndex~=1
+%     formalGraphName=setGraphNameCellArray{graphIndex-1};
+%     else
+%     formalGraphName=[];
+%     end
+% if  ~strcmp(setGraphName(1:end-3),formalGraphName(1:end-3))
+    % figure(graphIndex)
+% end
+for GraphIndex=1:3
+ResultStructEmagCalc(GraphIndex)=plotMCADEmagCalc(FluxLinkageLoadPh{GraphIndex}, mcad);
 hold on 
+end
 % AllResultDataStruct=cell2struct(tempGrName,'dataTable')
 
-tempGrName=getDataSetTableFromDataManagetWithName(app, 'Flux-Linkage')
-a=struct()
-a.dataTable=tempGrName{8,3}
-StepData.EndTime=tempGrName{8,3}.Time(end)
-StepData.StepDivision=height(tempGrName{8,3})-1
-a.DataName='FluxLinkageOCPh1'
-table2Plot=a.dataTable
-plotJMAGResultDataStruct(a,StepData)
+
+%% Jmag Plot
+
+%% change Study Name with Model Name 4 DataSet
+
+% Jproj=getJProjHier(app)
+% Jproj=setJMagHierStudyName(app);
+
+DataSetCellArray=getDataSetCellFromDataManagerWithName(app, 'flux','load');
+Jproj=sort2TableFromJmagDataSetByHier(DataSetCellArray,app)
+
+%% Split DataSet By Hier
+Jproj.e10JFT047FeedbackControlCoil_2.load_Coil_of_e10JFT047FeedbackControlCoil_2.Coil_FluxLinkage.plot
+
+
+exportFigure
+% table2Plot=Jproj.e10JFT047FeedbackControlCoil_2.load_Coil_of_e10JFT047FeedbackControlCoil_2.Coil_FluxLinkage
 hold on
-
-mcad.GetMagneticGraphPoint()
-
-
+for GraphIndex=1:3
+plotTransientTable(ResultStructEmagCalc(GraphIndex).dataTable)
+hold on 
+end
+% plotJMAGResultDataStruct(table2Plot)
+% hold on
+saveFigures2eps(pwd)
+figurePath=''
+%% Field Result Plot
 mm2m(0.05541)
 
 [pk,gamma]=dq2pkBeta(-150,190)

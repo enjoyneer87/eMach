@@ -1,4 +1,4 @@
-function sketchAssembleTable=getGeomSketchAssembleTable(AssembleName,geomApp)
+function AssembleTable=getGeomSketchAssembleTable(AssembleName,geomApp)
     geomApp.Hide;
     AssemObjStruct              = getStatorGeomSketchData(geomApp,AssembleName);
     % RegionData                  = getRegionDataArea(AssemObjStruct,app,AssembleName);
@@ -6,9 +6,9 @@ function sketchAssembleTable=getGeomSketchAssembleTable(AssembleName,geomApp)
     refObjTable                 =struct2table(AssemObjStruct);
     % ItemDataTable=struct2table(RegionData);
     % sketchAssemble=[refObjTable ItemDataTable];
-    sketchAssembleTable=refObjTable;
+    AssembleTable=refObjTable;
 
-    sketchAssembleTable=getRegionSubSketchList(sketchAssembleTable);
+    % AssembleTable=getRegionSubSketchList(AssembleTable);
     geomApp.Show
 
 end

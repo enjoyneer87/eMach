@@ -1,4 +1,4 @@
-function AssemObjTable=getSGeomPartData(geomApp,AssembleName)
+function AssemObjTable=devget3DGeomPartData(geomApp,AssembleName)
     %% dev
     % AssembleName=AssemTable.AssemItemName{AssemItemIndex}
     

@@ -1,4 +1,4 @@
-function AssemPartStruct=getAssemPartListStruct(geomApp)
+function AssemPartStruct=devgetAssemPartListStruct(geomApp)
     AssemTable=getGeomAssemItemListTable(geomApp);
     geomApp.Hide
     AssemPartStruct=struct();

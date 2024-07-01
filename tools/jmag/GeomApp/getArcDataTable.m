@@ -33,8 +33,9 @@ ArcTable            =getArcTable(RegionDataTable);
         CenterVertexTable   =[CenterVertexTable;tempCenterVertexTable];
         EndVertexTable      =[EndVertexTable;tempEndVertexTable];
         %% ArcTable Data
-        ArcTable.Radius(IndexofArc)                     =CurItem.GetRadius;
+        ArcTable.lengthinRadius(IndexofArc)                     =CurItem.GetRadius; % Radius from each CenterVertex
         % ArcTable.Angle(IndexofArc)     
+
         ArcTable.Angle(IndexofArc)=calculateAngleBetweenThreePoints(tempStartVertexTable,tempCenterVertexTable,tempEndVertexTable);
         % geomDocuMeasureManager=geomDocu.GetMeasureManager();
         % refObj1=geomDocu.CreateReferenceFromIdentifier()

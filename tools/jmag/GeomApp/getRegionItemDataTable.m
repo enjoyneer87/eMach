@@ -15,7 +15,7 @@ geomDocu=geomApp.GetDocument();
 
 %%  Get RegionItemTable
 AssemRegionTable  =getRegionItemTable(refObjTable);
-
+% % AssemRegionTable=refObjTable;
 % sel=geomDocu.GetSelection;
 % % NumSelections=sel.Count;
 NumSelections=height(AssemRegionTable);
@@ -36,7 +36,7 @@ NumSelections=height(AssemRegionTable);
            % distance
            distanceRFromCenter=getDistanceFromZero(selObj,geomApp);
            AssemRegionTable.distanceRFromCenter(SelIndex)=distanceRFromCenter;       
-
+           sel.Clear;
         else
             AssemRegionTable.Area(SelIndex)=0;
         end
@@ -44,9 +44,7 @@ NumSelections=height(AssemRegionTable);
         % RegionArray(SelIndex,1)=refObjTable(SelIndex).Area;
         % AssemRegionTable.Area(SelIndex)=0.0001;
         % end
-        sel.Clear;
     end
 geomApp.Show
-sel.Clear
 
 end

@@ -29,12 +29,25 @@ function ResultStructEmagCalc=plotMCADEmagCalc(setGraphName, mcad,FigureData)
         YlabelName ='[mWb]';
     elseif contains(setGraphName,'Loss','IgnoreCase',true)
         YlabelName ='[W]';
+    elseif contains(setGraphName,'B','IgnoreCase',false)
+        YlabelName ='[T]';
     end
 
     %% Graph Point Info
     [~, NumGraphPoints] = mcad.GetVariable('TorquePointsPerCycle');
     [~, ShaftSpeed] = mcad.GetVariable('ShaftSpeed');
+    [~, PoleNumber] =mcad.GetVariable('Pole_Number');
+    [~,FEAMeasurePath_NumPoints]            =mcad.GetVariable('FEAMeasurePath_NumPoints');
+    FEAMeasurePath_NumPoints                =convertCharTypeData2ArrayData(FEAMeasurePath_NumPoints);
+    FEAMeasurePath_NumPoints                =FEAMeasurePath_NumPoints(1);
 
+    %% Mesh
+    [~,AirgapMeshPoints_layers]             =mcad.GetVariable('AirgapMeshPoints_layers');
+    [~,AirgapMeshPoints_mesh]               =mcad.GetVariable('AirgapMeshPoints_mesh');
+    [~,IM_AirgapMeshPoints_AdvancedFEA_Lab] =mcad.GetVariable('IM_AirgapMeshPoints_AdvancedFEA_Lab');
+
+    
+     
     %% YvalueName Setting
     % OPpointName = [setGraphName, '@', num2str(ShaftSpeed), 'rpm'];
 
@@ -75,7 +88,11 @@ function ResultStructEmagCalc=plotMCADEmagCalc(setGraphName, mcad,FigureData)
     formatter_sci
     
     %% Output 
-    dataTable = table(List_xvalue, List_valueforGraph, 'VariableNames', {'XValue', 'GraphValue'});
+    StepDivision=height(List_xvalue)-1;
+    freqE=rpm2freqE(ShaftSpeed,double(PoleNumber/2));
+    EndTime=1/freqE;
+    xTime=(0:(EndTime/StepDivision):EndTime)';
+    dataTable = table(xTime,List_xvalue, List_valueforGraph, 'VariableNames', {'Time','Angle', 'GraphValue'});
     YValue = max(List_valueforGraph);
     MeanValue = mean(List_valueforGraph);
 

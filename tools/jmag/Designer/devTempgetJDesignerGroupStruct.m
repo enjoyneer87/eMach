@@ -14,5 +14,4 @@ function  GroupStruct=getJDesignerGroupStruct(app)
 
 
 
-
         end
