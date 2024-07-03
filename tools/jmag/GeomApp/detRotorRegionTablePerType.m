@@ -22,7 +22,7 @@ ShaftTable   =table();
             if contains(RegionDataTable.Name{Index4RegionTable},'Magnet')
             MagnetTable=[MagnetTable;RegionDataTable(Index4RegionTable,:)];
             end
-            if contains(RegionDataTable.Name{Index4RegionTable},'Air','IgnoreCase',true)
+            if contains(RegionDataTable.Name{Index4RegionTable},'Air')
             AirAreaTable=[AirAreaTable;RegionDataTable(Index4RegionTable,:)];
             end
             if contains(RegionDataTable.Name{Index4RegionTable},'Band')
