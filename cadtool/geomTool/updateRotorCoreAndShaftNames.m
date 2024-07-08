@@ -11,7 +11,7 @@ function RotorAssemRegionTable = updateRotorCoreAndShaftNames(RotorAssemRegionTa
         RotorAssemRegionTable.Name(isShaft) = {'Shaft'};
         
         % Find the next closest region to the shaft to assign as RotorCore
-        nonShaftIndices = find(~isShaft);
+        nonShaftIndices = find(~contains(RotorAssemRegionTable.Name,'Shaft'));
         distancesNonShaft = RotorAssemRegionTable.distanceRFromCenter(nonShaftIndices);
         [~, nextMinIdx] = min(distancesNonShaft);
         rotorCoreIndex = nonShaftIndices(nextMinIdx);

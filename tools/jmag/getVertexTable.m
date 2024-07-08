@@ -11,8 +11,11 @@ StartVertexTable    =getPositionTableFromPostionObj( StartVertex );
 % refObj Handle
 %  Id
 %  IdentifierName
-refStartVertexTable=getRefVertexTableFromItemObj(StartVertex,app);
 
 %%
+if nargin>1
+refStartVertexTable=getRefVertexTableFromItemObj(StartVertex,app);
 vertexTable=[StartVertexTable refStartVertexTable];
+else
+vertexTable=StartVertexTable;
 end

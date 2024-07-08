@@ -6,7 +6,8 @@ function modifiedCell = removeCellwithMatchingStr(originalCell, strToRemove)
     
     % Find the indices of matching strings
     matchingIndices = contains(originalCell, strToRemove,"IgnoreCase",true);
-    
+    % matchingIndices = contains(originalCell, strToRemove);
+
     % Remove those indices from the original cell
     modifiedCell = originalCell(~matchingIndices);
 end

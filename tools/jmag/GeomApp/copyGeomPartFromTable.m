@@ -1,6 +1,6 @@
-function GeomNameStruct=copyGeomPartFromTable(StatorAssemRegionTable,geomApp)
+function GeomNameStruct=copyGeomPartFromTable(AssemRegionTable,geomApp)
 
-GeomNameStruct    =findUniqueRegionNameListFromTable(StatorAssemRegionTable);
+GeomNameStruct    =findUniqueRegionNameListFromTable(AssemRegionTable);
 
 uniqueRegionNameCell=GeomNameStruct.uniqueRegionNameCell;
 %% det ItemName
@@ -12,11 +12,8 @@ ItemName        =detStatorORRotor(uniqueRegionNameCell);
 
 %% getGeomPartlistCell
 AssembleAllPartName=getGeomPartlistCell(geomApp);
-
-%%
 AssembleItemIndex      =contains(AssembleAllPartName,ItemName);
 ItemPartNameListCell   =AssembleAllPartName(AssembleItemIndex);
-
 
 %%
 GeomNameStruct.SketchName   =ItemName;

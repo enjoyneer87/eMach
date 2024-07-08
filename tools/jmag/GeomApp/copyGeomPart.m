@@ -6,9 +6,10 @@ end
 %%  복사
     for i=1:(HowMany-1)
         ref1 = geomApp.GetDocument().GetAssembly().GetItem(ItemName);
-        geomApp.GetDocument().GetSelection().Add(ref1)
+        geomApp.GetDocument().GetSelection().Add(ref1)                  %% Add Item
         geomApp.GetDocument().GetSelection().Copy()
         geomApp.GetDocument().GetSelection().Clear()
+        %% Plane Copy? Need
         ref1 = geomApp.GetDocument().CreateReferenceFromIdentifier("plane(TBasicPlane2)");
         geomApp.GetDocument().GetSelection().AddReferenceObject(ref1)
         geomApp.GetDocument().GetSelection().Paste()

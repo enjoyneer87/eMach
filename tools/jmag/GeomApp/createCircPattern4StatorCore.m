@@ -1,5 +1,13 @@
-function createCircPattern4StatorCore(MachineData,StatorGeomAssemRegionTable,app)
+function createCircPattern4StatorCore(MachineData,StatorAssemRegionTable,geomApp)
+%% check App or Geometry Editor
+    AppDir=geomApp.GetAppDir;
+    AppDirStr=split(AppDir,'/');
+    if ~strcmp(AppDirStr{end},'Modeller')
+    geomApp=geomApp.CreateGeometryEditor(0);
+    geomApp.visible
+    end
 
+%% MachineData
     Poles              =MachineData.Poles               ;
     StatorOneSlotAngle =MachineData.StatorOneSlotAngle  ;
     PhaseNumber        =MachineData.PhaseNumber         ;
@@ -7,26 +15,25 @@ function createCircPattern4StatorCore(MachineData,StatorGeomAssemRegionTable,app
     q                  =MachineData.q                   ;
     slots              =MachineData.slots               ;
 
-    geomApp=app.CreateGeometryEditor(0);
-
     %% CoreIndex
-    STcoreIndex=contains(StatorGeomAssemRegionTable.Name,'StatorCore');
-    
-    %%
-    StatorCoreAssemTable=StatorGeomAssemRegionTable(STcoreIndex,:);
-    geomApp.GetDocument().GetAssembly().GetItem("Stator").OpenSketch()
-    Item=geomApp.GetDocument().GetAssembly().GetItem("Stator").CreateRegionCircularPattern();
-    Item.GetName
-    Item.SetProperty("Merge", 1)
-    Item.SetRegionList(StatorCoreAssemTable.IdentifierName{:})
-    Item.SetProperty('CenterType','DefaultOrigin')
-    Item.SetAngle(360/Poles/(NSPP*PhaseNumber))
+    STcoreIndex=contains(StatorAssemRegionTable.Name,'StatorCore');
+    % STcoreIndex=contains(StatorGeomAssemTable(:,"Name"){:},'StatorCore');
 
+    %%
+    StatorCoreAssemRegionTable=StatorAssemRegionTable(STcoreIndex,:);
+    SketchItem=geomApp.GetDocument().GetAssembly().GetItem("Stator");
+    SketchItem.OpenSketch()
+    circItemObj=SketchItem.CreateRegionCircularPattern();
+    circItemObj.SetProperty('CenterType','DefaultOrigin')
+    circItemObj.SetAngle(360/Poles/(NSPP*PhaseNumber))
     if NSPP<1
-    Item.SetInstance(360/StatorOneSlotAngle)
+    circItemObj.SetInstance(360/StatorOneSlotAngle)
     else
-    Item.SetInstance(NSPP*PhaseNumber)
+    circItemObj.SetInstance(NSPP*PhaseNumber)
     end
-    Item.SetName('StatorCore')
+    circItemObj.SetName('StatorCore')
+    % Item.GetName
+    circItemObj.SetProperty("Merge", 1)
+    circItemObj.SetRegionList(StatorCoreAssemRegionTable.IdentifierName{:})
 
 end

@@ -1,13 +1,17 @@
-function [StatorAssemRegionTable,StatorGeomArcTable]=setGetGeomStatorNameNTable(StatorGeomAssemTable,geomApp)
-    StatorAssemRegionTable      =getRegionItemDataTable(StatorGeomAssemTable,'Stator',geomApp);
-    StatorAssemRegionTable = sortrows(StatorAssemRegionTable,'distanceRFromCenter','descend');
+function [StatorAssemRegionTable]=setGetGeomStatorNameNTable(geomApp)
+    % StatorAssemRegionTable      =getRegionItemDataTable(StatorGeomAssemTable,'Stator',geomApp);
+    % StatorAssemRegionTable = sortrows(StatorAssemRegionTable,'distanceRFromCenter','descend');
+
+    % [StatorAssemRegionTable,StatorGeomArcTable,~]      =allocateSubSketchList2AssemRegionTable(StatorGeomAssemTable,StatorAssemRegionTable,geomApp);
+
+    AssembleName='Stator';
+    % StatorAssemRegionTable=getGeomAssembleTableWithHierData(geomApp,AssembleName);
+    StatorAssemRegionTable=getGeomAssemTable(geomApp,AssembleName);
     [SlotUniqueValueStruct, StatorAssemRegionTable]=findConductorSlotinArea(StatorAssemRegionTable);
 
-    [StatorAssemRegionTable,StatorGeomArcTable,~]      =allocateSubSketchList2AssemRegionTable(StatorGeomAssemTable,StatorAssemRegionTable,geomApp);
-
-   
     %% Find StatorCore
     [maxValue,index]=max(StatorAssemRegionTable.Area(:));
+    StatorAssemRegionTable.Name=StatorAssemRegionTable.sketchItemName;
     % StatorAssemRegionTable.Name{index}='StatorCore';
     % refObj=  StatorAssemRegionTable.ReferenceObj(index);
     % sel=getSelectRefObj(refObj,geomApp);
@@ -15,7 +19,6 @@ function [StatorAssemRegionTable,StatorGeomArcTable]=setGetGeomStatorNameNTable(
     % StatorCoreItemName=StatorCoreItem.GetName;
     if ~strcmp(StatorAssemRegionTable.Name{index},'StatorCore')
      StatorAssemRegionTable.Name{index}='StatorCore';
-     changeNameGeomSketchAll(StatorAssemRegionTable,geomApp);
     end
     %% Conductor Setting
     if ~isempty(SlotUniqueValueStruct)
@@ -23,15 +26,30 @@ function [StatorAssemRegionTable,StatorGeomArcTable]=setGetGeomStatorNameNTable(
             %% Slot
             nonStatorCore = (~strcmp(StatorAssemRegionTable.Name, 'StatorCore') & ~strcmp(StatorAssemRegionTable.Name, 'Housing'));
             StatorAssemRegionTable.Name(nonStatorCore) = {'Copper'};
-            changeNameGeomSketchAll(StatorAssemRegionTable,geomApp);
+            % changeNameGeomSketchAll(StatorAssemRegionTable,geomApp);
         else
             %% Other
             [otherSlotAreaGeomTable,StatorAssemRegionTable,StatorRegionTablePerType]=findnReNameOtherSlotArea(StatorAssemRegionTable);
-            changeNameGeomSketchAll(StatorAssemRegionTable,geomApp);
-        end
-    else
-        
+            % changeNameGeomSketchAll(StatorAssemRegionTable,geomApp);
+        end      
     end
-    geomApp.GetDocument().GetAssembly().GetItem('Stator').CloseSketch();
+    
+    StatorAssemRegionTable.sketchItemName=StatorAssemRegionTable.Name;
+    changeNameGeomSketchAll(StatorAssemRegionTable,geomApp);
 
+    AssemTable = getGeomAssemItemListTable(geomApp);
+    PartGeomTable=AssemTable(contains(AssemTable.Type,'Part'),:); 
+    
+    if isempty(PartGeomTable)  % only Sketch
+        geomApp.GetDocument().GetAssembly().GetItem(AssembleName).CloseSketch();
+        disp('2D')
+    else 
+        BoolPartIndex=contains(PartGeomTable.AssemItemName,AssembleName,"IgnoreCase",true);
+        PartName=PartGeomTable.AssemItemName{BoolPartIndex};
+        PartObj=geomApp.GetDocument().GetAssembly().GetItem(PartName);
+        PartObj.ClosePart()
+        disp('Sketch in 3D')
+    end
+
+    
 end

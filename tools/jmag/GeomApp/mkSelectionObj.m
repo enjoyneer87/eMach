@@ -43,24 +43,24 @@ function sel=mkSelectionObj(geomApp,~)
     %% [WIP]
 
     % geomView.SelectAtCircleDlg()
-    boolvis_item=true
-    is_height=true
+    boolvis_item=true;
+    is_height=true;
     filter=int32(0);
-    center_x              =  0
-    center_y              =  0    
-    center_z              =  0    
-    center_axis_x         =  0        
-    center_axis_y         =  0        
-    center_axis_z         =  0        
-    x_axis_x              =  0    
-    x_axis_y              =  0    
-    x_axis_z              =  0    
-    outerRadius           =  10e6    
-    innerRadius           =  0    
-    startAngle            =  0    
-    top                   =0  
-    bottom                =0      
-    EndAngle              =  360   
+    center_x              =  0;
+    center_y              =  0    ;
+    center_z              =  0    ;
+    center_axis_x         =  0        ;
+    center_axis_y         =  0        ;
+    center_axis_z         =  0        ;
+    x_axis_x              =  0    ;
+    x_axis_y              =  0    ;
+    x_axis_z              =  0    ;
+    outerRadius           =  10e6    ;
+    innerRadius           =  0    ;
+    startAngle            =  0    ;
+    top                   =0  ;
+    bottom                =0      ;
+    EndAngle              =  360   ;
     geomView.SelectAtCircleDlg(center_x, center_y,center_z,center_axis_x,center_axis_y,center_axis_z,x_axis_x,x_axis_y,x_axis_z,outerRadius,innerRadius,startAngle,EndAngle,is_height,top,bottom,boolvis_item,filter)
     
     %%

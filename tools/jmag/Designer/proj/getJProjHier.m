@@ -31,3 +31,22 @@ function JprojStruct = getJProjHier(app)
         % JprojStruct.(ModelName) = model;
     end
 end
+
+
+
+% 
+% function JprojTable=getJProjHier(app)
+% 
+%     NumModels=app.NumModels;
+%     JprojTable=table();
+%     for ModelIndex=1:NumModels
+%         ModelObj=app.GetModel(ModelIndex-1);
+%         JprojTable.ModelName{ModelIndex}=ModelObj.GetName;
+%         NumStudies=ModelObj.NumStudies;
+%         StudyCell=repmat({''},NumStudies,1);
+%         for StudyIndex=1:NumStudies
+%         StudyCell{StudyIndex}=ModelObj.GetStudy(StudyIndex-1).GetName;
+%         end
+%         JprojTable.StudyTable{ModelIndex}=StudyCell;
+%     end
+% end

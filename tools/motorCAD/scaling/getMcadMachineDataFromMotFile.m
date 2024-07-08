@@ -1,6 +1,8 @@
 function MachineData = getMcadMachineDataFromMotFile(ActiveXParametersStruct)
     % MOT 파일로부터 ActiveX 파라미터 테이블을 가져옴
-    % ActiveXParametersStruct = getMcadActiveXTableFromMotFile(MotFilePath);
+    if ~isstruct(ActiveXParametersStruct)
+        ActiveXParametersStruct = getMcadActiveXTableFromMotFile(ActiveXParametersStruct);
+    end   % ActiveXParametersStruct = getMcadActiveXTableFromMotFile(MotFilePath);
     
     % Geometry 카테고리
     categories.Geometry = {'Pole_Number', 'Slot_Number', 'DCBusVoltage', 'Stator_Lam_Dia', 'Stator_Lam_Length', 'Motor_Length', 'Housing_Dia'};

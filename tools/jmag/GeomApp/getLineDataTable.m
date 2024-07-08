@@ -5,6 +5,7 @@ StartVertexTable    =table();
 EndVertexTable      =table();     
 LineDirectionalTable=table();
 %% check App or Geometry Editor
+if nargin>1
     AppDir=geomApp.GetAppDir;
     AppDirStr=split(AppDir,'/');
     if ~strcmp(AppDirStr{end},'Modeller')
@@ -12,22 +13,39 @@ LineDirectionalTable=table();
     geomApp.visible
     end
 geomApp.Hide;
-
+end
 % Get ArcTable
-sketchLineTable=getLineTable(RegionDataTable);
+if isvarofTable(RegionDataTable,'Type')
+sketchLineTable            =getLineTable(RegionDataTable);
+elseif isvarofTable(RegionDataTable,'IdentifierName')
+sketchLineTable=RegionDataTable(contains(RegionDataTable.IdentifierName,'Line'),:);
+sketchLineTable=sketchLineTable(~contains(sketchLineTable.IdentifierName,'vertex'),:);
+sketchLineTable=sketchLineTable(~contains(sketchLineTable.IdentifierName,'Item'),:);
+sketchLineTable=sketchLineTable(~contains(sketchLineTable.IdentifierName,'Boolean'),:);
+end
 
 %% Get Vertex Table and Arc Radius
     for IndexofArc=1:height(sketchLineTable)
+        if isvarofTable(RegionDataTable,'IdentifierName')
         CurItem=convertRefObj2Item(sketchLineTable.ReferenceObj(IndexofArc),geomApp);
+        else
+        CurItem=sketchLineTable.sketchItemObj{IndexofArc};
+        end
         if CurItem.IsValid
         %% VertexTable
         StartVertex                                     =CurItem.GetStartVertex   ;   
         % CenterVertex                                    =CurItem.GetCenterVertex  ;     
         EndVertex                                       =CurItem.GetEndVertex     ; 
         % temporary Table
+        if nargin>1
         tempStartVertexTable        =getVertexTable(StartVertex,geomApp);
         % tempCenterVertexTable       =getVertexTable(CenterVertex,app);
         tempEndVertexTable          =getVertexTable(EndVertex,geomApp);
+        else
+        tempStartVertexTable        =getVertexTable(StartVertex);
+        % tempCenterVertexTable       =getVertexTable(CenterVertex,app);
+        tempEndVertexTable          =getVertexTable(EndVertex);
+        end
                 % VertexTable Row
         StartVertexTable    =[StartVertexTable;  tempStartVertexTable];
         % CenterVertexTable =[CenterVertexTable; tempCenterVertexTable];
@@ -52,7 +70,7 @@ addTableName2VarNameInFunction('StartVertexTable');
 % addTableName2VarNameInFunction('CenterVertexTable');
 addTableName2VarNameInFunction('EndVertexTable');
 NewLineTable=[sketchLineTable LineDirectionalTable StartVertexTable EndVertexTable ];
-geomApp.Show
+% geomApp.Show
 
 end
 

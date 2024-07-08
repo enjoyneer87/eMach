@@ -1,5 +1,6 @@
 function AssembleTable=getGeomSketchAssembleTable(AssembleName,geomApp)
     geomApp.Hide;
+    
     AssemObjStruct              = getStatorGeomSketchData(geomApp,AssembleName);
     % RegionData                  = getRegionDataArea(AssemObjStruct,app,AssembleName);
     %% Struct 2 Table

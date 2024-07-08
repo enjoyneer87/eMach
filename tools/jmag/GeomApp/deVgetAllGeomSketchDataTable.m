@@ -1,4 +1,4 @@
-function RegionDataTable=getAllGeomSketchDataTable(app,AssembleName)
+function RegionDataTable=deVgetAllGeomSketchDataTable(app,AssembleName)
    %[WIP] sketchAssemble=getGeomSketchAssembleTable(AssembleName,app) 와 중복
     % getGeomSketchAssembleTable>getStatorGeomSketchData>getSkecthDataTableFromCurrentSelection>
 

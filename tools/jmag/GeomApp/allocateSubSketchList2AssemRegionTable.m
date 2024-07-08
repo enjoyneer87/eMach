@@ -3,7 +3,7 @@
 
 % StatorAssemRegionTable
 
-function [StatorAssemRegionTable,StatorGeomArcTable,StatorGeomLineTable]=allocateSubSketchList2AssemRegionTable(StatorGeomAssemTable,StatorAssemRegionTable,geomApp)
+function [AssemRegionTable,GeomArcTable,GeomLineTable]=allocateSubSketchList2AssemRegionTable(GeomAssemTable,AssemRegionTable,geomApp)
 
 %% check App or Geometry Editor
     AppDir=geomApp.GetAppDir;
@@ -13,40 +13,40 @@ function [StatorAssemRegionTable,StatorGeomArcTable,StatorGeomLineTable]=allocat
         % geomApp.Show
     end
 
-StatorGeomArcTable          =getArcDataTable(StatorGeomAssemTable,geomApp);
-StatorGeomLineTable         =getLineDataTable(StatorGeomAssemTable,geomApp);
+GeomArcTable          =getArcDataTable(GeomAssemTable,geomApp);
+GeomLineTable         =getLineDataTable(GeomAssemTable,geomApp);
 
-StatorGeomArcTable   = sortrows(StatorGeomArcTable,         'Angle','descend');
-StatorGeomLineTable  = sortrows(StatorGeomLineTable,        'length','descend');
+GeomArcTable   = sortrows(GeomArcTable,         'Angle','descend');
+GeomLineTable  = sortrows(GeomLineTable,        'length','descend');
 
-for RegionIndex=1:height(StatorAssemRegionTable)
+for RegionIndex=1:height(AssemRegionTable)
     % 찾을 대상 Region 이름 추출
     clear SketchItemList
-    faceItemName=erase(StatorAssemRegionTable.IdentifierName{RegionIndex},'faceregion(');
+    faceItemName=erase(AssemRegionTable.IdentifierName{RegionIndex},'faceregion(');
     faceItemName=erase(faceItemName,')');
     % 전체테이블에서 해당 RegionItem포함된 Index 추출
-    faceItemIndex=find(contains(StatorGeomAssemTable.IdentifierName,faceItemName));
+    faceItemIndex=find(contains(GeomAssemTable.IdentifierName,faceItemName));
     
-    edgeItemIndex=contains(StatorGeomAssemTable.IdentifierName(faceItemIndex),'edgeregion');
+    edgeItemIndex=contains(GeomAssemTable.IdentifierName(faceItemIndex),'edgeregion');
     skechItemIndex=faceItemIndex(edgeItemIndex);
 
     %% ItemList
-    SketchItemList=StatorGeomAssemTable.IdentifierName(skechItemIndex);
+    SketchItemList=GeomAssemTable.IdentifierName(skechItemIndex);
     SketchItemList=erase(SketchItemList,['edgeregion(',faceItemName,'+']);
     SketchItemList=erase(SketchItemList,')');
 
     %%ArcTable
-    TSketchArcNames=erase(StatorGeomArcTable.IdentifierName,'edgeregion(');
+    TSketchArcNames=erase(GeomArcTable.IdentifierName,'edgeregion(');
     TSketchArcNames=erase(TSketchArcNames,')');
-    MatchedArcTable=StatorGeomArcTable(find(contains(TSketchArcNames,SketchItemList)),:);
+    MatchedArcTable=GeomArcTable(contains(TSketchArcNames,SketchItemList),:);
 
     %%LineTable
-    TSketchLineNames=erase(StatorGeomLineTable.IdentifierName,'edgeregion(');
+    TSketchLineNames=erase(GeomLineTable.IdentifierName,'edgeregion(');
     TSketchLineNames=erase(TSketchLineNames,')');
-    MatchedLineTable=StatorGeomLineTable(find(contains(TSketchLineNames,SketchItemList)),:);
+    MatchedLineTable=GeomLineTable(contains(TSketchLineNames,SketchItemList),:);
 
     %RegionList
-    StatorAssemRegionTable.SketchList{RegionIndex}=    {MatchedArcTable,MatchedLineTable};
+    AssemRegionTable.SketchList{RegionIndex}=    {MatchedArcTable,MatchedLineTable};
     % contains(StatorGeomAssemTable.IdentifierName(faceIteMatchedArcTablemIndex),'Line')
     % contains(StatorGeomAssemTable.IdentifierName(faceItemIndex),'Arc')
     % all(~contains(StatorGeomAssemTable.IdentifierName(faceItemIndex),'Boolean'))

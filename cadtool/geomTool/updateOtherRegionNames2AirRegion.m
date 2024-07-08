@@ -1,6 +1,6 @@
 function regionTable = updateOtherRegionNames2AirRegion(regionTable)
     % List of names that should not be changed
-    namesToKeep = {'shaft', 'Rotorcore', 'Magnet','Sleeve'};
+    namesToKeep = {'shaft', 'Rotorcore', 'Magnet','Sleeve','airRegion'};
     
     % Iterate over each row in regionTable
     for i = 1:height(regionTable)

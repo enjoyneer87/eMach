@@ -1,8 +1,8 @@
 function AssembleItemName=getGeomPartlistCell(geomApp)
 %% init
-    geomDocu        =geomApp.GetDocument
-    geomAssemble    =geomDocu.GetAssembly
-    NumAssemblyItem =geomAssemble.NumItems
+     geomDocu        =geomApp.GetDocument;
+    geomAssemble    =geomDocu.GetAssembly;
+    NumAssemblyItem =geomAssemble.NumItems;
 
 %% get Current Part List    
 % 1~3 Index는 Plane reference라서 제외
