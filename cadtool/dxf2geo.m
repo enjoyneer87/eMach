@@ -1,11 +1,12 @@
 function geoFileFullPath=dxf2geo(dxfPath)
     addpathGmsh
+    % dxfPath=NewtestStatorDXFPath
     %%
     [~,FileName,dxfext]=fileparts(dxfPath);
     filePath=[FileName,dxfext];
     geoFileDir=fullfile(pwd,'geoFile');
     newFilePath=fullfile(geoFileDir,filePath);
-    copyfile(dxfPath,newFilePath);
+    % copyfile(dxfPath,newFilePath);
     % dxf 2 geo in matlab
     %%
     dxfFile = newFilePath;  % 변환할 DXF 파일 경로와 파일 이름
@@ -16,7 +17,10 @@ function geoFileFullPath=dxf2geo(dxfPath)
     %% move2 cadtool Path
     
     %% dxf2geo.exe 실행 명령 생성
-    command = sprintf('dxf2geo.exe %s %f %d %f %f', newFilePath, tolerance, rotation, xOffset, yOffset);
+    addpath('Z:\Seminar_material\EMdyne\Scripts\Scripts\')
+    % command = sprintf('dxf2geo.exe %s %f %d %f %f', newFilePath, tolerance, rotation, xOffset, yOffset);
+    command = sprintf('dxf2geo.exe %s %f %d %f %f', dxfPath, tolerance, rotation, xOffset, yOffset);
+
     % 외부 명령 실`행
     system(command);
     if isfile(newFilePath)

@@ -16,6 +16,8 @@ elseif strcmp(python2call,'jmag')
 pyenv('Version', 'C:\ANSYS_Motor-CAD\2023_2_1\Python\Python\python.exe');
 elseif strcmp(python2call,'pyleecan')
 pyenv('Version', 'C:\ANSYS_Motor-CAD\2023_2_1\Python\Python\python.exe');
+elseif strcmp(python2call,'gmsh')
+pyenv('Version', 'Z:\01_Codes_Projects\git_fork_emach\.venv\Scripts\pythonw.exe')
 end
 
 end
