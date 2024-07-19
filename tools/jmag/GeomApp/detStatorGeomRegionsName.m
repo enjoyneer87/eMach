@@ -12,5 +12,7 @@ function RegionListExcept2Delete=detStatorGeomRegionsName(RegionTablePerType,Nam
                 RegionListExcept2Delete    = RegionTablePerType.HousingTable.Name;
             elseif contains(Name2Change,'otherSlotArea')
                 RegionListExcept2Delete    = RegionTablePerType.otherSlotAreaTable.Name;
+            else
+                RegionListExcept2Delete    = RegionTablePerType.otherSlotAreaTable.Name;
             end        
 end

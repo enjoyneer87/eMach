@@ -1,5 +1,5 @@
 classdef CrossSectParallelogram  < CrossSectBase
-    %   CrossSectParallelogram Describes a solid parallelogram.
+    %   CrossSectParallelogram Describes a c
     %   Properties are set upon class creation and cannot be modified.
     %   The anchor point for this is the lower left corner of the parallelogram.
     

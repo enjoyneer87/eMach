@@ -1,4 +1,4 @@
-function StatorAssemTable=getStatorGeomSketchTable(app)
+function StatorAssemTable=devgetStatorGeomSketchTable(app)
     StatorSketchRefObjStr=getStatorGeomSketchData(app);
     % RegionData=getRegionDataArea(StatorSketchRefObjStr,app);
     refObjTable=struct2table(StatorSketchRefObjStr);

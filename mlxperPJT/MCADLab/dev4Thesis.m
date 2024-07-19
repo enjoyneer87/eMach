@@ -38,6 +38,7 @@ originLabLinkTable      = reNameLabTable2LabLink(filteredTable);
 MCADLinkTable           = originLabLinkTable;
 
 
+
 %% dev McADLinkTable Post(LUT)
 MCADLinkTable       = originLabLinkTable    ;             
 MachineData         = refLABBuildData       ;             
@@ -182,7 +183,7 @@ ax.YLim=[0 1785.5];
         % getDataFromMessageLogFiles.m
 
 %% 
-%% 
+%% BuildTable (ScalingMotTable 2 Build
 parentPath              ='E:\KDH\8p48sVV\'          ; 
 % parentPath              ='E:\KDH\230819_8P48S_Vtype';
 % parentPath                ='Z:\Simulation\LabProj2023v3\230819_8P48S_Vtype'  ;             
@@ -281,6 +282,10 @@ mcad.ShowResultsViewer_Lab("Electromagnetic")
 calcVehicleLateralDynamics
 devLauchDoE4EffiVehicleDutyCycle
 devLauchDoE4EfficiencyVehiclePerformance
+
+
+
+
 %% Duty Cycle (EC)
 % CalculateDutyCycle_Lab - LabManager 
 % [DONE]calc DutyCycle in devReBuildDOE.mlx
@@ -316,6 +321,18 @@ idx = contains(modifiedData,'Material_Weight_Notes')
 idx = contains(modifiedData,'Mat_Weight_Notes')
 Material_Weight_Notes=modifiedData(idx)
 value=getValuesMotDatainCellFormat(Material_Weight_Notes)
+
+%% AuVeCoDE Review
+
+
+load('Z:\01_Codes_Projects\VehicleSystem\git_AuVECoDE\01_MAIN_functions\.dependency\dependency.mat')
+Nodes = splitvars(G.Edges, 'EndNodes');
+idx = find((Nodes.EndNodes_2==172));
+coupledNode=Nodes.EndNodes_1(idx)
+MainFunctionNode=G.Nodes.Short_Name(coupledNode)
+
+[vehicle] = INITIALIZE_vehicle(Parameters);
+
 %% 턴별로 생성한뒤, 동일전류밀도에서 큰거와 작은거 비교를 위해서는 다른 턴수로 전류범위를 맞춘뒤 비교가능
 %% 정수 턴수별 AC Loss를 Plot해서 연속적인 함수로 Interpolation한뒤, Surrogate모델을 만드는것도 방법인듯
 
