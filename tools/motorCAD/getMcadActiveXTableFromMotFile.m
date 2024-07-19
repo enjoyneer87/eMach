@@ -1,9 +1,8 @@
 function modifiedDataStruct = getMcadActiveXTableFromMotFile(MotFilePath)
-    load("Z:\01_Codes_Projects\git_fork_emach\tools\mcadActiveXparameterList.mat");
+    load("mcadActiveXparameterList.mat");
     modifiedData = getDataFromMotFiles(MotFilePath);
     % modifiedDataStruct 구조체 초기화
     modifiedDataStruct = struct();
-
     % 각 tableName에 대한 CurrentValue를 초기화
     tableNames = fieldnames(ActiveXParametersStruct);
     for tableIndex = 1:numel(tableNames)

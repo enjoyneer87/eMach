@@ -9,6 +9,7 @@ function [BuildList, MotFileParentPath] = mkMCADScaledFilesFromList(BuildList, A
         parpool;  % 기본 설정으로 병렬 풀 시작
     end
     
+    
     % 출력 파일 경로 설정
     MotFileParentPath = fullfile(parentPath, AddName);
     

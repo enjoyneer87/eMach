@@ -61,7 +61,7 @@ end
     % Ampere/m2
     % LabTable.CurrentDensityRMS                =calcCurrentDensity((LabTable.Is)/sqrt(2),MotorCADGeo.ParallelPaths,double(MotorCADGeo.NumberStrandsHand),MotorCADGeo.ArmatureConductorCSA);
     refLabTable.CurrentDensityRMS                =calcCurrentDensity((Is)/sqrt(2),MotorCADGeo.ParallelPaths,double(MotorCADGeo.NumberStrandsHand),MotorCADGeo.ArmatureConductorCSA);
-    SLLawScaledLabTable.CurrentDensityRMS                            = 1./k_Winding*refLabTable.CurrentDensityRMS;
+    % SLLawScaledLabTable.CurrentDensityRMS                            = 1./k_Winding*refLabTable.CurrentDensityRMS;
     ScaledMachineData.Ipk                =max(ScaledIsPk);
     ScaledMachineData.Irms                =max(ScaledIsPk)/sqrt(2);
 %% [Vs]
@@ -90,8 +90,8 @@ end
     R_Cuco20                =ScaledMachineData.ResistanceActivePart20    ;
     R_Cuew20                =ScaledMachineData.EndWindingResistance_Lab20;
     R_Cu20                 =ScaledMachineData.Resistance_MotorLAB20  ;   
-    SLLawScaledLabTable.Stator_Copper_Loss_DC                          =3*(R_Cuco20+R_Cuew20).*pk2rms(ScaledIsPk).^2;
-    SLLawScaledLabTable.Stator_Copper_Loss_DC20                =SLLawScaledLabTable.Stator_Copper_Loss_DC;
+    % SLLawScaledLabTable.Stator_Copper_Loss_DC                          =3*(R_Cuco20+R_Cuew20).*pk2rms(ScaledIsPk).^2;
+    % SLLawScaledLabTable.Stator_Copper_Loss_DC20                =SLLawScaledLabTable.Stator_Copper_Loss_DC;
 %% AC Los Scaling
    ScaledMachineData.HybridAdjustmentFactor_ACLosses                  =1;
    ScaledMachineData.WindingTemp_ACLoss_Ref_Lab                =BuildingData.TwindingCalc_MotorLAB;

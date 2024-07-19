@@ -17,7 +17,10 @@ function scaleList2Build = getMCADData4ScalingList(parentPath)
 
     % 루프를 병렬로 실행
     parfor MotFileIndex = 1:length(MotFileList)
+
+    % for MotFileIndex = 1:length(MotFileList)
         % 각 MOT 파일에 대한 데이터 처리
+        disp(MotFileList{MotFileIndex})
         [Data2Scaling4Building, filteredLabTable4Scaling] = getMCADData4ScalingFromMotFile(MotFileList{MotFileIndex});
         % [SLScaledMachineData, SLLabTable, refTable] = scaleTable4LabTable(scaleFactor, filteredTable, BuildingData);
 

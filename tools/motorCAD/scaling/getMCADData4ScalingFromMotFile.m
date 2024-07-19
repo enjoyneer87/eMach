@@ -10,7 +10,7 @@ ActiveXParametersStruct = getMcadActiveXTableFromMotFile(MotFilePath);
 MachineData                                         = getMcadMachineDataFromMotFile(ActiveXParametersStruct)    ;
 BuildingData                                        = getMCADBuildingDataFromMotFile(ActiveXParametersStruct);
 MachineData                                         = mergeSubStructs(MachineData);
-[BuildingData.MotorCADGeo,b]                        = mergeStructs(BuildingData.MotorCADGeo,MachineData);
+[BuildingData.MotorCADGeo,~]                        = mergeStructs(BuildingData.MotorCADGeo,MachineData);
 %% HairPin
 if BuildingData.MotorCADGeo.Armature_CoilStyle==1
 BuildingData.MotorCADGeo.LabMaxRMSCurrentDensity    = calcCurrentDensity(BuildingData.MotorCADGeo.Imaxrms,double(BuildingData.MotorCADGeo.ParallelPaths),double(BuildingData.MotorCADGeo.NumberStrandsHand),BuildingData.MotorCADGeo.ArmatureConductorCSA);
