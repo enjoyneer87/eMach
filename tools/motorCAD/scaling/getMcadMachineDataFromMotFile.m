@@ -58,7 +58,7 @@ function MachineData = getMcadMachineDataFromMotFile(ActiveXParametersStruct)
     % 조건부 실행 및 계산
     if isfield(MachineData.Winding, 'Armature_CoilStyle')
         if MachineData.Winding.Armature_CoilStyle == 1
-            disp('HairPin');
+            % disp('HairPin');
            %% ArmatureConductorCSA
             Irms                =MachineData.Winding.RMSCurrent             ;
             ParallelPath        =MachineData.Winding.ParallelPaths          ;    
@@ -69,7 +69,7 @@ function MachineData = getMcadMachineDataFromMotFile(ActiveXParametersStruct)
 
            
         elseif MachineData.Winding.Armature_CoilStyle == 0
-            disp('환선');
+            % disp('환선');
             if isfield(MachineData.Winding, 'ArmatureTurnCSA')
                 %% 전류, 전류밀도로 역산 (CSA는 도체의 면적)
             Irms                =MachineData.Winding.RMSCurrent             ;

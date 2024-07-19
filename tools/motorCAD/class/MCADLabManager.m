@@ -157,8 +157,13 @@ classdef MCADLabManager
         end
 
 %% processSLLAW
- function obj=processSLLAW(obj)
+function obj=processSLLAW(obj)
          
+            % if nargin>1
+            % NewParentPath=NewPath;
+            % else
+            % NewParentPath=[];
+            % end
             obj=obj.setupParallelPoolSPMD();
             %% 
             BuildTable    =obj.BuildListTable;
@@ -169,81 +174,99 @@ classdef MCADLabManager
             end
             %%
             requiredWorkers = min(obj.NumMCAD, height(FilteredTable));
+            SCMatrixName= mkScalingNameMatrixFromMCADDOEList(FilteredTable)';
+            SCMatrixNameVector = reshape(SCMatrixName, [numel(SCMatrixName), 1]);
+            kRadialMatrix=mkScalingMatrixFromMCADDOEList(FilteredTable)';
+            kRadialVector = reshape(kRadialMatrix, [numel(SCMatrixName), 1]);
+            doubleCellArray = num2cell(kRadialVector);
+            ScalingCell=[SCMatrixNameVector,doubleCellArray];
+            nonZeroNumber=numel(kRadialMatrix);
 
             if requiredWorkers>0
             % spmd 블록을 사용하여 파일 처리
             spmd(requiredWorkers)
                 mcad = actxserver('motorcad.appautomation');  % 각 워커별로 ActiveX 인스턴스 생성
-                % obj.MCADInstances{spmdIndex} = mcad;  % Composite 객체에 인스턴스 저장
-                SCMatrixName= mkScalingNameMatrixFromMCADDOEList(FilteredTable)';
-                SCMatrixNameVector = reshape(SCMatrixName, [numel(SCMatrixName), 1]);
-                kRadialMatrix=mkScalingMatrixFromMCADDOEList(FilteredTable)';
-                kRadialVector = reshape(kRadialMatrix, [numel(SCMatrixName), 1]);
-                doubleCellArray = num2cell(kRadialVector);
-                ScalingCell=[SCMatrixNameVector,doubleCellArray];
-                nonZeroNumber=numel(kRadialMatrix);
-            
+                % obj.MCADInstances{spmdIndex} = mcad;  % Composite 객체에 인스턴스 저장      
             % 각 워커가 처리할 파일의 범위 지정
                 for idx = spmdIndex : spmdSize : nonZeroNumber
                     originalRowIndex = mod(idx-1, height(FilteredTable)) + 1;
                     motFileData = FilteredTable(originalRowIndex, :);
                     try
                         % SLLAW 관련 파일 로드 및 변수 설정
-                                refPath=motFileData.MotFilePath{:};      
-                                additionalOption=ScalingCell{idx,1};
-                                SLLAWPath= mkMCADFileFromRefPath(refPath,'SLLAW',additionalOption);
-                                refLabTable  =motFileData.refTable{:};
-                                BuildingData =motFileData.BuildingData(:);
-                                %%scalingFactorStruct
-                                if ScalingCell{idx,2}==0
-                                scalingFactorStruct.k_Radial   =1 ;
-                                else
-                                scalingFactorStruct.k_Radial   = ScalingCell{idx,2};
-                                end
-                                scalingFactorStruct.k_Axial    = 1;
-                                scalingFactorStruct.a_p    = BuildingData.MotorCADGeo.ParallelPaths;
-                                scalingFactorStruct.n_c    = BuildingData.MotorCADGeo.MagTurnsConductor;
-                                scalingFactorStruct.k_Winding   = 1;
-                                %% Scale
-                                [SLScaledMachineData,SLLawScaledLabTable,~] = scaleTable4LabTable(scalingFactorStruct,refLabTable,BuildingData);                                        
-                                                        %% 
-                        motFileData.SLScaledMachineData=SLScaledMachineData;
-                        motFileData.SLLawScaledLabTable={SLLawScaledLabTable};
-                                                        % SLLAWPath=motFileData
-                        mcad.LoadFromFile(SLLAWPath);
-                        mcad.SetVariable("MessageDisplayState", 2);
-                        mcad.RestoreCompatibilitySettings();
-                        mcad.ClearModelBuild_Lab();
-                        mcad.SetVariable('ACLossHighFrequencyScaling_Method',0);
-                        %SLLAW가 있으면 그냥 열어서      Lab만들기
-                        %SLFEA가 없으면 SetVariable하고  Lab만들기
-                        % if isfield(motFileData,'samesameMotFilePath')
-                        %    if ~isfile(motFileData.SLFEAMotFilePath)
-                        mcad.SetVariable('AirgapDefinition', 1);
-                        %% SLMachineData
-                        setMcadVariable(motFileData.SLScaledMachineData, mcad);
-                        %% SL Lab Building Setting
-                        LabBuildSettingTable=obj.LabBuildSettingTable;
-                        setMcadTableVariable(LabBuildSettingTable,mcad);
-                        mcad.SetVariable("CurrentSpec_MotorLAB",0);
-                        mcad.SetVariable("MaxModelCurrent_MotorLAB", max(motFileData.SLLawScaledLabTable{:}.Is));                        
-                        %% - SCLaw 맵 구성 (땡겨오기)                       
-                        [~,LabMatFileDir]=mcad.GetVariable('ResultsPath_MotorLAB');
-                        ExportLabLinkTxtPath=makeLabLinkTXTFromLabTable(motFileData.SLLawScaledLabTable{:},LabMatFileDir);
-                        if contains(LabMatFileDir,'SLLAW')
-                            [newLabTxtDir,DesignName,~]=fileparts(SLLAWPath);
-                            designNumber = extractDesignNumber(DesignName);
-                            NewLabTxtPath=[newLabTxtDir,['\',designNumber,'SLLAW_LabLink.txt']];
-                            movefile(ExportLabLinkTxtPath,NewLabTxtPath);
-                        end
-                        motFileData.ImportLabLinkTxtPath=NewLabTxtPath;
-                        BuildData         =motFileData.BuildingData;                
-                        ScaledMachineData =motFileData.SLScaledMachineData       ;      
-                        LabLinkTxtPath    =motFileData.ImportLabLinkTxtPath      ;      
-                        ImportExternalTXTLabModel(LabLinkTxtPath,BuildData,mcad,ScaledMachineData)
-                        mcad.SaveToFile(SLLAWPath);
-  
-                        disp(['Task completed successfully for file: ', SLLAWPath]);
+                            refPath=motFileData.MotFilePath{:};      
+                            additionalOption=ScalingCell{idx,1};
+                            % if ~isempty(NewParentPath)
+                            % SLLAWPath= mkMCADFileFromRefPath2NewPath(refPath,'SLLAW',additionalOption,NewParentPath);
+                            % else
+                            SLLAWPath= mkMCADFilePathFromRefPath(refPath,'SLLAW',additionalOption);
+                            % end
+                            
+                              
+                            if ~exist(SLLAWPath,'file')
+                                copyfile(refPath,SLLAWPath); 
+                                disp(['파일을 복사했습니다.',SLLAWPath]);                                
+                            refLabTable  =motFileData.refTable{:};
+                            BuildingData =motFileData.BuildingData(:);
+                            %%scalingFactorStruct
+                            if ScalingCell{idx,2}==0
+                            scalingFactorStruct.k_Radial   =1 ;
+                            else
+                            scalingFactorStruct.k_Radial   = ScalingCell{idx,2};
+                            end
+                            scalingFactorStruct.k_Axial    = 1;
+                            scalingFactorStruct.a_p    = BuildingData.MotorCADGeo.ParallelPaths;
+                            scalingFactorStruct.n_c    = BuildingData.MotorCADGeo.MagTurnsConductor;
+                            scalingFactorStruct.k_Winding   = 1;
+                            %% Scale
+                            %
+                            [SLScaledMachineData,SLLawScaledLabTable,~] = scaleTable4LabTable(scalingFactorStruct,refLabTable,BuildingData);                                        
+                                                    %% 
+                                                        
+                            motFileData.SLScaledMachineData=SLScaledMachineData;
+                            motFileData.SLLawScaledLabTable={SLLawScaledLabTable};
+                                                            % SLLAWPath=motFileData
+                            %% - SCLaw 맵 구성                    
+                            % [~,LabMatFileDir]=mcad.GetVariable('ResultsPath_MotorLAB');
+                            % [~,LabMatFileDir]=mcad.GetVariable('ResultsPath_MotorLAB');
+    
+                            [LabFileDir,SLLAWDIR,~]=fileparts(SLLAWPath);
+                            SLLAWLabDIR=fullfile(LabFileDir,SLLAWDIR);
+                            ExportLabLinkTxtPath=makeLabLinkTXTFromLabTable(motFileData.SLLawScaledLabTable{:},SLLAWLabDIR);
+                            if contains(SLLAWLabDIR,'SLLAW')
+                                [newLabTxtDir,DesignName,~]=fileparts(SLLAWPath);
+                                % designNumber = extractDesignNumber(DesignName);
+                                [newLabTxtDir,DesignName,~]=fileparts(SLLAWPath);
+                                % NewLabTxtPath=[newLabTxtDir,['\',designNumber,'SLLAW_LabLink.txt']];
+                                NewLabTxtPath=fullfile(SLLAWLabDIR,[DesignName,'LabLink.txt']);
+                                movefile(ExportLabLinkTxtPath,NewLabTxtPath);
+                            end
+                            %% Import
+                            mcad.LoadFromFile(SLLAWPath);
+                            mcad.SetVariable("MessageDisplayState", 2);
+                            % mcad.RestoreCompatibilitySettings();
+                            mcad.ClearModelBuild_Lab();
+                            mcad.SetVariable('ACLossHighFrequencyScaling_Method',0);
+                            %SLLAW가 있으면 그냥 열어서      Lab만들기
+                            %SLFEA가 없으면 SetVariable하고  Lab만들기
+                            % if isfield(motFileData,'samesameMotFilePath')
+                            %    if ~isfile(motFileData.SLFEAMotFilePath)
+                            mcad.SetVariable('AirgapDefinition', 1);
+                            %% SLMachineData
+                            setMcadVariable(motFileData.SLScaledMachineData, mcad);
+                            %% SL Lab Building Setting
+                            setMcadTableVariable(obj.LabBuildSettingTable,mcad);
+                            mcad.SetVariable("CurrentSpec_MotorLAB",0);
+                            mcad.SetVariable("MaxModelCurrent_MotorLAB", max(motFileData.SLLawScaledLabTable{:}.Is));                        
+                            mcad.SetVariable('CalcTypeCuLoss_MotorLAB',3);
+                            %% 
+                            motFileData.ImportLabLinkTxtPath=NewLabTxtPath;
+                            BuildData         =motFileData.BuildingData;                
+                            ScaledMachineData =motFileData.SLScaledMachineData       ;      
+                            LabLinkTxtPath    =motFileData.ImportLabLinkTxtPath      ;      
+                            ImportExternalTXTLabModel(LabLinkTxtPath,BuildData,mcad,ScaledMachineData)
+                            mcad.SaveToFile(SLLAWPath);
+                            disp(['Task completed successfully for file: ', SLLAWPath]);
+                            end
                        catch e
                             disp(['Error processing file ',SLLAWPath, ': ', e.message]);
                     end

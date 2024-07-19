@@ -1,4 +1,4 @@
-function LabLinkTxtPath=makeLabLinkTXTFromLabTable(SatuMapTable,LabMatFileDir)
+function LabLinkTxtPath=makeLabLinkTXTFromLabTable(SatuMapTable,LabFileDir)
 
 SatuMapTable=sortrows(SatuMapTable,'Is',"ascend");
 % SatuMapTable.("Current Angle")=abs(SatuMapTable.("Current Angle"));
@@ -6,12 +6,11 @@ SatuMapTable=sortrows(SatuMapTable,'Is',"ascend");
 
 %% 
 if nargin==2
-    if ~isfolder(LabMatFileDir)
-    mkdir(LabMatFileDir)
+    if ~isfolder(LabFileDir)
+    mkdir(LabFileDir)
     end
-    [~,b,~]=fileparts(LabMatFileDir);
     % [b,~,~]=fileparts(b);
-    LabLinkTxtPath=fullfile(LabMatFileDir,[b,'LabLink.txt']);
+    LabLinkTxtPath=fullfile(LabFileDir,'LabLink.txt');
 else    
     LabLinkTxtPath=fullfile(pwd,'LabLink.txt');
 end
