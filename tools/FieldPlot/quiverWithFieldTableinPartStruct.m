@@ -14,9 +14,9 @@ function quiverWithFieldTableinPartStruct(WireStruct,PartIndex,~)
         ElementIDStr=VarNames{ElementIndex};
         ElementPostion=WireStruct(PartIndex).ElementPosition.(ElementIDStr);
            
-        containCell=findMatchedVarName(WireStruct(1).BxTimeinRow,ElementIDStr,1);
-        BxFieldData=WireStruct(1).BxTimeinRow.(containCell{:});
-        ByFieldData=WireStruct(1).ByTimeinRow.(containCell{:});
+        containCell=findMatchedVarName(WireStruct(PartIndex).BxTimeinRow,ElementIDStr,1);
+        BxFieldData=WireStruct(PartIndex).BxTimeinRow.(containCell{:});
+        ByFieldData=WireStruct(PartIndex).ByTimeinRow.(containCell{:});
     
         % ElementID=strrep(,'x',"");
         if strcmp(PlotType,'Transient')

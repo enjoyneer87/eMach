@@ -22,14 +22,19 @@ function NewMotFilePath= mkMCADFileFromRefPath(refModelPath,AddName,additionalOp
     elseif strcmp(AddName,'SLFEA')
     PathStr=strsplit(refModelDir,'\');
     Str2Change=PathStr(contains(PathStr,'DOE'));
-    SLLAWMotFileDIR=strrep(refModelDir,Str2Change{:},AddName);
-    SLFEAMotFileDIR=strrep(SLLAWMotFileDIR,'SLLAW',AddName);
-    NewMotFileDIR  = SLFEAMotFileDIR;
-    %%FileName
-    refModelMotFileName=strrep(refModelMotFileName,'SLLAW','');
-    refModelMotFileName=strrep(refModelMotFileName,'SLFEA','');
-    NewMotFileName=[refModelMotFileName,AddName];
+        if ~isempty(Str2Change)
+        SLLAWMotFileDIR=strrep(refModelDir,Str2Change{:},AddName);
+        else
+        SLLAWMotFileDIR=strrep(refModelDir,PathStr{end},'SLLAW');
+        SLFEAMotFileDIR=strrep(SLLAWMotFileDIR,'SLLAW',AddName);
+        NewMotFileDIR  = SLFEAMotFileDIR;
+        %%FileName
+        refModelMotFileName=strrep(refModelMotFileName,'SLLAW','');
+        refModelMotFileName=strrep(refModelMotFileName,'SLFEA','');
+        NewMotFileName=[refModelMotFileName,AddName];
+        end
     end
+    
     %%
     if nargin>2
     NewMotFilePath=fullfile(NewMotFileDIR,[NewMotFileName,additionalOption,FileExt]);

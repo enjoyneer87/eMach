@@ -1,5 +1,8 @@
 function regionTable = allocateMagnetNamesMTable(regionTable)
-    % Define a tolerance for grouping distances into layers
+    %% temp
+    % regionTable=RotorAssemRegionTable;
+    %%
+    % Define a tolerance for grouping distances into layers  
     tolerance = 0.001;
 
     % Find the regions that correspond to magnets

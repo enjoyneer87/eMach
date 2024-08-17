@@ -61,7 +61,7 @@ fcnExportGraphicGif.m
 **motorcad Analysis File
 *.mes
 *.ugf
-
+**SimpleFHI
 **/feasys**
 **/AutoSave
 **/MessageLogs
@@ -72,5 +72,8 @@ fcnExportGraphicGif.m
 
 **.bh
 **/DOE**
-
+**archive
 **/LabProj2023**
+**backup
+*.venv
+*.vscode**

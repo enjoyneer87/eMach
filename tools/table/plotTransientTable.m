@@ -1,4 +1,7 @@
 function plotTransientTable(table2Plot, StepData)
+%% devTemp
+% table2Plot=ResultTable
+%%
     if isvarofTable(table2Plot,'Time') 
     % StepData.StartTime   =table2Plot{1,1};
     % StepData.EndTime     =table2Plot{end,1};
@@ -12,7 +15,8 @@ function plotTransientTable(table2Plot, StepData)
     StepData.EndTime     =table2Plot{end,1};
     end
 
-    StartTime   =StepData.StartTime;
+   
+    % StartTime   =StepData.StartTime;
     EndTime     =StepData.EndTime;
     StepDivision=StepData.StepDivision;
     xTime=(0:(EndTime/StepDivision):EndTime)';
@@ -20,16 +24,16 @@ function plotTransientTable(table2Plot, StepData)
     heightTable=height(table2Plot);
     % Single Period
     if heightTable>StepDivision
-    table2Plot = table2Plot(heightTable-(StepDivision):end, :);
+    table2Plot = table2Plot(heightTable-(StepDivision)+1:end, :);
     end
 
 
     % 각 변수에 대해 그래프를 그림
-    for i = 2:width(table2Plot)
+    for i = 1:width(table2Plot)
         varName = table2Plot.Properties.VariableNames{i}; % 변수 이름
         % varUnit = table2Plot.Properties.VariableUnits{1}; % 변수 단위
-        if height(table2Plot)==height(xTime) && ~contains(varName,'Angle','IgnoreCase',true) 
-        plot(xTime,table2Plot.(varName), 'DisplayName', strrep(varName, '_', ' '));
+        if height(table2Plot)==height(xTime)-1 && ~contains(varName,'Angle','IgnoreCase',true) 
+        plot(xTime(2:end),table2Plot.(varName), 'DisplayName', strrep(varName, '_', ' '));
         hold on;
         end
         % Y축 라벨 설정: 변수 이름과 단위를 포함

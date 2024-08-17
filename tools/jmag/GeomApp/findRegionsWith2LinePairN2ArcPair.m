@@ -3,7 +3,7 @@ function regions = findRegionsWith2LinePairN2ArcPair(regionTable)
     regions = [];
 
     % Iterate over each region in RegionTable
-    for regionIdx =4:height(regionTable)
+    for regionIdx =1:height(regionTable)
         sketchList = regionTable.SketchList{regionIdx};
         arcTable = sketchList{1};
         lineTable = sketchList{2}; 

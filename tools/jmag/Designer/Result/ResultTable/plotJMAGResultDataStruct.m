@@ -1,5 +1,7 @@
-function plotJMAGResultDataStruct(DataSetTable)
-
+function plotJMAGResultDataStruct(DataSetTable,stepData)
+%% devTemp
+% DataSetTable=ResultTable
+% stepData=StepData
 % DataSetTable.Properties.Description
 
 % for dataIndex=1:length(AllResultDataStruct)
@@ -11,8 +13,11 @@ function plotJMAGResultDataStruct(DataSetTable)
     if contains(DataSetTable.Properties.VariableNames,'Iron Loss')
     plot1DFFT(table2Plot)
     else
-    plotTransientTable(DataSetTable)
-    
+        if nargin>1
+            plotTransientTable(DataSetTable,stepData)
+        else
+            plotTransientTable(DataSetTable)
+        end
     end
     % title(titleName);    
     hold off

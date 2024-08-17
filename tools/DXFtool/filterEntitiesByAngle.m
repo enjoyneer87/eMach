@@ -1,7 +1,7 @@
 function dxf = filterEntitiesByAngle(entitiesStruct, max_angle)
     %% Test
     % entitiesStruct=entitiesRotorStruct
-    % max_angle=45
+    % max_angle=22.5
     % Initialize the filtered entities array
     filtered_entities = struct('name', {}, 'layer', {}, 'linetype', {}, 'color', {}, 'arc', {}, 'line', {});
 
@@ -19,9 +19,6 @@ function dxf = filterEntitiesByAngle(entitiesStruct, max_angle)
     %% add edge Line
     if contains(entitiesTable.layer{1},'Stator','IgnoreCase',true)
     LayerName='Stator';
-    else
-    LayerName=   entitiesTable.layer(1); 
-    end
     NewTable = entitiesTable([], :);
     NewTable.name(end+1)={'LINE'};
     NewTable.layer(end)={LayerName};
@@ -33,17 +30,54 @@ function dxf = filterEntitiesByAngle(entitiesStruct, max_angle)
     [BoundxMax,BoundyMax]=pol2cart(deg2rad(max_angle),maxRadius);
 
     NewTable.line(end)={[BoundxMin BoundyMin BoundxMax BoundyMax]};
+    else % rotor
+    LayerName=   entitiesTable.layer(1); 
+    NewTable = entitiesTable([], :);
+    NewTable.name(end+1)={'LINE'};
+    NewTable.layer(end)={LayerName};
+    NewTable.line(end)={[0 0 maxRadius 0]};
+
+    NewTable.name(end+1)={'LINE'};
+    NewTable.layer(end)={LayerName};
+    [BoundxMin,BoundyMin]=pol2cart(deg2rad(max_angle),0);
+    [BoundxMax,BoundyMax]=pol2cart(deg2rad(max_angle),maxRadius);
+
+    NewTable.line(end)={[BoundxMin BoundyMin BoundxMax BoundyMax]};
+
+    end
+
 
     %%  Filter Arc & Line
     % Filter rows where the arc field is not empty
     arcTable = entitiesTable(~cellfun(@isempty, entitiesTable.arc), :);
-    
+
+    %% Rotor 일때 절반   
+    if contains(entitiesTable.layer{1},'Rotor','IgnoreCase',true)
+        % 원점이 (0,0)인 행들을 찾는 코드
+        origin_x = 0;
+        origin_y = 0;
+        % 주기성을 계산합니다.
+        % LCMMotor=lcm(8,48);
+        % periodicitySlots = LCMMotor / poles;
+        % PeriodicAngle=360/LCMMotor*periodicitySlots;
+        PeriodicAngle=max_angle*2;
+        % 논리형 배열을 생성하여 원점이 (0,0)인 행들을 찾기
+        is_ShapeArc  = cellfun(@(arc) arc(1) == origin_x && arc(2) == origin_y && arc(5) ==PeriodicAngle , arcTable.arc);
+        
+        new_angle = PeriodicAngle / 2;
+        for i = 1:height(arcTable)
+            if is_ShapeArc(i)
+                arc = arcTable.arc{i};
+                arc(5) = new_angle;
+                arcTable.arc{i} = arc;
+            end
+        end
+    end
     %% Filter rows where the line field is not empty
     lineTable = entitiesTable(~cellfun(@isempty, entitiesTable.line), :);
 
 
     %% Filter the lineTable to keep only the lines within the angle range
-
     for i = 1:height(lineTable)
         % Get the line coordinates
         Xi = lineTable.line{i}(1);
@@ -110,7 +144,7 @@ function dxf = filterEntitiesByAngle(entitiesStruct, max_angle)
     NewArcTable.layer(end)={'Stator'};
     NewArcTable.arc(end)={[0 0 maxRadius 0 45]};
     entitiesTable=[filtered_arcTable;filtered_lineTable;NewArcTable;NewTable];
-    else
+    else % rotor
     entitiesTable=[filtered_arcTable;filtered_lineTable;NewTable];
     end
     %% 

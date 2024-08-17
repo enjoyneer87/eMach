@@ -9,8 +9,14 @@ ConductorTable           =table();
 InsulationTable          =table();
 CenterAirPostTable       =table();
 OtherTable               =table();
-PartTable = struct2table(PartStruct);
-NumberofPart = length(PartStruct);
+if isstruct(PartStruct)
+    PartTable = struct2table(PartStruct);
+    NumberofPart = length(PartStruct);
+elseif istable(PartStruct)
+    PartTable = PartStruct;
+    NumberofPart = height(PartStruct);
+end
+
 for partIndex = 1:NumberofPart
     if strcmp(PartTable.Name(partIndex), 'RotorAirBarrier')
         % AirBarrierStruct에 새로운 행을 추가합니다.

@@ -1,8 +1,8 @@
 mcad=callMCAD
 %% 경로
 
-jprojPath="Z:\Simulation\JMAGDev\e10JFT047FeedbackControl.jproj"
-jprojPath="Z:\Simulation\JMAGDev\e10JFT047FeedbackControlCoil.jproj"
+% jprojPath="Z:\Simulation\JMAGDev\e10JFT047FeedbackControl.jproj";
+jprojPath="Z:\Simulation\JMAGDev\e10JFT047FeedbackControlCoil.jproj";
 
 InitialStudyName='FullPyFeedBackLoss'
 
@@ -34,7 +34,9 @@ mcad.GeometryExport()
 
 
 %%
-dxfFiles = findDXFFiles('Z:\Simulation\JEETACLossValid_e10_v23\refModel')';
+% dxfFiles = findDXFFiles('Z:\Simulation\JEETACLossValid_e10_v23\refModel')';
+dxfFiles = findDXFFiles('Z:\01_Codes_Projects\git_fork_emach\tools\jmag\thermal')';
+
 
 
 %% Syre Model 2 Dxf
@@ -82,12 +84,11 @@ dxfList2Import(2).sketchName=ItemList{2};
 
 
 Model.RestoreCadLink()
-
 geomApp=app.CreateGeometryEditor(0);
-
 geomApp.Show
 sketchs=ImportDXF2Geom(dxfList2Import,geomApp);
 
+%%
 StatorGeomAssemTable    =getGeomSketchAssembleTable('Stator',geomApp);
 RotorGeomAssembleTable  =getGeomSketchAssembleTable('Rotor',geomApp);
 

@@ -57,14 +57,14 @@ function ResultStructEmagCalc=plotMCADEmagCalc(setGraphName, mcad,FigureData)
     for dataIndex = 0:NumGraphPoints
         [success, x, y] = mcad.GetMagneticGraphPoint(setGraphName, dataIndex);
         if success == 0
-            List_xvalue(dataIndex + 1) = x/3;
+            List_xvalue(dataIndex + 1) = x;
             List_valueforGraph(dataIndex + 1) = y;
         end
     end
     %% Plot
     plot(List_xvalue, List_valueforGraph, 'LineWidth', 2,'LineStyle',LineStyle)
     a = gca;
-    a.XLabel.String = 'ElecAngle[deg]';
+    a.XLabel.String = 'Electrical Angle[deg]';
     a.YLabel.String = YlabelName;
     xlim([min(List_xvalue), max(List_xvalue)]);
     xticks(0:60:max(List_xvalue));

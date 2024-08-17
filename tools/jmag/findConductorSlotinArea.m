@@ -1,5 +1,6 @@
 function [UniqueValueStruct,RegionDataTable]=findConductorSlotinArea(RegionDataTable)
-
+    %% dev Temp
+    % RegionDataTable=StatorAssemRegionTable
     %% findSimilarValuesWithinTolerance
     Name4Object='Conductor';
     % RegionDataTable=StatorAssemRegionTable
@@ -23,13 +24,13 @@ function [UniqueValueStruct,RegionDataTable]=findConductorSlotinArea(RegionDataT
     % % 빈 구조체 제거
     %     emptyStructs = arrayfun(@(x) isempty(x.Values), UniqueValueStruct);
     %     UniqueValueStruct(emptyStructs) = [];
-    %% 내측부터 번호매기기
+    %% 내측부터 번호매기기 x -> 외측부터 번호매기기 -> JEET Numbering일치
     
     
     %% GeomTable이름 변경   
 
     if isscalar(UniqueValueStruct)
-        for Index4SameArea=1:length(UniqueValueStruct.Indices)
+        for Index4SameArea=length(UniqueValueStruct.Indices):1
         RegionDataTable.Name{UniqueValueStruct.Indices(Index4SameArea)}=[Name4Object,'_',num2str(Index4SameArea)];
         end
     elseif isempty(UniqueValueStruct)     

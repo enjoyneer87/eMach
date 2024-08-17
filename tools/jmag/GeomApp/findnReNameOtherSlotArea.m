@@ -33,7 +33,7 @@ otherSlotAreaTable =RegionDataTable(~contains(RegionDataTable.Name,'Conductor')&
             end
     end
 %% RegionDataTable Update
-RegionDataTable = updateTableWithOtherTablewithVar(otherSlotAreaTable, RegionDataTable, 'Id');
+% RegionDataTable = updateTableWithOtherTablewithVar(otherSlotAreaTable, RegionDataTable, 'Id');
 
 
 %% [TB]면적이 unique한지 아니냐에 따라 분류할것

@@ -15,6 +15,7 @@ else
     RegionName=RegionDataTable.Name(Index4ChangeObject);
 end
 
+% RegionDataTable.sketchItemObj{Index4ChangeObject}.SetName(RegionName);
 RegionDataTable.sketchItemObj{Index4ChangeObject}.SetProperty("Name", RegionName);
 
 end

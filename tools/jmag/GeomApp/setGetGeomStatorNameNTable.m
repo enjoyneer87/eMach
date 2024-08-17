@@ -7,6 +7,7 @@ function [StatorAssemRegionTable]=setGetGeomStatorNameNTable(geomApp)
     AssembleName='Stator';
     % StatorAssemRegionTable=getGeomAssembleTableWithHierData(geomApp,AssembleName);
     StatorAssemRegionTable=getGeomAssemTable(geomApp,AssembleName);
+    %% Conductor
     [SlotUniqueValueStruct, StatorAssemRegionTable]=findConductorSlotinArea(StatorAssemRegionTable);
 
     %% Find StatorCore
@@ -27,13 +28,13 @@ function [StatorAssemRegionTable]=setGetGeomStatorNameNTable(geomApp)
             nonStatorCore = (~strcmp(StatorAssemRegionTable.Name, 'StatorCore') & ~strcmp(StatorAssemRegionTable.Name, 'Housing'));
             StatorAssemRegionTable.Name(nonStatorCore) = {'Copper'};
             % changeNameGeomSketchAll(StatorAssemRegionTable,geomApp);
-        else
+        else %% Conductor
             %% Other
             [otherSlotAreaGeomTable,StatorAssemRegionTable,StatorRegionTablePerType]=findnReNameOtherSlotArea(StatorAssemRegionTable);
             % changeNameGeomSketchAll(StatorAssemRegionTable,geomApp);
         end      
     end
-    
+    %% 
     StatorAssemRegionTable.sketchItemName=StatorAssemRegionTable.Name;
     changeNameGeomSketchAll(StatorAssemRegionTable,geomApp);
 
