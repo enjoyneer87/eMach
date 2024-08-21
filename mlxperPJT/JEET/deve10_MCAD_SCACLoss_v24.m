@@ -11,6 +11,12 @@ MfileName=strrep(MfileName,'dev','');
 %% Scale
 refModelPath='Z:\Simulation\JEETACLossValid_e10_v24\refModel\e10_UserRemesh.mot';
 [refModelDir,refModelMotFileName,FileExt]=fileparts(refModelPath);
+% mk File
+ScaledBuildMotFilePath= mkMCADFileFromRefPath(refModelPath,'SLFEA');
+dir(fileparts(ScaledBuildMotFilePath)) 
+mcad(McadIndex).LoadFromFile(ScaledBuildMotFilePath)
+mcad(McadIndex).SetVariable("MessageDisplayState",2)
+[~,isScaledBuildBuilt]=mcad(McadIndex).GetModelBuilt_Lab;
 [refLABBuildData]=getMCADBuildingData(mcad(1));
 refLABBuildData.MotorCADGeo.Ratio_Bore
 scalingFactorStruct=defScalingFactor(2,1,2,4,2,4,2);
@@ -19,18 +25,14 @@ k_Radial  =scalingFactorStruct.k_Radial  ;
 k_Winding =scalingFactorStruct.k_Winding ;    
 scalingFactorStruct.n_c =scalingFactorStruct.turns_per_coil;    
 ScaledMachineData = SLScaleMachine(scalingFactorStruct,refLABBuildData.MotorCADGeo);
-% mk File
-ScaledBuildMotFilePath= mkMCADFileFromRefPath(refModelPath,'SLFEA');
-dir(fileparts(ScaledBuildMotFilePath)) 
-mcad(McadIndex).LoadFromFile(ScaledBuildMotFilePath)
-mcad(McadIndex).SetVariable("MessageDisplayState",2)
-[~,isScaledBuildBuilt]=mcad(McadIndex).GetModelBuilt_Lab;
+
 % Scale
 setMcadVariable(ScaledMachineData,mcad(McadIndex));
+mcad(McadIndex).SaveToFile(ScaledBuildMotFilePath)
 [validGeo]=mcad(McadIndex).CheckIfGeometryIsValid(1);
 % Check
 [~,CheckSLSOD]=mcad(McadIndex).GetVariable("Stator_Lam_Dia");
-if k_Radial==CheckSLSOD/MotorCADGeo.Stator_Lam_Dia
+if k_Radial==CheckSLSOD/refLABBuildData.MotorCADGeo.Stator_Lam_Dia
 disp('Scale됨')
 end
 %% 선행 정보 추출
@@ -92,7 +94,6 @@ varName2SaveList{1}='FullFEA';
 % HybridModel_FEAFluxLinePoints- The number of points taken along each line in the hybrid loss model
 % Defines the skew distrubution of the lines in the hybrid loss model
 mcad.SetVariable('ProximityLossModel',1);
-
 mcad.SetVariable('RMSCurrent',RMSCurrent);
 mcad.SetVariable('PhaseAdvance',PhaseAdvance);
 

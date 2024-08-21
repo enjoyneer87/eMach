@@ -45,7 +45,7 @@ for SelIndex=1:AssemObjNumItems
         AssemObjStruct(SelIndex).sketchItemName      =sketchItemObj.GetName;
         AssemObjStruct(SelIndex).Type                =sketchItemObj.GetScriptTypeName;
 end   
-
+%% Selection
 for SelIndex=1:NumSelections
         AssemRefObjStruct(SelIndex).ReferenceObj        =sel.GetReferenceObject(SelIndex-1);          
         AssemRefObjStruct(SelIndex).IdentifierName      =AssemRefObjStruct(SelIndex).ReferenceObj.GetIdentifier;

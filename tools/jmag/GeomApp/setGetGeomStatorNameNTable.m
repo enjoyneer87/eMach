@@ -1,43 +1,49 @@
 function [StatorAssemRegionTable]=setGetGeomStatorNameNTable(geomApp)
-    % StatorAssemRegionTable      =getRegionItemDataTable(StatorGeomAssemTable,'Stator',geomApp);
-    % StatorAssemRegionTable = sortrows(StatorAssemRegionTable,'distanceRFromCenter','descend');
 
-    % [StatorAssemRegionTable,StatorGeomArcTable,~]      =allocateSubSketchList2AssemRegionTable(StatorGeomAssemTable,StatorAssemRegionTable,geomApp);
-
+%% Assemble Region Table
     AssembleName='Stator';
-    % StatorAssemRegionTable=getGeomAssembleTableWithHierData(geomApp,AssembleName);
     StatorAssemRegionTable=getGeomAssemTable(geomApp,AssembleName);
+%% check WireTemplate (NonRegion)
+    WireTemplateObj=getWireTemplateObject(geomApp);
     %% Conductor
     [SlotUniqueValueStruct, StatorAssemRegionTable]=findConductorSlotinArea(StatorAssemRegionTable);
-
+    emptyRows = findEmptyRows(StatorAssemRegionTable, 'sketchItemObj');  
+    StatorAssemRegionTable=StatorAssemRegionTable(~emptyRows,:);
     %% Find StatorCore
     [maxValue,index]=max(StatorAssemRegionTable.Area(:));
     StatorAssemRegionTable.Name=StatorAssemRegionTable.sketchItemName;
-    % StatorAssemRegionTable.Name{index}='StatorCore';
-    % refObj=  StatorAssemRegionTable.ReferenceObj(index);
-    % sel=getSelectRefObj(refObj,geomApp);
-    % StatorCoreItem=sel.Item(0);
-    % StatorCoreItemName=StatorCoreItem.GetName;
     if ~strcmp(StatorAssemRegionTable.Name{index},'StatorCore')
      StatorAssemRegionTable.Name{index}='StatorCore';
     end
-    %% Conductor Setting
-    if ~isempty(SlotUniqueValueStruct)
-        if ~length(SlotUniqueValueStruct.Values)==1
-            %% Slot
-            nonStatorCore = (~strcmp(StatorAssemRegionTable.Name, 'StatorCore') & ~strcmp(StatorAssemRegionTable.Name, 'Housing'));
-            StatorAssemRegionTable.Name(nonStatorCore) = {'Copper'};
-            % changeNameGeomSketchAll(StatorAssemRegionTable,geomApp);
-        else %% Conductor
-            %% Other
-            [otherSlotAreaGeomTable,StatorAssemRegionTable,StatorRegionTablePerType]=findnReNameOtherSlotArea(StatorAssemRegionTable);
-            % changeNameGeomSketchAll(StatorAssemRegionTable,geomApp);
-        end      
+
+    %% WireTemplate이 없으면 Conductor Setting이나 Slot Setting
+    if ~WireTemplateObj.IsValid
+        %% Conductor Setting
+        if ~isempty(SlotUniqueValueStruct)
+            if ~length(SlotUniqueValueStruct.Values)==1
+                %% Slot
+                nonStatorCore = (~strcmp(StatorAssemRegionTable.Name, 'StatorCore') & ~strcmp(StatorAssemRegionTable.Name, 'Housing'));
+                StatorAssemRegionTable.Name(nonStatorCore) = {'Copper'};
+                % changeNameGeomSketchAll(StatorAssemRegionTable,geomApp);
+            else %% Conductor
+                %% Other
+                [otherSlotAreaGeomTable,StatorAssemRegionTable,StatorRegionTablePerType]=findnReNameOtherSlotArea(StatorAssemRegionTable);
+                % changeNameGeomSketchAll(StatorAssemRegionTable,geomApp);        
+            end      
+        end
     end
-    %% 
+    %%  add wireTable 2 RegionTable
+    if WireTemplateObj.IsValid
+    newVarNames={'sketchItemObj','sketchItemName','Type'};   
+    WireTable = mkNewTablewithTable(StatorAssemRegionTable, newVarNames, WireTemplateObj,WireTemplateObj.GetName,WireTemplateObj.GetScriptTypeName);
+    WireTable.Name=WireTable.sketchItemName;
+    StatorAssemRegionTable =[StatorAssemRegionTable;WireTable];
+    end
+    %%  change Name 
     StatorAssemRegionTable.sketchItemName=StatorAssemRegionTable.Name;
     changeNameGeomSketchAll(StatorAssemRegionTable,geomApp);
-
+    
+    %% check 3D or 2D
     AssemTable = getGeomAssemItemListTable(geomApp);
     PartGeomTable=AssemTable(contains(AssemTable.Type,'Part'),:); 
     

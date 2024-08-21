@@ -1,5 +1,6 @@
 function RegionTablePerType = detStatorRegionTablePerType(RegionDataTable)
-
+%%
+% RegionDataTable =StatorAssemRegionTable
 
 % Name4Object         =   'otherSlotArea';
 % TableIndex4RegionTable=table();
@@ -7,7 +8,7 @@ otherSlotAreaTable  =   table();
 InsulationAreaTable =   table();
 CoreAreaTable       =   table();
 ConductorTable      =   table();
-
+WireTemplateTable   =   table();
 
 %%
 %% 
@@ -30,14 +31,21 @@ ConductorTable      =   table();
             otherSlotAreaTable=[otherSlotAreaTable;RegionDataTable(Index4RegionTable,:) ];
            
             end
+        else
+            %% WireTemplateTable
+            if contains(RegionDataTable.Name{Index4RegionTable},'Wire Template','IgnoreCase',true)
+            WireTemplateTable=[WireTemplateTable;RegionDataTable(Index4RegionTable,:)];
+            end
         end
     end
 
 %%
 RegionTablePerType.otherSlotAreaTable       =otherSlotAreaTable       ;         
 RegionTablePerType.InsulationAreaTable      =InsulationAreaTable      ;
-RegionTablePerType.CoreAreaTable            =CoreAreaTable      ;         
+RegionTablePerType.CoreAreaTable            =CoreAreaTable            ;         
 RegionTablePerType.ConductorTable           =ConductorTable           ;
+RegionTablePerType.WireTemplateTable        =WireTemplateTable           ;
+
 % RegionTablePerType.TableIndex4RegionTable           =TableIndex4RegionTable;
 end
 

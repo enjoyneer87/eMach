@@ -1,5 +1,6 @@
 function reNumberLayerTable=renumberCoilNumber(McadWindingPatternTable)
 %% devfuncrenumberCoilNumber.mlx
 reNumberLayerTable=McadWindingPatternTable;
+if any(McadWindingPatternTable.CoilNumber==0)
 reNumberLayerTable.CoilNumber=reNumberLayerTable.CoilNumber+1;
 end

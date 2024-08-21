@@ -22,7 +22,7 @@ function SeriesTurns=calcTurnsinseriesperphaseFromSlot(NumOfSlots,MagTurnsConduc
 
     %% 상당직렬턴수
     % Ncspc
-    SeriesTurnsPerPhase=TotalMagTurnsinAllSlot/2/ParallelPath  % 상당 직렬턴수?
+    SeriesTurnsPerPhase=TotalMagTurnsinAllSlot/2/ParallelPath;  % 상당 직렬턴수?
     % TurnsInSeries=TurnsInSeriesPerPhase*3
 
     SeriesTurns=SeriesTurnsPerPhase;   

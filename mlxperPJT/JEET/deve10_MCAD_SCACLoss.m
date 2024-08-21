@@ -181,6 +181,72 @@ LoadInput = ['Irms',num2str(RMSCurrent),'ang',num2str(floor(PhaseAdvance))];
 MatFilePath           = fullfile(MatDir,['MatBy_',MfileName,'_',LoadInput,'.mat']);
 save(MatFilePath,varName2SaveList{:})
 
+%% Check transition Speed
+ConductorSkinDepth=[Hybrid.('ConductorSkinDepth'){:}];       
+BoolResistanceLimit=ConductorSkinDepth>Copper_Height;
+resistanceLimitSpeed=SpeedList(BoolResistanceLimit);
+InductanceLimitSpeed=SpeedList(~BoolResistanceLimit);
+Copper_Height=1.6
+TransitionSpeed=resistanceLimitSpeed(end);
+
+% SpeedList=[1000:1000:15000];
+delta=calcSkinDepth(omega2freq(rpm2OmegaE(SpeedList,4)));% 2.25594 -
+% delta>>h 가정에 대부분의 hairpin은 자유로울수 없음
+% 정확하게 범위 
+d_limitList=0.5*delta;
+isinDlimit=d_limitList>Copper_Height;
+resistanceLimitSpeed=SpeedList(isinDlimit);
+d_limit_inRLimit   =d_limitList(isinDlimit);
+
+InductanceLimitSpeed=SpeedList(~isinDlimit);
+
+% Generate frequency range for the plot
+% frequency = linspace(10, 2000); % Adjust range as needed
+frequency = linspace(omega2freq(rpm2OmegaE(1000,4)), omega2freq(rpm2OmegaE(15000,4))); % Adjust range as needed
+speed = linspace(1000,15000); % Adjust range as needed
+
+% Calculate skin depth for each frequency
+skin_depth = arrayfun(@calcSkinDepth, frequency);
+
+% Plot the Limit of Conductor Size
+figure(1);
+plot(frequency, skin_depth*0.5);
+% Yline
+TransitionFreqE=omega2freq(rpm2OmegaE(TransitionSpeed,4))
+x = [TransitionFreqE TransitionFreqE];
+y = [0 d_limit_inRLimit(end)];
+pl=line(x,y);
+pl.Color='k'
+% xiine
+x = [0 TransitionFreqE];
+y = [d_limit_inRLimit(end) d_limit_inRLimit(end)];
+pl=line(x,y);
+pl.Color='k'
+
+xlabel('Frequency (Hz)');
+ylabel('Skin Depth (mm)');
+title('Skin Depth vs Frequency');
+
+figure(2)
+plot(speed, skin_depth*0.5);
+resistanceLimitSpeed=SpeedList(isinDlimit);
+TransitionSpeed=resistanceLimitSpeed(end);
+% Yline
+x = [TransitionSpeed TransitionSpeed];
+y = [0 d_limit_inRLimit(end)];
+pl=line(x,y);
+pl.Color='k'
+% xiine
+x = [0 TransitionSpeed];
+y = [d_limit_inRLimit(end) d_limit_inRLimit(end)];
+pl=line(x,y);
+pl.Color='k'
+grid on;
+xlabel('Speed [RPM]');
+ylabel('Skin Depth (mm)');
+title('Skin Depth vs Speed');
+
+
 %% Plot
 plot(SpeedList,[FullFEA.ACLossFullFEAEmagMCAD_Total{:}]-[FullFEA.DCConductorLoss_Armature_A{:}],'DisplayName','Diffusion')
 hold on

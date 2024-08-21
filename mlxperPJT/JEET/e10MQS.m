@@ -1,3 +1,5 @@
+%% dev 
+% % Z:\01_Codes_Projects\git_fork_emach\mlxperPJT\deve10MQSplotAC.m에서 활용
 %% MCAD
 % in origin MLX 
 % JEETResult_rev1.mlx
@@ -52,6 +54,7 @@ zp.run;
 % 저장
 NewtestRotorDXFPath=strsplit(dxfFiles{1},'.');
 NewtestRotorDXFPath=[NewtestRotorDXFPath{1},'Periodic','.dxf'];
+exist(NewtestRotorDXFPath,"file")
 delete(NewtestRotorDXFPath)
 writeDXF(NewtestRotorDXFPath, RotorDxf);
 
@@ -59,7 +62,8 @@ writeDXF(NewtestRotorDXFPath, RotorDxf);
 app=callJmag;
 app.Show
 app.GetProjectFolderPath
-jprojPath='Z:\Simulation\JEETACLossValid_e10_v24\JMAG\MCADv24e10_refModel2_JMAG_JFT047.jproj';
+jprojPath='Z:\Simulation\JEETACLossValid_e10_v24\JMAG\e10_JFT145_WireTemp.jproj';
+app.SaveAs(jprojPath)
 app.Load(jprojPath)
 Model=app.GetCurrentModel;
 % Model.SetStudyOrder("NoLoad", 0)
@@ -68,28 +72,39 @@ StepDivision=120;
 EndTime=1/FreqE;
 
 %% Import
-dxfList2Import=defDXFList2Import(dxfFiles, 4,2);
+dxfList2Import=defDXFList2Import(dxfFiles, 5,3);
 Model=app.GetCurrentModel;
 Model.RestoreCadLink()
 geomApp=app.CreateGeometryEditor(0);
 
-% Check Exist Assem
+% Check Exist Assem N Import
 AssemTable = getGeomAssemItemListTable(geomApp);
 
-delete2AssemInJMAG= 'Rotor';
-delete2AssemTable=AssemTable(contains(AssemTable.AssemItemName,delete2AssemInJMAG),:);
-if isempty(AssemTable)
-sketchs=ImportDXF2Geom(dxfList2Import,geomApp);
-else 
-geomApp.GetDocument().GetSelection().Add(delete2AssemTable.AssemItem);
-geomApp.GetDocument().GetSelection().Delete()
-dxfList2Import=dxfList2Import(contains(dxfList2Import.sketchName,delete2AssemInJMAG),:);
-sketchs=ImportDXF2Geom(dxfList2Import,geomApp);
+if exist('AssemTable',"var")
+    delete2AssemInJMAG= 'Rotor';
+    delete2AssemTable=AssemTable(contains(AssemTable.AssemItemName,delete2AssemInJMAG),:);
+    if isempty(AssemTable)
+    sketchs=ImportDXF2Geom(dxfList2Import,geomApp);
+    else 
+    geomApp.GetDocument().GetSelection().Add(delete2AssemTable.AssemItem);
+    geomApp.GetDocument().GetSelection().Delete()
+    dxfList2Import=dxfList2Import(contains(dxfList2Import.sketchName,delete2AssemInJMAG),:);
+    sketchs=ImportDXF2Geom(dxfList2Import,geomApp);
+    end
+else
+    sketchs=ImportDXF2Geom(dxfList2Import,geomApp);
 end
 
 %% setGet GeomAssemTable 
 StatorAssemRegionTable=setGetGeomStatorNameNTable(geomApp);
 RotorAssemRegionTable =setGetGeomRotorNameNTableInnerRotor(geomApp);
+
+%% GeomDesginTable
+% [Skip] GeomDesginTable
+setGeomDesignTable('stack_length',MachineData.Stator_Lam_Length,app);
+% setGeomDesignTable('Freq',Freq,app);
+setGeomDesignTable('SLOTS',MachineData.Slot_Number,app);
+setGeomDesignTable('POLES',MachineData.Pole_Number,app);
 
 % Get Mirror or Feature 
 
@@ -111,19 +126,18 @@ runnerType=checkInnerOuterMotor(StatorGeomArcTable,RotorGeomArcTable);
 
 
 %% 자석 edge잡기 & Stator Pattern
-if contains(delete2AssemInJMAG, 'Rotor')
-getGeomMagnetizationEdgeSet(RotorAssemRegionTable,geomApp);
-elseif contains(delete2AssemInJMAG, 'Stator')
-% Stator pattern
-createCircPattern4withInput(StatorAssemRegionTable,'',geomApp)
+if exist('delete2AssemInJMAG','var')
+    if contains(delete2AssemInJMAG, 'Rotor')
+    getGeomMagnetizationEdgeSet(RotorAssemRegionTable,geomApp);
+    elseif contains(delete2AssemInJMAG, 'Stator')
+    % Stator pattern
+    createCircPattern4withInput(StatorAssemRegionTable,'',geomApp)
+    end
+else % initial
+    getGeomMagnetizationEdgeSet(RotorAssemRegionTable,geomApp);
+    createCircPattern4withInput(StatorAssemRegionTable,'',geomApp)
 end
-
-%% GeomDesginTable
-% [Skip] GeomDesginTable
-setGeomDesignTable('stack_length',MachineData.Stator_Lam_Length,app);
-% setGeomDesignTable('Freq',Freq,app);
-setGeomDesignTable('SLOTS',MachineData.Slot_Number,app);
-setGeomDesignTable('POLES',MachineData.Pole_Number,app);
+%% Import 
 app.ImportDataFromGeometryEditor();
 %% Designer ModelObj
 Model=app.GetCurrentModel;
@@ -152,7 +166,7 @@ ConductorPartTable=sortingConductorTableBySlot(PartStruct);
 %% Change Name
 changeJMAGPartNameTable(ConductorPartTable,app);
 PartStructByType = convertJmagPartStructByType(PartStruct);
-if isconductor==1
+if isConductor==1
 PartStructByType.ConductorTable=PartStructByType.SlotTable;
 PartStructByType.SlotTable=0;
 end
@@ -179,12 +193,12 @@ Model.GetSetList().GetSet(RotorSetName).SetParameter("text", "Rotor")
 Model.GetSetList().GetSet(RotorSetName).Rebuild()
 end
 %% createStudy or apply Template
-useTemplate=1;
+useTemplate=0;
 
 if NumStudies==0
     if useTemplate==0
-        for StudyIndex=1:2
-        StudyNameList={'NoLoad','Load'};
+        for StudyIndex=1:1
+        StudyNameList={'NoLoad'};
         StudyObj=Model.CreateStudy('Transient2D',[ModelName,StudyNameList{StudyIndex}]);
         end
     else

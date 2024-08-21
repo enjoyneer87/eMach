@@ -30,13 +30,14 @@ function [UniqueValueStruct,RegionDataTable]=findConductorSlotinArea(RegionDataT
     %% GeomTable이름 변경   
 
     if isscalar(UniqueValueStruct)
-        for Index4SameArea=length(UniqueValueStruct.Indices):1
-        RegionDataTable.Name{UniqueValueStruct.Indices(Index4SameArea)}=[Name4Object,'_',num2str(Index4SameArea)];
+        conductorIndexList=UniqueValueStruct.Indices;
+        for Index4SameArea=length(conductorIndexList):-1:1
+            RegionDataTable.Name{conductorIndexList(Index4SameArea)}=[Name4Object,'_',num2str(Index4SameArea)];
+            RegionDataTable.sketchItemName=RegionDataTable.Name;
         end
     elseif isempty(UniqueValueStruct)     
       RegionDataTable = sortrows(RegionDataTable,'Area','descend');
       RegionDataTable.Name{2}='Conductor'; 
+      RegionDataTable.sketchItemName=RegionDataTable.Name;
     end
-
-    RegionDataTable.sketchItemName=RegionDataTable.Name;
 end

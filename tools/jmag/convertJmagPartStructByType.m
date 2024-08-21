@@ -18,11 +18,9 @@ elseif istable(PartStruct)
 end
 
 for partIndex = 1:NumberofPart
-    if strcmp(PartTable.Name(partIndex), 'RotorAirBarrier')
-        % AirBarrierStruct에 새로운 행을 추가합니다.
-        newRow = PartTable(partIndex, :);
-        AirBarrierTable = [AirBarrierTable; newRow];
-    elseif strcmp(PartTable.Name(partIndex), 'Stator')
+    %% 필수
+    
+    if strcmp(PartTable.Name(partIndex), 'Stator')
         newRow = PartTable(partIndex, :);
         StatorTable = [AirBarrierTable; newRow];   
     elseif contains(PartTable.Name(partIndex), 'StatorCore')
@@ -30,7 +28,28 @@ for partIndex = 1:NumberofPart
         StatorCoreTable = [StatorCoreTable; newRow];    
     elseif contains(PartTable.Name(partIndex), 'RotorCore')
         newRow = PartTable(partIndex, :);
-        RotorCoreTable = [RotorCoreTable; newRow];    
+        RotorCoreTable = [RotorCoreTable; newRow];
+    end
+end
+
+
+if isempty(StatorCoreTable)
+StatorTable=PartTable(contains(PartTable.Name, 'Stator'),:);
+StatorAreas=uniquetol(StatorTable.Area,1e-5);
+StatorCoreTable= StatorTable(StatorTable.Area==max(StatorAreas),:);
+StatorCoreTable.Name{:}='Stator/StatorCore';
+elseif isempty(RotorCoreTable)
+RotorTable=PartTable(contains(PartTable.Name, 'Rotor'),:);
+RotorAreas=uniquetol(StatorTable.Area,1e-5);
+RotorCoreTable= RotorTable(RotorTable.Area==max(RotorAreas),:);
+RotorCoreTable.Name{:}='Rotor/RotorCore';
+end
+
+for partIndex = 1:NumberofPart
+    if strcmp(PartTable.Name(partIndex), 'RotorAirBarrier')
+        % AirBarrierStruct에 새로운 행을 추가합니다.
+        newRow = PartTable(partIndex, :);
+        AirBarrierTable = [AirBarrierTable; newRow];
     elseif contains(PartTable.Name(partIndex), 'Magnet')
         newRow = PartTable(partIndex, :);
         MagnetTable = [MagnetTable; newRow];    
@@ -38,6 +57,9 @@ for partIndex = 1:NumberofPart
         newRow = PartTable(partIndex, :);
         SlotTable = [SlotTable; newRow];   
     elseif contains(PartTable.Name(partIndex), 'Conductor')
+        newRow = PartTable(partIndex, :);
+        ConductorTable = [ConductorTable; newRow];
+    elseif contains(PartTable.Name(partIndex), 'Wire','IgnoreCase',true)
         newRow = PartTable(partIndex, :);
         ConductorTable = [ConductorTable; newRow];
     elseif contains(PartTable.Name(partIndex), 'Insulation')
@@ -62,7 +84,8 @@ PartStructByType.SlotTable         =SlotTable         ;
 PartStructByType.ConductorTable    =ConductorTable    ;
 PartStructByType.InsulationTable   =InsulationTable   ;
 PartStructByType.CenterAirPostTable        =CenterAirPostTable   ;
-
 PartStructByType.OtherTable        =OtherTable   ;
+
+
 
 end

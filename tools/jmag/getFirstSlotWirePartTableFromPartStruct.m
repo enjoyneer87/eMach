@@ -16,5 +16,6 @@ function firstSlotWirePartsTable=getFirstSlotWirePartTableFromPartStruct(PartStr
     %% 첫번째 슬롯 Wire확인
     IsFirstSlot=(abs([WireGroupTable.CentroidTheta]-WireGroupTable.CentroidTheta(1))<tolerance);
     firstSlotWirePartsTable=WireGroupTable(IsFirstSlot,:);
+    %% CentroidR으로 번호 할당
     firstSlotWirePartsTable=sortrows(firstSlotWirePartsTable,"CentroidR","ascend");
 end

@@ -8,5 +8,5 @@ tempFileList = strrep(tempFileList, 'deV', '');
 
 devList=struct2table(devList);
 [Dir,~,~]=fileparts(pwd);
-devList.FinishedFile=findFilePaths(Dir,tempFileList)';
+devList.FinishedFile=findFilePaths(tempFileList,Dir)';
 end

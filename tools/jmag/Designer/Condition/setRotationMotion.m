@@ -1,11 +1,22 @@
-function setRotationMotion(studyObj,RPM)
+function setRotationMotion(app,RPM)
 % studyObj=curStudyObj
+
+ModelObj=app.GetCurrentModel;
+studyObj=app.GetCurrentStudy;
+%%
 if studyObj.GetCondition('Rotation').IsValid
-RotConObj=studyObj.GetCondition('Rotation');
+    RotConObj=studyObj.GetCondition('Rotation');
 else
-RotConObj=studyObj.CreateCondition('RotationMotion','Rotation');
+    RotConObj=studyObj.CreateCondition('RotationMotion','Rotation');
 end
-RotConObj.AddSetFromModel('Rotor',0);
+
+%% AddSet 
+RotConObj.AddSetFromModel('Rotor',int32(0));
+% RotConObj.IsValid
+% RotConObj.GetParts
+% RotConObj.AddSet(ModelObj.GetSetList().GetSet("Rotor"), 0);
+
+
 RotConObj.SetValue('AngularVelocity',RPM)
 
 %% Initial Position

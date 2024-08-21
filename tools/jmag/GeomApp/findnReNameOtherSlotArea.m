@@ -1,5 +1,7 @@
 function [otherSlotAreaTable,RegionDataTable,RegionTablePerType]       =findnReNameOtherSlotArea(RegionDataTable)
-% findSimilarValuesWithinTolerance
+%% dev 
+% RegionDataTable=StatorAssemRegionTable
+%% findSimilarValuesWithinTolerance
 Name4Object         =   'otherSlotArea';
 otherSlotAreaTable  =   table();
 InsulationAreaTable =   table();
@@ -7,7 +9,6 @@ CoreAreaTable       =   table();
 ConductorTable      =   table();
 
 %% 
-
 CoreAreaTable      =RegionDataTable(contains(RegionDataTable.Name,'StatorCore'),:);
 ConductorTable     =RegionDataTable(contains(RegionDataTable.Name,'Conductor'),:);    
 otherSlotAreaTable =RegionDataTable(~contains(RegionDataTable.Name,'Conductor')&~contains(RegionDataTable.Name,'StatorCore'),:);    

@@ -22,8 +22,12 @@ function AssemTable = getGeomAssemItemListTable(geomApp,Type2filter)
                 AssemCellList =[AssemCellList; newRow];
             end
         end
-          AssemTable =cell2table(AssemCellList, 'VariableNames', {'AssemItem', 'AssemItemName','Type'});
 
+        if isempty(AssemCellList)
+          AssemTable =[];
+        else 
+          AssemTable =cell2table(AssemCellList, 'VariableNames', {'AssemItem', 'AssemItemName','Type'});
+        end
     end
     
     %% Filter By Type
