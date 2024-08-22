@@ -48,8 +48,9 @@ def winding_table(fname):
 def main(fname):
 	study=app.GetCurrentStudy()
 	if study.GetWinding(0).IsValid():
-		study.GetWinding(0).RemoveAllCoils()
-		study.GetWinding(0).ImportCoilSetting(fname)
+	    study.GetWinding(0).RemoveAllCoils()
+	    study.GetWinding(0).ImportCoilSetting(fname)
+
 
 
 main(fname)

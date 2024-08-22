@@ -19,27 +19,40 @@ end
 
 for partIndex = 1:NumberofPart
     %% 필수
+
+    if ~contains(PartTable.Name(partIndex), 'Rotor')
+        if contains(PartTable.Name(partIndex), 'rotor','IgnoreCase',true)
+        PartTable.Name(partIndex) = regexprep(PartTable.Name(partIndex), 'rotor', 'Rotor', 'ignorecase');
+        end
+    end
+    if ~contains(PartTable.Name(partIndex), 'Stator')
+        if contains(PartTable.Name(partIndex), 'stator','IgnoreCase',true)
+        PartTable.Name(partIndex) = regexprep(PartTable.Name(partIndex), 'stator', 'Stator', 'ignorecase');
+        end
+    end
     
     if strcmp(PartTable.Name(partIndex), 'Stator')
         newRow = PartTable(partIndex, :);
-        StatorTable = [AirBarrierTable; newRow];   
+        StatorTable = [AirBarrierTable; newRow];
     elseif contains(PartTable.Name(partIndex), 'StatorCore')
         newRow = PartTable(partIndex, :);
         StatorCoreTable = [StatorCoreTable; newRow];    
     elseif contains(PartTable.Name(partIndex), 'RotorCore')
         newRow = PartTable(partIndex, :);
         RotorCoreTable = [RotorCoreTable; newRow];
+    else
+        % 기존 문자열
     end
 end
 
 
 if isempty(StatorCoreTable)
-StatorTable=PartTable(contains(PartTable.Name, 'Stator'),:);
+StatorTable=PartTable(contains(PartTable.Name, 'Stator','IgnoreCase',true),:);
 StatorAreas=uniquetol(StatorTable.Area,1e-5);
 StatorCoreTable= StatorTable(StatorTable.Area==max(StatorAreas),:);
 StatorCoreTable.Name{:}='Stator/StatorCore';
 elseif isempty(RotorCoreTable)
-RotorTable=PartTable(contains(PartTable.Name, 'Rotor'),:);
+RotorTable=PartTable(contains(PartTable.Name, 'Rotor','IgnoreCase',true),:);
 RotorAreas=uniquetol(StatorTable.Area,1e-5);
 RotorCoreTable= RotorTable(RotorTable.Area==max(RotorAreas),:);
 RotorCoreTable.Name{:}='Rotor/RotorCore';

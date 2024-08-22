@@ -8,11 +8,24 @@ function WireTemplateObj=getWireTemplateObject(geomApp)
     end
 %% get WireTemplate Obj
     GeomDocu=geomApp.GetDocument;
-    StatorItem=GeomDocu.GetAssembly().GetItem("Stator");
-    
-    WireTemplateObj=StatorItem.GetItem("HairPin");
+    GeomAssem=GeomDocu.GetAssembly();
+    StatorItemobj=GeomAssem.GetItem("Stator");
+    if ~StatorItemobj.IsValid
+        NumItems=GeomAssem.NumItems;
+        for ItemIndex=1:NumItems
+        StatorObjList{ItemIndex}=GeomAssem.GetItem(int32(ItemIndex)-1); 
+            if StatorObjList{ItemIndex}.IsValid
+                StatorObjName{ItemIndex}=StatorObjList{ItemIndex}.GetName;
+                if contains(StatorObjName{ItemIndex},'stator','IgnoreCase',true)
+                    StatorItemobj=StatorObjList{ItemIndex};
+                end
+            end
+        end
+    end
+
+    WireTemplateObj=StatorItemobj.GetItem("HairPin");
     if ~WireTemplateObj.IsValid
-    WireTemplateObj=StatorItem.GetItem('Wire Template');
+    WireTemplateObj=StatorItemobj.GetItem('Wire Template');
     end
 
     if WireTemplateObj.IsValid

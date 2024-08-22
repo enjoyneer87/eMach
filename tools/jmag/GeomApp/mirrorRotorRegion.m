@@ -6,6 +6,13 @@ AssembleName='Rotor';
 geomDocu=geomApp.GetDocument();
 geomAssem=geomApp.GetDocument().GetAssembly();
 geomView=geomApp.View();
+
+AssemTable = getGeomAssemItemListTable(geomApp);
+AssemNameInGeomApp  = AssemTable.AssemItemName(contains(AssemTable.AssemItemName,AssembleName,"IgnoreCase",true)); 
+    if length(AssemNameInGeomApp)==1
+    AssembleName = AssemNameInGeomApp{:};
+    end
+
 RotorItemObj=geomAssem.GetItem(AssembleName);
 RotorItemObj.OpenSketch();
 
@@ -45,6 +52,6 @@ if isempty(MirrorCopyTable)
     end
 end
 
-    geomApp.GetDocument().GetAssembly().GetItem("Rotor").CloseSketch()
+    RotorItemObj.CloseSketch()
 
 end

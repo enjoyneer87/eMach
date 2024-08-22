@@ -37,7 +37,7 @@ classdef MCADLabManager
             end
         
             % Python 환경 설정
-            pyenv('Version', 'C:\ANSYS_Motor-CAD\2024_1_1\Python\Python\python.exe');
+            pyenv('Version', 'C:\ANSYS_Motor-CAD\2024_1_3\Python\Python\python.exe');
             currentPool = gcp('nocreate');
             % MCAD 인스턴스 생성
             if isempty(obj.MCADInstances)
@@ -59,7 +59,7 @@ classdef MCADLabManager
                 obj.MCADInstances{i} = actxserver('motorcad.appautomation');
             end
         end
-%%
+%% setupParallelPoolSPMD
         function obj = setupParallelPoolSPMD(obj)
             BuildTable = obj.BuildListTable;
             if isfield(BuildTable,'IsBuildFromDate')
@@ -92,7 +92,7 @@ classdef MCADLabManager
             end
         end
 
-        %%
+%% processSLFEA
     
         function obj = processSLFEA(obj)
          
@@ -174,9 +174,9 @@ function obj=processSLLAW(obj)
             end
             %%
             requiredWorkers = min(obj.NumMCAD, height(FilteredTable));
-            SCMatrixName= mkScalingNameMatrixFromMCADDOEList(FilteredTable)';
+            SCMatrixName  = mkScalingNameMatrixFromMCADDOEList(FilteredTable)';
             SCMatrixNameVector = reshape(SCMatrixName, [numel(SCMatrixName), 1]);
-            kRadialMatrix=mkScalingMatrixFromMCADDOEList(FilteredTable)';
+            kRadialMatrix = mkScalingMatrixFromMCADDOEList(FilteredTable)';
             kRadialVector = reshape(kRadialMatrix, [numel(SCMatrixName), 1]);
             doubleCellArray = num2cell(kRadialVector);
             ScalingCell=[SCMatrixNameVector,doubleCellArray];
@@ -345,7 +345,7 @@ function obj=processSLLAW(obj)
         %             disp('workers가 필요없어요 as there are no applicable tasks.\n');
         %     end
         % end
-        %% processFiles
+%% processFiles
         function processFiles(obj)
             % 병렬 풀이 이미 설정되었는지 확인
             if isempty(gcp('nocreate'))

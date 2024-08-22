@@ -30,7 +30,11 @@ end
         if isvarofTable(RegionDataTable,'IdentifierName')
         CurItem=convertRefObj2Item(ArcTable.ReferenceObj(IndexofArc),geomApp);
         else
-        CurItem=ArcTable.sketchItemObj{IndexofArc};
+            if iscell(ArcTable.sketchItemObj)
+            CurItem=ArcTable.sketchItemObj{IndexofArc};
+            else
+            CurItem=ArcTable.sketchItemObj(IndexofArc);
+            end
         end
         if CurItem.IsValid
         %% VertexTable

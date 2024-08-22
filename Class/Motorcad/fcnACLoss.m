@@ -16,6 +16,8 @@ mcad.SaveToFile(proj); % 파일 생성
 mcad.LoadFromFile(proj);
 
 
+% D:\KangDH\Emlab_emach\tools\motorCAD\def\defDefaultSetting.m
+
 
 %% Magnetic
 

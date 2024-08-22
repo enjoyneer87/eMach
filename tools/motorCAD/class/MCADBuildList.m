@@ -7,15 +7,30 @@ classdef MCADBuildList
     end
 
     methods
-        function obj = MCADBuildList(DOEDIR)
+        function obj = MCADBuildList(input2GetData)
         % 병렬 풀 설정
         if isempty(gcp('nocreate'))
             parpool;  % 기본 설정으로 병렬 풀 시작
         end
-        %% MOTFilePath
-        MotFileList = findMOTFiles(DOEDIR)';
-        MotFileList = removeAutoSaveFiles(MotFileList);
-        MotFileList = removeBackupFiles(MotFileList);
+%% MOTFilePath
+        if isstring(input2GetData)    
+            MotFileList = findMOTFiles(input2GetData)';
+            MotFileList = removeAutoSaveFiles(MotFileList)';
+            MotFileList = removeBackupFiles(MotFileList);
+            MotFileList = MotFileList(~contains(MotFileList, 'Scale'));
+            MotFileList = MotFileList(~contains(MotFileList, 'SL'));
+            MotFileList = MotFileList(~contains(MotFileList, 'MCAD'));
+        elseif istable(input2GetData)
+            if isvarofTable(input2GetData,'ParentPath')
+            MotFileDirList=fullfile(input2GetData.ParentPath,input2GetData.FileDir);
+            MotFileList   =fullfile(MotFileDirList,input2GetData.FileName);
+            elseif isvarofTable(input2GetData,'MotFilePath')
+            MotFileList=input2GetData.MotFilePath;
+            end
+        elseif iscell(input2GetData)
+            MotFileList=input2GetData;
+        end
+        %% Class       
         % MotFileList = MotFileList';  
         obj.MotFilePath=MotFileList;
         %% Build MessageLog
@@ -23,14 +38,21 @@ classdef MCADBuildList
         MotFileDate = cell(1, numel(MotFileList));  % 초기화
     
         parfor MotFileIndex = 1:numel(MotFileList)
-            MessageLossList = findTXTFiles(fileparts(MotFileList{MotFileIndex}))';
-            if ~isempty(MessageLossList)
-                MessageLogData = getTXTdataScan(MessageLossList{1});
-                MessageLog = checkMCADMessageLog4LabBuild(MessageLogData);
+            [parentDir,MotFileName,~]=fileparts(MotFileList{MotFileIndex})
+            MessageLogsList = findTXTFiles(fullfile(parentDir,MotFileName))';
+            MessageLogsList = MessageLogsList(contains(MessageLogsList,'messageLog'))
+            if ~isempty(MessageLogsList)
+                % get Latest MessageLog
+                lastwriteDateList = getLastWriteDateList(MessageLogsList);
+                lastwriteDateList={lastwriteDateList(:).LastDate};
+                % latestIndex       = findMostRecentIndex(lastwriteDateList);              
+                latestIndex=1
+                MessageLogData    = getTXTdataScan(MessageLogsList{latestIndex});
+                MessageLog        = checkMCADMessageLog4LabBuild(MessageLogData);              
                 if ~isempty(MessageLog)
                     MessageDate{MotFileIndex} = MessageLog;
-                else
-                    MessageDate{MotFileIndex} = '';  % 공백 문자열로 초기화
+                else                   
+                    MessageDate(MotFileIndex) =  input2GetData.SatDate(MotFileIndex) ;  % 공백 문자열로 초기화
                 end
             else
                 MessageDate{MotFileIndex} = '';  % 파일 목록이 비어있을 경우 공백 문자열
@@ -41,6 +63,7 @@ classdef MCADBuildList
         % 할당
         obj.LabBuildDate = MessageDate';
         obj.MotFileDate = MotFileDate';
+
         % 날짜 비교 메소드 호출
         obj.IsBuildFromDate = obj.checkDates();
         end
@@ -61,7 +84,13 @@ classdef MCADBuildList
                             result(i) = 3; % LabBuildDate가 MotFileDate보다 이전
                         end
                     catch
-                        result(i) = 0; % 날짜 변환에 실패할 경우 0으로 처리
+                        labDate = datetime(obj.LabBuildDate{1}, 'InputFormat', 'dd-MM-yy HH:mm', 'Locale', 'en_US');
+                        motDate = datetime(obj.MotFileDate{i}, 'InputFormat', 'dd/MM/yyyy HH:mm:ss', 'Locale', 'en_US');
+                        if labDate > motDate
+                            result(i) = 1; % LabBuildDate가 MotFileDate보다 이후
+                        else
+                            result(i) = 3; % LabBuildDate가 MotFileDate보다 이전
+                        end
                     end
                 else
                     result(i) = 0; % MotFileDate가 비어있음

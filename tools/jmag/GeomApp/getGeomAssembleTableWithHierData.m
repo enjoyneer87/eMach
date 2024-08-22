@@ -41,7 +41,7 @@ AssemObjNumItems=AssemItemObj.NumItems;
 AssemObjStruct=struct();
 for SelIndex=1:AssemObjNumItems
         sketchItemObj                                =AssemItemObj.GetItem(int32(SelIndex-1));
-        AssemObjStruct(SelIndex).sketchItemObj       =sketchItemObj;
+        AssemObjStruct(SelIndex).sketchItemObj       ={sketchItemObj};
         AssemObjStruct(SelIndex).sketchItemName      =sketchItemObj.GetName;
         AssemObjStruct(SelIndex).Type                =sketchItemObj.GetScriptTypeName;
 end   
@@ -63,7 +63,11 @@ faceRegionTable=AssembleItemTable(strcmp(AssembleItemTable.Type,'RegionItem'),:)
 %% faceRegion Area
 for SelIndex=1:height(faceRegionTable)
             % refObj=faceRegionTable.ReferenceObj(SelIndex);
-            refObj=geomDocu.CreateReferenceFromItem(faceRegionTable.sketchItemObj{SelIndex});       
+            if iscell(faceRegionTable.sketchItemObj)
+               refObj=geomDocu.CreateReferenceFromItem(faceRegionTable.sketchItemObj{SelIndex});
+            else
+               refObj=geomDocu.CreateReferenceFromItem(faceRegionTable.sketchItemObj(SelIndex));       
+            end
             % sel.Add(faceRegionTable.sketchItemObj{SelIndex})
             sel.AddReferenceObject(refObj);                           % Selection Object    -> 동작안되는것도 있는듯
             geomDocuVolManager            =geomDocu.GetVolumeCalculationManager();

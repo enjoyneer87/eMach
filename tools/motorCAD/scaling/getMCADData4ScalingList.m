@@ -1,16 +1,26 @@
-function scaleList2Build = getMCADData4ScalingList(parentPath)
-    MotFileList = findMOTFiles(parentPath)';
+function scaleList2Build = getMCADData4ScalingList(input2GetData)
+%% dev
+% input2GetData=OriginFileList
+%% input 조건
+if isstring(input2GetData)
+    MotFileList = findMOTFiles(input2GetData)';
     MotFileList = removeAutoSaveFiles(MotFileList)';
     MotFileList = MotFileList(~contains(MotFileList, 'Scale'));
     MotFileList = MotFileList(~contains(MotFileList, 'SL'));
     MotFileList = MotFileList(~contains(MotFileList, 'MCAD'));
+elseif istable(input2GetData)
+    MotFileDirList=fullfile(input2GetData.ParentPath,input2GetData.FileDir);
+    MotFileList   =fullfile(MotFileDirList,input2GetData.FileName);
+elseif iscell(input2GetData)
+    MotFileList=input2GetData;
+end
 
-    % 빌드 리스트를 미리 초기화
+%% 빌드 리스트를 미리 초기화
     % BuildList = repmat(struct('MotFilePath', [], 'SatDate', [], 'SLScaledMachineData', [], 'SLLabTable', [], 'BuildingData', [], 'refTable', []), numel(MotFileList), 1);
 
     scaleList2Build = repmat(struct('MotFilePath', [], 'SatDate', [], 'BuildingData', [], 'refTable', []), numel(MotFileList), 1);
 
-    % MATLAB 병렬 풀을 시작 (필요한 경우)
+%% MATLAB 병렬 풀을 시작 (필요한 경우)
     if isempty(gcp('nocreate'))
         parpool;  % Default pool
     end

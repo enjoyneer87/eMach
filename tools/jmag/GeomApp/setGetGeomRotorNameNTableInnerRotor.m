@@ -28,12 +28,14 @@ RotorAssemRegionTable = updateOtherRegionNames2AirRegion(RotorAssemRegionTable);
 RotorAssemRegionTable=changeNameGeomSketchAll(RotorAssemRegionTable,geomApp);
 
 %%
-
 AssemTable = getGeomAssemItemListTable(geomApp);
 PartGeomTable=AssemTable(contains(AssemTable.Type,'Part'),:); 
-
 if isempty(PartGeomTable)  % only Sketch
-    geomApp.GetDocument().GetAssembly().GetItem('Rotor').CloseSketch();
+    AssemNameInGeomApp  = AssemTable.AssemItemName(contains(AssemTable.AssemItemName,AssembleName,"IgnoreCase",true)); 
+    if length(AssemNameInGeomApp)==1
+    AssembleName = AssemNameInGeomApp{:};
+    end
+    geomApp.GetDocument().GetAssembly().GetItem(AssembleName).CloseSketch();
     disp('2D')
 else 
     BoolPartIndex=contains(PartGeomTable.AssemItemName,AssembleName,"IgnoreCase",true);

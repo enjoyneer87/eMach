@@ -7,8 +7,8 @@ function [StatorAssemRegionTable]=setGetGeomStatorNameNTable(geomApp)
     WireTemplateObj=getWireTemplateObject(geomApp);
     %% Conductor
     [SlotUniqueValueStruct, StatorAssemRegionTable]=findConductorSlotinArea(StatorAssemRegionTable);
-    emptyRows = findEmptyRows(StatorAssemRegionTable, 'sketchItemObj');  
-    StatorAssemRegionTable=StatorAssemRegionTable(~emptyRows,:);
+    % emptyRows = findEmptyRows(StatorAssemRegionTable, 'sketchItemObj');  
+    % StatorAssemRegionTable=StatorAssemRegionTable(~emptyRows,:);
     %% Find StatorCore
     [maxValue,index]=max(StatorAssemRegionTable.Area(:));
     StatorAssemRegionTable.Name=StatorAssemRegionTable.sketchItemName;
@@ -48,6 +48,10 @@ function [StatorAssemRegionTable]=setGetGeomStatorNameNTable(geomApp)
     PartGeomTable=AssemTable(contains(AssemTable.Type,'Part'),:); 
     
     if isempty(PartGeomTable)  % only Sketch
+        AssemNameInGeomApp  = AssemTable.AssemItemName(contains(AssemTable.AssemItemName,AssembleName,"IgnoreCase",true));       
+        if length(AssemNameInGeomApp)==1
+        AssembleName = AssemNameInGeomApp{:};
+        end
         geomApp.GetDocument().GetAssembly().GetItem(AssembleName).CloseSketch();
         disp('2D')
     else 

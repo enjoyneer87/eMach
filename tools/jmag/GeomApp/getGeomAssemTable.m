@@ -23,11 +23,16 @@ function faceRegionTable=getGeomAssemTable(geomApp,AssembleName)
 % end
 
 % 3d & 2d Available
-AssemTable = getGeomAssemItemListTable(geomApp);
-PartGeomTable=AssemTable(contains(AssemTable.Type,'Part'),:);
+AssemTable          = getGeomAssemItemListTable(geomApp);
+PartGeomTable       = AssemTable(contains(AssemTable.Type,'Part'),:);
+AssemNameInGeomApp  = AssemTable.AssemItemName(contains(AssemTable.AssemItemName,AssembleName,"IgnoreCase",true));
+
+if length(AssemNameInGeomApp)==1
+AssembleName = AssemNameInGeomApp{:};
+end
 %% 3D인경우
 if ~isempty(PartGeomTable)
-    PartObj=PartGeomTable.AssemItem(contains(PartGeomTable.AssemItemName,AssembleName));
+    PartObj=PartGeomTable.AssemItem(contains(PartGeomTable.AssemItemName,AssembleName,"IgnoreCase",true));
     %% PartItem Table
     if iscell(PartObj)
     PartObj=PartObj{:};
@@ -46,6 +51,7 @@ if ~isempty(PartGeomTable)
     end
 elseif isempty(PartGeomTable)
 %% 2D인 경우
+
 faceRegionTable=getGeomAssembleTableWithHierData(geomApp,AssembleName);
 end
 end

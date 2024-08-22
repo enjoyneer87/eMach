@@ -1,7 +1,11 @@
 %% dev 
 % % Z:\01_Codes_Projects\git_fork_emach\mlxperPJT\deve10MQSplotAC.m에서 활용
 % Circuit 생성 어떻게 할지 결정
-
+% - Winding은 jmdl 불러오는거니까 - circuit도?
+% ApplyJMAGAnalysisTemplate에 Template있는데 circuit이랑, study네임 미지정
+% 기본 study는 NoLoad로 하고, Circuit Input도 없는걸로하고
+% Mesh 설정끝나면
+% Study 복사후 복사한 스터디들 Circuit Input 넣기
 %% from
 %  devJmagSettingwithConductor
 % Z:\01_Codes_Projects\git_fork_emach\tools\jmag\devJmagWindingSetting.mlx
@@ -11,17 +15,26 @@
 
 % 이 파일은 JMAG Jproj 호출을 위한 m파일입니다
 %% rev1에서 회전자 dxf 수정함
-refPath='Z:\Simulation\JEETACLossValid_e10_v24\refModel\';
-dxfFiles = findDXFFiles('Z:\Simulation\JEETACLossValid_e10_v24\refModel')';
+refPath='Z:\Simulation\JEETACLossValid_e10_v24\refModel\e10_UserRemesh.mot';
+if ~exist(refPath,"file")
+    refPath='D:\KangDH\Thesis\e10\refModel\e10_UserRemesh.mot';
+end
+[refDIR,FileName,~]=fileparts(refPath);
+dxfFiles = findDXFFiles(refDIR)';
 %% JMAG
-app=callJmag;
+app=callJmag('231');
 app.Show
 jprojFiles=app.GetProjectFolderPath;
 jprojPath='Z:\Simulation\JEETACLossValid_e10_v24\JMAG\e10_JFT145_WireTemp.jproj';
+[~,jprojName,~]=fileparts(jprojPath);
 if ~exist(jprojPath,"file")
-app.SaveAs(jprojPath)
+    jprojPath=fullfile(refDIR,[jprojName,'.jproj']);
 end
-
+if contains(jprojFiles,'C:/Users/','IgnoreCase',true)
+    if ~exist(jprojPath,"file")
+    app.SaveAs(jprojPath)
+    end
+end
 app.Load(jprojPath)
 Model=app.GetCurrentModel;
 jprojFiles=app.GetProjectFolderPath;
@@ -32,6 +45,8 @@ StepDivision=120;
 EndTime=1/FreqE;
 %% Import
 % dxfList2Import=defDXFList2Import(dxfFiles, 5,3);
+% delete(DXFMatFilePath)
+
 DXFMatFilePath=fullfile(jprojFiles,'ImportDXF.mat');
 if ~exist(DXFMatFilePath,"file")
     save(DXFMatFilePath,'dxfList2Import');
@@ -39,13 +54,15 @@ else
     load(DXFMatFilePath);
 end
 Model=app.GetCurrentModel;
-Model.RestoreCadLink()
+if Model.IsValid
+    Model.RestoreCadLink()
+end
 geomApp=app.CreateGeometryEditor(0);
 
 % Check Exist Assem N Import
 AssemTable = getGeomAssemItemListTable(geomApp);
 
-delete2AssemInJMAG= 'Rotor';
+% delete2AssemInJMAG= 'Rotor';
 delete2AssemInJMAG=[];
 if exist('AssemTable',"var")&~isempty(delete2AssemInJMAG)
     delete2AssemTable=AssemTable(contains(AssemTable.AssemItemName,delete2AssemInJMAG),:);
@@ -55,7 +72,7 @@ if exist('AssemTable',"var")&~isempty(delete2AssemInJMAG)
     geomApp.GetDocument().GetSelection().Add(delete2AssemTable.AssemItem);
     geomApp.GetDocument().GetSelection().Delete()
     dxfList2Import=dxfList2Import(contains(dxfList2Import.sketchName,delete2AssemInJMAG),:);
-    sketchs=ImportDXF2Geom(dxfList2Import,geomApp);
+    sketchs       =ImportDXF2Geom(dxfList2Import,geomApp);
     end
 elseif ~exist('AssemTable',"var")
     sketchs=ImportDXF2Geom(dxfList2Import,geomApp);
@@ -80,25 +97,33 @@ setGeomDesignTable('POLES',MachineData.Pole_Number,app);
 mirrorRotorRegion(RotorAssemRegionTable,geomApp)
 
 % Suppress Shaft
-% geomApp.GetDocument().GetAssembly().GetItem("Rotor").OpenSketch()
-% geomApp.GetDocument().GetAssembly().GetItem("Rotor").GetItem("Shaft").SetProperty("Suppress", 1)
-% geomApp.GetDocument().GetAssembly().GetItem("Rotor").CloseSketch()
+geomAssem=geomApp.GetDocument().GetAssembly();
+
+% geomAssem.GetItem("Rotor").OpenSketch()
+% geomAssem.GetItem("Rotor").GetItem("Shaft").SetProperty("Suppress", 1)
+% geomAssem.GetItem("Rotor").CloseSketch()
 %
 RotorRegionTablePerType = detRotorRegionTablePerType(RotorAssemRegionTable);
 StatorRegionTablePerType = detStatorRegionTablePerType(StatorAssemRegionTable);
 
+%% lineTable
+StatorGeomLineTable=getLineTable(StatorAssemRegionTable);
+
 %%% Arc 
-StatorGeomArcTable=getArcTable(StatorAssemRegionTable);
-RotorGeomArcTable=getArcTable(RotorAssemRegionTable);
-runnerType=checkInnerOuterMotor(StatorGeomArcTable,RotorGeomArcTable);
+StatorGeomArcTable     =getArcTable(StatorAssemRegionTable);
+RotorGeomArcTable      =getArcTable(RotorAssemRegionTable);
+runnerType             =checkInnerOuterMotor(StatorGeomArcTable,RotorGeomArcTable);
+StatorOneSlotAngle     =max(max(StatorGeomArcTable.EndVertexTabletheta),max(StatorGeomArcTable.StartVertexTabletheta));
+
 %% if no WireTemplate and ConductorTable is not Empty
 % Import Stator Taemplate and Delete exist Stator Assem
-
-jmdlFileName='JFT145Stator_geomTemplate';
+jmdlFileName='JFT145_stator';
 filePathCell=findFilePaths(jmdlFileName,fileparts(jprojFiles));
+if isempty(filePathCell)
+    filePathCell=findFilePaths(jmdlFileName,pwd);
+end
 jmdlfilePath=filePathCell{:};
 if ~any(contains(StatorAssemRegionTable.Type,'WireTemplate'))&~isempty(StatorRegionTablePerType.ConductorTable)
-  
     %% Dimension
     MaxEndVertexTabler          =max(StatorGeomArcTable.EndVertexTabler);
     MaxStartVertexTabler        =max(StatorGeomArcTable.StartVertexTabler);
@@ -108,36 +133,52 @@ if ~any(contains(StatorAssemRegionTable.Type,'WireTemplate'))&~isempty(StatorReg
     SID                         =2*min(MinEndVertexTabler,MinStartVertexTabler);
     %% [TC]
     BackyokeLength              =10;
-
     StatorGeoAssemName='Stator';
-    geomApp.GetDocument().GetSelection().Add(geomApp.GetDocument().GetAssembly().GetItem(StatorGeoAssemName))
+    existSTItemObj=geomAssem.GetItem(StatorGeoAssemName);
+    if ~existSTItemObj.IsValid
+    StatorGeoAssemName='stator';
+    existSTItemObj=geomAssem.GetItem(StatorGeoAssemName);
+    end
+    geomApp.GetDocument().GetSelection().Add(existSTItemObj) 
     geomApp.GetDocument().GetSelection().Delete()
       %% merge 
     geomApp.MergeJmdl(jmdlfilePath)
     preAssembleName="StatorWithTemplate";
-    StatorObj=geomApp.GetDocument().GetAssembly().GetItem(preAssembleName);
-    StatorObj.SetName('Stator');
+    StatorObj=geomAssem.GetItem(preAssembleName);
+    if ~StatorObj.IsValid
+        NumItems=geomAssem.NumItems;
+        for ItemIndex=1:NumItems
+        StatorObjList{ItemIndex}=geomAssem.GetItem(int32(ItemIndex)-1); 
+            if StatorObjList{ItemIndex}.IsValid
+                StatorObjName{ItemIndex}=StatorObjList{ItemIndex}.GetName;
+                if contains(StatorObjName{ItemIndex},'stator','IgnoreCase',true)
+                    StatorObj=StatorObjList{ItemIndex};
+                end
+            end
+        end
+    end
+    StatorObj.SetName(StatorGeoAssemName);
     %% Wire Template Coincident
-    ref1 = geomApp.GetDocument().GetAssembly().GetItem(StatorGeoAssemName).GetItem("Line.6")
-    ref2 = geomApp.GetDocument().CreateReferenceFromItem(ref1)
-    ref3 = geomApp.GetDocument().GetAssembly().GetItem(StatorGeoAssemName).GetItem("Line")
-    ref4 = geomApp.GetDocument().CreateReferenceFromItem(ref3)
-    geomApp.GetDocument().GetAssembly().GetItem(StatorGeoAssemName).CreateBiConstraint("coincident", ref2, ref4)
-    geomApp.GetDocument().GetAssembly().GetItem(StatorGeoAssemName).GetItem("Wire Template").SetProperty("RectangleWidth", 1.6)
-    geomApp.GetDocument().GetAssembly().GetItem(StatorGeoAssemName).GetItem("Wire Template").SetProperty("RectangleHeight", 3.7)
-    geomApp.GetDocument().GetAssembly().GetItem(StatorGeoAssemName).GetItem("Wire Template").SetProperty("WireCoatingThickness", 0.1)
-    geomApp.GetDocument().GetAssembly().GetItem(StatorGeoAssemName).GetItem("Wire Template").SetProperty("WieGapDistance", 0.15)
-    geomApp.GetDocument().GetAssembly().GetItem(StatorGeoAssemName).GetItem("Wire Template").SetProperty("WireCount", 4)
-    geomApp.GetDocument().GetAssembly().GetItem(StatorGeoAssemName).GetItem("Wire Template").SetProperty("FillFactor", 63.8825526278559)
-    geomApp.GetDocument().GetAssembly().GetItem(StatorGeoAssemName).GetItem("Wire Template").SetProperty("StartDeltaX", 5)
-    geomApp.GetDocument().GetAssembly().GetItem(StatorGeoAssemName).GetItem("Wire Template").SetProperty("StartDeltaY", "5*tan(3.75*pi/180)")
+    ref1 = geomAssem.GetItem(StatorGeoAssemName).GetItem("Line.6");
+    ref2 = geomApp.GetDocument().CreateReferenceFromItem(ref1);
+    ref3 = geomAssem.GetItem(StatorGeoAssemName).GetItem("Line");
+    ref4 = geomApp.GetDocument().CreateReferenceFromItem(ref3);
+    geomAssem.GetItem(StatorGeoAssemName).CreateBiConstraint("coincident", ref2, ref4)
+    geomAssem.GetItem(StatorGeoAssemName).GetItem("Wire Template").SetProperty("RectangleWidth", 1.6)
+    geomAssem.GetItem(StatorGeoAssemName).GetItem("Wire Template").SetProperty("RectangleHeight", 3.7)
+    geomAssem.GetItem(StatorGeoAssemName).GetItem("Wire Template").SetProperty("WireCoatingThickness", 0.1)
+    geomAssem.GetItem(StatorGeoAssemName).GetItem("Wire Template").SetProperty("WieGapDistance", 0.15)
+    geomAssem.GetItem(StatorGeoAssemName).GetItem("Wire Template").SetProperty("WireCount", 4)
+    geomAssem.GetItem(StatorGeoAssemName).GetItem("Wire Template").SetProperty("FillFactor", 63.8825526278559)
+    geomAssem.GetItem(StatorGeoAssemName).GetItem("Wire Template").SetProperty("StartDeltaX", 5)
+    geomAssem.GetItem(StatorGeoAssemName).GetItem("Wire Template").SetProperty("StartDeltaY", "5*tan(3.75*pi/180)")
     
     %% set Geom Contraint
     SW4Obj=StatorObj.GetItem('SW4');
     SW4Obj.IsValid
     SW4Obj.SetDistance(BackyokeLength)
-    geomApp.GetDocument().GetAssembly().GetItem(StatorGeoAssemName).GetItem("SD1").SetProperty("Diameter", SOD)
-    geomApp.GetDocument().GetAssembly().GetItem(StatorGeoAssemName).GetItem("SD4").SetProperty("Diameter", SID)
+    geomAssem.GetItem(StatorGeoAssemName).GetItem("SD1").SetProperty("Diameter", SOD);
+    geomAssem.GetItem(StatorGeoAssemName).GetItem("SD4").SetProperty("Diameter", SID);
 end
 %% 자석 edge잡기 & Stator Pattern
 if exist('delete2AssemInJMAG','var') &~isempty(delete2AssemInJMAG)
@@ -151,7 +192,7 @@ elseif ~exist('AssemTable',"var")
 % else % initial
     getGeomMagnetizationEdgeSet(RotorAssemRegionTable,geomApp);
     if ~contains(StatorAssemRegionTable.Type,'WireTemplate')
-    createCircPattern4withInput(StatorAssemRegionTable,'',geomApp)
+    createCircPattern4withInput(StatorAssemRegionTable,'',geomApp);
     end
 elseif isempty(AssemTable)
     getGeomMagnetizationEdgeSet(RotorAssemRegionTable,geomApp);
@@ -194,16 +235,45 @@ rmJModelAllGroups(app)
 % oldFileName='writeJmagWindingPatternCSV'
 % newFileName='devWriteJmagWindingPatternCSV'
 % renameFile(newFileName,oldFileName)
+
 %% Model PartName Change & Model Set - PartStruct
 PartStruct          =getJMAGDesignerPartStruct(app);
 PartTable           =struct2table(PartStruct);
+
+PartStructByType    =convertJmagPartStructByType(PartStruct);
+
 % stator CoreName
 changeJMAGPartNameTable(PartStructByType.StatorCoreTable,app)
 %% reGet
-PartStruct          =getJMAGDesignerPartStruct(app);
-PartStructByType    =convertJmagPartStructByType(PartStruct);
+PartStruct          = getJMAGDesignerPartStruct(app);
 PartStructByType    = convertJmagPartStructByType(PartStruct);
-PartStructByType.SlotTable.Name=strrep(PartStructByType.SlotTable.Name,'StatorWithTemplate','Stator');
+fieldList = fields(PartStructByType);
+
+%% 
+% %% 기본 assem이름 일원화
+% NamseSplit=strsplit(PartTable.Name{1},'/')
+% NamseSplit
+% findName='Stator';
+% PartTable(contains(PartTable.Name,findName,"IgnoreCase",true),:)    
+% numericArray = cellfun(@(x) updatePartName(x,'Stator',1), );
+% 미리 대체할 문자열을 설정
+searchStrings = {'rotor', 'stator'};
+replaceStrings = {'Rotor', 'Stator'};
+
+for fieldIndex = 1:length(fieldList)
+    currentField = PartStructByType.(fieldList{fieldIndex});
+    
+    if istable(currentField)&~isempty(currentField)
+        % 각 검색 문자열에 대해 대체 작업 수행
+        for i = 1:length(searchStrings)
+            currentField.Name = strrep(currentField.Name, searchStrings{i}, replaceStrings{i});
+        end
+        
+        % 수정된 테이블을 다시 구조체 필드에 할당
+        PartStructByType.(fieldList{fieldIndex}) = currentField;       
+    end
+    changeJMAGPartNameTable(currentField,app)
+end
 %% Magnet
 sortedMagnetTables = sortMagnetTableByNumber(PartStructByType);
 %% Conductor Table
@@ -212,7 +282,8 @@ PartStructByType.ConductorTable=PartStructByType.SlotTable;
 PartStructByType.SlotTable=0;
 end
 %%[TC] add LayerNumber sortingConductorTableBySlot
-ConductorPartTable=sortingConductorTableBySlot(PartStructByType.ConductorTable,app);
+PartStructByType.ConductorPartTable=sortingConductorTableBySlot(PartStructByType.ConductorTable,app);
+changeJMAGPartNameTable(PartStructByType.ConductorPartTable,app)
 
 %% reGet
 PartStruct=getJMAGDesignerPartStruct(app);
@@ -234,7 +305,7 @@ Model.GetSetList().CreatePartSet(SlotConductorSetName)
 Model.GetSetList().GetSet(SlotConductorSetName).SetUpdateByRelation(false)
 Model.GetSetList().GetSet(SlotConductorSetName).SetMatcherType("MatchNames")
 Model.GetSetList().GetSet(SlotConductorSetName).SetParameter("style", "prefix")
-Model.GetSetList().GetSet(SlotConductorSetName).SetParameter("text", [strcell{1},"/Slot"])
+Model.GetSetList().GetSet(SlotConductorSetName).SetParameter("text", [strcell{1},'/Slot'])
 Model.GetSetList().GetSet(SlotConductorSetName).Rebuild()
 end
 RotorSetName="Rotor";
@@ -275,45 +346,7 @@ for ModelIndex=1:NumModels
     end
 end
 
-
-%% [TC] Copy Noload2>Load
-ModelName=app.GetCurrentModel.GetName;
-NoLoadStudyName=[ModelName,'_NoLoad'];
-LoadStudyName  =[ModelName,'_Load'];
-PWMStudyName   =[ModelName,'_PWM'];
-NumStudies=Model.NumStudies;
-while NumStudies<3
-        % CurrentStudyName=Model.GetStudy(NoLoadStudyName);
-        % app.SetCurrentStudy(CurrentStudyName)
-        % if ~strcmp(CurrentStudyName,LoadStudyName) 
-        LoadStudyObj=Model.GetStudy(LoadStudyName);
-        if ~LoadStudyObj.IsValid
-        Model.DuplicateStudyName(NoLoadStudyName, LoadStudyName, true)        
-        end
-        PWMStudyObj=Model.GetStudy(PWMStudyName);
-        if ~PWMStudyObj.IsValid
-        Model.DuplicateStudyName(NoLoadStudyName, PWMStudyName, true)
-        end
-        NumStudies=Model.NumStudies;
-end
-
-NumStudies=Model.NumStudies;
-while NumStudies<3
-        % CurrentStudyName=Model.GetStudy(NoLoadStudyName);
-        % app.SetCurrentStudy(CurrentStudyName)
-        % if ~strcmp(CurrentStudyName,LoadStudyName) 
-        LoadStudyObj=Model.GetStudy(LoadStudyName);
-        if ~LoadStudyObj.IsValid
-        Model.DuplicateStudyName(NoLoadStudyName, LoadStudyName, true)        
-        end
-        PWMStudyObj=Model.GetStudy(PWMStudyName);
-        if ~PWMStudyObj.IsValid
-        Model.DuplicateStudyName(NoLoadStudyName, PWMStudyName, true)
-        end
-        NumStudies=Model.NumStudies;
-end
 app.Save
-
 
 NumModels=app.NumModels;
 for ModelIndex=1:NumModels
@@ -370,27 +403,49 @@ end
 setJMAGMotorConditions(app, PartStructByType, isConductor)
 %% Winding Setting
 % getCoilTable
-txtFileList                             =findTXTFiles('Z:\Simulation\JEETACLossValid_e10_v24\refModel')';
-windingPatternTxtPath                   =txtFileList(contains(txtFileList,'turn'));
-[coilsTablePerCoil,CSVTab,outputPath] = convertMCADPatternTable2JMAGCoilTable(windingPatternTxtPath{:});
+
+txtFileList                             =findTXTFiles(refDIR)';
+windingPatternTxtPath                   =txtFileList(contains(txtFileList,'Winding'));
+[coilsTablePerCoil,CSVTab,outputPath]   = convertMCADPatternTable2JMAGCoilTable(windingPatternTxtPath{:});
 % [WIP]CoilsTable Setting
 %% WindingSettingObj Setting
 importJMAGCoilsFromCSV(outputPath)
+WindingObj=curStudyObj.GetWinding(0);
+WindingObj.SetSerialGroups(width(coilsTablePerCoil))
+WindingObj.SetComponent("Winding Three Phase Conductor1")
+WindingObj.SetPhaseOrder("UWV")
 % devsetJMAGWindingCoilsTable(coilTable,app)
+%% mesh Condition
+MeshCondtionTable = setupMotorMesh(app,PartStructByType); % defaulst Mesh Size
+
+%% Copy Noload2>Load
+NoLoadStudyName=[ModelName,'_NoLoad'];
+LoadStudyName  =[ModelName,'_Load'];
+PWMStudyName   =[ModelName,'_PWM'];
+NumStudies=Model.NumStudies;
+while NumStudies<3
+        % CurrentStudyName=c.GetStudy(NoLoadStudyName);
+        % app.SetCurrentStudy(CurrentStudyName)
+        % if ~strcmp(CurrentStudyName,LoadStudyName) 
+        LoadStudyObj=Model.GetStudy(LoadStudyName);
+        if ~LoadStudyObj.IsValid
+        Model.DuplicateStudyName(NoLoadStudyName, LoadStudyName, true)        
+        end
+        PWMStudyObj=Model.GetStudy(PWMStudyName);
+        if ~PWMStudyObj.IsValid
+        Model.DuplicateStudyName(NoLoadStudyName, PWMStudyName, true)
+        end
+        NumStudies=Model.NumStudies;
+end
 %% Circuit 
 InputCurrentData.Current=RMSCurrent*sqrt(2);
 InputCurrentData.freqE='FreqE';
 InputCurrentData.phaseAdvance='MCADPhaseAdvance';
 InputCurrentData.CoilList       = [1,5,13,9]; % TD
-InputCurrentData.ParallelNumber = width(coilTable)
-NoLoadStudyName=[ModelName,'_NoLoad'];
-LoadStudyName  =[ModelName,'_Load'];
-PWMStudyName   =[ModelName,'_PWM'];
-
+InputCurrentData.ParallelNumber = width(coilsTablePerCoil);
 for StudyIndex=1:NumStudies
     curStudyObj=Model.GetStudy(StudyIndex-1);
     app.SetCurrentStudy(curStudyObj.GetName)
-   
     % No Load & Load    
     curStudyName=curStudyObj.GetName;
     if strcmp(NoLoadStudyName,curStudyName) |strcmp(LoadStudyName,curStudyName)
@@ -402,86 +457,18 @@ for StudyIndex=1:NumStudies
     curStudyObj.GetCircuit().GetComponent("theta_m").SetLink("Rotation")
     end
 end
-%% mesh
-% Mesh Condition
-
-for StudyIndex=1:NumStudies
-    curStudyObj=Model.GetStudy(StudyIndex-1);
-    app.SetCurrentStudy(curStudyObj)
-    % 2.8 Mesh Seting
-    % MeshControlObj 
-    MeshControlObj=curStudyObj.GetMeshControl();
-    % General Properties
-    MeshControlObj.SetValue("MeshType", 1)
-    MeshControlObj.SetValue("AirRegionDirection", 1)
-    MeshControlObj.SetValue("AirRegionScaleY", 1.15)
-    %% skinDepth
-    omegaE=rpm2OmegaE(rpm,4);
-    SkinDepth_delta_inmm = calcSkinDepth(omegaE);
-    MeshControlObj=curStudyObj.GetMeshControl();
-    if MeshControlObj.GetCondition('ConductorSkinDepth').IsValid
-        ConductorSkinDepthObj=MeshControlObj.GetCondition("ConductorSkinDepth");
-    else
-            ConductorSkinDepthObj=MeshControlObj.CreateCondition("SkinDepth", "ConductorSkinDepth");
-    end
-    ConductorSkinDepthObj.SetValue("Depth", 0.4)
-    ConductorSkinDepthObj.SetValue("Division", 2)
-    ConductorSkinDepthObj.SetValue("CommonRatio", 1)
-    ConductorSkinDepthObj.ClearParts()
-    ConductorSkinDepthObj.AddSetFromModel(SlotConductorSetName,0)
-
-    % Conductor
-    ConductorMeshPartObj=curStudyObj.CreateCondition("Part", "ConductorPart"); 
-    ConductorMeshPartObj.SetValue("Size", ConductorMeshSize)
-    ConductorMeshPartObj.ClearParts()
-    ConductorMeshPartObj.AddSetFromModel(SlotConductorSetName,0)
-    % core
-    coreMeshPartObj=MeshControlObj.CreateCondition("Part", "CorePart");
-    coreMeshPartObj.SetValue("Size",0.5)
-    coreMeshPartObj.ClearParts()
-    coreMeshPartObj.AddPart("Stator/StatorCore")
-    coreMeshPartObj.AddPart("Rotor/RotorCore")
-    
-    % Magnet
-    MagnetMeshPartObj=MeshControlObj.CreateCondition("Part", "MagnetPart");
-    MagnetMeshPartObj.SetValue("Size",1)
-    MagnetMeshPartObj.ClearParts()
-    
-    %MagnetTable
-    for MagnetIndex=1:height(MagnetTable)
-    MagnetMeshPartObj.AddPart(MagnetTable.Name{MagnetIndex})
-    end
-
-    %meshTotalPropertyTable
-    meshTotalPropertyTable=MeshControlObj.GetPropertyTable;
-    meshTotalPropertyTable=char2CategoricalPropertiesTable(meshTotalPropertyTable);
-    
-    % MeshControl Condition
-    NumConditions=MeshControlObj.NumConditions   ;
-    MeshCondtionTable=table();
-    for MeshConditionIndex=1:NumConditions
-    MeshCondtionObj=MeshControlObj.GetCondition(MeshConditionIndex-1);
-    MeshCondtionTable.MeshCondition(MeshConditionIndex)             =MeshCondtionObj;
-    MeshCondtionTable.CondtionType{MeshConditionIndex}              ={MeshCondtionObj.GetType};
-    MeshCondtionTable.Name{MeshConditionIndex}                      ={MeshCondtionObj.GetName};
-    MeshCondtionTable.MeshCondtionPropertyTable(MeshConditionIndex) ={char2CategoricalPropertiesTable(MeshCondtionObj.GetPropertyTable)};
-    MeshCondtionTable.Parts(MeshConditionIndex)                     ={MeshCondtionObj.GetParts};
-    end
-end
-
 %% Study Prop
-
 for StudyIndex=1:NumStudies
     curStudyObj=Model.GetStudy(StudyIndex-1);
     app.SetCurrentStudy(curStudyObj)
     StudyName=curStudyObj.GetName;
     %% LoadObj
     % NoLoadObj
-    if strcmp(NoLoadStudyName,StudyName)
+    if contains(NoLoadStudyName,StudyName)
     StepDivision=120;
-    elseif strcmp(LoadStudyName,StudyName)
+    elseif contains(LoadStudyName,StudyName)
     StepDivision=120;
-    elseif strcmp(PWMStudyName,StudyName)
+    elseif contains(PWMStudyName,StudyName)
     StepDivision=1080;   % PWMOBJ
     end
     %%
@@ -490,21 +477,33 @@ for StudyIndex=1:NumStudies
     curStudyObj.GetStudyProperties().SetValue('NonlinearSpeedup', 0)
     curStudyObj.GetStudyProperties().SetValue('UseMultiCPU', 1)
     curStudyObj.GetStudyProperties().SetValue('MultiCPU', 4) 
-    curStudyObj.GetStep().SetValue("Step", 4*StepDivision+1)
     curStudyObj.GetStep().SetValue("StepType", 1)
+    curStudyObj.GetStep().SetValue("Step", 4*StepDivision+1)
     curStudyObj.GetStep().SetValue("StepDivision", StepDivision)
-    curStudyObj.GetStep().SetValue("EndPoint", "1/ FreqE")
+    curStudyObj.GetStep().SetValue("EndPoint", "1/FreqE")
 end
 
 %% StudyPropertiesTable
 % Model=app.GetCurrentModel;
 propertiesTableWithValue=getJMagStudyProperties(curStudyObj);
+app.Save
+
+%% DesignTable
+curStudyObj
+
+curStudyObj.GetDesignTable().AddCases(8)
+DTObj=curStudyObj.GetDesignTable();
+for CaseIndex=1:8
+    DTObj.SetValue(CaseIndex,'speed',speedList{CaseIndex-1})
+end
+
+
+
 %% submit 
     app.SetProjectName('e10');    
     ProjectName=app.GetProjectName;
     ProjectPath=app.GetProjectPath;
-
-Model=app.GetCurrentModel
+Model=app.GetCurrentModel;
 for StudyIndex=1:NumStudies
     curStudyObj=Model.GetStudy(StudyIndex-1);
     app.SetCurrentStudy(curStudyObj.GetName)
@@ -521,14 +520,15 @@ end
 %% load result
 % waveform
 % field result
-LossStudyResultTableObj=curStudyObj.GetResultTable
-ResultDataStruct       = getJMagResultDatas(LossStudyResultTableObj,'voltage')
+LossStudyResultTableObj=curStudyObj.GetResultTable;
+ResultDataStruct       = getJMagResultDatas(LossStudyResultTableObj,'voltage');
+
 
 
 % Joule Loss [W]
 
 %% get ResultTable Obj
-app=callJmag
+app=       callJmag
 Model=app.GetCurrentModel
 StudyIndex=4
 curStudyObj=Model.GetStudy(StudyIndex-1)
@@ -547,3 +547,27 @@ u1List=contains(jouleDataStruct(1).dataTable.Properties.VariableNames,'Slot1')
 activePhaseResistance=MachineData.ResistanceActivePart
 
 %% Compare with Coil Post Calculation
+Model=app.GetCurrentModel
+NumStudies=Model.NumStudies;
+PJTPDir=app.GetProjectFolderPath();
+Model.GetStudy
+
+
+for StudyIndex=1:NumStudies
+    curStudyObj=app.GetStudy(int32(StudyIndex)-1);
+    StudyName=curStudyObj.GetName;
+    RTableObj=curStudyObj.GetResultTable;
+    if RTableObj.IsValid
+        NumTables=RTableObj.NumTables;
+        ResultFilePath{StudyIndex} =fullfile(PJTPDir,[StudyName,'.csv']);
+        RTableObj.WriteAllCaseTables(ResultFilePath{StudyIndex},'Steps')
+    end
+end
+
+for StudyIndex=1:NumStudies
+    opts=delimitedTextImportOptions('NumVariables',1000);
+    resultTableCell{StudyIndex}=readtable(ResultFilePath{StudyIndex},opts);
+end
+
+%% 
+separatedTables = parseJMAGResultTable(resultTableCell{1,1}, 'Var1');

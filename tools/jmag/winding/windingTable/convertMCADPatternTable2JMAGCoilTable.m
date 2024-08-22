@@ -19,7 +19,7 @@ function [coilsTablePerCoil,CSVTab,outputPath] = convertMCADPatternTable2JMAGCoi
             curPhaseParaCoils=TotalCoilTable(TotalCoilTable.PhaseNumber==num2str(PhaseIndex)&TotalCoilTable.ParallelPath==num2str(ParaPathIndex),:);
             for RadialPosIndex=1:length(PosCatList)
             CoilGroup       =curPhaseParaCoils(curPhaseParaCoils.GoRadialPosition==PosCatList{RadialPosIndex},:);
-                if ~isempty(CoilGroup)
+                if ~isempty(CoilGroup)     
                 TableWithGroups = groupCoilsByConsecutiveNumbers(CoilGroup);
                 TableWithGroups.GroupNumber         = categorical(TableWithGroups.GroupNumber);
                 GroupNumber                         = length(categories(TableWithGroups.GroupNumber));

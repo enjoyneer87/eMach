@@ -29,7 +29,11 @@ end
         if isvarofTable(RegionDataTable,'IdentifierName')
         CurItem=convertRefObj2Item(sketchLineTable.ReferenceObj(IndexofArc),geomApp);
         else
-        CurItem=sketchLineTable.sketchItemObj{IndexofArc};
+            if iscell(sketchLineTable.sketchItemObj)
+            CurItem=sketchLineTable.sketchItemObj{IndexofArc};
+            else
+            CurItem=sketchLineTable.sketchItemObj(IndexofArc);
+            end
         end
         if CurItem.IsValid
         %% VertexTable

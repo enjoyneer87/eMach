@@ -2,6 +2,9 @@ function sketchs = ImportDXF2Geom(dxfList2Import, geomApp)
     % app.LaunchGeometryEditor();
     
     %% Init
+    if isstruct(dxfList2Import)
+        dxfList2Import=struct2table(dxfList2Import);
+    end
     %% check App or Geometry Editor
     AppDir = geomApp.GetAppDir;
     AppDirStr = split(AppDir, '/');
@@ -41,7 +44,6 @@ function sketchs = ImportDXF2Geom(dxfList2Import, geomApp)
 
         %% Rotor
         geomApp.Merge(dxfList2Import.dxfPath{2});
-
         NumItems = geomAssem.NumItems;
         for i = 1:NumItems    
             if i == 1

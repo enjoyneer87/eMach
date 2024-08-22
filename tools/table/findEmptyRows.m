@@ -13,6 +13,8 @@ function emptyRows = findEmptyRows(table, variableName)
     % 테이블의 해당 변수 값 가져오기
     data = table.(variableName);
     
+    if
+
     % 데이터 타입에 따라 비어 있는 값을 확인
     if isnumeric(data) || islogical(data)
         % 숫자형 또는 논리형의 경우 NaN 값이 비어 있는 값으로 간주
@@ -26,6 +28,7 @@ function emptyRows = findEmptyRows(table, variableName)
     elseif isstring(data)
         % String 형의 경우, ""를 비어 있는 값으로 간주
         emptyRows = data == "";
+        d
     else
         error('지원되지 않는 데이터 유형입니다.');
     end

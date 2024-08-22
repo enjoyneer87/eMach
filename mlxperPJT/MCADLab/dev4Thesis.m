@@ -28,7 +28,7 @@ originModelIndex    =1
 % calculate_power(Ud, Id, Uq, Iq, qs): 입력 전압 Ud, Uq와 전류 Id, Iq, 스테이터 위상 qs를 이용해 입력 및 출력 전력을 계산합니다.
 
 
-MotFilePath             =getCurrentMCADFilePath(mcad(1));
+MotFilePath             =getCurrentMCADFilePath(mcad);
 
 modifiedDataStruct      =getMcadActiveXTableFromMotFile(MotFilePath);
 filteredTable           =getMCADLabDataFromMotFile(MotFilePath);

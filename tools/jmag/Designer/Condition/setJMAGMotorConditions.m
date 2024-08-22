@@ -19,8 +19,19 @@ function setJMAGMotorConditions(app, PartStructByType, isConductor,NumStudies)
         RotorOnePoleAngle = calcMotorPeriodicity(Pole, Slot);
 
         % StatorEdgeXposition 계산
-        CoreDistance =         PartStructByType.StatorCoreTable.CentroidR;
-        StatorEdgeXposition = CoreDistance / 2;
+        CoreDistance           = PartStructByType.StatorCoreTable.CentroidR;
+        StatorEdgeXposition    = CoreDistance / 2;
+    
+        % 기존 Condition 삭제
+        if curStudyObj.IsValid
+        NumConditions=curStudyObj.NumConditions;
+             for conditionIndex=1:20
+                 if curStudyObj.GetCondition(conditionIndex-1).IsValid
+                 curStudyObj.DeleteCondition(conditionIndex-1)
+                 end
+             end
+        end
+        %
 
         % 회전 주기 경계 조건 설정
         setRPBoundaryCondition(curStudyObj, RotorOnePoleAngle, StatorEdgeXposition);
