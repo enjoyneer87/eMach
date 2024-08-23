@@ -23,7 +23,7 @@ octave-workspace
 *.aux
 *.dvi
 *.ps
-*.eps
+
 *.log
 
 *.jproj
@@ -34,24 +34,30 @@ tests/LineCurrent.csv
 Class/LineCurrent.csv
 LineCurrent.csv
 *.png
-*.csv
+
 *.gif
 
 # 
 *.xml
-*.dxf
+
 
 #
-*.txt
+
 *.xlsx
 temp**
-*.mat
+
 tests/validation_w_map_motorcad_osilo.m
 Class/getFieldNames.m
 fcnExportGraphicGif.m
 
-*.csv
 *.gif
+
+# Ignore all .csv files
+.
+
+# But do not ignore .csv files in the specific folder
+!mlxperPJT/*.csv
+
 tests/validation_w_map_motorcad_osilo.m
 Class/getFieldNames.m
 fcnExportGraphicGif.m
