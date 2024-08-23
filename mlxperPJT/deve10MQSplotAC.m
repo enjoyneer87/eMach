@@ -92,7 +92,7 @@ ACLossJmag=...
 9404.4190626,
 10026.804339,
 10661.2973648]
-
+Rph=0.007
 plot(SpeedList,ACLossJmag-3*Rph*460.^2)
 hold on
 

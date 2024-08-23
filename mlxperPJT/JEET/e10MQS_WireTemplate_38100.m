@@ -36,7 +36,7 @@ if contains(jprojFiles,'C:/Users/','IgnoreCase',true)
     end
 end
 app.Load(jprojPath)
-Model=app.GetCurrentModel;
+ModelObj=app.GetCurrentModel;
 jprojFiles=app.GetProjectFolderPath;
 
 % Model.SetStudyOrder("NoLoad", 0)
@@ -53,9 +53,9 @@ if ~exist(DXFMatFilePath,"file")
 else
     load(DXFMatFilePath);
 end
-Model=app.GetCurrentModel;
-if Model.IsValid
-    Model.RestoreCadLink()
+ModelObj=app.GetCurrentModel;
+if ModelObj.IsValid
+    ModelObj.RestoreCadLink()
 end
 geomApp=app.CreateGeometryEditor(0);
 
@@ -200,7 +200,7 @@ end
 %% Import 
 app.ImportDataFromGeometryEditor();
 %% Designer ModelObj
-Model=app.GetCurrentModel;
+ModelObj=app.GetCurrentModel;
 WireTemplateObj=getWireTemplateObject(geomApp);
 
 if WireTemplateObj.IsValid
@@ -213,20 +213,20 @@ end
 
 if isConductor==1
     ModelName='e10_Conductor';
-    ConductorModelObj=Model;
+    ConductorModelObj=ModelObj;
     ConductorMeshSize=0.5;
 elseif isConductor==2
     ModelName='e10_WireTemplate';
-    ConductorModelObj=Model;
+    ConductorModelObj=ModelObj;
     ConductorMeshSize=0.5;
 else
     ModelName='e10_Coil';
-    CoilModelObj=Model;
+    CoilModelObj=ModelObj;
     ConductorMeshSize=1;
 end
 
-Model.SetName(ModelName)
-ModelName=Model.GetName;
+ModelObj.SetName(ModelName)
+ModelName=ModelObj.GetName;
 app.SetCurrentModel(ModelName)
 
 
@@ -293,29 +293,29 @@ PartStructByType.ConductorTable=PartStructByType.SlotTable;
 PartStructByType.SlotTable=0;
 end
 %% Change Name
-Model=app.GetCurrentModel;
-Model.SortPartsByName()
+ModelObj=app.GetCurrentModel;
+ModelObj.SortPartsByName()
 %% Make Set
 SlotConductorSetName="SlotConductor";
 
 strcell=strsplit(PartStructByType.ConductorTable.Name{1},'/');
-SetObj=Model.GetSetList.GetSet(SlotConductorSetName);
+SetObj=ModelObj.GetSetList.GetSet(SlotConductorSetName);
 if ~(SetObj.IsValid)
-Model.GetSetList().CreatePartSet(SlotConductorSetName)
-Model.GetSetList().GetSet(SlotConductorSetName).SetUpdateByRelation(false)
-Model.GetSetList().GetSet(SlotConductorSetName).SetMatcherType("MatchNames")
-Model.GetSetList().GetSet(SlotConductorSetName).SetParameter("style", "prefix")
-Model.GetSetList().GetSet(SlotConductorSetName).SetParameter("text", [strcell{1},'/Slot'])
-Model.GetSetList().GetSet(SlotConductorSetName).Rebuild()
+ModelObj.GetSetList().CreatePartSet(SlotConductorSetName)
+ModelObj.GetSetList().GetSet(SlotConductorSetName).SetUpdateByRelation(false)
+ModelObj.GetSetList().GetSet(SlotConductorSetName).SetMatcherType("MatchNames")
+ModelObj.GetSetList().GetSet(SlotConductorSetName).SetParameter("style", "prefix")
+ModelObj.GetSetList().GetSet(SlotConductorSetName).SetParameter("text", [strcell{1},'/Slot'])
+ModelObj.GetSetList().GetSet(SlotConductorSetName).Rebuild()
 end
 RotorSetName="Rotor";
-SetObj=Model.GetSetList.GetSet(RotorSetName);
+SetObj=ModelObj.GetSetList.GetSet(RotorSetName);
 if ~(SetObj.IsValid)
-Model.GetSetList().CreatePartSet(RotorSetName)
-Model.GetSetList().GetSet(RotorSetName).SetMatcherType("MatchNames")
-Model.GetSetList().GetSet(RotorSetName).SetParameter("style", "prefix")
-Model.GetSetList().GetSet(RotorSetName).SetParameter("text", "Rotor")
-Model.GetSetList().GetSet(RotorSetName).Rebuild()
+ModelObj.GetSetList().CreatePartSet(RotorSetName)
+ModelObj.GetSetList().GetSet(RotorSetName).SetMatcherType("MatchNames")
+ModelObj.GetSetList().GetSet(RotorSetName).SetParameter("style", "prefix")
+ModelObj.GetSetList().GetSet(RotorSetName).SetParameter("text", "Rotor")
+ModelObj.GetSetList().GetSet(RotorSetName).Rebuild()
 end
 %% createStudy or apply Template
 useTemplate=1;
@@ -324,23 +324,23 @@ TemplateName='IPMSM_WireSinCond';
 NumModels=app.NumModels;
 
 for ModelIndex=1:NumModels
-    Model=app.GetModel(ModelIndex-1);
-    NumStudies=Model.NumStudies;
+    ModelObj=app.GetModel(ModelIndex-1);
+    NumStudies=ModelObj.NumStudies;
     if NumStudies==0
         if useTemplate==0
             for StudyIndex=1:1
             StudyNameList={'NoLoad'};
-            StudyObj=Model.CreateStudy('Transient2D',[ModelName,StudyNameList{StudyIndex}]);
+            StudyObj=ModelObj.CreateStudy('Transient2D',[ModelName,StudyNameList{StudyIndex}]);
             end
         elseif useTemplate==1
             ApplyJMAGAnalysisTemplate(TemplateName,app)
         end
     else
         disp('manual')
-        NoloadStudyObj=Model.GetStudy(0);
+        NoloadStudyObj=ModelObj.GetStudy(0);
         NoloadStudyObj.GetName;
         NoloadStudyObj.SetName([ModelName,'_NoLoad'])
-        loadStudyObj=Model.GetStudy(1);
+        loadStudyObj=ModelObj.GetStudy(1);
         loadStudyObj.GetName
         loadStudyObj.SetName([ModelName,'_Load'])
     end
@@ -350,17 +350,17 @@ app.Save
 
 NumModels=app.NumModels;
 for ModelIndex=1:NumModels
-    Model=app.GetModel(ModelIndex-1);
-    NumStudies=Model.NumStudies;
+    ModelObj=app.GetModel(ModelIndex-1);
+    NumStudies=ModelObj.NumStudies;
     %% Material Set
     BandMaterial                ='Air'                  ;
     ShaftMaterial               ='Air'                  ;
     RotorCoreMaterial           ="NO18-1160"     ;    
     MagNetMaterial              ="N42EH"         ;
     MagnetTable=PartStructByType.MagnetTable;
-    NumStudies=Model.NumStudies;
+    NumStudies=ModelObj.NumStudies;
     for StudyIndex=1:NumStudies
-        curStudyObj=Model.GetStudy(StudyIndex-1);
+        curStudyObj=ModelObj.GetStudy(StudyIndex-1);
         app.SetCurrentStudy(curStudyObj.GetName)
         % Magnet
         setMagnetMagnetizationbyEdgeSet(app,MagNetMaterial,MagnetTable)
@@ -379,7 +379,7 @@ for ModelIndex=1:NumModels
 end
 %% mkDesignerEquation
 for StudyIndex=1:NumStudies
-    curStudyObj=Model.GetStudy(StudyIndex-1);
+    curStudyObj=ModelObj.GetStudy(StudyIndex-1);
     app.SetCurrentStudy(curStudyObj)
     mkDesignerEquation('speed',num2str(rpm),curStudyObj)
     mkDesignerEquation('omega','speed/60*2*pi',curStudyObj,'equation')
@@ -422,20 +422,20 @@ MeshCondtionTable = setupMotorMesh(app,PartStructByType); % defaulst Mesh Size
 NoLoadStudyName=[ModelName,'_NoLoad'];
 LoadStudyName  =[ModelName,'_Load'];
 PWMStudyName   =[ModelName,'_PWM'];
-NumStudies=Model.NumStudies;
+NumStudies=ModelObj.NumStudies;
 while NumStudies<3
         % CurrentStudyName=c.GetStudy(NoLoadStudyName);
         % app.SetCurrentStudy(CurrentStudyName)
         % if ~strcmp(CurrentStudyName,LoadStudyName) 
-        LoadStudyObj=Model.GetStudy(LoadStudyName);
+        LoadStudyObj=ModelObj.GetStudy(LoadStudyName);
         if ~LoadStudyObj.IsValid
-        Model.DuplicateStudyName(NoLoadStudyName, LoadStudyName, true)        
+        ModelObj.DuplicateStudyName(NoLoadStudyName, LoadStudyName, true)        
         end
-        PWMStudyObj=Model.GetStudy(PWMStudyName);
+        PWMStudyObj=ModelObj.GetStudy(PWMStudyName);
         if ~PWMStudyObj.IsValid
-        Model.DuplicateStudyName(NoLoadStudyName, PWMStudyName, true)
+        ModelObj.DuplicateStudyName(NoLoadStudyName, PWMStudyName, true)
         end
-        NumStudies=Model.NumStudies;
+        NumStudies=ModelObj.NumStudies;
 end
 %% Circuit 
 InputCurrentData.Current=RMSCurrent*sqrt(2);
@@ -444,7 +444,7 @@ InputCurrentData.phaseAdvance='MCADPhaseAdvance';
 InputCurrentData.CoilList       = [1,5,13,9]; % TD
 InputCurrentData.ParallelNumber = width(coilsTablePerCoil);
 for StudyIndex=1:NumStudies
-    curStudyObj=Model.GetStudy(StudyIndex-1);
+    curStudyObj=ModelObj.GetStudy(StudyIndex-1);
     app.SetCurrentStudy(curStudyObj.GetName)
     % No Load & Load    
     curStudyName=curStudyObj.GetName;
@@ -459,7 +459,7 @@ for StudyIndex=1:NumStudies
 end
 %% Study Prop
 for StudyIndex=1:NumStudies
-    curStudyObj=Model.GetStudy(StudyIndex-1);
+    curStudyObj=ModelObj.GetStudy(StudyIndex-1);
     app.SetCurrentStudy(curStudyObj)
     StudyName=curStudyObj.GetName;
     %% LoadObj
@@ -503,11 +503,11 @@ end
     app.SetProjectName('e10');    
     ProjectName=app.GetProjectName;
     ProjectPath=app.GetProjectPath;
-Model=app.GetCurrentModel;
+ModelObj=app.GetCurrentModel;
 for StudyIndex=1:NumStudies
-    curStudyObj=Model.GetStudy(StudyIndex-1);
+    curStudyObj=ModelObj.GetStudy(StudyIndex-1);
     app.SetCurrentStudy(curStudyObj.GetName)
-    ModelName=Model.GetName;
+    ModelName=ModelObj.GetName;
     StudyName=curStudyObj.GetName();
     jobData =curStudyObj.CreateJob();
     if jobData.IsValid
@@ -529,9 +529,9 @@ ResultDataStruct       = getJMagResultDatas(LossStudyResultTableObj,'voltage');
 
 %% get ResultTable Obj
 app=       callJmag
-Model=app.GetCurrentModel
+ModelObj=app.GetCurrentModel
 StudyIndex=4
-curStudyObj=Model.GetStudy(StudyIndex-1)
+curStudyObj=ModelObj.GetStudy(StudyIndex-1)
 LossStudyResultTableObj=curStudyObj.GetResultTable
 % get DataStruct
 ResultDataStruct  = getJMagResultDatas(LossStudyResultTableObj,'voltage')
@@ -547,39 +547,89 @@ u1List=contains(jouleDataStruct(1).dataTable.Properties.VariableNames,'Slot1')
 activePhaseResistance=MachineData.ResistanceActivePart
 
 %% Compare with Coil Post Calculation
-Model=app.GetCurrentModel
-NumStudies=Model.NumStudies;
+ModelObj=app.GetCurrentModel
+NumStudies=ModelObj.NumStudies;
 PJTPDir=app.GetProjectFolderPath();
-Model.GetStudy
+ModelObj.GetStudy
+ModelName=ModelObj.GetName;
+if ~contains(ModelName,'ref_','IgnoreCase',true)&contains(ModelName,'sc_','IgnoreCase',true)
+    ModelObj.SetName(['ref_',ModelName])
+end
+ModelName=ModelObj.GetName;
 
+%% Study 이름에 Model이름과 Noload인지 Load인지 붙이기 
+NumModels=app.NumModels;
+for modelIndex=1:NumModels
+    tempModelObj    =app.GetModel(int32(modelIndex)-1);
+    tempModelName   =tempModelObj.GetName;
+    NumStudies      =tempModelObj.NumStudies;
+    if tempModelObj.IsValid
+        for studyIndex=1:NumStudies
+          tempStudyObj=tempModelObj.GetStudy(int32(studyIndex)-1);
+          tempStudyName   =tempStudyObj.GetName;
+          if contains(tempStudyName,'NoLoad','IgnoreCase',true)
+              tempStudyObj.SetName([tempModelName,'_NoLoad'])
+          elseif contains(tempStudyName,'_Load','IgnoreCase',true)
+              tempStudyObj.SetName([tempModelName,'_Load']);
+          else
+              tempStudyObj.SetName([tempModelName,tempStudyName]);
+          end
+        end
+    end
+end
 
-for StudyIndex=1:NumStudies
-    curStudyObj=app.GetStudy(int32(StudyIndex)-1);
+%% scaling
+%% skin Depth Model
+delta=calcSkinDepth(omega2freq(rpm2OmegaE(1000,4))) % 2.25594 -;
+
+AppNumStudies=app.NumStudies
+for AppStudyIndex=1:AppNumStudies
+    curAppStudyObj=app.GetStudy(AppStudyIndex-1);
+    MeshConObj    =curAppStudyObj.GetMeshControl;
+    MeshConObj.CreateCondition("RotationPeriodicMeshAutomatic", "RPMesh")
+end
+%% Mk scale
+mkJMAGScaling(app,RadialscaleFactor)
+
+%% Scaling후 전체 Table
+%% RDP포트번호 추출
+[status, cmdout] = system('reg query "HKEY_LOCAL_MACHINE\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp" /v PortNumber');
+if status == 0
+    % Extract the port number from the output
+    portNumberStr = regexp(cmdout, 'PortNumber\s+REG_DWORD\s+(\w+)', 'tokens', 'once');
+    portNumber = hex2dec(portNumberStr{1});
+    fprintf('RDP Port Number: %d\n', portNumber);
+else
+    fprintf('Failed to query the registry.\n');
+end
+
+PJTName=app.GetProjectName;
+% CurrentFilePath =mfilename("fullpath");
+CurrentFilePath='D:\KangDH\Emlab_emach\mlxperPJT\JEET\e10MQS_WireTemplate_38100.m';
+AppNumStudies=app.NumStudies
+[MfileDir,~,~]  =fileparts(CurrentFilePath )
+for AppStudyIndex=1:AppNumStudies
+    curStudyObj=app.GetStudy(int32(AppStudyIndex)-1);
     StudyName=curStudyObj.GetName;
     RTableObj=curStudyObj.GetResultTable;
     if RTableObj.IsValid
         NumTables=RTableObj.NumTables;
-        ResultFilePath{StudyIndex} =fullfile(PJTPDir,[StudyName,'.csv']);
-        RTableObj.WriteAllCaseTables(ResultFilePath{StudyIndex},'Steps')
+        ResultFilePath{AppStudyIndex} =fullfile([PJTName,StudyName,'_port',num2str(portNumber),'.csv']);
+        RTableObj.WriteAllCaseTables(fullfile(MfileDir,ResultFilePath{AppStudyIndex}),'Steps')
     end
 end
 
-for StudyIndex=1:NumStudies
-    opts=delimitedTextImportOptions('NumVariables',1000);
-    resultTableCell{StudyIndex}=readtable(ResultFilePath{StudyIndex},opts);
+%% 이건 dev10_JMAG에서실행 Table가져오기 - study이름에 이미포함되어있어서 상관없구나
+% D:\KangDH\Emlab_emach\mlxperPJT\JEET\deve10_JMAG_MQS_ACLoss.m
+for AppStudyIndex=1:AppNumStudies
+    opts=delimitedTextImportOptions('NumVariables',2000);
+    if exist(ResultFilePath{AppStudyIndex},"file")
+    resultTableCell{AppStudyIndex,1}=readtable(ResultFilePath{AppStudyIndex},opts);
+    resultTableCell{AppStudyIndex,2}=ResultFilePath{AppStudyIndex};
+    end
 end
 
 %%  Get All Data
-TablesCellCaseRowDataCol = parseJMAGResultTable(resultTableCell{1,1});
+TablesCellCaseRowDataCol = parseJMAGResultTable(resultTableCell{AppStudyIndex,1});
+TablesCellCaseRowDataCol.Properties.Description=resultTableCell{AppStudyIndex,2};
 %%
-TablesCellCaseRowDataCol{1,12}{1}
-
-targetName='Conductor'
-for TableIndex=1:width(TablesCellCaseRowDataCol)    
-    table2Plot=TablesCellCaseRowDataCol{1,TableIndex}{1};
-    varNames=table2Plot.Properties.VariableNames;    
-    if any(contains(varNames,targetName))
-    figure(TableIndex)    
-    plotJMAGResultDataStruct(table2Plot,targetName)
-    end
-end
