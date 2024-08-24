@@ -1,11 +1,12 @@
 function TablesCellCaseRowDataCol = parseJMAGResultTable(resultTable)
 %% dev
 % resultTable=resultTableCell{1,1}
+% resultTable=probeTableCell{CSVIndex,1}
 varName='Var1';
 
 %% `resultTable`에서 `varName` 열에서 'case range' 문자열을 검색합니다.
     RTTableTypeIdx = find(contains(resultTable.(varName), 'case range','IgnoreCase',true));
-    RTTableType      =length(RTTableTypeIdx);
+    RTTableType     =length(RTTableTypeIdx);
     % `separatedTables`는 분리된 테이블들을 담을 셀 배열입니다.
     TablesCellCaseRowDataCol = table();
     % 각 'case range' 구간을 찾고 해당 구간을 별도의 테이블로 분리합니다.
@@ -22,7 +23,11 @@ varName='Var1';
     end
 
     %% Table Type Name
-    InitDataNameList=resultTable(RTTableTypeIdx-1,1).Variables;
+    if ~startIdx==0  % from DataSet
+       InitDataNameList=resultTable(RTTableTypeIdx-1,1).Variables;
+    else  % From Direct Graph
+       InitDataNameList=resultTable(RTTableTypeIdx+1,2).Variables;
+    end  
     DataNameList = cellfun(@(x) strrep(x, ' ', ''), InitDataNameList, 'UniformOutput', false);  
     DataNameList = cellfun(@(x) strrep(x, '<Value>', ''), DataNameList, 'UniformOutput', false);  
     TablesCellCaseRowDataCol(:,DataNameList)=cell(Numcases,length(DataNameList));

@@ -1,4 +1,4 @@
-function plotTransientTable(table2Plot, var2Plot,StepData)
+function grphLineObj=plotTransientTable(table2Plot, var2Plot,StepData)
 %% devTemp
 % table2Plot=ResultTable
 % table2Plot=DataSetTable
@@ -17,7 +17,7 @@ function plotTransientTable(table2Plot, var2Plot,StepData)
             for i = 1:width(var2PlotList)
                 if ~isempty(table2Plot.(var2PlotList{i}))
                 % varUnit = table2Plot.Properties.VariableUnits{i}; % 변수 단위
-                plot(table2Plot.Time,table2Plot.(var2PlotList{i}), 'DisplayName', [strrep(var2PlotList{i}, '_', ' ')]);
+                grphLineObj{i}=plot(table2Plot.Time,table2Plot.(var2PlotList{i}), 'DisplayName', [strrep(var2PlotList{i}, '_', ' ')]);
                 hold on;
                 else
                 close
@@ -55,7 +55,7 @@ function plotTransientTable(table2Plot, var2Plot,StepData)
             varName = table2Plot.Properties.VariableNames; % 변수 이름
             % varUnit = table2Plot.Properties.VariableUnits{1}; % 변수 단위
             if height(table2Plot)==height(xTime)-1 && ~contains(varName,'Angle','IgnoreCase',true) 
-            plot(xTime(2:end),table2Plot.(varName), 'DisplayName', strrep(varName, '_', ' '));
+            grphLineObj{i}=plot(xTime(2:end),table2Plot.(varName), 'DisplayName', strrep(varName, '_', ' '));
             hold on;
             end
             % Y축 라벨 설정: 변수 이름과 단위를 포함

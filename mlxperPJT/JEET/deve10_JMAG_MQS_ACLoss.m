@@ -15,8 +15,8 @@ for AppStudyIndex=1:AppNumStudies
 end
 
 %%  Get All Data
-BoolLoad=contains(resultTableCell(:,2),'_Load','IgnoreCase',true)
-BoolRef =contains(resultTableCell(:,2),'ref','IgnoreCase',true)
+BoolLoad=contains(resultTableCell(:,2),'_Load','IgnoreCase',true);
+BoolRef =contains(resultTableCell(:,2),'ref','IgnoreCase',true);
 AppStudyIndex =(BoolRef&BoolLoad);
 MQSRefLoadTable = parseJMAGResultTable(resultTableCell{AppStudyIndex,1});
 MQSRefLoadTable.Properties.Description=resultTableCell{AppStudyIndex,2};
@@ -103,11 +103,94 @@ ylabel('Ratio SC/Ref')
 Ratio.Color='r';
 
 
-% Wave form
+%% Wave form B / LOSS/Current Density
+% B,W Graph=AnalysisType(2)*DataType(2)* 2(Load) * 2(Model) *2(Layer-4,3 Layer) =32 % 
+AnalysisType ={'MS','MQS'};
+DataType     ={'probeB','LossByJ','probeJ'};
+StudyType    ={'_Load','NoLoad'};
+ModelType    ={'ref','SC'};
+LayerNumber  ={'4','3'};
+LoadNumBWGraph   =length(AnalysisType)*(length(DataType)-1)*(length(StudyType)-1)*length(ModelType)*length(LayerNumber);
+NumTotalGraph    =LoadNumBWGraph/length(ModelType)/length(AnalysisType);  % Load, probeB, LossyByJ, LayerNumber
+% figure Num =Total Graph/(Model-with break yaxis) = 6
+%+ NoLoad Graph - 
+NoLoadNumBWGraph   =length(AnalysisType)*(length(DataType)-1)*(length(StudyType)-1)*(length(ModelType)-1)*length(LayerNumber);
+addNoloadBW        =NoLoadNumBWGraph/length(AnalysisType);  % Noload, ProbeB, LossByJ, LayerNumber,
+% Add Current Density
+NoLoadNumJGraph   =(length(AnalysisType)-1)*(length(DataType)-2)*(length(StudyType)-1)*(length(ModelType))*length(LayerNumber);
+addNoloadJ        =NoLoadNumJGraph/length(ModelType);  % Noload, ProbeJ, LayerNumber,
+%% 
 
 
 
+% D:\KangDH\Emlab_emach\mlxperPJT\JEET\devSettingProbeB.m
+probeBFilePath=findCSVFiles(pwd);
+PJTName     ='MQS';
+BoolPJTName =contains(probeBFilePath,PJTName,'IgnoreCase',true)
+BoolRef     =~contains(probeBFilePath,'ref','IgnoreCase',true)
+BoolLoad    =contains(probeBFilePath,'_Load','IgnoreCase',true)
+BoolProbeB  =contains(probeBFilePath,'ProbeB','IgnoreCase',true)
+ProbeCSVPath=probeBFilePath(BoolPJTName&BoolLoad&BoolProbeB&BoolRef);
+for CSVIndex=1:length(ProbeCSVPath)
+    opts=delimitedTextImportOptions('NumVariables',1000);
+    if exist(ProbeCSVPath{CSVIndex},"file")
+    probeTableCell{CSVIndex,1}=readtable(ProbeCSVPath{CSVIndex},opts);
+    probeTableCell{CSVIndex,2}=ProbeCSVPath{CSVIndex};
+    end
+end
+%  Get parsing Data
+MQSRefLoadProbeBTablesCellCaseRowDataCol = parseJMAGResultTable(probeTableCell{CSVIndex,1});
+MQSRefLoadProbeBTablesCellCaseRowDataCol.Properties.Description=probeTableCell{CSVIndex,2};
+
+MQSSCLoadProbeBTablesCellCaseRowDataCol = parseJMAGResultTable(probeTableCell{CSVIndex,1});
+MQSSCLoadProbeBTablesCellCaseRowDataCol.Properties.Description=probeTableCell{CSVIndex,2};
+
+save("MQSRefLoadProbeBTablesCellCaseRowDataCol.mat","MQSRefLoadProbeBTablesCellCaseRowDataCol")
+save("MQSSCLoadProbeBTablesCellCaseRowDataCol.mat","MQSSCLoadProbeBTablesCellCaseRowDataCol")
+
+TargetTable=MQSSCLoadProbeBTablesCellCaseRowDataCol;
+
+
+LayerIndex=2;
+for ModelIndex=1:2
+    if ModelIndex==1  %% ref
+        TargetTable=MQSRefLoadProbeBTablesCellCaseRowDataCol;
+        BoolAbsVar        =contains(TargetTable.Properties.VariableNames,'Absolute');
+        BoolRVar          =contains(TargetTable.Properties.VariableNames,'(R)');
+        % BooltanVar        =contains(TargetTable.Properties.VariableNames,'(θ)');
+        BoolZVar          =contains(TargetTable.Properties.VariableNames,'(Z)');
+        ConductorIndex    =contains(TargetTable.Properties.VariableNames,num2str(LayerIndex));
+        TargetTable=TargetTable(:,~BoolAbsVar&~BoolRVar&~BoolZVar&ConductorIndex);  % theta
+        % TargetTable=TargetTable(:,BoolAbsVar&~BoolRVar&~BoolZVar&ConductorIndex);   % ABs
+        % TargetTable=TargetTable(:,~BoolAbsVar&BoolRVar&~BoolZVar&ConductorIndex);   % R
+    else
+        TargetTable =MQSSCLoadProbeBTablesCellCaseRowDataCol;
+        BoolAbsVar        =contains(TargetTable.Properties.VariableNames,'Absolute');
+        BoolRVar          =contains(TargetTable.Properties.VariableNames,'(R)');
+        % BooltanVar        =contains(TargetTable.Properties.VariableNames,'\Theta');
+        BoolZVar          =contains(TargetTable.Properties.VariableNames,'(Z)');
+        ConductorIndex    =contains(TargetTable.Properties.VariableNames,num2str(LayerIndex));
+        TargetTable=TargetTable(:,~BoolAbsVar&~BoolRVar&~BoolZVar&ConductorIndex);  % theta
+        % TargetTable=TargetTable(:,BoolAbsVar&~BoolRVar&~BoolZVar&ConductorIndex);   % ABs
+        % TargetTable=TargetTable(:,~BoolAbsVar&BoolRVar&~BoolZVar&ConductorIndex);   % R
+    end
+% for caseIndex=1:height(TargetTable)
+    % for DataIndex=1:width(TargetTable)
+    for DataIndex=1:width(TargetTable)
+        figure(caseIndex)
+        tempTargetTable=TargetTable{caseIndex,DataIndex}{:};
+        tempTargetTable=tempTargetTable([end-119:end],:);
+        grphLineObj=plotTransientTable(tempTargetTable);
+        ax=convertFigXAxisToElecDeg();
+        % grphLineObj{1}.Marker='*'l
+        ax.YLim=[-0.4 0.4];
+        hold on
+    end
+% end
+
+end
 %% Single Value
+
 
 
 
