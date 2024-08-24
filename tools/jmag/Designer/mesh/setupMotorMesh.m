@@ -1,4 +1,4 @@
-function MeshCondtionTable = setupMotorMesh(app,PartStructByType)
+function MeshCondtionTable = setupMotorMesh(app,PartStructByType,MeshSizeStruct)
     % setupMeshConditions: 각 Study에 대한 메쉬 조건을 설정하고 결과 테이블을 반환합니다.
     %
     % 입력:
@@ -12,21 +12,29 @@ function MeshCondtionTable = setupMotorMesh(app,PartStructByType)
     % 출력:
     %   - MeshCondtionTable: 메쉬 조건 테이블
     
+    %
+    % MeshSizeStruct=ScaleSizeTable
     MeshCondtionTable = table(); % 결과 테이블 초기화
     Model=app.GetCurrentModel;
     SetListObj=Model.GetSetList;
     
 
     %% default
-    coreMeshSize      =0.5;
-    ConductorMeshSize =1;
-    skinDepthFixed    =0.4;
-    MagnetMeshSize    =1;
-    MagnetTable =PartStructByType.MagnetTable;
-    AirRegionScaleY   =1.15;
-    SkinMeshDivision  =4;
-    SkinMeshCommonRatio =1;
+    MagnetTable         =PartStructByType.MagnetTable;
+    AirRegionScaleY     =1.15;
 
+    if nargin<3
+    coreMeshSize        =0.5;
+    ConductorMeshSize   =1;
+    MagnetMeshSize      =1;
+    skinDepthFixed      =0.4;
+    SkinMeshDivision    =4;
+    SkinMeshCommonRatio =1;
+    else
+    coreMeshSize        =MeshSizeStruct.coreMeshSize      ;
+    ConductorMeshSize   =MeshSizeStruct.ConductorMeshSize ;
+    MagnetMeshSize      =MeshSizeStruct.MagnetMeshSize    ;
+    end
     %% SlotConductorSetName
     NumSet=SetListObj.NumSet;
     if SetListObj.IsValid
@@ -74,25 +82,35 @@ function MeshCondtionTable = setupMotorMesh(app,PartStructByType)
         omegaE = rpm2OmegaE(rpm, NumPoles/2);
         SkinDepth_delta_inmm = calcSkinDepth(omegaE);
         
-        if MeshControlObj.GetCondition('ConductorSkinDepth').IsValid
-            ConductorSkinDepthObj = MeshControlObj.GetCondition("ConductorSkinDepth");
-        else
-            ConductorSkinDepthObj = MeshControlObj.CreateCondition("SkinDepth", "ConductorSkinDepth");
+        if all(~contains(curStudyObj.GetName,'Coil','IgnoreCase',true),~contains(curStudyObj.GetName,'MS','IgnoreCase',true))
+            if MeshControlObj.GetCondition('ConductorSkinDepth').IsValid
+                ConductorSkinDepthObj = MeshControlObj.GetCondition("ConductorSkinDepth");
+            else
+                ConductorSkinDepthObj = MeshControlObj.CreateCondition("SkinDepth", "ConductorSkinDepth");        
+            end
+            ConductorSkinDepthObj.SetValue("Depth", skinDepthFixed);
+            ConductorSkinDepthObj.SetValue("Division", SkinMeshDivision);
+            ConductorSkinDepthObj.SetValue("CommonRatio", SkinMeshCommonRatio);
+            ConductorSkinDepthObj.ClearParts();
+            if ~exist('SlotConductorSetName','var')
+            SlotConductorSetName='SlotConductor';
+            end
+            ConductorSkinDepthObj.AddSetFromModel(SlotConductorSetName, 0);  
+        else 
+            if MeshControlObj.GetCondition('ConductorSkinDepth').IsValid
+                ConductorSkinDepthObj = MeshControlObj.GetCondition("ConductorSkinDepth");
+                ConductorSkinDepthObj.delete;
+            end
         end
-        
-        ConductorSkinDepthObj.SetValue("Depth", skinDepthFixed);
-        ConductorSkinDepthObj.SetValue("Division", SkinMeshDivision);
-        ConductorSkinDepthObj.SetValue("CommonRatio", SkinMeshCommonRatio);
-        ConductorSkinDepthObj.ClearParts();
-        if ~exist('SlotConductorSetName','var')
-        SlotConductorSetName='SlotConductor';
-        end
-        ConductorSkinDepthObj.AddSetFromModel(SlotConductorSetName, 0);
-        
+
+        %% 기본메쉬
         % Conductor 메쉬 설정
         ConductorMeshPartObj = curStudyObj.CreateCondition("Part", "ConductorPart");
         ConductorMeshPartObj.SetValue("Size", ConductorMeshSize);
         ConductorMeshPartObj.ClearParts();
+        if ~exist('SlotConductorSetName','var')
+            SlotConductorSetName='SlotConductor';
+        end
         ConductorMeshPartObj.AddSetFromModel(SlotConductorSetName, 0);
         
         % Core 메쉬 설정

@@ -16,6 +16,23 @@ function ConductorPartTable = sortingConductorTableBySlot(PartStruct,app)
     if isempty(ConductorPartTable)
         ConductorPartTable = PartTable(contains(PartTable.Name, 'Wire', 'IgnoreCase', true), :);
     end
+    if isempty(ConductorPartTable)
+        ConductorPartTable = PartTable(contains(PartTable.Name, 'Slots', 'IgnoreCase', true), :);
+    end
+    if isempty(ConductorPartTable)
+        Name4Object='Stator/Conductor';
+        ConductorPartTable = PartTable(contains(PartTable.Name, 'Stator', 'IgnoreCase', true), :);
+        UniqueValueStruct = findSimilarValuesWithinTolerance(ConductorPartTable.Area);
+            if isscalar(UniqueValueStruct)
+            conductorIndexList=UniqueValueStruct.Indices;
+            for Index4SameArea=length(conductorIndexList):-1:1
+                ConductorPartTable.Name{conductorIndexList(Index4SameArea)}=[Name4Object,'_',num2str(Index4SameArea)];
+            end
+            elseif isempty(UniqueValueStruct)     
+              ConductorPartTable = sortrows(ConductorPartTable,'Area','descend');
+              ConductorPartTable.Name{2}='Conductor'; 
+            end
+    end
    
     %% 고유한 ConductorR과 SlotTheta 값 추출
     ConductorR = uniquetol(ConductorPartTable.CentroidR, difftolerance);
