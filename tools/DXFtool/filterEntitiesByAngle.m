@@ -138,11 +138,11 @@ function dxf = filterEntitiesByAngle(entitiesStruct, max_angle)
 
     NewArcTable.name(end+1)={'ARC'};
     NewArcTable.layer(end)={'Stator'};
-    NewArcTable.arc(end)={[0 0 minRadius 0 45]};
+    NewArcTable.arc(end)={[0 0 minRadius 0 max_angle]};
 
     NewArcTable.name(end+1)={'ARC'};
     NewArcTable.layer(end)={'Stator'};
-    NewArcTable.arc(end)={[0 0 maxRadius 0 45]};
+    NewArcTable.arc(end)={[0 0 maxRadius 0 max_angle]};
     entitiesTable=[filtered_arcTable;filtered_lineTable;NewArcTable;NewTable];
     else % rotor
     entitiesTable=[filtered_arcTable;filtered_lineTable;NewTable];

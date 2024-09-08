@@ -17,7 +17,7 @@ function setInsertInput2SinCircuit(app,InputCurrentData)
         SinCS1Component=currentCircuit.GetComponent("CS1");
     elseif currentCircuit.NumComponents==0
         %[TC] 존재안하면 이 회로 기본적으로 입력
-        jcirFilePath=mkJmag3phaseCoilSinCircuit(app);
+        mkJmag3phaseCoilSinCircuit(app);
         % jcirFilePath=mkJmag3phaseConductorSinCircuit(app);
         currentCircuit=studyObj.GetCircuit;
         SinCS1Component=currentCircuit.GetComponent("CS1");
@@ -28,7 +28,7 @@ function setInsertInput2SinCircuit(app,InputCurrentData)
         % SinCS1Component/.delete
         currentCircuit.DeleteInstance("CS1", 0)
 
-    elseif contains(StudyName,'load','IgnoreCase',true) && ~contains(StudyName,'Noload','IgnoreCase',true)
+    elseif contains(StudyName,'_load','IgnoreCase',true) && ~contains(StudyName,'_Noload','IgnoreCase',true)
         %% 없으면 만들기~
         if ~SinCS1Component.IsValid
               %% mk Input Component

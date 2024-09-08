@@ -1,5 +1,7 @@
 function [coilsTablePerCoil,CSVTab,outputPath] = convertMCADPatternTable2JMAGCoilTable(McadWindingPatternTable,outputPath)
-    %% nargin
+% dev
+% McadWindingPatternTable=windingPatternTxtPath{:}
+%% nargin
     if ~istable(McadWindingPatternTable)
     refOutputPath             =strrep(McadWindingPatternTable,'.txt','.csv');
     McadWindingPatternTable=readMCADWindingPatterTXT(McadWindingPatternTable);

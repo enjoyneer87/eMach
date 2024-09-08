@@ -1,6 +1,6 @@
 function [model,pdeTriElements,pdeNodes,pdeQuadElements]  = nastran2PDEMesh(csvFile)
     % csvFile: 메쉬 데이터가 포함된 CSV 파일 경로
-
+    % csvFile=MPToolCSVFilePath
     % CSV 파일 읽기
     data = readtable(csvFile, 'Delimiter', ',', 'ReadVariableNames', false);
 
@@ -45,7 +45,7 @@ function [model,pdeTriElements,pdeNodes,pdeQuadElements]  = nastran2PDEMesh(csvF
     nodeIDs              = gridData.Var2;
     coords               = gridData(:, 4:6);
     coords               = table2array(coords);
-    nodes                = [nodeIDs, coords];
+    nodes                = [nodeIDs, m2mm(coords)];
 
     % CTRIA3 데이터 파싱
     triElementIDs       = ctria3Data.Var2;
@@ -91,7 +91,7 @@ function [model,pdeTriElements,pdeNodes,pdeQuadElements]  = nastran2PDEMesh(csvF
     pdeQuadElements = pdeQuadElements';
 
     % 삼각형 요소에 네 번째 행을 추가하여 0으로 채움
-    pdeTriElements(4, :) = NaN;
+    % pdeTriElements(4, :) = 0;
 
     % 삼각형과 사각형 요소를 결합하여 하나의 요소 배열로 만듦
     pdeElements = [pdeTriElements];
@@ -99,9 +99,28 @@ function [model,pdeTriElements,pdeNodes,pdeQuadElements]  = nastran2PDEMesh(csvF
     % 노드 좌표 설정
     pdeNodes = nodes(:, 2:4)';
 
+    pdeNodes(3, :) = 0;
+
     % PDE 모델 생성 및 메쉬 추가
     
     model = createpde();
     geometryFromMesh(model, pdeNodes(1:2,:), pdeTriElements(1:3,:));
+
+    %% 3D Plot
+
+    % % 3차원 PDE 모델 생성
+    % model = createpde(3);
+    % 
+    % % 3차원 메쉬의 노드와 요소를 정의
+    % % pdeNodes는 3xN 행렬, pdeTriElements는 4xM 행렬
+    % % pdeNodes: 3xN 행렬 (x, y, z 좌표)
+    % % pdeTriElements: 4xM 행렬 (4개의 노드 인덱스, 테트라헤드럴 요소)
+    % 
+    % geometryFromMesh(model, pdeNodes(1:3,:), pdeTriElements(1:4,:));
+    
+    % % 플롯 설정
+    % pdegplot(model, 'FaceLabels', 'on', 'FaceAlpha', 0.5);
+    % axis equal;
+    % view(3);
 
 end

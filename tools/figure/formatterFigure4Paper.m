@@ -89,10 +89,14 @@ function formatterFigure4Paper(columnType, layoutType)
     xticks = get(ax, 'XTick');
     yticks = get(ax, 'YTick');
     % X, Y 축 레이블에 쉼표를 포함한 숫자 형식 설정
+    if ~isduration(xticks)&xticks>1000
     ax.XTickLabel = arrayfun(@(x) formatNumberWithComma(x), xticks, 'UniformOutput', false);
+    end
+    if any(yticks>999)
     ax.YTickLabel = arrayfun(@(x) formatNumberWithComma(x), yticks, 'UniformOutput', false);
+    end
     % 박스 및 기타 옵션 설정
-    ax.XLabel.FontName = 'Times New Roman';
-    ax.YLabel.FontName = 'Times New Roman';
+    ax.XLabel.FontName = 'Aerial';
+    ax.YLabel.FontName = 'Aerial';
     box on
 end

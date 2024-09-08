@@ -405,7 +405,9 @@ setJMAGMotorConditions(app, PartStructByType, isConductor)
 % getCoilTable
 
 txtFileList                             =findTXTFiles(refDIR)';
-windingPatternTxtPath                   =txtFileList(contains(txtFileList,'Winding'));
+windingPatternTxtPath                   =txtFileList(contains(txtFileList,'turn'));
+
+% windingPatternTxtPath                   =txtFileList(contains(txtFileList,'Winding'));
 [coilsTablePerCoil,CSVTab,outputPath]   = convertMCADPatternTable2JMAGCoilTable(windingPatternTxtPath{:});
 % [WIP]CoilsTable Setting
 %% WindingSettingObj Setting
@@ -419,12 +421,13 @@ WindingObj.SetPhaseOrder("UWV")
 MeshCondtionTable = setupMotorMesh(app,PartStructByType); % defaulst Mesh Size
 
 %% Copy Noload2>Load
+Model=app.GetCurrentModel;
 NoLoadStudyName=[ModelName,'_NoLoad'];
 LoadStudyName  =[ModelName,'_Load'];
 PWMStudyName   =[ModelName,'_PWM'];
 NumStudies=Model.NumStudies;
 while NumStudies<3
-        % CurrentStudyName=c.GetStudy(NoLoadStudyName);
+        % CurrentStudyName=.GetStudy(NoLoadStudyName);
         % app.SetCurrentStudy(CurrentStudyName)
         % if ~strcmp(CurrentStudyName,LoadStudyName) 
         LoadStudyObj=Model.GetStudy(LoadStudyName);
@@ -530,7 +533,7 @@ ResultDataStruct       = getJMagResultDatas(LossStudyResultTableObj,'voltage');
 %% get ResultTable Obj
 app=       callJmag
 Model=app.GetCurrentModel
-StudyIndex=4
+StudyIndex=1
 curStudyObj=Model.GetStudy(StudyIndex-1)
 LossStudyResultTableObj=curStudyObj.GetResultTable
 % get DataStruct
@@ -550,24 +553,29 @@ activePhaseResistance=MachineData.ResistanceActivePart
 Model=app.GetCurrentModel
 NumStudies=Model.NumStudies;
 PJTPDir=app.GetProjectFolderPath();
-Model.GetStudy
+
+ResultCSVPath=exportJMAGAllCaseTables(app,'JEET')
+
+% for StudyIndex=1:NumStudies
+%     curStudyObj=app.GetStudy(int32(StudyIndex)-1);
+%     StudyName=curStudyObj.GetName;
+%     RTableObj=curStudyObj.GetResultTable;
+%     if RTableObj.IsValid
+%         NumTables=RTableObj.NumTables;
+%         ResultFilePath{StudyIndex} =fullfile(PJTPDir,[StudyName,'.csv']);
+%         RTableObj.WriteAllCaseTables(ResultFilePath{StudyIndex},'Steps')
+%     end
+% end
+
+% for StudyIndex=1:NumStudies
+%     opts=delimitedTextImportOptions('NumVariables',1000);
+%     resultTableCell{StudyIndex}=readtable(ResultFilePath{StudyIndex},opts);
+% end
+% 
+% %% 
+% separatedTables = parseJMAGResultTable(resultTableCell{1,1}, 'Var1');
 
 
-for StudyIndex=1:NumStudies
-    curStudyObj=app.GetStudy(int32(StudyIndex)-1);
-    StudyName=curStudyObj.GetName;
-    RTableObj=curStudyObj.GetResultTable;
-    if RTableObj.IsValid
-        NumTables=RTableObj.NumTables;
-        ResultFilePath{StudyIndex} =fullfile(PJTPDir,[StudyName,'.csv']);
-        RTableObj.WriteAllCaseTables(ResultFilePath{StudyIndex},'Steps')
-    end
-end
-
-for StudyIndex=1:NumStudies
-    opts=delimitedTextImportOptions('NumVariables',1000);
-    resultTableCell{StudyIndex}=readtable(ResultFilePath{StudyIndex},opts);
-end
-
-%% 
-separatedTables = parseJMAGResultTable(resultTableCell{1,1}, 'Var1');
+%% Mk scale
+RadialscaleFactor=2;
+mkJMAGScaling(app,RadialscaleFactor);

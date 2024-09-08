@@ -1,25 +1,44 @@
-function setJMAGFEMCoil(studyObj,PartStructByType)
+function setJMAGFEMCoil(curStudyObj,PartStructByType)
 % studyObj=SinNonEddyStudyObj
 %% pre calculation
-Dtable=studyObj.GetDesignTable();
+Dtable=curStudyObj.GetDesignTable();
 tempJMAGDTableCSVpath='Z:\Simulation\JEETACLossValid_e10_v24\refModel\sampleJMAGDesignTable.csv';
 Dtable.Export(tempJMAGDTableCSVpath)
 JMAGDesignTable=readtable(tempJMAGDTableCSVpath);
 propertiesName=JMAGDesignTable.Properties.VariableNames;
-PoleProp=JMAGDesignTable(:,contains(propertiesName,'Poles','IgnoreCase',true));
+PoleProp=JMAGDesignTable(:,contains(propertiesName,'POLES'));
 PoleNumber=unique(PoleProp.Variables);
-SlotNumberProp=JMAGDesignTable(:,contains(propertiesName,'Slot','IgnoreCase',true));
+SlotNumberProp=JMAGDesignTable(:,contains(propertiesName,'SLOTS'));
 SlotNumber=unique(SlotNumberProp.Variables);
 q=calcNSPP(SlotNumber,PoleNumber);  % NSPP
 
-%%
-PhaseName={'u','v','w'};
+%% Initialize Condition FEM Coil
+% curStudyObj=app.GetCurrentStudy
+NumConditions   = curStudyObj.NumConditions;
+for ConditionIndex=1:NumConditions
+    ConditionObj{ConditionIndex}=curStudyObj.GetCondition(ConditionIndex-1);
+    if ConditionObj{ConditionIndex}.IsValid
+        ConditionObjName{ConditionIndex}=ConditionObj{ConditionIndex}.GetName;
+        ConditionObjType{ConditionIndex}=ConditionObj{ConditionIndex}.GetType;
+    end
+end
+
+for ConditionIndex=1:NumConditions
+    if contains(ConditionObjType{ConditionIndex},'FEM Coil','IgnoreCase',true)
+    curStudyObj.DeleteCondition(ConditionObjName{ConditionIndex});
+    end
+end
+
 % studyObj.GetCondition
 % ConditionObj=studyObj.GetCondition('FemCoil');
+
+
+%%
+PhaseName={'u','v','w'};
 for PhaseIndex=1:length(PhaseName)
     % studyObj.CreateCondition('FemCoil',PhaseName{PhaseIndex})
-    % ConditionObj.SetName(PhaseName{PhaseIndex})
-    ConditionObj=studyObj.CreateCondition("FEMCoil", PhaseName{PhaseIndex});
+    % ConditionObj.SetName(PhaseName{PhaseIndex})//
+    ConditionObj=curStudyObj.CreateCondition("FEMCoil", PhaseName{PhaseIndex});
     ConditionObj.SetLink(['Coil',num2str(PhaseIndex)])
     %% SubCondition
     subCon_CoilSet1Obj=ConditionObj.GetSubCondition(0);

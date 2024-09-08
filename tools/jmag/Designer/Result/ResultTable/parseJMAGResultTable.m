@@ -1,88 +1,94 @@
 function TablesCellCaseRowDataCol = parseJMAGResultTable(resultTable)
 %% dev
-% resultTable=resultTableCell{1,1}
-% resultTable=probeTableCell{CSVIndex,1}
-varName='Var1';
+    % resultTable=resultTableCell{15,1}
+    % TablesCellCaseRowDataCol
+    % resultTable=probeTableCell{CSVIndex,1}
+    % resultTable=tempRawTable;
+    % resultTable=ResultTableFromCSVPerStudy
+    varName='Var1';
 
 %% `resultTable`에서 `varName` 열에서 'case range' 문자열을 검색합니다.
-    RTTableTypeIdx = find(contains(resultTable.(varName), 'case range','IgnoreCase',true));
-    RTTableType     =length(RTTableTypeIdx);
-    % `separatedTables`는 분리된 테이블들을 담을 셀 배열입니다.
-    TablesCellCaseRowDataCol = table();
-    % 각 'case range' 구간을 찾고 해당 구간을 별도의 테이블로 분리합니다.
-
-    %% Initia TablesCaseRowDataCol
-    startIdx = RTTableTypeIdx(1)-1;
-    caseLineIdx  =resultTable(startIdx+1,:);
+    caseRangeLineIdxList = find(contains(resultTable.(varName), 'case range','IgnoreCase',true));
+    TablesCellCaseRowDataCol = table();      % 각 'case range' 구간을 찾고 해당 구간을 별도의 테이블로 분리합니다.
+    %% mkRow - Case Number
+    FistIdx     =caseRangeLineIdxList(1);          % Case Range Line
+    caseLineIdx  =resultTable(FistIdx,:);
     CaseList     =removeEmptyCells(caseLineIdx.Variables);
     CaseList     =CaseList(2:end);
-    CaseList     =cellfun(@(x) str2num(x),CaseList);
+    CaseList     =cellfun(@(x) str2double(x),CaseList,'UniformOutput',false);
     Numcases     =length(CaseList);
     for caseIndex=1:length(CaseList)
         TablesCellCaseRowDataCol(caseIndex,'Case')={caseIndex};
     end
-
-    %% Table Type Name
-    if ~startIdx==0  % from DataSet
-       InitDataNameList=resultTable(RTTableTypeIdx-1,1).Variables;
-    else  % From Direct Graph
-       InitDataNameList=resultTable(RTTableTypeIdx+1,2).Variables;
-    end  
-    DataNameList = cellfun(@(x) strrep(x, ' ', ''), InitDataNameList, 'UniformOutput', false);  
-    DataNameList = cellfun(@(x) strrep(x, '<Value>', ''), DataNameList, 'UniformOutput', false);  
-    TablesCellCaseRowDataCol(:,DataNameList)=cell(Numcases,length(DataNameList));
-    
-    %% 데이터별로 테이블 쪼개기
-    % TablePerDataCol=table();
-    % TablePerDataCol.TableName=InitDataNameList;
-    TablePerDataCol.TableCell=cell(length(InitDataNameList),1);
-
-    %% 각 'case range' 구간을 찾고 해당 구간을 별도의 테이블로 분리합니다.
-    for DataIndex = 1:length(RTTableTypeIdx)
-        % 현재 'case range' 행의 인덱스
-        startIdx = RTTableTypeIdx(DataIndex) ;
-        
-        % 다음 'case range' 행의 인덱스를 찾습니다.
-        if DataIndex < length(RTTableTypeIdx)
-            endIdx = RTTableTypeIdx(DataIndex+1) - 2;
-        else
-            % 마지막 'case range' 이후로는 테이블의 마지막 행까지 선택
-            endIdx = height(resultTable);
-        end
-        
-        % 분리된 테이블을 `separatedTables` 셀 배열에 추가합니다.
-        % TablePerDataCol{DataIndex,'TableCell'} = {resultTable(startIdx:endIdx, :)};
-        emptyVars = varfun(@(x) all(cellfun(@isempty, x)), resultTable(startIdx:endIdx, :) , 'OutputFormat', 'uniform');
-        % 비어있는 변수의 인덱스 찾기
-        emptyVarIndices = find(emptyVars);
-        if ~isempty(emptyVarIndices)
-            % 연속적으로 비어있는 인덱스 중 첫 번째만 남기기
-            diffIndices = [1, diff(emptyVarIndices)];  % 각 비어있는 인덱스 사이의 차이
-            nonConsecutive = [true, diffIndices(2:end) > 1];  % 차이가 1보다 큰 경우만 유지
-            emptyVarIndices = emptyVarIndices(nonConsecutive);
-        end
-
-        prevIdx = 1;
-        %% case-  비어있는 변수를 기준으로 테이블 쪼개기
-        for caseIndex = 1:length(emptyVarIndices)
-            curIdx                                          = emptyVarIndices(caseIndex);
-            TableByCaseByData                               = resultTable(startIdx+1:endIdx, prevIdx:(curIdx-1));
-            uniqueColNames                                  = makeUniqueColNames(TableByCaseByData(1,:).Variables);
-            TableByCaseByData.Properties.VariableNames      =uniqueColNames;
-            TableByCaseByData                               =TableByCaseByData(2:end,:);
-            numericTable = convertCharCellTable2Numeric(TableByCaseByData);            
-            numericTable  =convertNumTable2TimeTable(numericTable);
-            TablesCellCaseRowDataCol(caseIndex,DataIndex+1) = {numericTable};
-
-            prevIdx = curIdx + 1;
-             % 마지막 부분 처리
-            if prevIdx <= width(numericTable)
-                TablesCellCaseRowDataCol(end+1,DataIndex+1) =   {numericTable};
-            end
-        end
-    end
     TablesCellCaseRowDataCol.Properties.RowNames=cellstr(num2str(TablesCellCaseRowDataCol.Case));
     TablesCellCaseRowDataCol=removevars(TablesCellCaseRowDataCol,"Case");
     TablesCellCaseRowDataCol.Properties.DimensionNames=[{'Case'} {'Variables'}];
+    %% mkCol - DataSet or GraphName
+    if ~(FistIdx==1)  % from DataSet
+       DataSetNameIndexList    =caseRangeLineIdxList-1;
+       DataSetNameList         =cell(length(DataSetNameIndexList),1);
+       for DataNameIndex=1:length(DataSetNameIndexList)
+           DataNameRowIndex=DataSetNameIndexList(DataNameIndex);
+           if ~isEmptyCheck(resultTable(DataNameRowIndex,1).Variables)
+            DataSetNameList(DataNameIndex,1)=resultTable(DataNameRowIndex,1).Variables;
+           else
+               NonEmptyVars=findEmptyVars(resultTable(DataNameRowIndex,:),1);
+               DataSetNameList(DataNameIndex,1)=resultTable(DataNameRowIndex,NonEmptyVars).Variables;
+           end
+       end
+       % DataSetNameList         =resultTable(DataSetNameIndexList,1).Variables;   
+       DataSetNameList = cellfun(@(x) strrep(x, ' ', ''), DataSetNameList, 'UniformOutput', false);  
+       DataSetNameList = cellfun(@(x) strrep(x, '<Value>', ''), DataSetNameList, 'UniformOutput', false);  
+       NumDataSet      = length(DataSetNameList);       
+       TablesCellCaseRowDataCol(:,DataSetNameList)=cell(Numcases,NumDataSet);
+       endIndexShiftLine=-2;  %% DataName이 있음
+       NumColoumn=NumDataSet;
+    else  % From Direct Graph
+       GraphNameIndexList= caseRangeLineIdxList+1;% Data Unit List
+       GraphNameList      =resultTable(GraphNameIndexList,2).Variables;   
+       GraphNameList = cellfun(@(x) strrep(x, ' ', ''), GraphNameList, 'UniformOutput', false);  
+       GraphNameList = cellfun(@(x) strrep(x, '<Value>', ''), GraphNameList, 'UniformOutput', false);  
+       NumGraphList  = length(GraphNameList);
+       TablesCellCaseRowDataCol(:,GraphNameList)=cell(Numcases,NumGraphList);
+       endIndexShiftLine=-1;  %% 데이터 네임은 없고 Graph Name만있음
+       NumColoumn=NumGraphList;
+    end  
+ 
+    %% 데이터별로 테이블 쪼개기
+    %% 각 'case range' 구간을 찾고 해당 구간을 별도의 테이블로 분리합니다.
+    for ColIdx = 1:NumColoumn
+        % 현재 'case range' 행의 인덱스
+        curRow_containCaseRangeIdx = caseRangeLineIdxList(ColIdx) ;
+        curDataStartRowIdx         = curRow_containCaseRangeIdx+2;  % 그래프이름이 무조건있으니까
+        % GraphName별로 분리
+        curDataGraphNameLineIndex             =curRow_containCaseRangeIdx+1;% Data Unit List
+        % 다음 'case range' 행의 인덱스를 찾습니다.
+        if ColIdx < width(TablesCellCaseRowDataCol)
+            endIdx = caseRangeLineIdxList(ColIdx+1) + endIndexShiftLine;
+        else
+            endIdx = height(resultTable)+endIndexShiftLine+1; % 마지막 'case range' 이후로는 테이블의 마지막 행까지 선택
+        end
+    
+        emptyVars = varfun(@(x) all(cellfun(@isempty, x)), resultTable(curDataGraphNameLineIndex,:) , 'OutputFormat', 'uniform');
+        emptyVarIndices = find(emptyVars);   % 비어있는 변수의 인덱스 찾기
+        if ~isempty(emptyVarIndices)
+            % 연속적으로 비어있는 인덱스 중 첫 번째만 남기기
+            diffIndices = [1, diff(emptyVarIndices)];         % 각 비어있는 인덱스 사이의 차이
+            nonConsecutive = [true, diffIndices(2:end) > 1];  % 차이가 1보다 큰 경우만 유지
+            emptyVarIndices = emptyVarIndices(nonConsecutive);
+        end
+        prevColIdx = 1;
+        %% case-  비어있는 변수를 기준으로 테이블 쪼개기
+        for caseIndex = 1:length(emptyVarIndices)
+            curColIdx                  =emptyVarIndices(caseIndex);
+            uniqueColNames             =makeUniqueColNames(resultTable(curDataGraphNameLineIndex, prevColIdx:(curColIdx-1)).Variables);
+            GraphTableByCaseByData     =resultTable(curDataStartRowIdx:endIdx, prevColIdx:(curColIdx-1));
+            GraphTableByCaseByData.Properties.VariableNames      =uniqueColNames;
+            numericTable  = convertCharCellTable2Numeric(GraphTableByCaseByData);            
+            numericTable  = convertNumTable2TimeTable(numericTable);
+            TablesCellCaseRowDataCol(caseIndex,ColIdx) = {numericTable};
+            prevColIdx = curColIdx + 1;
+        end
+    end
 end
 

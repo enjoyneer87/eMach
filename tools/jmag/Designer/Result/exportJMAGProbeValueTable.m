@@ -12,7 +12,7 @@ function tempCsvPath=exportJMAGProbeValueTable(app,ProbeName,ProjName)
             GrphName{GraphIndex}=GraphDMObj.GetGraphName(GraphIndex-1);      
         end
         CurrentFilePath =mfilename("fullpath");
-        CurrentFilePath='D:\KangDH\Emlab_emach\tools\jmag\Designer\Result\test.m';
+        % CurrentFilePath='D:\KangDH\Emlab_emach\tools\jmag\Designer\Result\test.m';
         % CurrentFilePath='D:\KangDH\Emlab_emach\mlxperPJT\JEET\e10MQS_WireTemplate_38100.m';
         [MfileDir,~,~]        =fileparts(CurrentFilePath);
         for DirIndex=1:4 % Result, Designer,jmag,tools

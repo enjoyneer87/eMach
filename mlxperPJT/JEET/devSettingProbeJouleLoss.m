@@ -5,7 +5,7 @@ app.Show
 ProbeType   ="CurrentLossDensityScalar" ;                 
 ProbeName   ='LossByJ'         ;  
 ProjectDirName='JEET'
-%% MQS Ref
+%% Ref
 clear ProbeNameNPoint
 ProbeNameNPoint{1}         ={"63.030692799",     "53.7999768547",   "0", "R4_"};
 ProbeNameNPoint{end+1}     ={"61.5631904602051", "55.4568901062012","0", "L4_"};
@@ -14,7 +14,7 @@ ProbeNameNPoint{end+1}     ={"63.0255012512207", "56.7243804931641","0", "L3_"};
 ProbeNameNPoint{end+1}     ={"65.9719390869141", "56.3747138977051","0", "R2_"};
 ProbeNameNPoint{end+1}     ={"64.5314636230469", "58.013729095459" ,"0", "L2_"};
 ProbeDataByModel{1}=ProbeNameNPoint;
-%% MQS SC
+%% SC
 clear ProbeNameNPoint
 ProbeNameNPoint{1}         ={"2*63.030692799",     "2*53.7999768547",   "0", "R4_"};
 ProbeNameNPoint{end+1}     ={"2*61.5631904602051", "2*55.4568901062012","0", "L4_"};

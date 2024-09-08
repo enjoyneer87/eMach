@@ -48,8 +48,8 @@ PosCatList                                = categories(TotalCoilTable.GoRadialPo
                         ReSlotIndex               =str2double(ReSlotIndex);
                         ReRadialPosIndex          =SingleCoilTable.ReturnRadialPosition(CoilNumberIndex);
                         %%[TC[ Key - JMAG Coil에서 인식문제..
-                        % ReRadialPosIndex          =double(char(ReRadialPosIndex)) - double('a') + 1;
-                        ReRadialPosIndex          = GoRadialPosIndex;
+                        ReRadialPosIndex          =double(char(ReRadialPosIndex)) - double('a') + 1;
+                        % ReRadialPosIndex          = GoRadialPosIndex;
                         %% 테이블에 값넣기
                         CoilsTable{GoRadialPosIndex,GoSlotIndex}={num2str(2*CoilNumberIndex-1)};  % Coil번호할당하는거
                         CoilsTable{ReRadialPosIndex,ReSlotIndex}={num2str(2*CoilNumberIndex)};    % Coil번호할당하는거

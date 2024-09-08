@@ -10,3 +10,26 @@ app.Load(jprojPath)
 
 %% skin Depth Model
 delta=calcSkinDepth(omega2freq(rpm2OmegaE(1000,4))) % 2.25594 -;
+
+NumStudies=app.NumStudies
+for StudyIndex=1:NumStudies
+    curAppStudyObj=app.GetStudy(StudyIndex-1);
+    MeshConObj    =curAppStudyObj.GetMeshControl;
+    MeshConObj.CreateCondition("RotationPeriodicMeshAutomatic", "RPMesh")
+end
+%% Mk scale
+mkJMAGScaling(app,RadialscaleFactor)
+
+%%
+PJTPDir=app.GetProjectFolderPath();
+NumStudies=app.NumStudies;
+for StudyIndex=1:NumStudies
+    curStudyObj=app.GetStudy(int32(StudyIndex)-1);
+    StudyName=curStudyObj.GetName;
+    RTableObj=curStudyObj.GetResultTable;
+    if RTableObj.IsValid
+        NumTables=RTableObj.NumTables;
+        ResultFilePath{StudyIndex} =fullfile(PJTPDir,[StudyName,'.csv']);
+        RTableObj.WriteAllCaseTables(ResultFilePath{StudyIndex},'Steps')
+    end
+end

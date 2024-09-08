@@ -1,5 +1,5 @@
-function b=getCurrentMCADFilePath(mcad)
+function CurrentMotFilePath=getCurrentMCADFilePath(mcad)
     % mcad(1).ShowMagneticContext()
-    [~,b]=mcad.GetVariable('CurrentMotFilePath_MotorLAB');
-    disp(b)
+    CurrentMotFilePath=getCurrentMotFilePath(mcad);
+
 end

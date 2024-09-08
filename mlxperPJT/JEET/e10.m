@@ -11,6 +11,7 @@ entitiesRotorStruct = readDXF(dxfFiles{1});
 entitiesRotorStruct = arrayfun(@(x) setfield(x, 'layer', 'rotor'), entitiesRotorStruct);
 RotorDxf = filterEntitiesByAngle(entitiesRotorStruct, 22.5);
 plotEntitiesStruct(RotorDxf)
+view(3)
 NewtestRotorDXFPath=strsplit(dxfFiles{1},'.');
 NewtestRotorDXFPath=[NewtestRotorDXFPath{1},'Periodic','.dxf'];
 delete(NewtestRotorDXFPath)
@@ -201,7 +202,7 @@ end
 % mkJmag3phaseCoilSinCircuit(app)
 % R_phaseJMAG=devJmagPhaseResistanceFromWindingSet(CoilWindingInfo,app)
 
-%% Set Magnet Conductor  
+%% Set Magnet Conductor   ? 
 Model=app.GetCurrentModel;
 MagnetNameIndex=find(contains(MagnetTable.Name,'magnet','IgnoreCase',true));
 for MagnetIndex=1:height(MagnetNameIndex) 
@@ -262,10 +263,10 @@ for StudyIndex=1:NumStudies
     InputCurrentData.phaseAdvance='MCADPhaseAdvance';
     % No Load & Load    
     curStudyName=curStudyObj.GetName;
-    if strcmp(NoLoadStudyName,curStudyName) |strcmp(LoadStudyName,curStudyName)
+    if contains(curStudyName,'No') || contains(curStudyName,'_Load')
     setInsertInput2SinCircuit(app,InputCurrentData)
     % PWM
-    elseif strcmp(PWMStudyName,curStudyName)
+    elseif contains(curStudyName,'PWM')
     loadJMAG_PWMInput(app)
     curStudyObj.GetCircuit().GetComponent("theta_m").SetLink("Rotation")
     end

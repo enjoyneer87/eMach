@@ -48,12 +48,12 @@ function [P_rect,P_1DInstant,P_1DrectG1,P1DrectG2, P_rect_nonGamma, P_rectMCAD1D
                 Bm = sqrt(Br.^2 + Btheta.^2);
                 % AC 손실 계산
                 P_1DInstant=[];
-                P_rect              = calcHybridProx1D(gamma_w_prime, gamma_h_prime, mu_c, sigma, lactive, Bm); %[W
+                P_rect                 = calcHybridProx1D(gamma_w_prime, gamma_h_prime, mu_c, sigma, lactive, Bm); %[W
                 % P_rect              = calcHybridProx1D(gamma_w_prime(1), gamma_h_prime(1), mu0, sigma, lactive, Bm); %[W]
-                P_1DrectG1   = lactive * g1_func(gamma_w_prime, gamma_h_prime) .* Bm.^2 ;
-                P1DrectG2    = lactive * g2_func(gamma_w_prime, gamma_h_prime) .* Bm.^2 ;
-                P_rect_nonGamma     = calcHybridProx1D(w, h, mu0, sigma, lactive, Bm); %[W]
-                P_rectMCAD1D        = calcHybridProx1DMCAD(w, h, sigma, freqE, lactive, Bm); %[W]
+                P_1DrectG1             = lactive * g1_func(gamma_w_prime, gamma_h_prime) .* Bm.^2 ;
+                P1DrectG2              = lactive * g2_func(gamma_w_prime, gamma_h_prime) .* Bm.^2 ;
+                P_rect_nonGamma        = calcHybridProx1D(w, h, mu0, sigma, lactive, Bm); %[W]
+                P_rectMCAD1D           = calcHybridProx1DMCAD(w, h, sigma, freqE, lactive, Bm); %[W]
 
                 % 2D 방법에 의한 손실 계산
                 P_2DG1 = lactive * (g1_func(gamma_w_prime, gamma_h_prime) .* Br.^2 + ...

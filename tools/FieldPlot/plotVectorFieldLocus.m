@@ -36,12 +36,19 @@ function plotVectorFieldLocus(positionTable, BxMatrix, ByMatrix)
     %     yLocus(:,j+1) = yLocus(:,j) + ByMatrix(:, j+1);
     % end
 
-    for i=2:5:height(ByMatrix)-1
-    % plot(PosX(i)+BrMatrix(i,:),PosY(i)+BtMatrix(i,:),'k')
-    plot(xStart(i)+BxMatrix(i,:),yStart(i)+ByMatrix(i,:),'k','Marker','+')
-    hold on
+    % [Fr, Ftheta] = cart2PolVector(BxMatrix, ByMatrix, xStart, yStart);
+    for j = 1:60:numSteps
+    scatter3(xStart,yStart,(Ftheta(:,j)).^2,'o')
+        hold on
+    % scatter3(xStart,yStart,Fr(:,j+1).^2,'+')
     end
-    scatter(xStart,yStart,'SizeData',5)
+    % for i=2:5:height(ByMatrix)-1
+    % plot(PosX(i)+BrMatrix(i,:),PosY(i)+BtMatrix(i,:),'k')
+    % % % plot(xStart(i)+BxMatrix(i,:),yStart(i)+ByMatrix(i,:),'k','Marker','+')
+    % 
+    % hold on
+    % end
+    % scatter(xStart,yStart,'SizeData',5)
 
     hold off;
 end

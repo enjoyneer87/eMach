@@ -12,8 +12,6 @@ function emptyRows = findEmptyRows(table, variableName)
     
     % 테이블의 해당 변수 값 가져오기
     data = table.(variableName);
-    
-    if
 
     % 데이터 타입에 따라 비어 있는 값을 확인
     if isnumeric(data) || islogical(data)

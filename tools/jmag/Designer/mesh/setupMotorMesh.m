@@ -34,6 +34,9 @@ function MeshCondtionTable = setupMotorMesh(app,PartStructByType,MeshSizeStruct)
     coreMeshSize        =MeshSizeStruct.coreMeshSize      ;
     ConductorMeshSize   =MeshSizeStruct.ConductorMeshSize ;
     MagnetMeshSize      =MeshSizeStruct.MagnetMeshSize    ;
+    skinDepthFixed      =0.4;
+    SkinMeshDivision    =4;
+    SkinMeshCommonRatio =1;
     end
     %% SlotConductorSetName
     NumSet=SetListObj.NumSet;
@@ -74,6 +77,7 @@ function MeshCondtionTable = setupMotorMesh(app,PartStructByType,MeshSizeStruct)
                    MeshConditionName{MeshConditionIndex}=MeshControlObj.GetCondition(MeshConditionIndex-1).GetName;
                 end
             end
+
             for MeshConditionIndex=1:NumConditionsMeshCondition
                    MeshControlObj.DeleteCondition(MeshConditionName{MeshConditionIndex});        
             end
@@ -133,7 +137,10 @@ function MeshCondtionTable = setupMotorMesh(app,PartStructByType,MeshSizeStruct)
         % meshTotalPropertyTable 가져오기
         meshTotalPropertyTable = MeshControlObj.GetPropertyTable();
         meshTotalPropertyTable = char2CategoricalPropertiesTable(meshTotalPropertyTable);
-        
+        if ~MeshControlObj.GetConditionByType('RotationPeriodicMeshAutomatic',0).IsValid
+        RPMeshObj=MeshControlObj.CreateCondition("RotationPeriodicMeshAutomatic", "RPMesh");
+        % RPMeshObj.GetName
+        end
         % MeshControl Condition 테이블 생성
         NumConditions = MeshControlObj.NumConditions;
         for MeshConditionIndex = 1:NumConditions

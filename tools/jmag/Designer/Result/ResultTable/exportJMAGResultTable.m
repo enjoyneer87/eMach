@@ -4,7 +4,7 @@ function exportFilePath=exportJMAGResultTable(JMAG,Simulation,caseNumber,selectO
                 export_data_name='BField';
                 path=fullfile(pwd,'fluxData');
             elseif ResultType=="force"
-                ResultType='Nodalforce'
+                ResultType='Nodalforce';
                 export_data_name='Nodalforce';
             end
 

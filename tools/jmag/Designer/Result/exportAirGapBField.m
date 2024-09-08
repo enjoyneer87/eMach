@@ -1,6 +1,7 @@
-function  exportData=exportAirGapBField(i_Stator_OD,Input)
+function  exportData=exportAirGapBField(i_Stator_OD,app)
     exportData=struct();
 % Jproject File Path
+    JMAG=app;
     file_path=JMAG.GetProjectPath();
 % Project Name
     [~, fileName,~]=fileparts(file_path);
@@ -20,8 +21,6 @@ function  exportData=exportAirGapBField(i_Stator_OD,Input)
 
     
 %% Model 단위 [Tobe]
-
-
 %%study 단위에서
 check_case = struct('result_exist', false, 'caseno', 0); % Preallocation을 위한 초기 배열 생성
 check_case = repmat(check_case, NumCases, 1); % 배열 크기를 미리 할당

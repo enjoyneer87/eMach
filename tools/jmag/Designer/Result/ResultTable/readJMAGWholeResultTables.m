@@ -1,30 +1,31 @@
-function ResultTableFromCSV=readJMAGWholeResultTables(app)
-%% Get AllCaseTables
-    NumModel         =app.NumModels;
-    NumTotalStudy    =app.NumStudies;
-for PJTStudyIndex=1:NumTotalStudy
-    curStudyObj=app.GetStudy(PJTStudyIndex-1);
-     if curStudyObj.HasResult
-        DTObj               =curStudyObj.GetDesignTable;
-        NumCases            =DTObj.NumCases;
-        ResultFileNamesCell =curStudyObj.GetResultFileNames;
-        ResultFile4Path     =curStudyObj.GetResultFileName;
-        PathInfoList        =strsplit(ResultFile4Path,'/');
-        jplotName           =PathInfoList(end);
-        caseName            =PathInfoList(end-1);
-        StudyName           =PathInfoList(end-2);
-        ModelName           =strrep(PathInfoList(end-3),'~','');
-        ResultCSVName       =[ModelName{1},curStudyObj.GetName,'.csv'];        
-        ResultCSVPath       =fullfile(app.GetProjectFolderPath,ResultCSVName); 
-        %% CSV 만들기
-        ResultTableObj      =curStudyObj.GetResultTable;
-        ResultTableObj.WriteAllCaseTables(ResultCSVPath,'Step')
+function ResultTableFromCSV=readJMAGWholeResultTables(filterName)
+%%dev
+% filterName=MSfilterName
+
+%% Get CSVPath N Filter
+    CSVInGitPath=findCSVFiles(pwd)';
+    if iscell(filterName)
+        numFilters=len(filterName);
+        for FilterIndex=1:numFilters
+            CSVInGitPath=CSVInGitPath(contains(CSVInGitPath,filterName{FilterIndex},"IgnoreCase",true));
+        end
+        ResultCSVPath=CSVInGitPath;
+    else
+    ResultCSVPath=CSVInGitPath(contains(CSVInGitPath,filterName,"IgnoreCase",true));
+    end
+    AppNumStudies=length(ResultCSVPath);
+%% read Per Studies
+    for PJTStudyIndex=1:AppNumStudies
         %% 가져오기 옵션을 설정하고 데이터 가져오기
         opts                =delimitedTextImportOptions("NumVariables", 521);
-        ResultTableFromCSV{PJTStudyIndex}      =readtable(ResultCSVPath,opts);
+        ResultTableFromCSVPerStudy     =readtable(ResultCSVPath{PJTStudyIndex},opts);
+        [ResultCSVDir,StudyName,~]     =fileparts(ResultCSVPath{PJTStudyIndex});
+        parsedResultTable5StudyPerStudy=parseJMAGResultTable(ResultTableFromCSVPerStudy);
+        parsedResultTable5StudyPerStudy.Properties.Description=StudyName;
         %% Mat으로 저장
-        save(fullfile(app.GetProjectFolderPath,'AllResultTab.mat'),"ResultTableFromCSV")
+        ResultTableFromCSV{PJTStudyIndex} =parsedResultTable5StudyPerStudy;
+        save(fullfile(ResultCSVDir,['ResultTabStudy',StudyName,'.mat']),"ResultTableFromCSVPerStudy")
+        clear opts
      end
-      clear opts
+     % save(fullfile(app.GetProjectFolderPath,'AllResultTab.mat'),"ResultTableFromCSV")
 end
-
