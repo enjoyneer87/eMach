@@ -3,6 +3,7 @@ HDEV_measured=measureddata(12)
 % HDEV_measured.p=12;
 %%
 path='Z:\01_Codes_Projects\Testdata_post\Test_Measured_Data\Load\Test_20220313_2nd';
+addpath(path)
 measurelist_by_channel=fcn_read_dat(file_list_get(path),1)
 %% data import
 for i=1:1
@@ -46,6 +47,7 @@ HDEV_measured.Id=xdq(1,:)';
 HDEV_measured.Iq=xdq(2,:)';
 
 I_ins=I_ins';
+figure(1)
 plot(t.time,I_ins)
 hold on
 plot(t.time,xdq')
@@ -58,7 +60,7 @@ hold on
 text([mean(t.time(i))],[mean_Idq(2)],num2str(mean_Idq(2)))
 formatter_sci
 
-figure
+figure(2)
 plot(t.time,u_ins')
 end
 

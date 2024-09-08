@@ -19,4 +19,4 @@
 
 outputMatPath='Z:\01_Codes_Projects\git_Pyleecan_fork\output_data.mat'
 
-BData=load(outputMatPath)
+AData=load(outputMatPath)

@@ -6,10 +6,10 @@ Z:\01_Codes_Projects\git_fork_emach\mlxperPJT\JEET\e10.m
 Z:\01_Codes_Projects\git_fork_emach\mlxperPJT\JEET\deve10_JMAG_MS_ACLoss.m
 
 
-
 Z:\01_Codes_Projects\git_fork_emach\mlxperPJT\JEET\e10MQS_WireTemplate.m
 Z:\01_Codes_Projects\git_fork_emach\mlxperPJT\JEET\deve10_JMAG_MQS_ACLoss.m
 Z:\01_Codes_Projects\git_fork_emach\mlxperPJT\deve10MQSplotAC.m
+Z:\01_Codes_Projects\git_fork_emach\tools\jmag\dev_e10_ACLoss.mlx
 
 
 setTextFontSize(allFigures(1), 25)
@@ -211,3 +211,123 @@ for CSVIndex=1:length(ProbeCSVPath)
         end
     end
 end
+
+
+%% SCLoss
+SCECLoss=[1000	4636.45318597;
+3000	        6291.27877751;
+5000	        8890.77838158;
+7000	        12212.3710345;
+9000	        16064.045461;
+11000	        20304.32069;
+13000	        24843.0207383;]
+
+
+smallECLoss=[1000	4371.14456252;
+3000	4429.65650377;
+5000	4459.12402544;
+7000	4491.68312285;]
+
+smallECFine=[...
+1000	4353.26625211;
+3000	4423.18479013;
+5000	4454.38928069;
+7000	4486.98629123;
+9000	4523.70346692;
+11000	4565.70447938;
+13000	4614.42002555; ]
+
+refECLoss=[1000	4389.51669168;
+3000	4578.9206542;
+5000	4836.86914308;
+7000	5175.87470762;
+9000	5586.22275975;
+11000	6061.54496099;
+13000	6598.34309099;]
+
+
+
+
+
+DCLoss=Irms.^2*3*RphinCircuitActive;
+diffSCRef=SCECLoss-refECLoss;
+ratioScref=(SCECLoss-DCLoss)./(refECLoss-DCLoss)
+plot(speedList,diffSCRef(:,2)/1000)
+hold on
+plot(speedList,ratioScref(:,2))
+%%MQS 
+% SCAllLoss
+% refAllLoss
+% smallSCAllLoss
+% SCACLoss
+% rfACLoss
+% smallSCACLoss
+%MS
+% SCAllLoss
+% rfAllLoss
+% smallSCAllLoss
+% SCACoss
+% rfACLoss
+% smallSCACLoss
+
+%%MQS 
+% SCAllLoss
+plot(speedList,SCECLoss(:,2)/1000,'DisplayName','SCAllLoss')
+hold on
+% refAllLoss
+plot(speedList,refECLoss(:,2)/1000,'DisplayName','refAllLoss')
+
+plot(speedList,(SCECLoss(:,2)/1000)./(refECLoss(:,2)/1000),'DisplayName','MQS SC vs ref Winding Loss Ratio')
+hold on 
+hold on
+plot(speedList,(smallECFine(:,2))/1000,'DisplayName','smallECFine')
+
+% smallSCAllLoss
+plot(speedList(1:4),smallECLoss(:,2)/1000,'DisplayName','small')
+
+
+% SCACLoss
+% plot(speedList,(SCECLoss(:,2)-DCLoss)/1000,'DisplayName','SCACLoss')
+% hold on
+% % rfACLoss  
+% plot(speedList,(refECLoss(:,2)-DCLoss)/1000,'DisplayName','rfACLoss')
+% % smallSCACLoss
+% plot(speedList(1:4),(smallECLoss(:,2)-DCLoss)/1000,'DisplayName','smallAC')
+% plot(speedList,(smallECFine(:,2)-DCLoss)/1000,'DisplayName','smallECFine')
+% 
+
+%MS
+% SCAllLoss
+% rfAllLoss
+for speedIndex=1:6
+% SCACoss
+% scatter(speedList(speedIndex),((SCACmeanLineMS{speedIndex}{1}-DCLoss)*3)/1000,'k')
+hold on
+scatter(speedList(speedIndex),((SmallACmeanLineMS{speedIndex}{1}-DCLoss)*3)/1000+4335/1000,'r')
+hold on
+% scatter(speedList(speedIndex),((SCACmeanLineMS{speedIndex}{3}-DCLoss)*3)/1000,'b','filled')
+if speedList(speedIndex)>3000
+scatter(speedList(speedIndex),((SmallACmeanLineMS{speedIndex}{1}-DCLoss)*3)/1000*sqrt(2)^((max(speedList)-speedList(speedIndex))/speedList(speedIndex))+4335/1000,'r','filled');
+end
+% rfACLoss
+scatter(speedList(speedIndex),((meanLineMS{speedIndex}{1}-DCLoss)*3)/1000+4335/1000,'k')
+if speedList(speedIndex)>3000
+scatter(speedList(speedIndex),((meanLineMS{speedIndex}{1}-DCLoss)*3)/1000*sqrt(2)^((max(speedList)-speedList(speedIndex))/speedList(speedIndex))+4335/1000,'k','filled')
+end
+hold on
+% scatter(speedList(speedIndex),((meanLineMS{speedIndex}{2}-DCLoss)*6)/1000,'r')
+hold on
+% scatter(speedList(speedIndex),((meanLineMS{speedIndex}{3}-DCLoss)*6)/1000,'b')
+% plot(speedList,diffSCRef(:,2)/1000,'DisplayName','diffSCRef')
+scatter(speedList(speedIndex),((meanLineMS{speedIndex}{1}-DCLoss)*3)/1000+4335/1000-refECLoss(speedIndex,2)/1000)
+%% scaleSpeedACLoss
+% scatter(speedList(speedIndex),((ScaleSpeedmeanLineMS{speedIndex}{1}-DCLoss)*3)/1000,'b','x')
+end
+
+for speedIndex=2:6
+scatter(speedList(speedIndex),(refECLoss(speedIndex,2)-DCLoss)/1000/(((meanLineMS{speedIndex}{1}-DCLoss)*3)/1000))
+hold on
+end
+
+Ipk=[460.1:-(460.1-0.1)/5:0.1];
+MCADAdvance=[0:90/4:90];

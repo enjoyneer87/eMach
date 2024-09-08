@@ -1,4 +1,6 @@
 function data=plotAnyContourByNameinMotorcad(Mat_File_Path,objectName,plotType,level_contour)
+%% dev
+% Mat_File_Path=originMat.ElecMatFileList{:}
     %% 데이터 로드
     if ischar(Mat_File_Path)&&contains(Mat_File_Path,'.mat')
     data       =            load(Mat_File_Path)                ; % MAT 파일 로드

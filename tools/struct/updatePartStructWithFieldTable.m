@@ -1,4 +1,6 @@
 function WireStruct = updatePartStructWithFieldTable(WireStruct, FieldTable, tableNameAsString)
+    %%dev
+    % FieldTable=BxTimeinRow
     % BfftMagTable의 변수 이름을 가져옵니다.
     varNames = FieldTable.Properties.VariableNames;
     if contains(tableNameAsString,'B')||contains(tableNameAsString,'Element','IgnoreCase',true)

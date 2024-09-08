@@ -1,11 +1,13 @@
 function [ElementID, NodeID]=devgetMeshData(app,PartIndex)
+%%dev
+% PartIndex=WireIndex
 % Select Element
 JView=app.View;
 JView.HideAll
-
 %% Show Only the Part
 Model=app.GetCurrentModel;
 Model.SetVisibility(PartIndex,1)
+JView.ShowMesh
 
 %% ElementID
 JView.SelectElement()
