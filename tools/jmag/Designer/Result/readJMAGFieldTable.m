@@ -21,6 +21,7 @@ BoolzCol = contains(filedTable.Properties.VariableNames, 'z','IgnoreCase',true);
 
 BoolrCol = contains(filedTable.Properties.VariableNames, 'r','IgnoreCase',true);
 BoolthetaCol = contains(filedTable.Properties.VariableNames, 'θ','IgnoreCase',true);
+BoolthetaCol = contains(filedTable.Properties.VariableNames, '¥è','IgnoreCase',true);
 BoolzCol = contains(filedTable.Properties.VariableNames, 'z','IgnoreCase',true);
 AbsTable    = filedTable(:, BoolAbsCol);
 xTable      = filedTable(:, BoolxCol);

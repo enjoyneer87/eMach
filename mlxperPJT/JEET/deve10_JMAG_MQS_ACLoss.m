@@ -1,25 +1,112 @@
 % Z:\01_Codes_Projects\git_fork_emach\mlxperPJT\JEET\deve10_JMAG_MS_ACLoss.m
 % dev10MQSplotAC
 e10MQS_WireTemplate_38100 % 실행해서 JMAG파일 만들기
-
-PJTName='MQS';
+%%
+CoilPattern=4;
+Modelcase  =2;
+ModeltableList=cell(CoilPattern*Modelcase,2);
+JPJTList=findJPJTFiles(fileparts(app.GetProjectFolderPath));
+BoolWireTemp=JPJTList(contains(JPJTList,'Peri','IgnoreCase',true))';
+BoolPeriTemp=JPJTList(contains(JPJTList,'Pattern','IgnoreCase',true))';
+MQSList=[BoolWireTemp;BoolPeriTemp];
+app=callJmag;
+for PJTIndex=7:len(MQSList)
+    app.Load(MQSList{PJTIndex})
+    app.CheckForNewResults()
+    exportJMAGAllCaseTables(app,'JEET');
+end
+%% Find CSV
+% PJTName='MQS';
 ResultFilePath=findCSVFiles(pwd);
-ResultFilePath=ResultFilePath(contains(ResultFilePath,PJTName,"IgnoreCase",true));
-% ResultFilePath=ResultFilePath(contains(ResultFilePath,'port38100',"IgnoreCase",true));
-% ResultFilePath=ResultFilePath(contains(ResultFilePath,'ref',"IgnoreCase",true));
-% ResultFilePath=ResultFilePath(~contains(ResultFilePath,'Probe',"IgnoreCase",true));
-% ResultFilePath=ResultFilePath(~contains(ResultFilePath,'By',"IgnoreCase",true));
-% ResultFilePath=ResultFilePath(contains(ResultFilePath,'_Load',"IgnoreCase",true));
+ResultFilePath=ResultFilePath(contains(ResultFilePath,'Pattern',"IgnoreCase",true));
+ResultFilePath=ResultFilePath(~contains(ResultFilePath,'Fq',"IgnoreCase",true));
+ResultFilePath=ResultFilePath(~contains(ResultFilePath,'Map',"IgnoreCase",true));
 
-resultTableCell=cell(length(ResultFilePath),1)
+resultTableCell=cell(length(ResultFilePath),1);
 AppNumStudies=length(ResultFilePath);
 for AppStudyIndex=1:AppNumStudies
-    opts=delimitedTextImportOptions('NumVariables',1000);
+    % opts=detectImportOptions(ResultFilePath{7})
+    opts=delimitedTextImportOptions('NumVariables',1500);
     if exist(ResultFilePath{AppStudyIndex},"file")
-    resultTableCell{AppStudyIndex,1}=readtable(ResultFilePath{AppStudyIndex},opts);
-    resultTableCell{AppStudyIndex,2}=ResultFilePath{AppStudyIndex};
+        resultTableCell{AppStudyIndex,1}=readtable(ResultFilePath{AppStudyIndex},opts);
+        resultTableCell{AppStudyIndex,2}=ResultFilePath{AppStudyIndex};
     end
 end
+
+
+%% 
+CSVTableList=cell(len(resultTableCell),2);
+for LoadStudyIndex=1:len(resultTableCell)
+    targetTable = parseJMAGResultTable(resultTableCell{LoadStudyIndex,1});
+    targetTable.Properties.Description=resultTableCell{LoadStudyIndex,2};
+    CSVTableList{LoadStudyIndex,1}=targetTable;
+end
+save('Z:\01_Codes_Projects\git_fork_emach\mlxperPJT\JEET\From38002\CSVTableList.mat',"CSVTableList")
+targetName='Total';
+% speedList=1000:2000:15000;
+for ModelIndex=1:len(CSVTableList)
+    TargetTable=CSVTableList{ModelIndex,1};
+    for TableIndex=2:2  % Joule Loss
+        speedList=cell(1,height(TargetTable));
+        JouleAvgTablCell4Case=cell(len(speedList),2);
+        for caseIndex=1:height(TargetTable)
+            % speed2Plot=speedList(caseIndex);
+            table2Plot=TargetTable{caseIndex,TableIndex}{1};
+            speedList{1,caseIndex}=['case',num2str(caseIndex),'speed',num2str(freqE2rpm(1/seconds(table2Plot.Time(121)),4))];
+            varNames=table2Plot.Properties.VariableNames;
+            if any(contains(varNames,targetName,"IgnoreCase",true))
+                % calc
+                table2plotPerVarNames=table2Plot(:,varNames);
+                JouleAvgTablCell4Case{caseIndex,1}=varfun(@mean ,table2plotPerVarNames(end-120:end,:),"OutputFormat","table");
+                JouleAvgTablCell4Case{caseIndex,2}=JouleAvgTablCell4Case{caseIndex,1}(:,end).Variables;
+            end
+        end
+            JouleAvgTablCell4CaseTable=cell2table(JouleAvgTablCell4Case);
+            JouleAvgTablCell4CaseTable.Properties.VariableNames={'JouleTable','JouleAvg'};
+            JouleAvgTablCell4CaseTable.Properties.RowNames=speedList;
+    end
+    CSVTableList{ModelIndex,2}=JouleAvgTablCell4CaseTable;
+end
+
+%% SCL
+targetName='Total';
+speedList=1000:2000:15000;
+JouleAvgTablCell4Case=cell(length(speedList),2);
+for ModelIndex=1:2
+TargetTable=ModeltableList{ModelIndex,1};
+for TableIndex=2:2  % Joule Loss
+for caseIndex=1:height(TargetTable)
+speed2Plot=speedList(caseIndex);
+table2Plot=TargetTable{caseIndex,TableIndex}{1};
+varNames=table2Plot.Properties.VariableNames;
+if any(contains(varNames,targetName,"IgnoreCase",true))
+% calc
+table2plotPerVarNames=table2Plot(:,varNames);
+JouleAvgTablCell4Case{caseIndex,1}=varfun(@mean ,table2plotPerVarNames(end-120:end,:),"OutputFormat","table");
+JouleAvgTablCell4Case{caseIndex,2}=JouleAvgTablCell4Case{caseIndex,1}(:,end).Variables;
+end
+end
+JouleAvgTablCell4CaseTable=cell2table(JouleAvgTablCell4Case)
+JouleAvgTablCell4CaseTable.Properties.VariableNames={'JouleTable','JouleAvg'}
+end
+ModeltableList{ModelIndex,2}=JouleAvgTablCell4CaseTable;
+end
+ModeltableList
+Modeltable=cell2table(ModeltableList)
+ModelTable=cell2table(ModeltableList)
+ModelTable.Properties.VariableNames={'LoadTable','JouleTable'}
+ModelTable.Properties.RowNames={'REF','SCL'}
+ResultFilePath
+[~,CSVDir,~]=filepart(ResultFilePath{1})
+[~,CSVDir,~]=fileparts(ResultFilePath{1})
+[CSVDir,DirName,~]=fileparts(ResultFilePath{1})
+[CSVDir,~,~]=fileparts(ResultFilePath{1})
+save(fullfile(CSVDir,'MQSTableFrom38100.mat'),"ModelTable")
+
+
+%% Load MQS List
+
+
 
 %%  Get All Data
 BoolLoad  =contains(resultTableCell(:,2),'_Load','IgnoreCase',true);
@@ -52,7 +139,7 @@ SCPhaseActResistance=RefPhaseActResistance/4
 % SCPhaseActResistance=SCMachine.MotorCADGeo.ResistanceActivePart
 SCDCLoss=(2*650.5/sqrt(2)).^2*PhaseNumber*SCPhaseActResistance;
 
-%% Speed List
+%% Speed ListP
 close all
 % Average - along last 120Step (Total)
 targetName='Total';

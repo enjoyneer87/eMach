@@ -1,5 +1,6 @@
 function TablesCellCaseRowDataCol = parseJMAGResultTable(resultTable)
 %% dev
+
     % resultTable=resultTableCell{15,1}
     % TablesCellCaseRowDataCol
     % resultTable=probeTableCell{CSVIndex,1}
@@ -82,10 +83,17 @@ function TablesCellCaseRowDataCol = parseJMAGResultTable(resultTable)
         for caseIndex = 1:length(emptyVarIndices)
             curColIdx                  =emptyVarIndices(caseIndex);
             uniqueColNames             =makeUniqueColNames(resultTable(curDataGraphNameLineIndex, prevColIdx:(curColIdx-1)).Variables);
-            GraphTableByCaseByData     =resultTable(curDataStartRowIdx:endIdx, prevColIdx:(curColIdx-1));
+            GraphTableByCaseByData     =resultTable(curDataStartRowIdx:endIdx, prevColIdx:(curColIdx-1));        
+            uniqueColNames = matlab.lang.makeUniqueStrings(matlab.lang.makeValidName(uniqueColNames), {}, namelengthmax);
             GraphTableByCaseByData.Properties.VariableNames      =uniqueColNames;
-            numericTable  = convertCharCellTable2Numeric(GraphTableByCaseByData);            
-            numericTable  = convertNumTable2TimeTable(numericTable);
+            numericTable  = convertCharCellTable2Numeric(GraphTableByCaseByData); 
+            if ~isempty(numericTable.Variables)&~any(all(isnan(numericTable.Variables)))
+                 if any(contains(numericTable.Properties.VariableNames,'Freq','IgnoreCase',true))
+                     numericTable  = convertNumTable2TFreqTable(numericTable);
+                 elseif any(contains(numericTable.Properties.VariableNames,'time','IgnoreCase',true))
+                     numericTable  = convertNumTable2TimeTable(numericTable);
+                 end
+            end
             TablesCellCaseRowDataCol(caseIndex,ColIdx) = {numericTable};
             prevColIdx = curColIdx + 1;
         end

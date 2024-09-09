@@ -1,4 +1,4 @@
-function [model,pdeTriElements,pdeNodes,pdeQuadElements]  = nastran2PDEMesh(csvFile)
+function [model,pdeTriElements,pdeNodes,pdeQuadElements]  = nastran2PDEMesh(csvFile,Dim)
     % csvFile: 메쉬 데이터가 포함된 CSV 파일 경로
     % csvFile=MPToolCSVFilePath
     % CSV 파일 읽기
@@ -8,6 +8,7 @@ function [model,pdeTriElements,pdeNodes,pdeQuadElements]  = nastran2PDEMesh(csvF
     gridData   = data(contains(data.Var1, 'GRID'), :);
     ctria3Data = data(contains(data.Var1, 'CTRIA3'), :);
     cquad4Data = data(contains(data.Var1, 'CQUAD4'), :);
+    
     
     %% Grid 
     % 	GRID: 카드의 이름을 나타냅니다.
@@ -45,8 +46,11 @@ function [model,pdeTriElements,pdeNodes,pdeQuadElements]  = nastran2PDEMesh(csvF
     nodeIDs              = gridData.Var2;
     coords               = gridData(:, 4:6);
     coords               = table2array(coords);
+    if strcmp(Dim,'mm')
+    nodes                = [nodeIDs, coords];
+    else
     nodes                = [nodeIDs, m2mm(coords)];
-
+    end
     % CTRIA3 데이터 파싱
     triElementIDs       = ctria3Data.Var2;
     CTRIA3PID           = ctria3Data.Var3;

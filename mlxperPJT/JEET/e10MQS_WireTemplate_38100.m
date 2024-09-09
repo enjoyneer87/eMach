@@ -405,7 +405,7 @@ setJMAGMotorConditions(app, PartStructByType, isConductor)
 % getCoilTable
 
 txtFileList                             =findTXTFiles(refDIR)';
-windingPatternTxtPath                   =txtFileList(contains(txtFileList,'Winding'));
+windingPatternTxtPath                   =txtFileList(contains(txtFileList,'turn'));
 [coilsTablePerCoil,CSVTab,outputPath]   = convertMCADPatternTable2JMAGCoilTable(windingPatternTxtPath{:});
 % [WIP]CoilsTable Setting
 %% WindingSettingObj Setting

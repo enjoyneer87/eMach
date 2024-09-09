@@ -4,13 +4,15 @@ DXFPath="Z:/Simulation/JEETACLossValid_e10_v24/refModel/e10_JMAG.dxf";
 DXFPath="Z:/Simulation/JEETACLossValid_e10_v24/refModel/e10_JMAGWireTemplate90deg.dxf";
 DXFPath="Z:/Simulation/JEETACLossValid_e10_v24/refModel/e10_SCL_ConductorModel.dxf";
 DXFPath="Z:/Simulation/JEETACLossValid_e10_v24/refModel/e10_REF_ConductorModel.dxf";
+DXFPath="Z:/Simulation/JEETACLossValid_e10_v24/refModel/e10_REF_ConductorModel.dxf";
 
 geomApp.GetDocument().ExportData(DXFPath);
-
+DXFtool(DXFPath)
+formatterFigure4Paper('double','2x2')
 StepList=[1,44,86,120]
 stepList=StepList;
 %% Abs Table/XTable/YTable
-for caseIndex=1:1
+for caseInd`=1:1
     for stepIndex=1:length(stepList)
         stepData=stepList(stepIndex)
         PosTable=FieldData{caseIndex}.positionTable; 

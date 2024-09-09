@@ -243,7 +243,7 @@ markerList={'+' , 'o' , '*' , '.' , 'x' , 'square' , 'diamond' , 'v' , '^' , '>'
     % end
 % end 
 %% Hybrid Calc
-refDim=[3.7/2 1.6 150]
+refDim=[3.7 1.6 150]
 pole=8
 speedList=[1000:2000:13000];
 refDim(3)=150
@@ -263,7 +263,7 @@ SCDim(3)=150
 for ModelNStudyIndex=2:2
     for speedIndex=1:6
         speed=speedList(speedIndex);
-        [SCTotalACLossPerMethod{speedIndex},TotalDCACSlot{speedIndex},DisplaynameList,SCACmeanLineMS{speedIndex}]=calcAllHybridACFromBtable(speed,pole,SCDim,MSRTargetTable{ModelNStudyIndex}(1,:),MSthetaTargetTable{ModelNStudyIndex}(1,:),3*DCLossWaveformByIwaveVph);
+        [SCTotalACLossPerMethod{speedIndex},TotalDCACSlot{speedIndex},DisplaynameList,SCACmeanLineMS{speedIndex}]=calcAllHybridACFromBtable(speed,pole,SCDim,MSRTargetTable{ModelNStudyIndex}(1,:),MSthetaTargetTable{ModelNStudyIndex}(1,:),3*0);
     end    
 end
 

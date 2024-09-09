@@ -1,15 +1,15 @@
 deve10_Comparison_MQS_MS
 
-
-Z:\01_Codes_Projects\git_fork_emach\mlxperPJT\JEET\e10MS.m
-Z:\01_Codes_Projects\git_fork_emach\mlxperPJT\JEET\e10.m
-Z:\01_Codes_Projects\git_fork_emach\mlxperPJT\JEET\deve10_JMAG_MS_ACLoss.m
-
-
-Z:\01_Codes_Projects\git_fork_emach\mlxperPJT\JEET\e10MQS_WireTemplate.m
-Z:\01_Codes_Projects\git_fork_emach\mlxperPJT\JEET\deve10_JMAG_MQS_ACLoss.m
-Z:\01_Codes_Projects\git_fork_emach\mlxperPJT\deve10MQSplotAC.m
-Z:\01_Codes_Projects\git_fork_emach\tools\jmag\dev_e10_ACLoss.mlx
+% 
+% Z:\01_Codes_Projects\git_fork_emach\mlxperPJT\JEET\e10MS.m
+% Z:\01_Codes_Projects\git_fork_emach\mlxperPJT\JEET\e10.m
+% Z:\01_Codes_Projects\git_fork_emach\mlxperPJT\JEET\deve10_JMAG_MS_ACLoss.m
+% 
+% 
+% Z:\01_Codes_Projects\git_fork_emach\mlxperPJT\JEET\e10MQS_WireTemplate.m
+% Z:\01_Codes_Projects\git_fork_emach\mlxperPJT\JEET\deve10_JMAG_MQS_ACLoss.m
+% Z:\01_Codes_Projects\git_fork_emach\mlxperPJT\deve10MQSplotAC.m
+% Z:\01_Codes_Projects\git_fork_emach\tools\jmag\dev_e10_ACLoss.mlx
 
 
 setTextFontSize(allFigures(1), 25)
