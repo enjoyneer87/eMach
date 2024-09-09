@@ -179,9 +179,13 @@ markerList={'+' , 'o' , '*' , '.' , 'x' , 'square' , 'diamond' , 'v' , '^' , '>'
             % MSthetaTargetTable=MSTargetTable(:,~BoolAbsVar&~BoolRVar&~BoolZVar&ConductorIndex);  % theta
             % % ABs
             % TargetTable=TargetTable(:,~BoolAbsVar&BoolRVar&~BoolZVar&ConductorIndex);
+            MSRMSesultTableFromCSV.MSRTargetTable{ModelNStudyIndex}=MSRTargetTable
+            MSRMSesultTableFromCSV.MSthetaTargetTable{ModelNStudyIndex}=MSthetaTargetTable
             % % R
+
     end
-    
+
+ save('MSRMSesultTableFromCSV.mat','MSRMSesultTableFromCSV')
     % for caseIndex=1:height(TargetTable)
         % for DataIndex=1:width(TargetTable)
         for DataIndex=1:2

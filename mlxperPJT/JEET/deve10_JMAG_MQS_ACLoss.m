@@ -1,11 +1,21 @@
 % Z:\01_Codes_Projects\git_fork_emach\mlxperPJT\JEET\deve10_JMAG_MS_ACLoss.m
 % dev10MQSplotAC
 e10MQS_WireTemplate_38100 % 실행해서 JMAG파일 만들기
-%%
+%% Set DefaultPath
 CoilPattern=4;
 Modelcase  =2;
 ModeltableList=cell(CoilPattern*Modelcase,2);
-JPJTList=findJPJTFiles(fileparts(app.GetProjectFolderPath));
+PortNumber=getPCRDPPortNumber();
+if PortNumber==38100
+    defaultPath='D:\KangDH\Thesis\e10\JMAG';
+elseif PortNumber==38002
+    defaultPath='Z:/Simulation/JEETACLossValid_e10_v24/JMAG';
+end
+%% Get PJTList
+CoilPattern=4;
+Modelcase  =2;
+ModeltableList=cell(CoilPattern*Modelcase,2);
+JPJTList=findJPJTFiles(defaultPath);
 BoolWireTemp=JPJTList(contains(JPJTList,'Peri','IgnoreCase',true))';
 BoolPeriTemp=JPJTList(contains(JPJTList,'Pattern','IgnoreCase',true))';
 MQSList=[BoolWireTemp;BoolPeriTemp];
@@ -18,30 +28,32 @@ end
 %% Find CSV
 % PJTName='MQS';
 ResultFilePath=findCSVFiles(pwd);
-ResultFilePath=ResultFilePath(contains(ResultFilePath,'Pattern',"IgnoreCase",true));
-ResultFilePath=ResultFilePath(~contains(ResultFilePath,'Fq',"IgnoreCase",true));
-ResultFilePath=ResultFilePath(~contains(ResultFilePath,'Map',"IgnoreCase",true));
+PatternList={'PatternC','PatternD'};
+for PatternIndex=1:len(PatternList)
+    ResultFilePath=ResultFilePath(contains(ResultFilePath,'SCL',"IgnoreCase",true));
+    resultListPath(PatternIndex)=ResultFilePath(contains(ResultFilePath,PatternList{PatternIndex},"IgnoreCase",true));
+end
 
-resultTableCell=cell(length(ResultFilePath),1);
-AppNumStudies=length(ResultFilePath);
+resultTableCell=cell(length(resultListPath),1);
+AppNumStudies=length(resultListPath);
 for AppStudyIndex=1:AppNumStudies
     % opts=detectImportOptions(ResultFilePath{7})
     opts=delimitedTextImportOptions('NumVariables',1500);
-    if exist(ResultFilePath{AppStudyIndex},"file")
-        resultTableCell{AppStudyIndex,1}=readtable(ResultFilePath{AppStudyIndex},opts);
-        resultTableCell{AppStudyIndex,2}=ResultFilePath{AppStudyIndex};
+    if exist(resultListPath{AppStudyIndex},"file")
+        resultTableCell{AppStudyIndex,1}=readtable(resultListPath{AppStudyIndex},opts);
+        resultTableCell{AppStudyIndex,2}=resultListPath{AppStudyIndex};
     end
 end
 
-
-%% 
+%% CSVTableList
 CSVTableList=cell(len(resultTableCell),2);
 for LoadStudyIndex=1:len(resultTableCell)
     targetTable = parseJMAGResultTable(resultTableCell{LoadStudyIndex,1});
     targetTable.Properties.Description=resultTableCell{LoadStudyIndex,2};
     CSVTableList{LoadStudyIndex,1}=targetTable;
 end
-save('Z:\01_Codes_Projects\git_fork_emach\mlxperPJT\JEET\From38002\CSVTableList.mat',"CSVTableList")
+MatFileName='SCL_TSFEA'
+save(['Z:\01_Codes_Projects\git_fork_emach\mlxperPJT\JEET\From38002\',MatFileName,'.mat'],"CSVTableList")
 targetName='Total';
 % speedList=1000:2000:15000;
 for ModelIndex=1:len(CSVTableList)
