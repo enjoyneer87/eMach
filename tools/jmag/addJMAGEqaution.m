@@ -1,17 +1,18 @@
-function addJMAGEqaution(EqName,Expression,studyObj)
-% EqName="Housing_height"
+function addJMAGEqaution(EqName,Expression,CurStudyObj)
+% EqName='mu0'
 % studyObj=Steady2
 % Expression=[num2str(Housing_outer_radius),'*scaleFactor']
-EqObj=studyObj.GetDesignTable().GetEquation(EqName);
-if ~EqObj.IsValid
-studyObj.GetDesignTable().AddEquation(EqName)                              ; 
+EqObj=CurStudyObj.GetDesignTable().GetEquation(EqName);
+if isempty(EqObj)
+    CurStudyObj.GetDesignTable().AddEquation(EqName);                          
 end
-studyObj.GetDesignTable().GetEquation(EqName).SetType(1)                   ; 
-studyObj.GetDesignTable().GetEquation(EqName).SetExpression(Expression)    ;             
-studyObj.GetDesignTable().GetEquation(EqName).SetDescription("")           ;         
-studyObj.GetDesignTable().GetEquation(EqName).SetModeling(false)           ;         
-studyObj.GetDesignTable().GetEquation(EqName).SetTrueValue("")             ;     
-studyObj.GetDesignTable().GetEquation(EqName).SetFalseValue("")            ;     
-studyObj.GetDesignTable().GetEquation(EqName).SetDisplayName("")           ;         
+EqObj=CurStudyObj.GetDesignTable().GetEquation(EqName);
+EqObj.SetType(1)                   ; 
+EqObj.SetExpression(Expression)    ;             
+EqObj.SetDescription("")           ;         
+EqObj.SetModeling(false)           ;         
+EqObj.SetTrueValue("")             ;     
+EqObj.SetFalseValue("")            ;     
+EqObj.SetDisplayName("")           ;         
 
 end

@@ -12,11 +12,11 @@ end
 CoilStyle=findMcadTableVariableFromAutomationName(ActiveXParametersStruct.Winding_Design,'Style');
 CoilStyle=CoilStyle{:};  % 0== 환선, 1== hairpin;
 if CoilStyle==0
-conductororCuboidNumbers=findMcadTableVariableFromAutomationName(ActiveXParametersStruct.Calc_Options,'NumberOfCuboids');
-conductororCuboidNumbers=str2double(conductororCuboidNumbers);
+    conductororCuboidNumbers=findMcadTableVariableFromAutomationName(ActiveXParametersStruct.Calc_Options,'NumberOfCuboids');
+    conductororCuboidNumbers=str2double(conductororCuboidNumbers);
 else
-conductororCuboidNumbers=findMcadTableVariableFromAutomationName(ActiveXParametersStruct.Calc_Options,'NumberOfCuboids');
-conductororCuboidNumbers=str2double(conductororCuboidNumbers);
+    conductororCuboidNumbers=findMcadTableVariableFromAutomationName(ActiveXParametersStruct.Calc_Options,'NumberOfCuboids');
+    conductororCuboidNumbers=str2double(conductororCuboidNumbers);
 end
 
 % ModelParameters_MotorLAB=getMCADTableValueFromActiveXstr(MCadActiveXParameter,'ModelParameters_MotorLAB',mcad(1))

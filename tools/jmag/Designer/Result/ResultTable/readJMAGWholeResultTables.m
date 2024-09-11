@@ -1,4 +1,4 @@
-function ResultTableFromCSV=readJMAGWholeResultTables(filterName)
+function [ResultTableFromCSV,ResultCSVPath]=readJMAGWholeResultTables(filterName)
 %%dev
 % filterName=FqfilterName
 
@@ -24,8 +24,8 @@ function ResultTableFromCSV=readJMAGWholeResultTables(filterName)
         parsedResultTable5StudyPerStudy.Properties.Description=StudyName;
         %% Mat으로 저장
         ResultTableFromCSV{PJTStudyIndex} =parsedResultTable5StudyPerStudy;
-        save(fullfile(ResultCSVDir,['ResultTabStudy',StudyName,'.mat']),"ResultTableFromCSVPerStudy")
+        save(fullfile(ResultCSVDir,['ResultTabStudy',StudyName,'.mat']),"parsedResultTable5StudyPerStudy")
         clear opts
-     end
+    end
      % save(fullfile(app.GetProjectFolderPath,'AllResultTab.mat'),"ResultTableFromCSV")
 end

@@ -1,4 +1,4 @@
-function plotMultipleInterpSatuMapSubplots(plotFunction, Data4Interp,Data4Interp2, subPlotList,lastfigure, startfigure)
+function tempFitResult=plotMultipleInterpSatuMapSubplots(plotFunction, Data4Interp,Data4Interp2, subPlotList,lastfigure, startfigure)
     % plotFunction: 그래프를 그리는 함수 (함수 핸들)
     % lastfigure: 총 서브플롯의 개수
         

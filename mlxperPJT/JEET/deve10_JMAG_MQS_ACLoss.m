@@ -8,19 +8,21 @@ ModeltableList=cell(CoilPattern*Modelcase,2);
 PortNumber=getPCRDPPortNumber();
 if PortNumber==38100
     defaultPath='D:\KangDH\Thesis\e10\JMAG';
+    defaultJEETPath='D:\KangDH\Emlab_emach\mlxperPJT\JEET\From38100\';
 elseif PortNumber==38002
     defaultPath='Z:/Simulation/JEETACLossValid_e10_v24/JMAG';
+    defaultJEETPath='Z:\01_Codes_Projects\git_fork_emach\mlxperPJT\JEET\From38002\';
 end
 %% Get PJTList
 CoilPattern=4;
 Modelcase  =2;
 ModeltableList=cell(CoilPattern*Modelcase,2);
 JPJTList=findJPJTFiles(defaultPath);
-BoolWireTemp=JPJTList(contains(JPJTList,'Peri','IgnoreCase',true))';
-BoolPeriTemp=JPJTList(contains(JPJTList,'Pattern','IgnoreCase',true))';
-MQSList=[BoolWireTemp;BoolPeriTemp];
+BoolWireTemp=JPJTList(contains(JPJTList,'SCL','IgnoreCase',true))';
+% BoolPeriTemp=JPJTList(contains(JPJTList,'Pattern','IgnoreCase',true))';
+MQSList=[BoolWireTemp];
 app=callJmag;
-for PJTIndex=7:len(MQSList)
+for PJTIndex=1:len(MQSList)
     app.Load(MQSList{PJTIndex})
     app.CheckForNewResults()
     exportJMAGAllCaseTables(app,'JEET');
@@ -29,8 +31,10 @@ end
 % PJTName='MQS';
 ResultFilePath=findCSVFiles(pwd);
 PatternList={'PatternC','PatternD'};
+clear resultListPath
 for PatternIndex=1:len(PatternList)
     ResultFilePath=ResultFilePath(contains(ResultFilePath,'SCL',"IgnoreCase",true));
+    ResultFilePath=ResultFilePath(~contains(ResultFilePath,'Fq',"IgnoreCase",true));
     resultListPath(PatternIndex)=ResultFilePath(contains(ResultFilePath,PatternList{PatternIndex},"IgnoreCase",true));
 end
 
@@ -52,11 +56,10 @@ for LoadStudyIndex=1:len(resultTableCell)
     targetTable.Properties.Description=resultTableCell{LoadStudyIndex,2};
     CSVTableList{LoadStudyIndex,1}=targetTable;
 end
-MatFileName='SCL_TSFEA'
-save(['Z:\01_Codes_Projects\git_fork_emach\mlxperPJT\JEET\From38002\',MatFileName,'.mat'],"CSVTableList")
+MatFileName='SCL_TSFEA';
 targetName='Total';
 % speedList=1000:2000:15000;
-for ModelIndex=1:len(CSVTableList)
+for ModelIndex=1:height(CSVTableList)
     TargetTable=CSVTableList{ModelIndex,1};
     for TableIndex=2:2  % Joule Loss
         speedList=cell(1,height(TargetTable));
@@ -78,32 +81,37 @@ for ModelIndex=1:len(CSVTableList)
             JouleAvgTablCell4CaseTable.Properties.RowNames=speedList;
     end
     CSVTableList{ModelIndex,2}=JouleAvgTablCell4CaseTable;
+    CSVTableList{ModelIndex,3}=CSVTableList{ModelIndex,1}.Properties.Description;
+end
+CSVTable=cell2table(CSVTableList)
+CSVTable.Properties.VariableNames={'TotalTable','JouleTable','CSVPath'}
+
+save([defaultJEETPath,MatFileName,'.mat'],"CSVTable")
+
+%% TB SCL
+
+targetName='Total';
+JouleAvgTablCell4Case=cell(length(speedList),2);
+for ModelIndex=1:height(CSVTableList)
+    TargetTable=CSVTableList{ModelIndex,1};
+    TableIndex=2;  % Joule Loss
+    for caseIndex=1:height(TargetTable)
+        table2Plot=TargetTable{caseIndex,TableIndex}{1};
+        speed=freqE2rpm(1/seconds(table2Plot.Time(121)),8/2);
+        varNames=table2Plot.Properties.VariableNames;
+        if any(contains(varNames,targetName,"IgnoreCase",true))
+            % calc
+            table2plotPerVarNames=table2Plot(:,varNames);
+            JouleAvgTablCell4Case{caseIndex,1}=varfun(@mean ,table2plotPerVarNames(end-120:end,:),"OutputFormat","table");
+            JouleAvgTablCell4Case{caseIndex,2}=JouleAvgTablCell4Case{caseIndex,1}(:,end).Variables;
+        end
+    end
+    JouleAvgTablCell4CaseTable=cell2table(JouleAvgTablCell4Case);
+    JouleAvgTablCell4CaseTable.Properties.VariableNames={'JouleTable','JouleAvg'}
+    ModeltableList{ModelIndex1}
+    ModeltableList{ModelIndex,2}=JouleAvgTablCell4CaseTable;
 end
 
-%% SCL
-targetName='Total';
-speedList=1000:2000:15000;
-JouleAvgTablCell4Case=cell(length(speedList),2);
-for ModelIndex=1:2
-TargetTable=ModeltableList{ModelIndex,1};
-for TableIndex=2:2  % Joule Loss
-for caseIndex=1:height(TargetTable)
-speed2Plot=speedList(caseIndex);
-table2Plot=TargetTable{caseIndex,TableIndex}{1};
-varNames=table2Plot.Properties.VariableNames;
-if any(contains(varNames,targetName,"IgnoreCase",true))
-% calc
-table2plotPerVarNames=table2Plot(:,varNames);
-JouleAvgTablCell4Case{caseIndex,1}=varfun(@mean ,table2plotPerVarNames(end-120:end,:),"OutputFormat","table");
-JouleAvgTablCell4Case{caseIndex,2}=JouleAvgTablCell4Case{caseIndex,1}(:,end).Variables;
-end
-end
-JouleAvgTablCell4CaseTable=cell2table(JouleAvgTablCell4Case)
-JouleAvgTablCell4CaseTable.Properties.VariableNames={'JouleTable','JouleAvg'}
-end
-ModeltableList{ModelIndex,2}=JouleAvgTablCell4CaseTable;
-end
-ModeltableList
 Modeltable=cell2table(ModeltableList)
 ModelTable=cell2table(ModeltableList)
 ModelTable.Properties.VariableNames={'LoadTable','JouleTable'}

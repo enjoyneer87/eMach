@@ -1,4 +1,4 @@
-function [fitResult, LossDataInfo] = interpLossFitResultFromMCadTable(MCADTable, varNameList)
+function [fitResult, LossDataInfo,DataSet] = interpLossFitResultFromMCadTable(MCADTable, varNameList)
     fitResult = struct();
     LossDataInfo = struct();
     lossTypes = {'Hys', 'Eddy', 'AC Copper', 'Magnet'};

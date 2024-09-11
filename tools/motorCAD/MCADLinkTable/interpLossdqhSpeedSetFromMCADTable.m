@@ -1,4 +1,4 @@
-function  [fitResult, scaledDataInfo] =interpLossdqhSpeedSetFromMCADTable(MCADLinkTable,MachineData,nTarget)
+function  [fitResult, scaledDataInfo,DataSet] =interpLossdqhSpeedSetFromMCADTable(MCADLinkTable,MachineData,nTarget)
     
     
 % dev
@@ -20,7 +20,7 @@ SpeedScaledMcadTable.("Magnet Loss")    =Wmag_scaled;
 % SpeedScaledMcadTable.("Hysteresis Iron Loss (Rotor Back Iron)")
 
 varNameList                             = SpeedScaledMcadTable.Properties.VariableNames;
-[fitResult, scaledDataInfo]             = interpLossFitResultFromMCadTable(SpeedScaledMcadTable, varNameList);
+[fitResult, scaledDataInfo,DataSet]      =interpLossFitResultFromMCadTable(SpeedScaledMcadTable, varNameList);
  
 scaledDataInfo.freqEOp                  = freqEOp;
 scaledDataInfo.freqEBuild               = freqEBuild;
