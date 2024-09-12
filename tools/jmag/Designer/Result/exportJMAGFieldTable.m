@@ -12,6 +12,8 @@ function exportFilePath=exportJMAGFieldTable(curStudyObj,selectObj,ResultType,ex
                  ResultType= 'MagneticFieldStrength';
             elseif ResultType=='p'
                  ResultType= 'Permeance';
+            elseif ResultType=="Jloss"
+                ResultType="CurrentLossDensityScalar";
             else 
                 disp('적절한 데이터를 요청하세요')
             end

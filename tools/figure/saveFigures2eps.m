@@ -1,4 +1,4 @@
-function saveFigures2eps(folderPath)
+function saveFigures2eps(folderDIR)
     % 주어진 폴더 경로에 있는 그래프들을 PNG 파일로 저장하는 함수
     % 폴더 경로에 있는 모든 figure 핸들을 찾음
     figHandles = findobj('Type', 'figure');
@@ -27,10 +27,10 @@ function saveFigures2eps(folderPath)
             figName = strrep(figName, '=', '');         % '='을 제거
             end
 
-            filename = fullfile(folderPath, ['pic_' figName '.svg']);    % 저장할 파일명과 경로를 합침
+            filename = fullfile(folderDIR, ['pic_' figName '.eps']);    % 저장할 파일명과 경로를 합침
             
             % 그래프를 PNG로 저장
-            saveas(figHandle,filename);
+            print(figHandle,filename);
 
             % exportgraphics(figHandle, filename, 'Resolution', 600, 'BackgroundColor', 'White');
         end

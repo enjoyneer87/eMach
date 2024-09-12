@@ -6,7 +6,9 @@ function  exportFilePathList=exportFieldData2CSV(app,ResultType,JMAGPJTName,Part
 
 % %% dev
 % ModelString='ref'
-% % % JMAGPJTName='JEET'
+% JMAGPJTName='JEET'
+% StudyString='_Load_18k_rgh'
+% CurrentFilePath='D:\KangDH\Emlab_emach\tools\jmag\Designer\Result\exportFieldData2CSV.m'
 % CurrentFilePath='Z:\01_Codes_Projects\git_fork_emach\tools\jmag\Designer\Result\file.m'
 % % ***** Default Setting
 %% Define Save Path
@@ -45,7 +47,7 @@ function  exportFilePathList=exportFieldData2CSV(app,ResultType,JMAGPJTName,Part
     exportFilePathList=cell(1,1);
     %% **** KeyPoint Designer
     for PJTStudyIndex=1:length(StudyObjCell)
-        curStudyObj=app.GetStudy(PJTStudyIndex-1);
+        curStudyObj=StudyObjCell{PJTStudyIndex};
         if curStudyObj.HasResult
            NumCases =curStudyObj.GetDesignTable().NumCases();
            for CasesIndex=1:1

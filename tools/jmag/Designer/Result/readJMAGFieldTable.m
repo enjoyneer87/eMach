@@ -1,10 +1,12 @@
-function FieldData=readJMAGFieldTable(filePath)
+function [FieldData,rawTable]=readJMAGFieldTable(filePath)
 %% dev
 % filePath=exportFilePath{1};
+
 %%
 opts = detectImportOptions(filePath,'VariableNamesLine',1,'VariableNamingRule','preserve');
 % 파일 경로 설정
 % 데이터를 가져오기
+% preview(filePath,opts)
 filedTable = readtable(filePath, opts);
 
 
@@ -31,6 +33,10 @@ zTable      = filedTable(:, BoolzCol);
 rTable      = filedTable(:, BoolrCol);
 thetaTable      = filedTable(:, BoolthetaCol);
 
+
+rawTable      = filedTable(:, :);
+
+
 FieldData.positionTable       =           positionTable   ;         
 FieldData.AbsTable        =           AbsTable            ; 
 FieldData.xTable          =           xTable              ; 
@@ -40,4 +46,5 @@ FieldData.zTable          =           zTable              ;
 FieldData.rTable          =           rTable              ; 
 FieldData.yTable          =           yTable              ; 
 FieldData.thetaTable      =           thetaTable              ; 
+
 end

@@ -1,20 +1,25 @@
 geomApp = app.CreateGeometryEditor();
 
+Numports=getPCRDPPortNumber
+if Numports==38002
 DXFPath="Z:/Simulation/JEETACLossValid_e10_v24/refModel/e10_JMAG.dxf";
 DXFPath="Z:/Simulation/JEETACLossValid_e10_v24/refModel/e10_JMAGWireTemplate90deg.dxf";
 DXFPath="Z:/Simulation/JEETACLossValid_e10_v24/refModel/e10_SCL_ConductorModel.dxf";
 DXFPath="Z:/Simulation/JEETACLossValid_e10_v24/refModel/e10_REF_ConductorModel.dxf";
 DXFPath="Z:/Simulation/JEETACLossValid_e10_v24/refModel/e10_REF_ConductorModel.dxf";
-
+else
+DXFPath="D:\KangDH\Emlab_emach\mlxperPJT\JEET\From38100/e10_JMAGWireTemplate90deg.dxf";
+end
 geomApp.GetDocument().ExportData(DXFPath);
+hold on
 DXFtool(DXFPath)
 formatterFigure4Paper('double','2x2')
 StepList=[1,44,86,120]
 stepList=StepList;
 %% Abs Table/XTable/YTable
-for caseInd`=1:1
+for caseInd=1:1
     for stepIndex=1:length(stepList)
-        stepData=stepList(stepIndex)
+        stepData=stepList(stepIndex);
         PosTable=FieldData{caseIndex}.positionTable; 
         % figure(1) % Abs
         AbsTable=FieldData{caseIndex}.AbsTable;
