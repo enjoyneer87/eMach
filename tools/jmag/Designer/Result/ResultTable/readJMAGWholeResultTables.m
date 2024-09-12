@@ -17,7 +17,9 @@ function [ResultTableFromCSV,ResultCSVPath]=readJMAGWholeResultTables(filterName
 %% read Per Studies
     for PJTStudyIndex=1:AppNumStudies
         %% 가져오기 옵션을 설정하고 데이터 가져오기
-        opts                =delimitedTextImportOptions("NumVariables", 1500);
+        opts= detectImportOptions(tempCSVPath,"ReadVariableNames",true,"VariableNamesRow",1);
+        numVar=len(opts.VariableOptions);
+        opts                =delimitedTextImportOptions("NumVariables", numVar);
         ResultTableFromCSVPerStudy     =readtable(ResultCSVPath{PJTStudyIndex},opts);
         [ResultCSVDir,StudyName,~]     =fileparts(ResultCSVPath{PJTStudyIndex});
         parsedResultTable5StudyPerStudy=parseJMAGResultTable(ResultTableFromCSVPerStudy);

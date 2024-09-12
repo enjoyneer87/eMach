@@ -1,9 +1,13 @@
 % ref 
 % Result4MDPICheckMotorCADExportToolTemp
-parentPath='D:\KangDH\Thesis\e10\refModel'
+PortNumber=getPCRDPPortNumber
+if PortNumber==38100
+parentPath='F:\KDH\Thesis\JEET'
+JMAGPath='D:\KangDH\Thesis\e10\JMAG'
+elseif PortNumber==38002
+parentPath='Z:\KDH\Thesis\JEET'
+end
 [motFileList,~]=getResultMotMatList(parentPath);
-
-
 %% try Final function 
 filteredTable           =getMCADLabDataFromMotFile(motFileList{1});
 originLabLinkTable      = reNameLabTable2LabLink(filteredTable);
@@ -25,10 +29,115 @@ for csvindex=1:len(CSVList)
 end
 
 %% Respons CaseTable 2 MCADLinkTable (dqTable) Format 
+
+JPJTList=findJPJTFiles(JMAGPath)'
+R1List=JPJTList(contains(JPJTList,'R1'))
+R1PatternDList=R1List(contains(R1List,'PatternD'))
+R1PatternDList=R1PatternDList(~contains(R1PatternDList,'4k'))
+
 app=callJmag
-CurStudyObj=app.GetCurrentStudy
-CurStudyObj.GetName
-sampleDTTable=getJMAGDesingTable(CurStudyObj)
+
+for JPJTIndex=1:len(R1PatternDList)
+    app.Load(R1PatternDList{JPJTIndex})
+    Model=app.GetCurrentModel
+    NumStudies=app.NumStudies;
+    ResultCSVPath=cell(NumStudies,1);
+    for StudyIndex=1:NumStudies     
+        curStudyObj             =Model.GetStudy(StudyIndex-1);
+        curStudyObj.CheckForNewResults;
+        curStudyName            =curStudyObj.GetName;
+        sampleDTTable          =getJMAGDesingTable(curStudyObj);
+        Numcase=height(sampleDTTable);
+        BoolHasResult=repmat(logical(0),Numcase,1);
+        for caseIndex=1:Numcase
+            if curStudyObj.CaseHasResult(caseIndex-1)
+                BoolHasResult(caseIndex)=1;
+            end
+        end
+        if all(BoolHasResult)
+        ResultCSVPath{StudyIndex}=exportJMAGOnlyHasAllCaseTables(app,curStudyObj,'JEET');
+        end
+    end
+    ResultCSVPath=removeEmptyCells(ResultCSVPath);
+    if ~isempty(ResultCSVPath)
+    R1PatternDList{JPJTIndex,3}=ResultCSVPath;
+    R1PatternDList{JPJTIndex,4}=sampleDTTable;
+    % R1PatternDList{JPJTIndex,2}=TotalTable;
+    R1PatternDList{JPJTIndex,2}=app.GetProjectFolderPath;
+    end
+end
+%% Get Result
+%% load JMAG response table
+filterName={'PatternD','R1','WirePeriodic_Load'};
+
+tempCSVPath=R1PatternDList{1,3}{1}
+opts= detectImportOptions(tempCSVPath,"ReadVariableNames",true,"VariableNamesRow",1)
+preview(tempCSVPath,opts)
+[parsedMSResultTableFromCSV,ResultCSVPath]=readJMAGWholeResultTables(FqfilterName);
+
+CSVList=findCSVFiles(pwd)'
+CSVList=CSVList(contains(CSVList,'Map'))
+
+for csvindex=1:len(CSVList)
+    CSVList{csvindex,2}=readtable(CSVList{csvindex},opts);
+    CSVList{csvindex,2}=removevars(CSVList{csvindex,2},'Var1');
+end
+%%
+
+
+for AppStudyIndex=1:AppNumStudies
+    load(MatFileList{AppStudyIndex})
+    if contains(MatFileList{AppStudyIndex},'SCL')
+    figure(2)
+    else
+    figure(1)
+    end
+    %%
+    tempJouleLossTableCell=parsedResultTable5StudyPerStudy.("JouleLoss:W");
+    for caseIndex=1:height(tempJouleLossTableCell)
+        table2Plot=tempJouleLossTableCell{caseIndex};
+        tempJouleLossTable{caseIndex}        =table2Plot.Total;
+        speedList=zeros(1,len(tempJouleLossTableCell));
+        speedNameList=cell(1,len(tempJouleLossTableCell));
+
+        JouleAvgTablCell4Case=cell(len(speedList),2);
+        speedList(caseIndex)=freqE2rpm(1/seconds(table2Plot.Time(121)),4);
+        speedNameList{1,caseIndex}=['case',num2str(caseIndex),'speed',num2str(speedNameList)];
+        JouleAvgTablCell4Case{caseIndex,2}=mean(table2Plot(end-120:end,'Total').Variables);
+        JouleAvgTablCell4Case{caseIndex,1}=table2Plot(end-120:end,'Total').Variables;
+        
+    end
+    JouleAvgTablCell4CaseTable=cell2table(JouleAvgTablCell4Case);
+    JouleAvgTablCell4CaseTable.Properties.VariableNames={'JouleTable','JouleAvg'};
+    meanACLoss=[JouleAvgTablCell4Case{:,2}];
+    plot(speedList,meanACLoss,'DisplayName',PatternList{AppStudyIndex});
+    % JouleAvgTablCell4CaseTable.Properties.RowNames=speedList;
+    % save([defaultJEETPath,MatFileName,num2str(AppStudyIndex),'.mat'],"JouleAvgTablCell4CaseTable")
+end
+%%
+% select conductor name
+
+% 
+% SlotList=contains(jouleLosslist,'Slot','IgnoreCase',true)
+% Conductor1=contains(jouleLosslist,'Wire1','IgnoreCase',true)
+% Conductor3=contains(jouleLosslist,'Wire2','IgnoreCase',true)
+% Conductor2=contains(jouleLosslist,'Wire2','IgnoreCase',true)
+% Conductor4=contains(jouleLosslist,'Wire2','IgnoreCase',true)
+
+
+
+%
+LossU1Var=jouleDataStruct(1).dataTable(:,Slot1U1List).Variables+jouleDataStruct(1).dataTable(:,Slot2U1List).Variables
+SumLossU1Var=LossU1Var(:,1)+LossU1Var(:,2)
+LossU2Var=jouleDataStruct(1).dataTable(:,Slot1U2List).Variables+jouleDataStruct(1).dataTable(:,Slot2U2List).Variables
+SumLossU2Var=LossU2Var(:,1)+LossU2Var(:,2)
+
+ACLossJMAG=P_rect1DData
+ACLossJMAG.DisplayName='ACLoss'
+ACLossOnlyU1=SumLossU1Var(361:1:481,:)-DCLossWaveU1(361:1:481,:)
+ACLossOnlyU2=SumLossU2Var(361:1:481,:)-DCLossWaveU2(361:1:481,:)
+
+%% 
 
 MCADLinkvar=MCADLinkTable.Properties.VariableNames
 DTvarName=sampleDTTable.Properties.VariableNames
@@ -53,39 +162,97 @@ JMAGLinkTable.Is=JMAGLinkTable.Is*sqrt(2)
 %% Make LabLinkTable 
 JMAGLinkTable=addvars(JMAGLinkTable,zeros(height(JMAGLinkTable),1),'NewVariableNames','TotalACLoss');
 for csvindex=1:len(CSVList)
-    JMAGLinkTable.TotalACLoss=CSVList{csvindex,2}.Variables';
+    JMAGLinkTable.TotalACLoss=CSVList{csvindex,2}.Variables'/1000;
 
     CSVList{csvindex,3}=JMAGLinkTable;
 end
 
-for csvindex=1:len(CSVList)
-plotMultipleInterpSatuMapSubplots(@plotFitResult, CSVList{csvindex,3});
-hold on
-end
-%% 3D AC Loss Surface
-n=[1 2 3]
-mergeFigures(4.*(n-1)+1)
-n=[4 5 6]
-mergeFigures(4.*(n-1)+1)
-
-%% Plot Per Speed
+% def Speed
 CSVListsTable=cell2table(CSVList);
-
 CSVListsTable.Properties.VariableNames={'CSV','ResTable','dqTable'}
-
 REFTable=CSVListsTable(1:3,:)
 SpeedList=extractBetween(REFTable.CSV,'Load','kMap')
 speed=convertCharCell2Numeric(SpeedList);
 REFTable=addvars(REFTable,speed,'NewVariableNames','speedK')
 REFTable=sortrows(REFTable,'speedK')
-
 SCLTable=CSVListsTable(4:6,:)
 SpeedList=extractBetween(SCLTable.CSV,'Load','kMap')
 speed=convertCharCell2Numeric(SpeedList);
 SCLTable=addvars(SCLTable,speed,'NewVariableNames','speedK')
 SCLTable=sortrows(SCLTable,'speedK')
+%
+% temp=SCLTable.dqTable{2}
+% SCLTable.dqTable{2}=REFTable.dqTable{2};
+% REFTable.dqTable{2}=temp
+
+close all
+
+for csvindex=1:height(SCLTable)
+plotMultipleInterpSatuMapSubplots(@plotFitResult,REFTable.dqTable{csvindex});
+n=csvindex;
+close(2*(n):2*(n+1))
+plotMultipleInterpSatuMapSubplots(@plotFitResult,SCLTable.dqTable{csvindex});
+close(2*(n)+1 : 2*(n+1)+1)
+hold on
+end
+
+colorList={'k','r','b'}
+markerList={'o','^'}
+group = ceil((1:6) / 3); % 3개씩 그룹으로 할당
+
+for csvindex=1:6
+    cf=figure(csvindex)
+    divided =csvindex
+    divisor =3
+    ax=cf.Children;
+    remainder=mod(divided,divisor);
+    ModelIndex=group(csvindex);
+
+    if remainder==0
+    remainder=divisor;
+    end
+    legend([num2str(SCLTable.speedK(remainder)),'k','[RPM]'])
+
+    % 모든 figure 객체 중에서 Marker 속성이 있는 객체를 찾음
+    markerObjects = findobj(ax, '-property', 'Marker');
+
+    % Marker 속성이 비어있지 않은 객체만 필터링
+    markerObjects         = markerObjects(~cellfun(@isempty, get(markerObjects, 'Marker')));
+    markerObjects(1).Marker=markerList{ModelIndex}
+    markerObjects(1).MarkerFaceColor=colorList{remainder};
+    markerObjects(1).MarkerSize=12
+    markerObjects(1).MarkerEdgeColor=colorList{remainder};
+end
 
 
+n=1
+figlist=[n:n+2]
+mergeFigures(figlist)
+n=4
+figlist=[n:n+2]
+mergeFigures(figlist)
+
+mergeFigures([1 4])
+mergeFigures([2 5])
+mergeFigures([3 6])
+for figIndex=7:11
+gcf=figure(figIndex)
+gcf.Children.ZLim=[0 7*10]
+gcf.Children.ZLabel.String='AC Loss[kW]'
+% close([1:6])
+end
+
+savefig(figure(7),'TSFEA_REF_TotalACFitSurf')
+savefig(figure(8),'TSFEA_SCL_TotalACFitSurf')
+
+
+%% 3D AC Loss Surface
+
+
+
+
+
+%% Plot Per Speed
 for SpeedIndex=1:3    
     [ACFitResult, tempGof, tempSingleDataSet] = createInterpDataSetofStrWithFieldName(REFTable.dqTable{SpeedIndex},'TotalACLoss');
     [id,iq]=pkgamma2dq(460,43.3);

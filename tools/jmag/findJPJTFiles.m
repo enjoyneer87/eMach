@@ -18,7 +18,7 @@ function JPJTFiles = findJPJTFiles(directory)
             
             % 하위 디렉토리에 대해 재귀적으로 MOT 파일을 찾음
             subDir = fullfile(directory, file.name);
-            subMOTFiles = findMOTFiles(subDir);
+            subMOTFiles = findJPJTFiles(subDir);
             
             % 하위 디렉토리에서 찾은 MOT 파일들을 현재 리스트에 추가
             JPJTFiles = [JPJTFiles, subMOTFiles];
