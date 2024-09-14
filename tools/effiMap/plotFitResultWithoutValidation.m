@@ -12,6 +12,7 @@ function plotFitResultWithoutValidation(fitresult, DataSet,plotDatatype)
 
     if nargin>2
         switch plotDatatype
+            %% case 0
             case 0
             % figure(1)
             a = plot(fitresult, [xData, yData], zData, 'XLim', xlim, 'YLim', ylim);
@@ -24,6 +25,7 @@ function plotFitResultWithoutValidation(fitresult, DataSet,plotDatatype)
             title([replaceUnderscoresWithSpace(varName)]);
             grid on
             formatter_sci
+            %% case 1
             case 1
             % 잔차 플로팅.
             % figure(2)
@@ -40,6 +42,7 @@ function plotFitResultWithoutValidation(fitresult, DataSet,plotDatatype)
             % title([replaceUnderscoresWithSpace(varName), newline,'RMSE=',num2str(statics.rmse)]);
             grid on
             formatter_sci
+            %% case 2
             case 2
             % 등고선 플롯을 만드십시오.
             % figure(3)
