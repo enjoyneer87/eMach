@@ -1,4 +1,4 @@
-function Jeddy = calcJnodeEddyFromMVP(A_fieldFP, timeStep,sigma)
+function Jeddy = calcJnodeEddyFromMVP(MVP, timeStep,sigma)
     
     %% dev
     % calculateTimeDerivative - 전기 전도도와 벡터 포텐셜의 시간 변화율 계산
@@ -20,8 +20,9 @@ function Jeddy = calcJnodeEddyFromMVP(A_fieldFP, timeStep,sigma)
     sigma=sigmaJMAG;
     end
     % 벡터 포텐셜의 시간에 따른 변화율 (dA/dt)
-    dA_dt = gradient(A_fieldFP,timeStep);
-    
+    % [d,dA_dt] = gradient(MVP,timeStep);
+    % diffMVP=diff(MVP)
+    dA_dt= diff(MVP)./timeStep;
     %%
 
     % σ * (dA/dt) 계산

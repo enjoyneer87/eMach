@@ -125,9 +125,9 @@ quadmesh(pdeQuadElements, x, y);
 centerAllFigures
 
 ax=gca
-ax.DataAspectRatio=[1 1 0.1]
+ax.DataAspectRatio=[1 1 0.05]
 
-ax.XLim=[ROD ROD+12]
-ax.YLim=[-2 12]
+ax.XLim=[60 100]
+ax.YLim=[0 70]
 
 formatterFigure4Paper('double','2x2')

@@ -1,5 +1,7 @@
-function fft_1d_gif(file_name,data,p)
-load(file_name);
+function fft_1d_gif(data,p,file_name)
+if nargin>2
+    load(file_name);
+end
 
 for i=1:height(data)
     clf;
@@ -24,7 +26,7 @@ for i=1:height(data)
     ylabel('B_{rad}[T]','FontName','Times New Roman', 'FontSize',12,'FontWeight','B');
     box on
     title('Spatial FFT Br')
-    text(80,0.5,strcat("Time","[sec]-",num2str(time(i)) ));
+    % text(80,0.5,strcat("Time","[sec]-",num2str(time(i)) ));
     drawnow limitrate
     getframe(gcf); 
 end

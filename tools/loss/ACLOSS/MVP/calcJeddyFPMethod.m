@@ -39,7 +39,9 @@ function WireStruct=calcJeddyFPMethod(DataStruct,WireStruct,endtime)
     
     %% Jelec
     for SlotIndex=1:length(WireStruct)
-        [WireStruct(SlotIndex).JeleTimeTable,WireStruct(SlotIndex).JnodeTable] = calcJeleFromMVP(WireStruct(SlotIndex).MVPTimeTable,WireStruct(SlotIndex).elementCentersTable,endtime/120);
+        sizeMVP=size(WireStruct(SlotIndex).MVPTimeTable);
+        onePeriodSteps=sizeMVP(1)/2;
+        [WireStruct(SlotIndex).JeleTimeTable,WireStruct(SlotIndex).JnodeTable] = calcJeleFromMVP(WireStruct(SlotIndex).MVPTimeTable,WireStruct(SlotIndex).elementCentersTable,endtime/onePeriodSteps);
     end
 
 end

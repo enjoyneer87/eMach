@@ -8,7 +8,7 @@ function [x0, y0] = triangulatePosition(x, y, d)
     y0_guess = mean(y);
 
     % 비선형 방정식을 푸는 함수
-    options = optimoptions('fsolve', 'Display', 'iter'); % 옵션 설정
+    options = optimoptions('fsolve', 'Display', 'iter','MaxFunctionEvaluations',10000,'MaxIterations',5000); % 옵션 설정
     result = fsolve(@(vars) distanceEquations(vars, x, y, d), [x0_guess, y0_guess], options);
 
     % 결과 반환

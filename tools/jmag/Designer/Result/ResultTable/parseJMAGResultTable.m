@@ -2,11 +2,12 @@ function TablesCellCaseRowDataCol = parseJMAGResultTable(resultTable)
 %% dev
 
     % resultTable=resultTableCell{15,1}
+    % resultTable=ResultTableFromCSVPerStudy
     % TablesCellCaseRowDataCol
     % resultTable=probeTableCell{CSVIndex,1}
     % resultTable=tempRawTable;
     % resultTable=ResultTableFromCSVPerStudy
-    varName='Var1';
+    varName='case Range';
 
 %% `resultTable`에서 `varName` 열에서 'case range' 문자열을 검색합니다.
     caseRangeLineIdxList = find(contains(resultTable.(varName), 'case range','IgnoreCase',true));
@@ -16,6 +17,7 @@ function TablesCellCaseRowDataCol = parseJMAGResultTable(resultTable)
     caseLineIdx  =resultTable(FistIdx,:);
     CaseList     =removeEmptyCells(caseLineIdx.Variables);
     CaseList     =CaseList(2:end);
+    CaseList     =cellfun(@(x) strrep(x,'"',''),CaseList,'UniformOutput',false);
     CaseList     =cellfun(@(x) str2double(x),CaseList,'UniformOutput',false);
     Numcases     =length(CaseList);
     for caseIndex=1:length(CaseList)
@@ -69,7 +71,7 @@ function TablesCellCaseRowDataCol = parseJMAGResultTable(resultTable)
         else
             endIdx = height(resultTable)+endIndexShiftLine+1; % 마지막 'case range' 이후로는 테이블의 마지막 행까지 선택
         end
-    
+   
         emptyVars = varfun(@(x) all(cellfun(@isempty, x)), resultTable(curDataGraphNameLineIndex,:) , 'OutputFormat', 'uniform');
         emptyVarIndices = find(emptyVars);   % 비어있는 변수의 인덱스 찾기
         if ~isempty(emptyVarIndices)
@@ -82,10 +84,11 @@ function TablesCellCaseRowDataCol = parseJMAGResultTable(resultTable)
         %% case-  비어있는 변수를 기준으로 테이블 쪼개기
         for caseIndex = 1:length(emptyVarIndices)
             curColIdx                  =emptyVarIndices(caseIndex);
-            uniqueColNames             =makeUniqueColNames(resultTable(curDataGraphNameLineIndex, prevColIdx:(curColIdx-1)).Variables);
+            uniqueColNamesParts             =makeUniqueColNames(resultTable(curDataGraphNameLineIndex, prevColIdx:(curColIdx-1)).Variables);
+            uniqueColNamesParts     =cellfun(@(x) strrep(x,'"',''),uniqueColNamesParts,'UniformOutput',false);
             GraphTableByCaseByData     =resultTable(curDataStartRowIdx:endIdx, prevColIdx:(curColIdx-1));        
-            uniqueColNames = matlab.lang.makeUniqueStrings(matlab.lang.makeValidName(uniqueColNames), {}, namelengthmax);
-            GraphTableByCaseByData.Properties.VariableNames      =uniqueColNames;
+            uniqueColNamesParts = matlab.lang.makeUniqueStrings(matlab.lang.makeValidName(uniqueColNamesParts), {}, namelengthmax);
+            GraphTableByCaseByData.Properties.VariableNames      =uniqueColNamesParts;
             numericTable  = convertCharCellTable2Numeric(GraphTableByCaseByData); 
             if ~isempty(numericTable.Variables)&~any(all(isnan(numericTable.Variables)))
                  if any(contains(numericTable.Properties.VariableNames,'Freq','IgnoreCase',true))

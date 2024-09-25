@@ -10,11 +10,12 @@ function plotCurrentDensityContour(elementCenters, currentDensity)
 
     % 입력이 2D인 경우만 다루는 예시
 
-    % 
+    % dev
     % elementCenters=elementPos
     % currentDensity=EddyLoss
     % elementCenters=WireStruct(SlotIndex).NodeTable.nodeCoords
-    currentDensity=WireStruct(SlotIndex).JnodeTable
+    % currentDensity=WireStruct(SlotIndex).JnodeTable
+    
     if size(elementCenters, 2) ~= 2
         error('현재 2D 좌표계만 지원합니다.');
     end
@@ -27,8 +28,10 @@ function plotCurrentDensityContour(elementCenters, currentDensity)
     tri = delaunay(x, y);
 
     % 전류 밀도 컨투어 플롯
-    figure;
-    trisurf(tri, x, y, currentDensity(1,:).Variables', 'EdgeColor', 'none'); % 삼각형 요소 그리기
+    % figure;
+    trisurf(tri, x, y, currentDensity', 'EdgeColor', 'none'); % 삼각형 요소 그리기
+
+    % trisurf(tri, x, y, currentDensity(1,:).Variables', 'EdgeColor', 'none'); % 삼각형 요소 그리기
     view(2);  % 2D로 보기
     colorbar; % 컬러바 추가
     colormap jet;  % 컬러맵 설정

@@ -1,7 +1,8 @@
 function ResultCSVPath=exportJMAGAllCaseTables(app,ProjName)
 %%dev
     % CurrentFilePath ='Z:\01_Codes_Projects\git_fork_emach\tools\jmag\Designer\Result\ResultTable\exportJMAGAllCaseTables.m'
-% 
+% CurrentFilePath='D:\KangDH\Emlab_emach\tools\jmag\Designer\Result\ResultTable\exportJMAGAllCaseTables.m'
+    % 
     %%  Get Grph In PJT
     GraphDMObj      =app.GetDataManager();
     appNumStudies=app.NumStudies;

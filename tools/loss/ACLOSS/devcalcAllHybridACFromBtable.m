@@ -3,74 +3,47 @@ function [TotalACLossPerMethod,DisplaynameList]=devcalcAllHybridACFromBtable(spe
 % RTargetTable  =MSRTargetTable{ModelNStudyIndex}(1,:)
 % thetaTargetTable=MSthetaTargetTable{ModelNStudyIndex}(1,:)
 
+DisplaynameList           =defHYBProxNameList();
+DisplaynameList           =DisplaynameList(1:7);
 
-DisplaynameList={'P_rect'...      % ,'P_Instant 1D'      ...      
-,'P_rect 1D G1'       ... % ,'P rect 1D G2'        ...% ,'P_rect nonGamma'... % ,'P_rect MCAD 1D'    ...
-,'P_rect 2D G1'};       
-% ,'P_rect 2D G2'};        
+PosLayName             =RTargetTable.Properties.VariableNames;
+PosLayName           =cellfun(@(x) strrep(x,'_(R)',''),PosLayName,'UniformOutput',false);
+DisplaynameList           =cellfun(@(x) strrep(x,'_',' '),DisplaynameList,'UniformOutput',false);
 
-PosLayName=RTargetTable.Properties.VariableNames
-PosLayName=cellfun(@(x) strrep(x,'_(R)',''),PosLayName,'UniformOutput',false)
-DisplaynameList=cellfun(@(x) strrep(x,'_',' '),DisplaynameList,'UniformOutput',false)
-
-aclossPerLayer=cell(width(PosLayName),length(DisplaynameList));
+aclossPerLayer           =cell(width(PosLayName),length(DisplaynameList));
 % gr=cell(1,width(DisplaynameList));
+%% calc Per Layer B
 for LayerIndex=1:width(PosLayName)
-    Bfield4LayerLeft.Br                 =RTargetTable{1,LayerIndex}{:}(end-120:end,:).Variables;
-    Bfield4LayerLeft.Bthetam            =thetaTargetTable{1,LayerIndex}{:}(end-120:end,:).Variables;
-    [P_rect,...
-     P_1DInstant,...
-     P_1DrectG1,...
-     P1DrectG2,...
-     P_rect_nonGamma,...
-     P_rectMCAD1D,...
-     P_rec2DG1,...
-     P_rec2DG2]             = calcHybridACLossWave('rectangular', refDim, rpm2freqE(speed,pole/2),Bfield4LayerLeft);
-    
-    aclossPerLayer{LayerIndex,1}=P_rect  *2           ;  
-    aclossPerLayer{LayerIndex,2}=P_1DrectG1*2        ;         
-    aclossPerLayer{LayerIndex,3}=P_rec2DG1*2           ; 
-    aclossPerLayer{LayerIndex,4}=P1DrectG2            ;     
-    aclossPerLayer{LayerIndex,5}=P_rec2DG2            ;  
-    % aclossPerLayer{LayerIndex,4}=1000*P_1DInstant          ;         
-   
-    % aclossPerLayer{LayerIndex,6}=1000*P_rect_nonGamma      ;             
-    % aclossPerLayer{LayerIndex,7}=P_rectMCAD1D         ;            
-    
-    % TotalArrayOfEachPositionNLayer=1000.*[P_rect,...
-    %                                     P_1DInstant,...
-    %                                     P_1DrectG1,...
-    %                                     P1DrectG2,...
-    %                                     P_rect_nonGamma,...
-    %                                     P_rectMCAD1D,...
-    %                                     P_rec2DG1,...
-    %                                     P_rec2DG2];
-    % for MethodIndex=1:width(aclossPerLayer)
-    %     figure(MethodIndex)
-    %     if ~isempty(aclossPerLayer{LayerIndex,MethodIndex})
-    %     gr{MethodIndex}=plotTransientTable(aclossPerLayer{LayerIndex,MethodIndex});
-    %     gr{MethodIndex}{1}.DisplayName=[DisplaynameList{MethodIndex},PosLayName{LayerIndex}];
-    %     end
-    %     hold on
-    % end
+    Bfield.Br                 =RTargetTable{1,LayerIndex}{:}(end-120:end,:).Variables;
+    Bfield.Bthetam            =thetaTargetTable{1,LayerIndex}{:}(end-120:end,:).Variables;
+    %% calc Function
+   [P1DG1P,P1DG2P,P2DG1P,P2DG2P,P2DG1,P2DG2,PrectP]  = calcHybridACLossWave('rectangular', refDim, rpm2freqE(speed,pole/2),Bfield);
+    %% Freq2 Time 
+    freq2TimeFactor=2;
+    aclossPerLayer{LayerIndex,1}=P1DG1P*freq2TimeFactor                            ;  
+    aclossPerLayer{LayerIndex,2}=P1DG2P                           ; 
+    aclossPerLayer{LayerIndex,3}=P2DG1P*freq2TimeFactor                            ;  
+    aclossPerLayer{LayerIndex,4}=P2DG2P                           ; 
+    aclossPerLayer{LayerIndex,5}=P2DG1*freq2TimeFactor           ;
+    aclossPerLayer{LayerIndex,6}=P2DG2                           ;     
+    aclossPerLayer{LayerIndex,7}=PrectP*freq2TimeFactor           ;  
 end
-
-    totalACgrph         =cell(1,width(aclossPerLayer));
-    TotalACLossPerMethod=cell(width(aclossPerLayer),1);
-
-for MethodIndex=1:width(aclossPerLayer)
+    % totalACgrph                      =cell(1,width(aclossPerLayer));
+    TotalACLossPerMethod           =cell(width(aclossPerLayer),1);
+%% To TotalACPerMethod Cell    
+for MethodIndex =1:width(aclossPerLayer)
     TotalACLossPerMethod{MethodIndex,1}=zeros(121,1);
     for LayerIndex=1:width(RTargetTable)
         if ~isempty(aclossPerLayer{LayerIndex,MethodIndex})
-           TotalACLossPerMethod{MethodIndex,1}=TotalACLossPerMethod{MethodIndex,1}+aclossPerLayer{LayerIndex,MethodIndex};
+           TotalACLossPerMethod{MethodIndex,1}     =TotalACLossPerMethod{MethodIndex,1}+aclossPerLayer{LayerIndex,MethodIndex};
         end
     end
+end
      % figure(MethodIndex)
      % totalACgrph{MethodIndex}=plotTransientTable(TotalACLossPerMethod{MethodIndex,1});
      % totalACgrph{MethodIndex}{1}.DisplayName=['Total',DisplaynameList{MethodIndex},'@',num2str(speed)];
      % hold on
 end
-
 % totalJouleGrph=cell(1,width(aclossPerLayer));
 % %% Including DC
 % for NewIndex=1:width(aclossPerLayer)
@@ -94,5 +67,3 @@ end
 %     formatterFigure4Paper('Double','2x2');
 %     ax=convertFigXAxisToElecDeg(0);
 % end
-
-end

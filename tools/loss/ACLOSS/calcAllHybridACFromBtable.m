@@ -1,8 +1,8 @@
-function [TotalACLossPerMethod,TotalDCAC,DisplaynameList,Pavg]=calcAllHybridACFromBtable(speed,pole,refDim,RTargetTable,thetaTargetTable,DCLossWaveformByIwaveVph)
+% function [TotalACLossPerMethod,TotalDCAC,DisplaynameList,Pavg]=calcAllHybridACFromBtable(speed,pole,refDim,RTargetTable,thetaTargetTable,DCLossWaveformByIwaveVph)
 %% dev
 % RTargetTable  =MSRTargetTable{ModelNStudyIndex}(1,:)
 % thetaTargetTable=MSthetaTargetTable{ModelNStudyIndex}(1,:)
-
+% RTargetTable=MSRTargetTable{ModelNStudyIndex}{1,1}
 
 DisplaynameList={'P_rect'...      % ,'P_Instant 1D'      ...      
 ,'P_rect 1D G1'       ... % ,'P rect 1D G2'        ...% ,'P_rect nonGamma'... % ,'P_rect MCAD 1D'    ...
@@ -25,7 +25,7 @@ for LayerIndex=1:width(PosLayName)
      P_rect_nonGamma,...
      P_rectMCAD1D,...
      P_rec2DG1,...
-     P_rec2DG2]             = calcHybridACLossWave('rectangular', refDim, rpm2freqE(speed,pole/2),Bfield4LayerLeft);
+     P_rec2DG2]                         = calcHybridACLossWave('rectangular', refDim, rpm2freqE(speed,pole/2),Bfield4LayerLeft);
     
     aclossPerLayer{LayerIndex,1}=1000*P_rect               ;     
     % aclossPerLayer{LayerIndex,2}=1000*P_1DInstant          ;         

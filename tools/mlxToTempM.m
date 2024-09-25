@@ -12,7 +12,7 @@ function mlxToTempM(folderPath)
         % 원본 .mlx 파일 이름
         mlxFileName = mlxFiles(k).name;
         % 새 .m 파일 이름 생성 ('temp' 접두어 추가)
-        mFileName = [mlxFileName(1:end-4), '.m'];
+        mFileName = [mlxFileName(1:end-4),'FromMlx', '.m'];
         
         % .mlx 파일을 .m 파일로 변환
         % MATLAB R2019b 이상에서 지원하는 matlab.internal.liveeditor.openAndConvert 함수 사용

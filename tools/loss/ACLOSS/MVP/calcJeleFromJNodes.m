@@ -21,7 +21,7 @@ function JeleTimeTable = calcJeleFromJNodes(elementCentersTable, JnodeTable)
     NodeIDs=cell2mat(NodeIDs)';
     % 각 요소에 대해 해당 요소에 속하는 노드의 전류 밀도를 평균내서 계산
     for eleIndex = 1:numElements
-        elementNodes = elementConnectivity(eleIndex, :);  % 요소의 노드 인덱스
+        elementNodes = elementConnectivity{eleIndex, :};  % 요소의 노드 인덱스
         matchingIndices=findMatchingRow(NodeIDs,elementNodes);
         elementNodeDensities = JnodeTable(:,matchingIndices).Variables;  % 해당 요소 노드의 전류 밀도
         elementCurrentDensity(:,eleIndex) = mean(elementNodeDensities,2);  % 요소별 전류 밀도는 노드의 전류 밀도의 평균값

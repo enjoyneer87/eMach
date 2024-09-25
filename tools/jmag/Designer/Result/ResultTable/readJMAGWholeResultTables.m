@@ -14,13 +14,17 @@ function [ResultTableFromCSV,ResultCSVPath]=readJMAGWholeResultTables(filterName
     ResultCSVPath=CSVInGitPath(contains(CSVInGitPath,filterName,"IgnoreCase",true));
     end
     AppNumStudies=length(ResultCSVPath);
+    tempCSVPath=ResultCSVPath{1};
 %% read Per Studies
     for PJTStudyIndex=1:AppNumStudies
         %% 가져오기 옵션을 설정하고 데이터 가져오기
         opts= detectImportOptions(tempCSVPath,"ReadVariableNames",true,"VariableNamesRow",1);
         numVar=len(opts.VariableOptions);
-        opts                =delimitedTextImportOptions("NumVariables", numVar);
+        opts                =delimitedTextImportOptions("NumVariables", 1);
         ResultTableFromCSVPerStudy     =readtable(ResultCSVPath{PJTStudyIndex},opts);
+        ResultTableFromCSVPerStudy.Properties.VariableNames{1}='case Range';
+        varNames=ResultTableFromCSVPerStudy.Properties.VariableNames;
+        ResultTableFromCSVPerStudy.Properties.VariableNames= cellfun(@(x) strrep(x,'Extra',''), varNames,'UniformOutput',false);
         [ResultCSVDir,StudyName,~]     =fileparts(ResultCSVPath{PJTStudyIndex});
         parsedResultTable5StudyPerStudy=parseJMAGResultTable(ResultTableFromCSVPerStudy);
         parsedResultTable5StudyPerStudy.Properties.Description=StudyName;

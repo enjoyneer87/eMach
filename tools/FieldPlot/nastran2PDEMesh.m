@@ -1,4 +1,4 @@
-function [model,pdeTriElements,pdeNodes,pdeQuadElements]  = nastran2PDEMesh(csvFile,Dim)
+function [MeshObj,model,pdeTriElements,pdeNodes,pdeQuadElements]  = nastran2PDEMesh(csvFile,Dim)
     % csvFile: 메쉬 데이터가 포함된 CSV 파일 경로
     % csvFile=MPToolCSVFilePath
     % CSV 파일 읽기
@@ -127,4 +127,10 @@ function [model,pdeTriElements,pdeNodes,pdeQuadElements]  = nastran2PDEMesh(csvF
     % axis equal;
     % view(3);
 
+    MeshObj.model         =model;
+    MeshObj.pdeTriElements=pdeTriElements;
+    MeshObj.pdeNodes      =pdeNodes;
+    if ~isempty(pdeQuadElements)
+    MeshObj.pdeQuadElements=pdeQuadElements;
+    end
 end

@@ -3,7 +3,10 @@ load('REFTableMapPerSpeed.mat');
 CSVList=[REFTable;SCLTable]
 CSVList=table2cell(CSVList)
 close all
-
+Kr=2
+load('Rdcactive.mat')
+RdcSCL=RdcREF./Kr.^2
+RdcSCLM=RdcSCL;
 for csvindex=1:height(REFTable)
     REFTable.dqTable{csvindex}.TotalDCLoss   =3*(REFTable.dqTable{csvindex}.Is./sqrt(2)).^2*RdcREF/1000;
     REFTable.dqTable{csvindex}.TotalOnlyLoss =REFTable.dqTable{csvindex}.TotalACLoss -REFTable.dqTable{csvindex}.TotalDCLoss;
@@ -24,28 +27,28 @@ for LossIndex=1:3
     close all
     devSurfVaryLoss_v1
     %%Temporal Save 2 Fig File
-    gcf=figure(len(CSVList)+1)
-    markerObjects = findobj(gcf, 'Type', 'Axes');
-    curZlim=markerObjects.ZLim
-    markerObjects.ZLim=[curZlim(1) 30];
-
-    %% Export Fig
-    for figIndex=len(CSVList)+1:len(CSVList)+2
-        if figIndex==len(CSVList)+1
-            ModelName='REF'
-        elseif figIndex==len(CSVList)+2
-            ModelName='SCL';
-        end
-        grid on
-        savefig(figure(figIndex),[LossTableNames{LossIndex},ModelName,'TSFEA_','FitSurfPerSpeed'])
-    end
-
-
-    for speedIndex=1:len(CSVList)/2
-        curRPM=speedList(speedIndex);
-        speedFigureIndex=len(CSVList)+speedIndex+2;
-        savefig(figure(speedFigureIndex),[LossTableNames{LossIndex},'TSFEA_','FitSurf_',num2str(curRPM),'rpm'])
-    end
+    % gcf=figure(len(CSVList)+1)
+    % markerObjects = findobj(gcf, 'Type', 'Axes');
+    % curZlim=markerObjects.ZLim
+    % markerObjects.ZLim=[curZlim(1) 30];
+    % 
+    % %% Export Fig
+    % for figIndex=len(CSVList)+1:len(CSVList)+2
+    %     if figIndex==len(CSVList)+1
+    %         ModelName='REF'
+    %     elseif figIndex==len(CSVList)+2
+    %         ModelName='SCL';
+    %     end
+    %     grid on
+    %     savefig(figure(figIndex),[LossTableNames{LossIndex},ModelName,'TSFEA_','FitSurfPerSpeed'])
+    % end
+    % 
+    % 
+    % for speedIndex=1:len(CSVList)/2
+    %     curRPM=speedList(speedIndex);
+    %     speedFigureIndex=len(CSVList)+speedIndex+2;
+    %     savefig(figure(speedFigureIndex),[LossTableNames{LossIndex},'TSFEA_','FitSurf_',num2str(curRPM),'rpm'])
+    % end
    
     % %% Export
     % % 렌더러를 painters로 설정 후 export_fig로 EPS 저장

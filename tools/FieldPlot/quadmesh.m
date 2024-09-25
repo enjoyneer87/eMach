@@ -1,5 +1,8 @@
 % QUADMESH 함수
 function hh = quadmesh(quad, x, y, z, varargin)
+
+% quad=pdeQuadElements;
+
 %QUADMESH Quadrilateral mesh plot.
 % QUADMESH(QUAD,X,Y,Z,C)는 M-by-4
 % 면 행렬 QUAD에 정의된 사변형을 메쉬로 표시합니다.  QUAD의 행에는
@@ -27,7 +30,7 @@ ax = newplot(ax);
 if nargin == 3 || (nargin > 4 && ischar(z))
     d = quad([1 2 3 4 1], :);
     if nargin == 3
-        h = plot(ax, x(d), y(d),'Color',[0.8,0.8,0.8]);
+        h = plot(ax,x(d) , y(d),'Color',[0.8,0.8,0.8]);
     else
         h = plot(ax, x(d), y(d), z, varargin{1}, varargin{2:end});
     end
@@ -49,18 +52,26 @@ else
     fc = get(ax, 'color');
 end
 
+
+
+% Combine handles of lines with the same color
+if isequal(get(h1, 'Color'), get(h2, 'Color')) && isequal(get(h2, 'Color'), get(h3, 'Color'))
+    combinedHandle = [h1, h2, h3];  % Combine the lines
+    legend(combinedHandle(1), 'Combined Legend');  % Create a single legend entry
+end
 % h = patch('faces', quad, 'vertices', [x(:) y(:) z(:)], 'facevertexcdata', c(:), ...
 %     'facecolor', fc, 'edgecolor', get(ax, 'defaultsurfacefacecolor'), ...
 %     'facelighting', 'none', 'edgelighting', 'flat', ...
 %     'parent', ax, ...
 %     varargin{start:end});
-
-h = patch('faces', quad, 'vertices', [x(:) y(:) z(:)], ...
-    'facecolor', [0.8 0.8 0.8], ...  % 옅은 회색
-    'edgecolor', [0.8 0.8 0.8], ...  % 옅은 회색
-    'facelighting', 'none', 'edgelighting', 'flat', ...
-    'parent', ax, ...
-    varargin{start:end});
+% 
+% h = patch('faces', quad, 'vertices', [x(:) y(:) z(:)], ...
+%     'facecolor', [0.8 0.8 0.8], ...  % 옅은 회색
+%     'edgecolor', [0.8 0.8 0.8], ...  % 옅은 회색
+%     'facelighting', 'none', 'edgelighting', 'flat', ...
+%     'DisplayName', 'Mesh', ... 
+%     'parent', ax, ...
+%     varargin{start:end});
 
 if ~ishold(ax)
     view(ax, 3);

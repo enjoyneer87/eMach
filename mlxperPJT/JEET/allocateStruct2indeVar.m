@@ -1,0 +1,16 @@
+ztextShiftRatio=tempFigConfig.ztextShiftRatio           ;                
+linePlotSlotIndex=tempFigConfig.linePlotSlotIndex       ;            
+eleInterval=tempFigConfig.eleInterval                   ;
+onePeriodSteps  =tempFigConfig.onePeriodSteps           ;        
+timeShift       =tempFigConfig.timeShift                ;        
+sequenceList    =tempFigConfig.sequenceList             ;        
+timeList        =tempFigConfig.timeList                 ;        
+timeNameList   =tempFigConfig.timeNameList              ;        
+ColorList       =tempFigConfig.ColorList                ;        
+timeColorList   =tempFigConfig.timeColorList            ;        
+timeColorList   =tempFigConfig.timeColorList            ;        
+timeColorList   =tempFigConfig.timeColorList            ;        
+timeList        =tempFigConfig.timeList                 ;        
+lineMarkerList =tempFigConfig.lineMarkerList            ;        
+SlotList       =tempFigConfig.SlotList                  ;        
+SlotFigIndex    =tempFigConfig.SlotFigIndex             ;        

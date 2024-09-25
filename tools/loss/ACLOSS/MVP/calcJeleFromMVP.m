@@ -1,6 +1,7 @@
 function [JeleTimeTable,JnodeTable] = calcJeleFromMVP(MVPTimeTable,elementCentersTable,timeStep)
     % dev
     % timeStep=endtime/120
+    % timeStep=endtime/onePeriodSteps
     % MVPTimeTable=WireStruct(SlotIndex).MVPTimeTable;
     % elementCentersTable=WireStruct(SlotIndex).elementCentersTable
     % Node

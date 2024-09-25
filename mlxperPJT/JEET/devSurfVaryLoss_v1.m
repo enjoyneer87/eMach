@@ -38,11 +38,11 @@ linesize=4
 csvindex=2
 LossIndex=3
 hold on
-scatter3(xData,yData,interpList{csvindex,LossIndex}.REFFIt(xData,yData),'x')
+% scatter3(xData,yData,interpList{csvindex,LossIndex}.REFFIt(xData,yData),'x')
 scatter3(interpList{csvindex,LossIndex}.REFDataSet.xData,interpList{csvindex,LossIndex}.REFDataSet.yData,interpList{csvindex,LossIndex}.REFDataSet.zData)
 hold on
 scatter3(interpList{csvindex,LossIndex}.REFDataSet.xData,interpList{csvindex,LossIndex}.REFDataSet.yData,interpList{csvindex,LossIndex}.REFDataSet.zData)
-
+close all
 % plot(interpList{csvindex,LossIndex}.REFFIt)
 %% DEF SCLREF Ratio
 for csvindex=1:height(REFTable)
@@ -131,4 +131,10 @@ for csvindex=1:height(REFTable)
     formatterFigure4Paper('double','2x2')
 end 
 
+fitresults=[]
+for rpmIndex=1:4
+fitresults=[fitresults;{interpList{rpmIndex,3}.SCLFIt}] 
+end
+
+devFitSurft4D
 %%
