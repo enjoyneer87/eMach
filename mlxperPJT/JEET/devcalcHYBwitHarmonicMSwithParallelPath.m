@@ -5,8 +5,9 @@ clear
 % close all
 figIndex=2
 ProxType='prime'
-SCFactor=2;
-load('BdisSFDTable.mat');
+SCFactor=1;
+% load('BdisSFDTable.mat');
+load('D:\KangDH\Emlab_emach\mlxperPJT\JEET\coeffiSCLBdisSFDTable.mat');
 
 % get Dta
 matFileList=findMatFiles(pwd)';

@@ -6,7 +6,8 @@
 %%
 % JmagResultName='e10MS_ConductorModel_REF_Load~16_';
 JmagResultPath='D:\KangDH\Thesis\e10\JMAG\MSConductorModel\e10MS_ConductorModel.jfiles\e10MS_ConductorModel~6\e10MS_ConductorModel_SCL_Load~13';
-JmagResultName='e10MS_ConductorModel_SCL_Load~13';
+% JmagResultName='e10MS_ConductorModel_SCL_Load~13';
+[~,JmagResultName,~]=fileparts(JmagResultPath)
 JmagResultDIR=extractBefore(JmagResultPath,'.jfiles');
 [JmagPJTDIR,JmagPJTName,~]=fileparts(JmagResultDIR);
 JmagPJTPath=fullfile(JmagPJTDIR,[JmagPJTName,'.jproj']);
@@ -76,5 +77,5 @@ end
 % MPToolCSVFilePath='D:/KangDH/Emlab_emach/mlxperPJT/JEET/From38100/REF_e10_WTPM_PatternD_TS_case28.csv'
 MPToolCSVFilePath='D:/KangDH/Emlab_emach/mlxperPJT/JEET/From38100/MPtools_SCL_e10_WTPM_PatternD_TS_case28.csv'
 % [model, pdeTriElements, pdeNodes, pdeQuadElements, quadElementsId, combinedElements,FieldDataSteps]= nastran2PDEMesh(MPToolCSVFilePath,'mm');
- [SCL_TSMesh,model,pdeTriElements,pdeNodes,pdeQuadElements]  = nastran2PDEMesh(MPToolCSVFilePath,'mm')
+ % [SCL_TSMesh,model,pdeTriElements,pdeNodes,pdeQuadElements]  = nastran2PDEMesh(MPToolCSVFilePath,'mm')
 % save('SCL_TS_18krpm_case28_Mesh.mat','SCL_TSMesh');

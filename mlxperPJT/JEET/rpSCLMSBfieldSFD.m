@@ -36,8 +36,9 @@ tempFigConfig.lineMarkerList={'-','-','-','-'}
 tempFigConfig.SlotList        ={'square','o','^','v','.','diamond','square','o','^','v','.','diamond','square','o','^','v','.','diamond','square','o','^','v','.','diamond'}
 tempFigConfig.SlotFigIndex    =[2*ones(1,4),3*ones(1,4),4*ones(1,4),5*ones(1,4),6*ones(1,4),7*ones(1,4)]
 save('tempFigConfig.mat','tempFigConfig')
-close all
+% close all
 
+        timeList=[1:20:240]
 
 %% plot
 % theta
@@ -49,8 +50,8 @@ slotIndex=12
 clear plotTable
 plotTable=[]
 for slotIndex=1:16
-plotTable=[plotTable; WireTable.TtileTableByElerow{slotIndex}]
-end
+    plotTable=[plotTable; WireTable.TtileTableByElerow{slotIndex}]
+
 
     for timeindex=1:len(timeList)
         TTabvar=WireTable.TtimeTableByEleCol{slotIndex}.Variables;

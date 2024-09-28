@@ -1,11 +1,14 @@
 function interpolatedValue=getdeluayInterpPointValue(px,py,values,DT)
 % % 보간할 포인트 좌표 (예: px, py)
 % %% dev
-% % px=pxr
-% % py=pyr
-% % DT=WireFitTable.DT{slotIndex}
-% % [a,b]=getMinMax(DT.Points(:,1))
-% % [a,b]=getMinMax(DT.Points(:,2))
+% px=pxr
+% py=pyr
+% [a,b]=getMinMax(pxr)
+% [a,b]=getMinMax(pyr)
+% 
+% % % DT=WireFitTable.DT{slotIndex}
+% [a,b]=getMinMax(DT.Points(:,1))
+% [a,b]=getMinMax(DT.Points(:,2))
 % % values=Brvalues
 % queryPoints = [px, py];
 % % 쿼리 포인트가 어느 삼각형에 속하는지 확인
@@ -39,6 +42,8 @@ function interpolatedValue=getdeluayInterpPointValue(px,py,values,DT)
     % 쿼리 포인트가 속하는 삼각형 찾기
     triangleID = pointLocation(DT, queryPoints);
     
+    triangleID=triangleID(~isnan(triangleID));
+    queryPoints=queryPoints(~isnan(triangleID),:);
     % 삼각형 정점 좌표 가져오기
     triVerts = DT.ConnectivityList(triangleID, :);
     

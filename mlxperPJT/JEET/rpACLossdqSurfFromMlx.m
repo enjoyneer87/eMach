@@ -22,7 +22,7 @@ R1PatternDList      =R1List(contains(R1List,'PatternD'));
 R1PatternDList      =R1PatternDList(~contains(R1PatternDList,'4k'));
 
 for projectIndex=1:len(R1PatternDList)
-    app.load(R1PatternDList{projectIndex})
+    app.Load(R1PatternDList{projectIndex})
     curStudyObj     =app.GetCurrentStudy;
     csvPath         =mkJMAGResponseTable(app,curStudyObj,'joule',BoolAllCases,'Total');
 end

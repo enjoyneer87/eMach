@@ -10,17 +10,17 @@ Lactive=150
 
 PartTable=struct2table(PartStruct);
 
-BoolTargetSlot=contains(PartTable.Name,'Slot1/')|contains(PartTable.Name,'Slot2/')...
-    |contains(PartTable.Name,'Slot8/')|contains(PartTable.Name,'Slot7/');
+BoolTargetSlot=contains(PartTable.Name,'Slot1/')|contains(PartTable.Name,'Slot2/')
+    % |contains(PartTable.Name,'Slot8/')|contains(PartTable.Name,'Slot7/');
 Slot1=findMatchingIndexInStruct(PartStruct,'Name','Slot1/');
 Slot2=findMatchingIndexInStruct(PartStruct,'Name','Slot2');
-Slot7=findMatchingIndexInStruct(PartStruct,'Name','Slot7');
-Slot8=findMatchingIndexInStruct(PartStruct,'Name','Slot8');
+% Slot7=findMatchingIndexInStruct(PartStruct,'Name','Slot7');
+% Slot8=findMatchingIndexInStruct(PartStruct,'Name','Slot8');
 
 WireTable=PartTable(BoolTargetSlot,:);
 WireTable = sortrows(WireTable,'Name'); 
 LayerNumber=4
-targetSlotNumber=8
+targetSlotNumber=2
 targetPartIndex=LayerNumber*targetSlotNumber
 
 %% Get Wire Element and Node ID
@@ -68,7 +68,7 @@ save('wireTable_SCL_TS_18krpm_case28.mat',"WireTable")
 
 %% Mesh Export
 % MPToolCSVFilePath='D:/KangDH/Emlab_emach/mlxperPJT/JEET/From38100/REF_e10_WTPM_PatternD_TS_case28.csv'
-MPToolCSVFilePath='D:/KangDH/Emlab_emach/mlxperPJT/JEET/From38100/MPtools_SCL_e10_WTPM_PatternD_TS_case28.csv'
+% MPToolCSVFilePath='D:/KangDH/Emlab_emach/mlxperPJT/JEET/From38100/MPtools_SCL_e10_WTPM_PatternD_TS_case28.csv'
 % [model, pdeTriElements, pdeNodes, pdeQuadElements, quadElementsId, combinedElements,FieldDataSteps]= nastran2PDEMesh(MPToolCSVFilePath,'mm');
  [SCL_TSMesh,model,pdeTriElements,pdeNodes,pdeQuadElements]  = nastran2PDEMesh(MPToolCSVFilePath,'mm')
-save('SCL_TS_18krpm_case28_Mesh.mat','SCL_TSMesh');
+% save('SCL_TS_18krpm_case28_Mesh.mat','SCL_TSMesh');

@@ -6,11 +6,14 @@ for LossIndex=1:3
     for csvindex=1:height(REFTable)
     interpList{csvindex,LossIndex}.REFTable=REFTable.dqTable{csvindex}(:,[1:2,LossIndex+2]);
     interpList{csvindex,LossIndex}.SCLTable=SCLTable.dqTable{csvindex}(:,[1:2,LossIndex+2]);
+    % interp REFTable
     InputTable=REFTable.dqTable{csvindex}(:,[1:2,LossIndex+2]);
     PlotName=InputTable.Properties.VariableNames{3};
     [tempFitResult, tempGof, tempSingleDataSet] = createInterpDataSetofStrWithFieldName(InputTable, PlotName);
+
     interpList{csvindex,LossIndex}.REFFIt     =tempFitResult;
     interpList{csvindex,LossIndex}.REFDataSet =tempSingleDataSet;
+    % interp SCLTable
     InputTable=SCLTable.dqTable{csvindex}(:,[1:2,LossIndex+2])
     PlotName=InputTable.Properties.VariableNames{3};
     [tempFitResult, tempGof, tempSingleDataSet] = createInterpDataSetofStrWithFieldName(InputTable, PlotName);
@@ -19,17 +22,22 @@ for LossIndex=1:3
     interpList{csvindex,LossIndex}.FitName    =PlotName;
     RatioTable=SCLTable.dqTable{csvindex}(:,[1:2,LossIndex+2]);
     RatioTable.Is=RatioTable.Is/2;
+    % RatioTable.Is=RatioTable.Is;
+
     PlotName=InputTable.Properties.VariableNames{3};
+    % interp RatioTable
     [tempFitResult, tempGof, tempSingleDataSet] = createInterpDataSetofStrWithFieldName(RatioTable, PlotName);
     interpList{csvindex,LossIndex}.SCLFIt4Ratio     =tempFitResult;
     interpList{csvindex,LossIndex}.SCLDataSet4Ratio =tempSingleDataSet;
     interpList{csvindex,LossIndex}.FitName          =PlotName;
     end
 end
-
-colorList={'k','r','b','g'}
+N = 5; 
+X = linspace(0,pi*3,1000);
+C = linspecer(N)
+colorList=num2cell(C,2)
 markerList={'o','^'}
-speedList
+% speedList
 modelIndex=1
 close all
 linesize=4
@@ -45,7 +53,7 @@ scatter3(interpList{csvindex,LossIndex}.REFDataSet.xData,interpList{csvindex,Los
 close all
 % plot(interpList{csvindex,LossIndex}.REFFIt)
 %% DEF SCLREF Ratio
-for csvindex=1:height(REFTable)
+for csvindex=1:height(REFTable)-1
     figure(1)
     xData=interpList{csvindex,LossIndex}.SCLDataSet4Ratio.xData;
     yData=interpList{csvindex,LossIndex}.SCLDataSet4Ratio.yData;
@@ -54,7 +62,7 @@ for csvindex=1:height(REFTable)
     xData4Box(:,csvindex)=xData;
     yData4Box(:,csvindex)=yData;
     zData4Box(:,csvindex)=zData;
-    scatter3(xData,yData,SCLREFRatio,'Marker','.','LineWidth',2,'MarkerEdgeColor',colorList{csvindex},'DisplayName',[num2str(speedList(csvindex)),'k[RPM]']);
+    scatter3(xData,yData,SCLREFRatio,'Marker','*','LineWidth',5,'MarkerEdgeColor',colorList{csvindex},'DisplayName',[num2str(speedList(csvindex)),'k[RPM]']);
     hold on
     ft='thinplate';
     % CubicSplineInterpolant
@@ -71,16 +79,27 @@ end
 hold on
 % plot3DBoxPlot(zData4Box', xData', yData')
 boxplot3D(zData4Box, xData, yData)
+for csvindex=1:height(REFTable)-1
+    figure(1)
+    hold on
+    xData=interpList{csvindex,LossIndex}.SCLDataSet4Ratio.xData;
+    yData=interpList{csvindex,LossIndex}.SCLDataSet4Ratio.yData;
+    SCLREFRatio=interpList{csvindex,LossIndex}.SCLFIt4Ratio(xData,yData)./interpList{csvindex,LossIndex}.REFFIt(xData,yData);
+     text(xData,yData*1.01,SCLREFRatio,num2str(csvindex),"FontSize",20,"BackgroundColor",color_code(255))
+
+end
+
 legend
 setlegendBoxShape(4)
-trimLegendToIndex(4)
+trimLegendToIndex(5)
 
-savefig(figure(1),'SClREFRatio_Map.fig')
+% savefig(figure(1),'SClREFRatio_Map.fig')
 close all
 %% Merge Model
 % for LossIndex=1:3
 modelIndex=1
-for csvindex=1:height(REFTable)
+csvindex=4
+for csvindex=1:height(REFTable)-1
     %% REF 
     figure(modelIndex+1)
     plot(interpList{csvindex,LossIndex}.REFFIt)
@@ -110,7 +129,7 @@ end
 % end
 
 %% Per Speed
-for csvindex=1:height(REFTable)
+for csvindex=1:height(REFTable)-1
     %% REF 
     figure(csvindex+modelIndex+3)
     plot(interpList{csvindex,LossIndex}.REFFIt)
@@ -132,9 +151,9 @@ for csvindex=1:height(REFTable)
 end 
 
 fitresults=[]
-for rpmIndex=1:4
+for rpmIndex=1:5
 fitresults=[fitresults;{interpList{rpmIndex,3}.SCLFIt}] 
 end
 
-devFitSurft4D
+% devFitSurft4D
 %%

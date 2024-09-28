@@ -1,6 +1,9 @@
 load('SCLTableMapPerSpeed.mat');
 load('REFTableMapPerSpeed.mat');
-CSVList=[REFTable;SCLTable]
+load('SCLFPFQTableMapPerSpeed.mat');
+% CSVList=[REFTable;SCLTable;SCLFqTable]
+CSVList=[REFTable;SCLTable;SCLFqTable]
+
 CSVList=table2cell(CSVList)
 close all
 Kr=2
@@ -17,11 +20,17 @@ for csvindex=1:height(SCLTable)
     SCLTable.dqTable{csvindex}.TotalOnlyLoss =SCLTable.dqTable{csvindex}.TotalACLoss -SCLTable.dqTable{csvindex}.TotalDCLoss;
 end
 
+for csvindex=1:height(SCLFqTable)
+    SCLFqTable.dqTable{csvindex}.TotalDCLoss   =3*(SCLFqTable.dqTable{csvindex}.Is./sqrt(2)).^2*RdcSCL/1000;
+    SCLFqTable.dqTable{csvindex}.TotalOnlyLoss =SCLFqTable.dqTable{csvindex}.TotalACLoss ;
+end
 
 LossTableNames={'TotalACLoss','TotalDCLoss','TotalOnlyLoss'};
 
 speed=REFTable.speedK;
 speedList=sort(speed,'ascend');
+
+% REFTable=SCLFqTable;
 
 for LossIndex=1:3
     close all

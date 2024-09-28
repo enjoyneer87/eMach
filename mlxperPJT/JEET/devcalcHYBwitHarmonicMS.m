@@ -6,7 +6,7 @@ clear
 figIndex=2
 ProxType='prime'
 SCFactor=2;
-load('BdisSFDTable.mat');
+load('coeffiSCLBdisSFDTable.mat');
 
 % get Dta
 matFileList=findMatFiles(pwd)';
@@ -37,8 +37,8 @@ NumCalcTargetSlots=len(SlotNumberList);
 % D:\KangDH\Emlab_emach\mlxperPJT\JEET\devmkDqTableformat.m
 load('SCLTableMapPerSpeed.mat');
 load('REFTableMapPerSpeed.mat');
-CSVList=[REFTable;SCLTable]
-CSVList=table2cell(CSVList)
+CSVList=[REFTable;SCLTable];
+CSVList=table2cell(CSVList);
 % close all
 Kr=2;
 load('Rdcactive.mat')
@@ -126,6 +126,7 @@ end
 [TSTotalSurf, tempGof, tempSingleDataSet] = createInterpDataSetofStrWithFieldName(TargetTable.dqTable{speedIdx},'TotalOnlyLoss');
 
 axTS=plotSurf2ndPlane(tempSingleDataSet.xData,TSTotalSurf);
+axDq=axTS.Parent
 hold on
 axTS.EdgeColor="none";
 

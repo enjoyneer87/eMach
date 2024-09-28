@@ -39,48 +39,30 @@ if istable(PartStruct)
         % init MVPTimeTable
         fieldTimeTable     =array2table(zeros(NumTimeStep,length(EleIds)));
         fieldTimeTable.Properties.VariableNames=cellstr(EleIdsStr);  
-        if width(FieldPerStep)==4
-            fieldyTimeTable    =fieldTimeTable;
-            fieldxTimeTable    =fieldTimeTable;
-            fieldzTimeTable    =fieldTimeTable;
-            for DataIndex=1:NumTimeStep
+        fieldyTimeTable    =fieldTimeTable;
+        fieldxTimeTable    =fieldTimeTable;
+        fieldzTimeTable    =fieldTimeTable;
+        %% time or Freq
+        for DataIndex=1:NumTimeStep
                 FieldPerStep     =array2table(DataStruct.(MagANameList{DataIndex}));
-                FieldPerStep.Properties.VariableNames={'id','x','y','z'};
-                matchingIndice =findMatchingRow(FieldPerStep.id,EleIds);
-                Fieldx      =FieldPerStep.x(matchingIndice,:);
-                Fieldy      =FieldPerStep.y(matchingIndice,:);
-                Fieldz      =FieldPerStep.z(matchingIndice,:);
-                fieldxTimeTable(DataIndex,:).Variables=Fieldx';
-                fieldyTimeTable(DataIndex,:).Variables=Fieldy';
-                fieldzTimeTable(DataIndex,:).Variables=Fieldz';
-            end
-            PartStruct.fieldxTimeTable{Partindex}=fieldxTimeTable;
-            PartStruct.fieldyTimeTable{Partindex}=fieldyTimeTable;   
-            PartStruct.fieldzTimeTable{Partindex}=fieldzTimeTable;   
-        elseif width(FieldPerStep)==7
-            fieldxRealTimeTable   =fieldTimeTable;
-            fieldyRealTimeTable   =fieldTimeTable;
-            fieldzRealTimeTable   =fieldTimeTable;
-            fieldxImgTimeTable    =fieldTimeTable;
-            fieldyImgTimeTable    =fieldTimeTable;
-            fieldzImgTimeTable    =fieldTimeTable;
-            for DataIndex=1:NumTimeStep
-                FieldPerStep.Properties.VariableNames={'id','xReal','xImg','yReal','yImg','zReal','zImg'};
-                matchingIndice =findMatchingRow(FieldPerStep.id,EleIds);
-                fieldxRealTimeTable(DataIndex,:).Variables=FieldPerStep.xReal(matchingIndice,:)'; 
-                fieldyRealTimeTable(DataIndex,:).Variables=FieldPerStep.yReal(matchingIndice,:)'; 
-                fieldzRealTimeTable(DataIndex,:).Variables=FieldPerStep.zReal(matchingIndice,:)';  
-                fieldxImgTimeTable(DataIndex,:) .Variables=FieldPerStep.xImg(matchingIndice,:)' ;
-                fieldyImgTimeTable(DataIndex,:) .Variables=FieldPerStep.yImg(matchingIndice,:)' ;
-                fieldzImgTimeTable(DataIndex,:) .Variables=FieldPerStep.zImg(matchingIndice,:)' ; 
-            end
-            PartStruct.fieldxRealTimeTable{Partindex}          =fieldxRealTimeTable     ;
-            PartStruct.fieldyRealTimeTable{Partindex}          =fieldyRealTimeTable     ;
-            PartStruct.fieldzRealTimeTable{Partindex}          =fieldzRealTimeTable     ;
-            PartStruct.fieldxImgTimeTable{Partindex}           =fieldxImgTimeTable      ;
-            PartStruct.fieldyImgTimeTable{Partindex}           =fieldyImgTimeTable      ;
-            PartStruct.fieldzImgTimeTable{Partindex}           =fieldzImgTimeTable      ;
+                if width(FieldPerStep)==4
+                    FieldPerStep.Properties.VariableNames={'id','x','y','z'};
+                    matchingIndice =findMatchingRow(FieldPerStep.id,EleIds);
+                    fieldxTimeTable(DataIndex,:).Variables=FieldPerStep.x(matchingIndice,:)';
+                    fieldyTimeTable(DataIndex,:).Variables=FieldPerStep.y(matchingIndice,:)';
+                    fieldzTimeTable(DataIndex,:).Variables=FieldPerStep.z(matchingIndice,:)';
+                elseif width(FieldPerStep)==7
+                    FieldPerStep.Properties.VariableNames={'id','xReal','xImg','yReal','yImg','zReal','zImg'};
+                    matchingIndice =findMatchingRow(FieldPerStep.id,EleIds);
+                    fieldxTimeTable(DataIndex,:).Variables=complex(FieldPerStep.xReal(matchingIndice,:)',FieldPerStep.xImg(matchingIndice,:)'); 
+                    fieldyTimeTable(DataIndex,:).Variables=complex(FieldPerStep.yReal(matchingIndice,:)',FieldPerStep.yImg(matchingIndice,:)'); 
+                    fieldzTimeTable(DataIndex,:).Variables=complex(FieldPerStep.zReal(matchingIndice,:)',FieldPerStep.zImg(matchingIndice,:)'); 
+               end
         end
+        %% 2 PartStruct(Table)
+        PartStruct.fieldxTimeTable{Partindex}=fieldxTimeTable;
+        PartStruct.fieldyTimeTable{Partindex}=fieldyTimeTable;   
+        PartStruct.fieldzTimeTable{Partindex}=fieldzTimeTable;   
     end
 else   
     %% element 2 PartStruct Table

@@ -123,4 +123,4 @@ caseNumber=extractBetween(BdisSFDTable.MatFileName,'Case','_MagB');
 caseNumber=cellfun(@(x) str2double(x), caseNumber);
 BdisSFDTable.caseIndex=caseNumber;
 BdisSFDTable=sortrows(BdisSFDTable,"caseIndex","ascend"); 
-% save('SCLBdisSFDTable.mat','BdisSFDTable')
+save('coeffiSCLBdisSFDTable.mat','BdisSFDTable')
