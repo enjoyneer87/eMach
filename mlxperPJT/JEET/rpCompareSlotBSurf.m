@@ -126,6 +126,9 @@ for idx=1:1
     end
 end
 
+        tsurf2(timeIdx)=trisurf(WireFitTable.DT{slotIndex}.ConnectivityList,x,y, abs(Btvalues), abs(Btvalues),'EdgeColor', 'none');
+
+
 
 % ax=tsurf1(1).Parent
 % ax2=tsurf2(1).Parent
@@ -138,3 +141,46 @@ end
 % freezeColors(colorbar)
 
 % ax2.f
+
+%% Coil Model
+matFileList    =findMatFiles(pwd)';                              
+matFileList    =matFileList(contains(matFileList,'_wireTable'));
+[~,MatfileNames,~]=fileparts(matFileList);
+timeStepReducedFactor=1;  % 480 step -> 240 = 2
+% triangulations = partitionedTriangulation(WireTable);
+grey=greyColor();
+%% Create the Flux Density Fit 
+load(MatfileNames{2})
+for slotIndex=1:height(WireTable)
+    % x=WireTable.elementCentersTable{slotIndex}.x;
+    % y=WireTable.elementCentersTable{slotIndex}.y;
+    x=WireTable.DT{slotIndex}.Points(:,1);
+    y=WireTable.DT{slotIndex}.Points(:,2);
+    a3rf=figure(3);
+    a3rf.Name=['Br','_MS'];
+    TR=triangulation(WireTable.elementCentersTable{slotIndex}.elementConnectivity,WireTable.DT{slotIndex}.Points);
+    for timeIdx=1:120
+     hold on
+    Brvalues = WireTable.RtileTableByElerow{slotIndex}.(sprintf('Step%d', timeIdx));
+    vertexValues = centroid2VertexValues(TR, Brvalues);
+    TSTriSurf1(timeIdx)=trisurf(WireTable.DT{slotIndex}.ConnectivityList,x,y, abs(vertexValues), abs(vertexValues),'EdgeColor', 'none');
+    end
+    
+    a4tf=figure(4);
+    a4tf.Name=['Bt','_MS'];
+    for timeIdx=1:120
+    hold on
+    Btvalues = WireTable.TtileTableByElerow{slotIndex}.(sprintf('Step%d', timeIdx));
+    vertexBtValues = centroid2VertexValues(TR, Btvalues);
+    TSTriSurf2(timeIdx)=trisurf(WireTable.DT{slotIndex}.ConnectivityList,x,y,abs(vertexBtValues) , abs(vertexBtValues),'EdgeColor', 'none');
+    end
+end
+
+
+for slotIndex=1:height(WireTable)
+triplot(WireTable.DT{slotIndex})
+hold on
+scatter(WireTable.elementCentersTable{slotIndex}.x,WireTable.elementCentersTable{slotIndex}.y,'*')
+scatter(WireTable.DT{slotIndex}.Points(WireTable.elementCentersTable{slotIndex}.elementConnectivity',1),WireTable.DT{slotIndex}.Points(WireTable.elementCentersTable{slotIndex}.elementConnectivity',2))
+
+end

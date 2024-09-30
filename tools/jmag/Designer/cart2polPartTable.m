@@ -1,32 +1,40 @@
 function WireTable=cart2polPartTable(WireTable)
-    WireTable.RtimeTableByEleCol=WireTable.fieldyTimeTable;
     WireTable.TtimeTableByEleCol=WireTable.fieldyTimeTable;
+    WireTable.RtimeTableByEleCol=WireTable.fieldxTimeTable;
 for slotIndex=1:height(WireTable)
     Fx=WireTable.fieldxTimeTable{slotIndex}.Variables;
-    Fy=WireTable.fieldxTimeTable{slotIndex}.Variables;
-    x=WireTable.elementCentersTable{slotIndex}.x;
-    y=WireTable.elementCentersTable{slotIndex}.y;
-    % scatter3(x,y,Fy(1,:))
-    %% Vector 
-    [tempR,tempTetha]=cart2PolVector(Fx,Fy,x,y);
-    WireTable.RtimeTableByEleCol{slotIndex}.Variables=tempR;
-    WireTable.TtimeTableByEleCol{slotIndex}.Variables=tempTetha;    
-    %% addtional 
-    [WireTable.closestPts{slotIndex}, WireTable.outMostIDs{slotIndex}] = findClosestPointsToRectangleCorners(WireTable.elementCentersTable{slotIndex});    
-    %% Add Elerow Table Theta
-    WireTable.TtileTableByElerow{slotIndex}=rows2vars(WireTable.TtimeTableByEleCol{slotIndex});
-    WireTable.TtileTableByElerow{slotIndex}.OriginalVariableNames=[];
-    varNames=WireTable.TtileTableByElerow{slotIndex}.Properties.VariableNames;
-    StepsName=cellfun(@(x) strrep(x,'Var','Step'),varNames,'UniformOutput',false);
-    WireTable.TtileTableByElerow{slotIndex}.Properties.VariableNames=StepsName;
-    WireTable.TtileTableByElerow{slotIndex}=[WireTable.elementCentersTable{slotIndex} WireTable.TtileTableByElerow{slotIndex} ];
-    %% RtileTableByElerow
-    WireTable.RtileTableByElerow{slotIndex}=rows2vars(WireTable.RtimeTableByEleCol{slotIndex});
-    WireTable.RtileTableByElerow{slotIndex}.OriginalVariableNames=[];
-    varNames=WireTable.RtileTableByElerow{slotIndex}.Properties.VariableNames;
-    StepsName=cellfun(@(x) strrep(x,'Var','Step'),varNames,'UniformOutput',false);
-    WireTable.RtileTableByElerow{slotIndex}.Properties.VariableNames=StepsName;
-    WireTable.RtileTableByElerow{slotIndex}=[WireTable.elementCentersTable{slotIndex} WireTable.RtileTableByElerow{slotIndex} ];
+    Fy=WireTable.fieldyTimeTable{slotIndex}.Variables;
+    if strcmp(WireTable.fieldxTimeTable{slotIndex}.Properties.Description,'element')
+        x=WireTable.elementCentersTable{slotIndex}.x;
+        y=WireTable.elementCentersTable{slotIndex}.y;
+        % scatter3(x,y,Fy(1,:))
+    
+        %% Vector 
+        [tempR,tempTetha]=cart2PolVector(Fx,Fy,x,y);
+
+        WireTable.TtimeTableByElerow{slotIndex}=rows2vars(WireTable.TtimeTableByEleCol{slotIndex});
+
+        WireTable.RtimeTableByElerow{slotIndex}=rows2vars(WireTable.RtimeTableByEleCol{slotIndex});
+        %% addtional 
+        [WireTable.closestPts{slotIndex}, WireTable.outMostIDs{slotIndex}] = findClosestPointsToRectangleCorners(WireTable.elementCentersTable{slotIndex});    
+        %% Add Elerow Table Theta
+        WireTable.TtimeTableByElerow{slotIndex}.Properties.RowNames=WireTable.TtimeTableByElerow{slotIndex}.OriginalVariableNames;
+        WireTable.TtimeTableByElerow{slotIndex}.OriginalVariableNames=[];
+        varNames=WireTable.TtimeTableByElerow{slotIndex}.Properties.VariableNames;
+        StepsName=cellfun(@(x) strrep(x,'Var','Step'),varNames,'UniformOutput',false);
+        WireTable.TtimeTableByElerow{slotIndex}.Properties.VariableNames=StepsName;
+        WireTable.TtimeTableByElerow{slotIndex}.Variables=tempTetha;    
+        WireTable.TtimeTableByElerow{slotIndex}=[WireTable.elementCentersTable{slotIndex} WireTable.TtimeTableByElerow{slotIndex} ];
+         %% RtileTableByElerow
+        WireTable.RtimeTableByElerow{slotIndex}.Properties.RowNames=WireTable.RtimeTableByElerow{slotIndex}.OriginalVariableNames;
+        WireTable.RtimeTableByElerow{slotIndex}.OriginalVariableNames=[];
+        varNames=WireTable.RtimeTableByElerow{slotIndex}.Properties.VariableNames;
+        StepsName=cellfun(@(x) strrep(x,'Var','Step'),varNames,'UniformOutput',false);
+        WireTable.RtimeTableByElerow{slotIndex}.Properties.VariableNames=StepsName;
+        WireTable.RtimeTableByElerow{slotIndex}.Variables=tempR;
+        WireTable.RtimeTableByElerow{slotIndex}=[WireTable.elementCentersTable{slotIndex} WireTable.RtimeTableByElerow{slotIndex} ];
+
+    end
 end
 
 
