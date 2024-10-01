@@ -22,12 +22,44 @@ perturbDimWDown         =[w_perturb_down, h_base];
 perturbDimHDown         =[w_base, h_perturb_down];
 
 BdisSFTPath='coeffiSCLBdisSFDTableV1.mat'
+
+load(BdisSFTPath)
+
+C = linspecer(1);
+
+for sublindeIndex=1:11
+% boxvalue=BrR(1:30,:);
+% bx=boxchart(boxvalue','BoxFaceColor','w','BoxEdgeColor','k','Notch','on','BoxMedianLineColor','r');
+hold on
+figure(1)
+BrR=BdisSFDTable.BrRcell{1,1}{sublindeIndex};
+     % for idx=1:100
+bar(BrR(1:30,:),'grouped','EdgeColor',C,'FaceColor',C)
+figure(2)
+BrR=BdisSFDTable.BrRcell{1,1}{sublindeIndex};
+bar(BrR(1:30,:),'grouped','EdgeColor',C,'FaceColor',C)
+figure(2)
+BtR=BdisSFDTable.BtRcell{1,1}{sublindeIndex};
+bar(BtR(1:30,:),'grouped','EdgeColor',C,'FaceColor',C)
+figure(3)
+BrL=BdisSFDTable.BrLcell{1,1}{sublindeIndex};
+bar(BrL(1:30,:),'grouped','EdgeColor',C,'FaceColor',C)
+figure(4)
+BtL=BdisSFDTable.BtLcell{1,1}{sublindeIndex};
+bar(BtL(1:30,:),'grouped','EdgeColor',C,'FaceColor',C)
+
+     % end
+    % title("Single-Sided Amplitude Spectrum of X(t)")
+xlabel("Order")
+ylabel("|P1(f)|")
+end
+
 % BdisSFTPath='D:\KangDH\Emlab_emach\mlxperPJT\JEET\SCLBdisSFDTable.mat'
 % BdisSFTPath='D:\KangDH\Emlab_emach\mlxperPJT\BdisSFDTable.mat'
 % refTargetTable  =calcSensitivityHYBHarmonicMS(refdimensions*SCFactor)
 % TargetTable=calcSensitivityHYBHarmonicMS(refdimensions)
 % BdisSFTPath='SCL_TS_16k_BdisSFDTable.mat'
-TargetTable=calcHYBHarmonicMS_v1(refdimensions,BdisSFTPath,2)
+TargetTable=calcHYBHarmonicMS_v1(refdimensions,BdisSFTPath,SCFactor)
 % UpWTargetTable  =calcSensitivityHYBHarmonicMS(perturbDimWUp*SCFactor)
 % UpHTargetTable  =calcSensitivityHYBHarmonicMS(perturbDimHUp*SCFactor)
 % DownWTargetTable=calcSensitivityHYBHarmonicMS(perturbDimWDown*SCFactor)

@@ -1,5 +1,5 @@
 function [P1,P2,bx]=getFFT1Dset(sigData,BoolPlot)
-    % Fs = 1000;            % Sampling frequency                    
+    % Fs = 1000;            % Sampling frequency        
     % T = 1/Fs;             % Sampling period       
     L = height(sigData);             % Length of signal
     % t = (0:L-1)*T;        % Time vector
@@ -7,8 +7,11 @@ function [P1,P2,bx]=getFFT1Dset(sigData,BoolPlot)
     %
     P2 = abs(Y./L);
     % Postive
-    P1 = P2(1:L/2+1,:);
-    P1(2:end-1,:) = 2*P1(2:end-1,:);
+
+    % L/2 + 1을 정수로 변환하여 인덱스 처리
+    halfL = floor(L / 2) + 1;  % 혹은 round(L/2 + 1) 사용 가능
+    % Positive frequency component만 추출
+    P1 = P2(1:halfL, :);
     % 
     % n = 2^nextpow2(L);
     % Y = fft(sigData,n);

@@ -5,7 +5,7 @@
 % Load Mat File From JplotReader  need Do prior -with python Code
 %%
 % JmagResultName='e10MS_ConductorModel_REF_Load~16_';
-JmagResultPath='D:\KangDH\Thesis\e10\JMAG\MSConductorModel\e10MS_ConductorModel.jfiles\e10MS_ConductorModel~6\e10MS_ConductorModel_SCL_Load~13';
+JmagResultPath='E:\KDH\e10\MSConductorModel\e10MS_ConductorModel.jfiles\e10MS_ConductorModel~6\e10MS_ConductorModel_SCL_Load~13'
 % JmagResultName='e10MS_ConductorModel_SCL_Load~13';
 [~,JmagResultName,~]=fileparts(JmagResultPath)
 JmagResultDIR=extractBefore(JmagResultPath,'.jfiles');

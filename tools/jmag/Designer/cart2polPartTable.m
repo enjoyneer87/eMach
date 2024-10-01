@@ -4,7 +4,7 @@ function WireTable=cart2polPartTable(WireTable)
 for slotIndex=1:height(WireTable)
     Fx=WireTable.fieldxTimeTable{slotIndex}.Variables;
     Fy=WireTable.fieldyTimeTable{slotIndex}.Variables;
-    if strcmp(WireTable.fieldxTimeTable{slotIndex}.Properties.Description,'element')
+    if contains(WireTable.fieldxTimeTable{slotIndex}.Properties.Description,'Element','IgnoreCase',true)
         x=WireTable.elementCentersTable{slotIndex}.x;
         y=WireTable.elementCentersTable{slotIndex}.y;
         % scatter3(x,y,Fy(1,:))

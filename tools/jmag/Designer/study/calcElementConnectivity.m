@@ -1,4 +1,4 @@
-function elementCentersTable = calcElementConnectivity(elementCentersTable, NodeTable)
+function elementCentersTable = calcElementConnectivity(elementCentersTable, NodeID,nodeCoords)
     % 요소 중심 좌표와 노드 좌표 및 노드 ID로부터 요소의 연결 정보를 계산
     %
     % 입력:
@@ -9,16 +9,20 @@ function elementCentersTable = calcElementConnectivity(elementCentersTable, Node
     %   elementCentersTable - 연결된 노드 정보가 포함된 테이블
 
     numElements = size(elementCentersTable, 1);  % 요소 수
-    nodeCoords = NodeTable.nodeCoords;
-    NodeID = NodeTable.NodeID;
+    % nodeCoords = NodeTable.nodeCoords;
+    % NodeID = NodeTable.NodeID;
     
     elementCentersTable.elementConnectivity = cell(numElements, 1);  % 연결 정보를 저장할 셀 배열
+    
     
     for i = 1:numElements
         % i번째 요소의 중심 좌표 가져오기
         elementCenter = elementCentersTable(i, :);
-        elementCenter = m2mm([elementCenter.x, elementCenter.y]);  % 예시에서는 2D 좌표
-        
+        if ~contains(elementCentersTable.Properties.VariableUnits,'mm','IgnoreCase',true)
+            elementCenter = m2mm([elementCenter.x, elementCenter.y]);  % 예시에서는 2D 좌표
+        else
+            elementCenter=[elementCenter.x, elementCenter.y];
+        end
         % 요소 타입에 따라 연결할 노드 수 결정 (2: 삼각형, 3: 사각형)
         if elementCentersTable.eleType(i) == 2
             numNodesPerElement = 3;  % 삼각형 요소

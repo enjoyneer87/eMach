@@ -3,13 +3,13 @@ matFileList=findMatFiles(pwd)';
 matFileList=matFileList(contains(matFileList,'wire'));
 REFmatFileList=matFileList(contains(matFileList,'SC'));
 REFmatFileList=REFmatFileList(contains(REFmatFileList,'MagB'));
-REFDTmatFileList=REFmatFileList(contains(REFmatFileList,'DT'));
-REFDTmatFileList=REFDTmatFileList(contains(REFDTmatFileList,'Case17'));
-REFDTmatFileList=REFDTmatFileList(~contains(REFDTmatFileList,'18k'));
+REFDTmatFileList=REFmatFileList(~contains(REFmatFileList,'DT'));
+REFDTmatFileList=REFDTmatFileList(contains(REFDTmatFileList,'Case28'));
+% REFDTmatFileList=REFDTmatFileList(~contains(REFDTmatFileList,'18k'));
 
 % FqmatFileList=REFDTmatFileList(contains(REFDTmatFileList,'Fq'));
 % MSmatFileList=REFDTmatFileList(contains(REFDTmatFileList,'MS'));
-
+matFileList=REFDTmatFileList
 
 [~,MatfileNames,~]=fileparts(REFDTmatFileList);
 
@@ -70,25 +70,70 @@ for idx=2:2
     else
         simuType='TS'
     end
-    for slotIndex=1:height(WireFitTable)
-    x=WireFitTable.DT{slotIndex}.Points(:,1);
-    y=WireFitTable.DT{slotIndex}.Points(:,2);
+    for slotIndex=1:height(WireTable)
+    x=WireTable.DT{slotIndex}.Points(:,1);
+    y=WireTable.DT{slotIndex}.Points(:,2);
         a1rf=figure(1);
         a1rf.Name=['Br',simuType];     
       
         for timeIdx=4:4
          hold on
-        Brvalues = WireFitTable.RtileTableByElerow{slotIndex}.(sprintf('Step%d', timeIdx));
-        trisurf(WireFitTable.DT{slotIndex}.ConnectivityList,x,y, abs(Brvalues), abs(Brvalues),'FaceColor','interp')
+        Brvalues = WireTable.RtileTableByElerow{slotIndex}.(sprintf('Step%d', timeIdx));
+        trisurf(WireTable.DT{slotIndex}.ConnectivityList,x,y, abs(Brvalues), abs(Brvalues),'FaceColor','interp')
         end
         a2tf=figure(2);
         a2tf.Name=['Bt',simuType];
         
         for timeIdx=4:4
         hold on
-        Btvalues = WireFitTable.TtileTableByElerow{slotIndex}.(sprintf('Step%d', timeIdx));
-        trisurf(WireFitTable.DT{slotIndex}.ConnectivityList,x,y, abs(Btvalues), abs(Btvalues),'FaceColor','interp')
+        Btvalues = WireTable.TtileTableByElerow{slotIndex}.(sprintf('Step%d', timeIdx));
+        trisurf(WireTable.DT{slotIndex}.ConnectivityList,x,y, abs(Btvalues), abs(Btvalues),'FaceColor','interp')
         end
+    end
+end
+
+
+
+
+
+idx=2
+load(matFileList{idx,1})
+if contains(matFileList{idx},'fq',IgnoreCase=true)
+    simuType='FQ'
+elseif contains(matFileList{idx},'MS',IgnoreCase=true)
+    simuType='MS'
+else
+    simuType='TS'
+end
+for slotIndex = 1:height(WireTable)
+
+    x = WireTable.DT{slotIndex}.Points(:,1);
+    y = WireTable.DT{slotIndex}.Points(:,2);
+    TR = WireTable.DT{slotIndex};  % triangulation 객체
+    eleType = WireTable.RtimeTableByElerow{slotIndex}.eleType;
+    eleCenter = [WireTable.RtimeTableByElerow{slotIndex}.x, WireTable.RtimeTableByElerow{slotIndex}.y];
+    sizeFieldData=size(WireTable.fieldxTimeTable{1})
+    a1rf=figure(1);
+    a1rf.Name=['Br',simuType];
+    triplot(WireTable.DT{slotIndex})
+    hold on
+    % title('Br Field');
+    for timeIdx = 1:sizeFieldData(1)
+        Brvalues = WireTable.RtimeTableByElerow{slotIndex}.(sprintf('Step%d', timeIdx));
+        vertexValues = centroid2VertexValues(TR, eleType, eleCenter, Brvalues');  % 삼각형 및 사각형 모두 처리
+        trisurf(TR.ConnectivityList, x, y, abs(vertexValues), abs(vertexValues), 'EdgeColor', 'none');
+    end
+    a2tf=figure(2);
+    a2tf.Name=['Bt',simuType];
+     triplot(WireTable.DT{slotIndex})
+    hold on
+    % title('Bt Field');
+    for timeIdx = 1:sizeFieldData(1)
+        Btvalues = WireTable.TtimeTableByElerow{slotIndex}.(sprintf('Step%d', timeIdx));
+        vertexBtValues = centroid2VertexValues(TR, eleType, eleCenter, Btvalues');
+        tsurf2(timeIdx)=trisurf(TR.ConnectivityList, x, y, abs(vertexBtValues), abs(vertexBtValues), 'EdgeColor', 'none');
+        tsurf2(timeIdx).FaceAlpha  =timeIdx/sizeFieldData(1);
+
     end
 end
 

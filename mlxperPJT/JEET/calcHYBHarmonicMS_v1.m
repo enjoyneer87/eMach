@@ -1,4 +1,4 @@
-% D:\KangDH\Emlab_emach\mlxperPJT\JEET\devSurfInterp4HYBMS.m
+% D:\KangDH\Emlab_emach\mlxperPJT\JEET\devSurfInterp4HYBMSv1.m
     % D:\KangDH\Emlab_emach\mlxperPJT\JEET\devmkBSFDTable.m
 % mergeFigures([1 2])
 function TargetTable=calcHYBHarmonicMS_v1(refdimensions,BdisSFTPath,SCFactor)
@@ -105,7 +105,9 @@ function TargetTable=calcHYBHarmonicMS_v1(refdimensions,BdisSFTPath,SCFactor)
             end
             %% Sum each Harmonic & Spatial 
             TotalProxPhase=totalGoReturnProx/(NumCalcTargetSlots/2);
-            TotalProx=TotalProxPhase*lactive*NumSlots*((2*1.14 / sqrt(speedIdx)) * (SCFactor - 1) + (2 - SCFactor));
+            % TotalProx=TotalProxPhase*lactive*NumSlots*2;
+
+            TotalProx=TotalProxPhase*lactive*NumSlots*((2*2/ sqrt(speedIdx)) * (SCFactor - 1) + 2*(2 - SCFactor));
             BdisSFDTable.TotalProx{caseIndex}=TotalProx;   
         end
         TargetTable.dqTable{speedIdx}.TotalHYBProx=cell2mat(BdisSFDTable.TotalProx);
