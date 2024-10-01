@@ -79,7 +79,7 @@ for slotIndex=1:height(WireTable)
     a3rf=figure(3);
     a3rf.Name=['Br','_MS'];
     TR=triangulation(WireTable.elementCentersTable{slotIndex}.elementConnectivity,WireTable.DT{slotIndex}.Points);
-    for timeIdx=1:120
+    for timeIdx=1:2
      hold on
     Brvalues = WireTable.RtimeTableByElerow{slotIndex}.(sprintf('Step%d', timeIdx));
     % Brvalues = WireTable.fieldxTimeTable{slotIndex}(timeIdx,:).Variables;
@@ -105,7 +105,9 @@ for slotIndex=1:height(WireTable)
     setgcaXYcoor
 end
 
+timeList=1:1:120;
 
+C = linspecer(len(timeList));
 for slotIndex=1:1
     % MVP=WireTable.fieldzTimeTable{slotIndex};
     DT=WireTable.DT{slotIndex};
@@ -122,15 +124,16 @@ for slotIndex=1:1
     msh.e=e;
     TR=triangulation(WireTable.elementCentersTable{slotIndex}.elementConnectivity,DT.Points);
     % stem3(p(1,:),p(2,:),WireTable.fieldzTimeTable{slotIndex}(timeIndex,:).Variables')
-    for timeIdx=1:2:120
+    for timeIdx=1:len(timeList)
         % A=MVP(timeIndex,:).Variables;
-
-    Btvalues = WireTable.TtimeTableByElerow{slotIndex}.(sprintf('Step%d', timeIdx));
-    Brvalues = WireTable.RtimeTableByElerow{slotIndex}.(sprintf('Step%d', timeIdx));
-    vertexBrValues = centroid2VertexValues(TR, Brvalues);
-    vertexBtValues = centroid2VertexValues(TR, Btvalues);
+    timeAngle=timeList(timeIdx);
+    Bxvalues = WireTable.fieldxTimeTable{slotIndex}(timeAngle,:).Variables;
+    Byvalues = WireTable.fieldyTimeTable{slotIndex}(timeAngle,:).Variables;
+    % vertexBrValues = centroid2VertexValues(TR, Brvalues);
+    % vertexBtValues = centroid2VertexValues(TR, Btvalues);
     % B=[B;zeros(len(B),1)'];
-    quiver3Jmag(TR,[Brvalues, Btvalues, zeros(len(Brvalues),1)]);
+    aq=quiver3Jmag(TR,[Bxvalues', Byvalues', zeros(len(Bxvalues'),1)]);
+    aq.Color=C(timeIdx,:);
     % DT.(DT.incenter)
     % IC=TR.incenter;
     % trisurf(TR.ConnectivityList,TR.Points(:,1),TR.Points(:,2),abs(vertexValues),abs(vertexValues))
@@ -140,6 +143,15 @@ for slotIndex=1:1
     % [linehandles, linecoordinates] = drawFluxLines(msh, Babs_t, 20,'k')
 end
 
+ax=gca
+ax.XLim=[80 91]
+ax.Colormap=C
+colorbar('northoutside')
+aMesh=triplot(DT)
+aMesh.Color=greyColor
+
+
+legend([num2str(timeList*3),'[deg]'])
 % 
 % % 
 % % %% From A
