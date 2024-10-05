@@ -44,12 +44,9 @@ if istable(curWireTable)
     WireIndexList = curWireTable.partIndex;
     for Partindex = 1:length(WireIndexList)
         WireIndex = WireIndexList(Partindex);
-        % nodes = [curWireTable.NodeTable{Partindex}];
-        % EleIds = [curWireTable.ElementId{Partindex}];
-        elementCentersTable             = AllelementCentersTable(AllelementCentersTable.partId==WireIndex,:);
-        %%  delaunayTriangulation
+        elementCentersTable             = AllelementCentersTable(AllelementCentersTable.partId==WireIndex,:);    
         curWireTable.DT{Partindex}=delaunayTriangulation(curWireTable.DT{Partindex}.Points);
-            %%  elementCentersTable
+        %%  elementCentersTable
         curWireTable.elementCentersTable{Partindex} = elementCentersTable;
     end
      %% DataType Assign
@@ -108,9 +105,9 @@ if istable(curWireTable)
             fieldTimeTable.Properties.VariableNames = PartNodeIdsCell;
             boolId=ismember(JplotReaderTabvarNames,PartNodeIdsCell);
         end
-    fieldxTimeTable = fieldTimeTable;
-    fieldyTimeTable = fieldTimeTable;
-    fieldzTimeTable = fieldTimeTable;
+        fieldxTimeTable = fieldTimeTable;
+        fieldyTimeTable = fieldTimeTable;
+        fieldzTimeTable = fieldTimeTable;
 
     %% Trim By ID
      if width(FieldPerStep) == 4 || strcmp(DataType, 'Node')
@@ -131,7 +128,15 @@ if istable(curWireTable)
       %
       curWireTable.fieldzTimeTable{Partindex} =          fieldzTimeTable;
       curWireTable.fieldzTimeTable{Partindex}.Properties.Description=DataType;
-    end
+     %% check DT Num Element and Data NumElement 
+     if strcmp(DataType,'Element') & ~width(fieldxTimeTable)==len(curWireTable.DT{Partindex}.ConnectivityList)
+        nodes = curWireTable.NodeTable{Partindex}.nodes;
+        CenterPoints=[curWireTable.elementCentersTable{Partindex}.x,...
+                      curWireTable.elementCentersTable{Partindex}.y];
+        elementConnectivityMat=findNearestNodes(1:len(nodes),nodes(:,2:3),CenterPoints,3);
+        curWireTable.DT{Partindex}=triangulation(elementConnectivityMat,curWireTable.DT{Partindex}.Points);    
+     end
+    end   
 else
     disp('table partTable needed');
 end
