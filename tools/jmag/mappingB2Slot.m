@@ -1,13 +1,13 @@
 function curWireTable=mappingB2Slot(DataStruct,curWireTable)
 
 %% dev
-
 % DataStruct=load('e10MS_ConductorModel_REF_Load~16_Case28_MagB.mat')
+% curWireTable=refWireTableBackup
+%% def Data
 FielNameCurDSTR=fieldnames(DataStruct);
 DataName=strsplit(FielNameCurDSTR{end},'_');
 DataName=DataName{1};
-% curWireTable=refWireTableBackup
-%% By Slot - Load와 noload 동일하다고 가정 [JplotReader Unit은 [m]]
+%%  get All Element Table By Slot   [JplotReader Unit은 [m]]
 AllelementCentersTable=array2table(DataStruct.element_centers);
 AllelementCentersTable.Properties.VariableNames={'id', 'partId', 'eleType', 'x', 'y', 'z', 'area'};
 if isempty(AllelementCentersTable.Properties.VariableUnits)
@@ -23,7 +23,7 @@ else
     end
 end
 
-%% Node Table
+%% get All Node Table
 AllNodeTable=array2table(DataStruct.nodes);
 AllNodeTable.Properties.VariableNames={'id','x','y','z'};
 if isempty(AllNodeTable.Properties.VariableUnits)
@@ -33,7 +33,8 @@ if isempty(AllNodeTable.Properties.VariableUnits)
     AllNodeTable.z=m2mm(AllNodeTable.z);
 end
 
-%% Field data aggregation (combine all DataIndex fields)
+%%  Field data aggregation (combine all DataIndex fields)
+%  properties 
 fieldNamesJReader = fieldnames(DataStruct);
 Boolvalue2Get = contains(fieldNamesJReader, DataName, "IgnoreCase", true);
 DataNameList = fieldNamesJReader(Boolvalue2Get);
@@ -41,63 +42,26 @@ NumTimeStep = length(DataNameList);
 
 if istable(curWireTable)
     WireIndexList = curWireTable.partIndex;
-    % NdeIds=[];
-    % NodeCoord=[];
-    % EleIds=[];
     for Partindex = 1:length(WireIndexList)
         WireIndex = WireIndexList(Partindex);
-        NodeIds = [curWireTable.NodeTable{Partindex}.NodeID];
-        NodeCoord = [ curWireTable.NodeTable{Partindex}.nodeCoords];
-        EleIds = [curWireTable.ElementId{Partindex}];
-        elementCentersTable          = AllelementCentersTable(AllelementCentersTable.partId==WireIndex,:);
-        elementCentersTable           =calcElementConnectivity(elementCentersTable,NodeIds,NodeCoord);
-        % [elementCentersTablewConnect,NonReaderlementConnectivity]      = allocateElementConnectivity(elementCentersTable, PartStruct.DT{Partindex});
-        elementConnectivityMat=cell2matwithvaryCell(elementCentersTable.elementConnectivity);
-        % if width(elementConnectivityMat)>3
-            curWireTable.DT{Partindex}=delaunayTriangulation(curWireTable.DT{Partindex}.Points);
-        % else
-        %     curWireTable.DT{Partindex}=triangulation(elementConnectivityMat,curWireTable.DT{Partindex}.Points);
-        % end
+        % nodes = [curWireTable.NodeTable{Partindex}];
+        % EleIds = [curWireTable.ElementId{Partindex}];
+        elementCentersTable             = AllelementCentersTable(AllelementCentersTable.partId==WireIndex,:);
+        %%  delaunayTriangulation
+        curWireTable.DT{Partindex}=delaunayTriangulation(curWireTable.DT{Partindex}.Points);
+            %%  elementCentersTable
         curWireTable.elementCentersTable{Partindex} = elementCentersTable;
     end
-
+     %% DataType Assign
     if contains(DataName, 'force', 'IgnoreCase', true) || contains(DataName, 'MagA', 'IgnoreCase', true)
         DataType = 'Node';    
     else
         DataType = 'Element';
     end
 
-    % 
-    % NodeIds=[];
-    % NodeCoord=[];
-    % EleIds=[];
-    % for Partindex = 1:length(WireIndexList)
-    %     WireIndex = WireIndexList(Partindex);
-    %     NodeIds = [NodeIds; curWireTable.NodeTable{Partindex}.NodeID];
-    %     NodeCoord = [NodeCoord; curWireTable.NodeTable{Partindex}.nodeCoords];
-    %     EleIds = [EleIds; curWireTable.ElementId{Partindex}];
-    % end
-    % EleIdsStr        =num2str(EleIds);
-    % 
-    % % Initialize Time Tables
-    % if contains(DataName, 'force', 'IgnoreCase', true) || contains(DataName, 'MagA', 'IgnoreCase', true)
-    %     DataType = 'Node';
-    %     fieldTimeTable = array2table(zeros(NumTimeStep, length(NodeIds)));
-    %     fieldTimeTable.Properties.VariableNames = cellstr(num2str(NodeIds'));
-    % else
-    %     DataType = 'Element';
-    %     fieldTimeTable = array2table(zeros(NumTimeStep, length(EleIds)));
-    %     fieldTimeTable.Properties.VariableNames = cellstr((EleIdsStr));
-    % end
-  
-    % Aggregate all FieldPerStep data for this PartIndex
+    %% Aggregate all FieldPerStep data for this PartIndex
     combinedData = struct('xReal', [], 'xImg', [], 'yReal', [], 'yImg', [], 'zReal', [], 'zImg', []);
     for DataIndex = 1:NumTimeStep
-        % eleIDs=DataStruct.MagB_241(:,1)';
-        % Fx=DataStruct.MagB_241(:,2)';
-        % Fy=DataStruct.MagB_241(:,3)';
-        % Fz=DataStruct.MagB_241(:,4)';
-
         FieldPerStep = array2table(DataStruct.(DataNameList{DataIndex}));
         if width(FieldPerStep) == 4 || strcmp(DataType, 'Node')
             FieldPerStep.Properties.VariableNames(1:4)={'id','xReal','yReal','zReal'};
@@ -115,8 +79,7 @@ if istable(curWireTable)
         end
     end
         
-
-      
+    %%  Make VarName List By id(Node or Element)
     JplotReaderTabvarNames=num2str(FieldPerStep.id);
     JplotReaderTabvarNames=cellstr(JplotReaderTabvarNames)';
     JplotReaderTabvarNames = strtrim(JplotReaderTabvarNames);
@@ -133,25 +96,23 @@ if istable(curWireTable)
 
             fieldTimeTable = array2table(zeros(NumTimeStep, length(PartEleIds)));
             fieldTimeTable.Properties.VariableNames = PartEleIdsCell;
-            % matchingIndice =findMatchingRow(FieldPerStep.id,EleIds);
             boolId=ismember(JplotReaderTabvarNames,PartEleIdsCell);
             
         else
-            PartNodeIds          =curWireTable.NodeTable{Partindex}.NodeID;
+            PartNodeIds          =curWireTable.NodeTable{Partindex}.nodes(:,1);
             PartNodeIdsStr        =num2str(PartNodeIds);
             PartNodeIdsCell       =cellstr(PartNodeIdsStr)';
             PartNodeIdsCell = strtrim(PartNodeIdsCell);
 
-            fieldTimeTable = array2table(zeros(NumTimeStep, length(NodeIds)));
+            fieldTimeTable = array2table(zeros(NumTimeStep, length(PartNodeIds)));
             fieldTimeTable.Properties.VariableNames = PartNodeIdsCell;
-            % boolId =findMatchingRow(FieldPerStep.id,NodeIds);
             boolId=ismember(JplotReaderTabvarNames,PartNodeIdsCell);
         end
     fieldxTimeTable = fieldTimeTable;
     fieldyTimeTable = fieldTimeTable;
     fieldzTimeTable = fieldTimeTable;
 
-
+    %% Trim By ID
      if width(FieldPerStep) == 4 || strcmp(DataType, 'Node')
         fieldxTimeTable.Variables = combinedData.xReal(:,boolId);
         fieldyTimeTable.Variables = combinedData.yReal(:,boolId);

@@ -5,8 +5,10 @@ function plotJMAGMesh(MeshObj)
     pdeNodes      =    MeshObj.pdeNodes      ;
 
 
+    DT=triangulation(pdeTriElements',pdeNodes(1:2,:)');
+    MeshPlot=triplot(DT);
     % tri Mesh plot
-    MeshPlot=pdeplot(model.Mesh.Nodes,model.Mesh.Elements);
+    % MeshPlot=pdeplot(model.Mesh.Nodes,model.Mesh.Elements);
     MeshPlot.Color=[0.80,0.80,0.80];  % grey
     hold on
 

@@ -57,7 +57,16 @@ fcnExportGraphicGif.m
 
 # But do not ignore .csv files in the specific folder
 !mlxperPJT/*.csv
+mlxperPJT/JEET/*.mat
+mlxperPJT/JEET/**/*.jlog
+tools/**/*.exe 
 
+
+*backup*
+*Backup*
+/tools/jmag/jplotReader/*.mat 
+*case*.html
+*xpdf-tools*
 tests/validation_w_map_motorcad_osilo.m
 Class/getFieldNames.m
 fcnExportGraphicGif.m

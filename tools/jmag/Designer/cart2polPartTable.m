@@ -1,6 +1,8 @@
 function WireTable=cart2polPartTable(WireTable)
     WireTable.TtimeTableByEleCol=WireTable.fieldyTimeTable;
     WireTable.RtimeTableByEleCol=WireTable.fieldxTimeTable;
+    WireTable.ZtimeTableByEleCol=WireTable.fieldzTimeTable;
+
 for slotIndex=1:height(WireTable)
     Fx=WireTable.fieldxTimeTable{slotIndex}.Variables;
     Fy=WireTable.fieldyTimeTable{slotIndex}.Variables;
@@ -13,8 +15,9 @@ for slotIndex=1:height(WireTable)
         [tempR,tempTetha]=cart2PolVector(Fx,Fy,x,y);
 
         WireTable.TtimeTableByElerow{slotIndex}=rows2vars(WireTable.TtimeTableByEleCol{slotIndex});
-
         WireTable.RtimeTableByElerow{slotIndex}=rows2vars(WireTable.RtimeTableByEleCol{slotIndex});
+        WireTable.ZtimeTableByElerow{slotIndex}=rows2vars(WireTable.ZtimeTableByEleCol{slotIndex});
+
         %% addtional 
         [WireTable.closestPts{slotIndex}, WireTable.outMostIDs{slotIndex}] = findClosestPointsToRectangleCorners(WireTable.elementCentersTable{slotIndex});    
         %% Add Elerow Table Theta
@@ -33,7 +36,24 @@ for slotIndex=1:height(WireTable)
         WireTable.RtimeTableByElerow{slotIndex}.Properties.VariableNames=StepsName;
         WireTable.RtimeTableByElerow{slotIndex}.Variables=tempR;
         WireTable.RtimeTableByElerow{slotIndex}=[WireTable.elementCentersTable{slotIndex} WireTable.RtimeTableByElerow{slotIndex} ];
-
+        %% ztileTableByElerow
+        WireTable.ZtimeTableByElerow{slotIndex}.Properties.RowNames=WireTable.ZtimeTableByElerow{slotIndex}.OriginalVariableNames;
+        WireTable.ZtimeTableByElerow{slotIndex}.OriginalVariableNames=[];
+        varNames=WireTable.ZtimeTableByElerow{slotIndex}.Properties.VariableNames;
+        StepsName=cellfun(@(x) strrep(x,'Var','Step'),varNames,'UniformOutput',false);
+        WireTable.ZtimeTableByElerow{slotIndex}.Properties.VariableNames=StepsName;
+        WireTable.ZtimeTableByElerow{slotIndex}.Variables=tempR;
+        WireTable.ZtimeTableByElerow{slotIndex}=[WireTable.elementCentersTable{slotIndex} WireTable.ZtimeTableByElerow{slotIndex} ];
+    else
+        WireTable.ZtimeTableByElerow{slotIndex}=rows2vars(WireTable.ZtimeTableByEleCol{slotIndex});
+        WireTable.ZtimeTableByElerow{slotIndex}.Properties.RowNames=WireTable.ZtimeTableByElerow{slotIndex}.OriginalVariableNames;
+        WireTable.ZtimeTableByElerow{slotIndex}.OriginalVariableNames=[];
+        varNames=WireTable.ZtimeTableByElerow{slotIndex}.Properties.VariableNames;
+        StepsName=cellfun(@(x) strrep(x,'Var','Step'),varNames,'UniformOutput',false);
+        WireTable.ZtimeTableByElerow{slotIndex}.Properties.VariableNames=StepsName;
+        % WireTable.ZtimeTableByElerow{slotIndex}.Variables=WireTable.fieldzTimeTable{slotIndex}.Variables';
+        NodeTable=struct2table( WireTable.NodeTable{slotIndex});
+        WireTable.ZtimeTableByElerow{slotIndex}=[NodeTable WireTable.ZtimeTableByElerow{slotIndex} ];
     end
 end
 

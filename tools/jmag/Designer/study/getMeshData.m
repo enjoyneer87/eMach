@@ -40,7 +40,6 @@ end
 
 %% Element CenterPosition
 % IC = incenter(DT);
-NodeTable.nodeCoords=nodeCoords;
-NodeTable.NodeID    =NodeID    ;
+NodeTable.nodes=[NodeID nodeCoords];
 delaunyObj=DT;
 end

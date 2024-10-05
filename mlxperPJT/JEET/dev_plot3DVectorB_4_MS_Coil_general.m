@@ -52,9 +52,11 @@ if 38100==getPCRDPPortNumber
 else
     matFileList=findMatFiles('Z:\01_Codes_Projects\git_fork_emach\tools\jmag\jplotReader')
 end
-MagBmatFileList=matFileList(contains(matFileList,JmagResultName)&contains(matFileList,'MagB'))'
-MagBmatFileList = sort(MagBmatFileList); 
-[~,MatfileNames,~]=fileparts(MagBmatFileList)
+
+matFileList(contains(matFileList,'MS'))'
+MagBmatFileList     =matFileList(contains(matFileList,JmagResultName)&contains(matFileList,'MagB'))'
+MagBmatFileList     =sort(MagBmatFileList); 
+[~,MatfileNames,~]  =fileparts(MagBmatFileList)
 
 for caseIndex=1:1
     WireTable=[];

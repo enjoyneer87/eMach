@@ -1,9 +1,12 @@
 function stepdata = extractJMAGFieldVectorFromMPtoolCSV(filename,keywordIndex)
     % 전체 데이터 읽기
-    filename=MPToolCSVFilePath
-    opts=detectImportOptions(filename)
-    data = readtable(filename, opts);
-
+    % filename=MPToolCSVFilePath
+    % opts=detectImportOptions(filename);
+    if istable(filename)
+      data=filename;
+    else
+      data = readtable(filename);
+    end
     % 특정 키워드가 포함된 행 찾기
     keywordIndices = find(contains(data.Var1,keywordIndex));
 

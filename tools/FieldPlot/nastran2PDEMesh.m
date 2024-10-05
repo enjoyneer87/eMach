@@ -1,9 +1,13 @@
-function [MeshObj,model,pdeTriElements,pdeNodes,pdeQuadElements]  = nastran2PDEMesh(csvFile,Dim)
+function [MeshObj,model,pdeTriElements,pdeNodes,pdeQuadElements,stepdata]  = nastran2PDEMesh(csvFile,Dim,keyworIndex)
     % csvFile: 메쉬 데이터가 포함된 CSV 파일 경로
     % csvFile=MPToolCSVFilePath
+    % csvFile='D:\KangDH\Emlab_emach\mlxperPJT\JEET\From38100\JEET_ref_e10_WirePeriodic_Load_18k_rgh_case1_J_MPtools.csv'
     % CSV 파일 읽기
     data = readtable(csvFile, 'Delimiter', ',', 'ReadVariableNames', false);
 
+    if nargin>2
+        stepdata = extractJMAGFieldVectorFromMPtoolCSV(data,keyworIndex);
+    end
     % GRID, CTRIA3, CQUAD4 데이터를 필터링
     gridData   = data(contains(data.Var1, 'GRID'), :);
     ctria3Data = data(contains(data.Var1, 'CTRIA3'), :);
@@ -120,7 +124,7 @@ function [MeshObj,model,pdeTriElements,pdeNodes,pdeQuadElements]  = nastran2PDEM
     % % pdeNodes: 3xN 행렬 (x, y, z 좌표)
     % % pdeTriElements: 4xM 행렬 (4개의 노드 인덱스, 테트라헤드럴 요소)
     % 
-    % geometryFromMesh(model, pdeNodes(1:3,:), pdeTriElements(1:4,:));
+    % geometryFromMesh(model, pdeNodes(1:3,:), pdeTriElements(1:3,:));
     
     % % 플롯 설정
     % pdegplot(model, 'FaceLabels', 'on', 'FaceAlpha', 0.5);
