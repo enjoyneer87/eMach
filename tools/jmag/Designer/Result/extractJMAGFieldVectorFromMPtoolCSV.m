@@ -54,7 +54,7 @@ function stepdata = extractJMAGFieldVectorFromMPtoolCSV(filename,keywordIndex)
         end
 
         % 숫자 데이터로 테이블 생성
-        dataTable = array2table(numericData(:, 1:length(row4VarName)-1), 'VariableNames', row4VarName(2:end));
+        dataTable = array2table(numericData(:, 1:length(row4VarName)-1), 'Var  iableNames', row4VarName(2:end));
         dataTable = [row4ID dataTable];
         dataTable.Properties.VariableNames{1}=row4VarName{1};
         % step 데이터 저장

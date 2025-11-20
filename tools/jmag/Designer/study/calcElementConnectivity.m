@@ -33,6 +33,7 @@ function elementCentersTable = calcElementConnectivity(elementCentersTable, Node
         end
         
         % 각 노드와 요소 중심 간의 거리 계산
+       
         distances = sqrt(sum((nodeCoords - elementCenter).^2, 2));
         
         % 가장 가까운 numNodesPerElement개의 노드 인덱스를 찾음

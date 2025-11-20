@@ -1,15 +1,28 @@
 function dxf = filterEntitiesByAngle(entitiesStruct, max_angle)
     %% Test
     % entitiesStruct=entitiesRotorStruct
-    % max_angle=22.5
+    % max_angle=45
     % Initialize the filtered entities array
     filtered_entities = struct('name', {}, 'layer', {}, 'linetype', {}, 'color', {}, 'arc', {}, 'line', {});
 
-
-    %% global Min &Max Arc
+    %% Check if any object exceeds max_angle - if not, return original data
     entitiesStruct=entitiesStruct';
     entitiesTable=struct2table(entitiesStruct);
     
+    % Get maximum angle from all objects
+    max_object_angle = getMaxObjectAngle(entitiesTable);
+    
+    % If any object exceeds max_angle, return original data without filtering
+    if max_object_angle >= max_angle
+        fprintf('일부 객체가 max_angle(%.1f°) 이상입니다(최대: %.1f°). 필터링을 건너뜁니다.\n', max_angle, max_object_angle);
+        dxf.divisions = 50;
+        dxf.entities = entitiesStruct;
+        return;
+    end
+    
+    fprintf('모든 객체가 max_angle(%.1f°) 미만에 있습니다. 필터링을 수행합니다.\n', max_angle);
+
+    %% global Min &Max Arc
     % Filter rows where the arc field is not empty
     arcEntities = entitiesTable.arc(~cellfun(@isempty, entitiesTable.arc), :);
     thirdValues = cellfun(@(x) x(3), arcEntities);
@@ -108,7 +121,7 @@ function dxf = filterEntitiesByAngle(entitiesStruct, max_angle)
     for i = 1:height(arcTable)
         % Get the arc angles
         [PosX,PosY]=PosArc(arcTable.arc{i});
-        [theta,rho]=cart2pol(PosX,PosY);
+        [theta, ~] = cart2pol(PosX, PosY);
         angle=rad2deg(theta);
         angle1 = arcTable.arc{i}(4);
         angle2 = arcTable.arc{i}(5);

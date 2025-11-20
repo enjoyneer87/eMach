@@ -335,6 +335,7 @@ MainFunctionNode=G.Nodes.Short_Name(coupledNode)
 
 %% 턴별로 생성한뒤, 동일전류밀도에서 큰거와 작은거 비교를 위해서는 다른 턴수로 전류범위를 맞춘뒤 비교가능
 %% 정수 턴수별 AC Loss를 Plot해서 연속적인 함수로 Interpolation한뒤, Surrogate모델을 만드는것도 방법인듯
+  
 
 %% ref 2.4 Reference 모델과 비교 
     % - mass, EC, 

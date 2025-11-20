@@ -25,15 +25,20 @@ function [fitresult, gof, DataSet] = createInterpDataSetofStrWithFieldName(build
     
     % fittype과 옵션 설정
     % ft = 'cubicinterp';
-    % ft='smoothingspline'
-    ft='thinplate';
+    % ft = fittype('smoothingspline');
+        ft='thinplate';
+    opts = fitoptions(ft);
+    % opts.SmoothingParam = 0.95;
+    opts.Normalize = 'on';
+    opts.ExtrapolationMethod = 'auto';
+
     % CubicSplineInterpolant
-    opts = fitoptions('Method', 'thinplate');
+    % opts = fitoptions('Method', 'thinplate');
     % opts = fitoptions('Method', 'CubicSplineInterpolant');
     % opts.ExtrapolationMethod = 'linear';
     % opts = fitoptions('Method', 'BiharmonicInterpolant');
     % opts = fitoptions('Method', 'NonlinearLeastSquares');
-    opts.ExtrapolationMethod = 'auto';
+    % opts.ExtrapolationMethod = 'auto';
     % opts.ExtrapolationMethod = 'biharmonic';
     % opts.Normalize = 'on';
     [fitresult, gof] = fit([xData, yData], zData, ft, opts);

@@ -1,0 +1,875 @@
+boundaries:
+  error: '''list'' object has no attribute ''items'''
+excitations:
+- CT_Ph2_P2_C6_Ret
+- CT_Ph3_P2_C24_Go
+- CT_Ph1_P2_C9_Ret
+- CT_Ph1_P2_C5_Ret
+- CT_Ph3_P1_C22_Go
+- L2_1Magnet1N0_1_1
+- CT_Ph3_P2_C20_Go
+- WG_Ph3_P1
+- CT_Ph1_P1_C8_Ret
+- CT_Ph3_P1_C2_Go
+- CT_Ph2_P1_C23_Ret
+- CT_Ph2_P2_C22_Ret
+- CT_Ph1_P1_C16_Ret
+- CT_Ph2_P2_C14_Ret
+- L2_1Magnet2N0_1_1
+- WG_Ph2_P1
+- L1_1Magnet1N0_1_1
+- CT_Ph2_P1_C7_Ret
+- CT_Ph3_P2_C16_Go
+- CT_Ph1_P1_C24_Ret
+- CT_Ph2_P2_C2_Ret
+- CT_Ph2_P1_C19_Ret
+- CT_Ph1_P1_C20_Ret
+- CT_Ph2_P1_C11_Ret
+- WG_Ph1_P1
+- CT_Ph3_P2_C12_Go
+- CT_Ph3_P2_C4_Go
+- CT_Ph2_P1_C3_Ret
+- CT_Ph3_P1_C6_Go
+- CT_Ph2_P2_C18_Ret
+- CT_Ph2_P1_C15_Ret
+- CT_Ph3_P1_C18_Go
+- L1_1Magnet2N0_1_1
+- CT_Ph1_P2_C21_Ret
+- CT_Ph3_P1_C10_Go
+- CT_Ph1_P2_C1_Ret
+- CT_Ph1_P1_C4_Ret
+- CT_Ph1_P1_C12_Ret
+- CT_Ph1_P2_C13_Ret
+- CT_Ph3_P2_C8_Go
+- CT_Ph1_P2_C17_Ret
+- CT_Ph2_P2_C10_Ret
+- CT_Ph3_P1_C14_Go
+geometry:
+  object_count: '51'
+  object_names:
+  - Stator_Lamination_Primitive
+  - Rotor_1
+  - Rotor_Pocket_10
+  - L2_1Magnet1N0_1_1
+  - Rotor_Pocket_16
+  - L2_1Magnet2N0_1_1
+  - Rotor_Pocket_24
+  - L1_1Magnet1N0_1_1
+  - Rotor_Pocket_30
+  - L1_1Magnet2N0_1_1
+  - Shaft
+  - Ph1_P1_C4_1
+  - Ph1_P1_C8_1
+  - Ph1_P1_C12_1
+  - Ph1_P1_C16_1
+  - Ph1_P1_C20_1
+  - Ph1_P1_C24_1
+  - Ph2_P1_C3_1
+  - Ph2_P1_C7_1
+  - Ph2_P1_C11_1
+  - Ph2_P1_C15_1
+  - Ph2_P1_C19_1
+  - Ph2_P1_C23_1
+  - Ph3_P2_C4_1
+  - Ph3_P2_C8_1
+  - Ph3_P2_C12_1
+  - Ph3_P2_C16_1
+  - Ph3_P2_C20_1
+  - Ph3_P2_C24_1
+  - Ph1_P2_C1_2
+  - Ph1_P2_C5_2
+  - Ph1_P2_C9_2
+  - Ph1_P2_C13_2
+  - Ph1_P2_C17_2
+  - Ph1_P2_C21_2
+  - Ph2_P2_C2_2
+  - Ph2_P2_C6_2
+  - Ph2_P2_C10_2
+  - Ph2_P2_C14_2
+  - Ph2_P2_C18_2
+  - Ph2_P2_C22_2
+  - Ph3_P1_C2_2
+  - Ph3_P1_C6_2
+  - Ph3_P1_C10_2
+  - Ph3_P1_C14_2
+  - Ph3_P1_C18_2
+  - Ph3_P1_C22_2
+  - Rotating_Band
+  - Whole_Region
+  - Boundary_Independent
+  - Boundary_Dependent
+  objects_detail:
+  - bounding_box:
+    - '50.3955002951652'
+    - '0.0'
+    - '0.0'
+    - '99.0'
+    - '70.0035713374682'
+    - '0.0'
+    color:
+    - '240'
+    - '0'
+    - '16'
+    mass: '0.0'
+    material: NO18-1160_180C
+    name: Stator_Lamination_Primitive
+    volume: '0.0'
+  - bounding_box:
+    - '16.5851895527305'
+    - '0.0'
+    - '0.0'
+    - '70.27'
+    - '49.6883935139787'
+    - '0.0'
+    color:
+    - '0'
+    - '240'
+    - '240'
+    mass: '0.0'
+    material: NO18-1160_140C
+    name: Rotor_1
+    volume: '0.0'
+  - bounding_box:
+    - '60.0614666381424'
+    - '11.7299'
+    - '0.0'
+    - '68.694456812254'
+    - '25.3131121564275'
+    - '0.0'
+    color:
+    - '241'
+    - '241'
+    - '240'
+    mass: '0.0'
+    material: vacuum
+    name: Rotor_Pocket_10
+    volume: '0.0'
+  - bounding_box:
+    - '60.2718251045875'
+    - '14.0665507567318'
+    - '0.0'
+    - '67.7816821310825'
+    - '24.9935748954125'
+    - '0.0'
+    color:
+    - '0'
+    - '212'
+    - '0'
+    mass: '0.0'
+    material: N42EH_80C
+    name: L2_1Magnet1N0_1_1
+    volume: '0.0'
+  - bounding_box:
+    - '55.7240604202521'
+    - '25.3039103852498'
+    - '0.0'
+    - '62.1036377276728'
+    - '40.0996883377166'
+    - '0.0'
+    color:
+    - '241'
+    - '241'
+    - '240'
+    mass: '0.0'
+    material: vacuum
+    name: Rotor_Pocket_16
+    volume: '0.0'
+  - bounding_box:
+    - '56.0909244173289'
+    - '25.824108811709'
+    - '0.0'
+    - '62.076391188291'
+    - '37.103591188291'
+    - '0.0'
+    color:
+    - '0'
+    - '212'
+    - '0'
+    mass: '0.0'
+    material: N42EH_80C
+    name: L2_1Magnet2N0_1_1
+    volume: '0.0'
+  - bounding_box:
+    - '47.4057916027725'
+    - '4.26999999936826'
+    - '0.0'
+    - '69.0542068592532'
+    - '19.8346026745976'
+    - '0.0'
+    color:
+    - '241'
+    - '241'
+    - '240'
+    mass: '0.0'
+    material: vacuum
+    name: Rotor_Pocket_24
+    volume: '0.0'
+  - bounding_box:
+    - '49.0959678755318'
+    - '5.15976787553178'
+    - '0.0'
+    - '67.8492506974866'
+    - '19.5597321244682'
+    - '0.0'
+    color:
+    - '0'
+    - '212'
+    - '0'
+    mass: '0.0'
+    material: N42EH_80C
+    name: L1_1Magnet1N0_1_1
+    volume: '0.0'
+  - bounding_box:
+    - '45.4846873602484'
+    - '20.6784726490005'
+    - '0.0'
+    - '54.3798679954032'
+    - '45.602201117403'
+    - '0.0'
+    color:
+    - '241'
+    - '241'
+    - '240'
+    mass: '0.0'
+    material: vacuum
+    name: Rotor_Pocket_30
+    volume: '0.0'
+  - bounding_box:
+    - '45.9713491276083'
+    - '22.4660852146695'
+    - '0.0'
+    - '54.2007374347625'
+    - '42.7472508723917'
+    - '0.0'
+    color:
+    - '0'
+    - '212'
+    - '0'
+    mass: '0.0'
+    material: N42EH_80C
+    name: L1_1Magnet2N0_1_1
+    volume: '0.0'
+  - bounding_box:
+    - '0.0'
+    - '0.0'
+    - '0.0'
+    - '23.455'
+    - '16.5851895527305'
+    - '0.0'
+    color:
+    - '160'
+    - '160'
+    - '160'
+    mass: '0.0'
+    material: Stahl 37_80C
+    name: Shaft
+    volume: '0.0'
+  - bounding_box:
+    - '59.7619843437632'
+    - '52.1036644919869'
+    - '0.0'
+    - '63.21724172169'
+    - '55.7462222044809'
+    - '0.0'
+    color:
+    - '255'
+    - '0'
+    - '0'
+    mass: '0.0'
+    material: Copper (Pure)_80C
+    name: Ph1_P1_C4_1
+    volume: '0.0'
+  - bounding_box:
+    - '62.9938369592355'
+    - '41.2733756522979'
+    - '0.0'
+    - '66.2390312983483'
+    - '45.0772662344586'
+    - '0.0'
+    color:
+    - '255'
+    - '0'
+    - '0'
+    mass: '0.0'
+    material: Copper (Pure)_80C
+    name: Ph1_P1_C8_1
+    volume: '0.0'
+  - bounding_box:
+    - '53.6390009516544'
+    - '46.7339521738119'
+    - '0.0'
+    - '57.0942583295812'
+    - '50.3765098863059'
+    - '0.0'
+    color:
+    - '255'
+    - '0'
+    - '0'
+    mass: '0.0'
+    material: Copper (Pure)_80C
+    name: Ph1_P1_C12_1
+    volume: '0.0'
+  - bounding_box:
+    - '66.3795812205314'
+    - '43.5356576411537'
+    - '0.0'
+    - '69.6247755596442'
+    - '47.3395482233144'
+    - '0.0'
+    color:
+    - '255'
+    - '0'
+    - '0'
+    mass: '0.0'
+    material: Copper (Pure)_80C
+    name: Ph1_P1_C16_1
+    volume: '0.0'
+  - bounding_box:
+    - '56.7004926477088'
+    - '49.4188083328994'
+    - '0.0'
+    - '60.1557500256356'
+    - '53.0613660453934'
+    - '0.0'
+    color:
+    - '255'
+    - '0'
+    - '0'
+    mass: '0.0'
+    material: Copper (Pure)_80C
+    name: Ph1_P1_C20_1
+    volume: '0.0'
+  - bounding_box:
+    - '59.6080926979395'
+    - '39.0110936634421'
+    - '0.0'
+    - '62.8532870370523'
+    - '42.8149842456028'
+    - '0.0'
+    color:
+    - '255'
+    - '0'
+    - '0'
+    mass: '0.0'
+    material: Copper (Pure)_80C
+    name: Ph1_P1_C24_1
+    volume: '0.0'
+  - bounding_box:
+    - '79.0635897755109'
+    - '14.0095993216551'
+    - '0.0'
+    - '81.3644874831548'
+    - '17.9015293200328'
+    - '0.0'
+    color:
+    - '0'
+    - '128'
+    - '0'
+    mass: '0.0'
+    material: Copper (Pure)_80C
+    name: Ph2_P1_C3_1
+    volume: '0.0'
+  - bounding_box:
+    - '76.5974377413595'
+    - '3.18890000985522'
+    - '0.0'
+    - '78.4968301170138'
+    - '6.97651536837667'
+    - '0.0'
+    color:
+    - '0'
+    - '128'
+    - '0'
+    mass: '0.0'
+    material: Copper (Pure)_80C
+    name: Ph2_P1_C7_1
+    volume: '0.0'
+  - bounding_box:
+    - '71.076074451907'
+    - '12.4207837391557'
+    - '0.0'
+    - '73.3769721595509'
+    - '16.3127137375335'
+    - '0.0'
+    color:
+    - '0'
+    - '128'
+    - '0'
+    mass: '0.0'
+    material: Copper (Pure)_80C
+    name: Ph2_P1_C11_1
+    volume: '0.0'
+  - bounding_box:
+    - '80.6607192767871'
+    - '3.45522155208037'
+    - '0.0'
+    - '82.5601116524414'
+    - '7.24283691060181'
+    - '0.0'
+    color:
+    - '0'
+    - '128'
+    - '0'
+    mass: '0.0'
+    material: Copper (Pure)_80C
+    name: Ph2_P1_C15_1
+    volume: '0.0'
+  - bounding_box:
+    - '75.069832113709'
+    - '13.2151915304054'
+    - '0.0'
+    - '77.3707298213529'
+    - '17.1071215287831'
+    - '0.0'
+    color:
+    - '0'
+    - '128'
+    - '0'
+    mass: '0.0'
+    material: Copper (Pure)_80C
+    name: Ph2_P1_C19_1
+    volume: '0.0'
+  - bounding_box:
+    - '72.5341562059319'
+    - '2.92257846763008'
+    - '0.0'
+    - '74.4335485815862'
+    - '6.71019382615153'
+    - '0.0'
+    color:
+    - '0'
+    - '128'
+    - '0'
+    mass: '0.0'
+    material: Copper (Pure)_80C
+    name: Ph2_P1_C23_1
+    volume: '0.0'
+  - bounding_box:
+    - '71.8614050587195'
+    - '34.2227436177157'
+    - '0.0'
+    - '74.8410101841383'
+    - '38.1228814470447'
+    - '0.0'
+    color:
+    - '127'
+    - '247'
+    - '247'
+    mass: '0.0'
+    material: Copper (Pure)_80C
+    name: Ph3_P2_C4_1
+    volume: '0.0'
+  - bounding_box:
+    - '72.2577608453033'
+    - '23.015367459927'
+    - '0.0'
+    - '74.9207948872296'
+    - '26.945020096842'
+    - '0.0'
+    color:
+    - '127'
+    - '247'
+    - '247'
+    mass: '0.0'
+    material: Copper (Pure)_80C
+    name: Ph3_P2_C8_1
+    volume: '0.0'
+  - bounding_box:
+    - '64.5572734516773'
+    - '30.6207445245722'
+    - '0.0'
+    - '67.5368785770961'
+    - '34.5208823539012'
+    - '0.0'
+    color:
+    - '127'
+    - '247'
+    - '247'
+    mass: '0.0'
+    material: Copper (Pure)_80C
+    name: Ph3_P2_C12_1
+    volume: '0.0'
+  - bounding_box:
+    - '76.1136603326074'
+    - '24.3242689626415'
+    - '0.0'
+    - '78.7766943745337'
+    - '28.2539215995565'
+    - '0.0'
+    color:
+    - '127'
+    - '247'
+    - '247'
+    mass: '0.0'
+    material: Copper (Pure)_80C
+    name: Ph3_P2_C16_1
+    volume: '0.0'
+  - bounding_box:
+    - '68.2093392551984'
+    - '32.4217440711439'
+    - '0.0'
+    - '71.1889443806172'
+    - '36.3218819004729'
+    - '0.0'
+    color:
+    - '127'
+    - '247'
+    - '247'
+    mass: '0.0'
+    material: Copper (Pure)_80C
+    name: Ph3_P2_C20_1
+    volume: '0.0'
+  - bounding_box:
+    - '68.4018613579992'
+    - '21.7064659572126'
+    - '0.0'
+    - '71.0648953999255'
+    - '25.6361185941275'
+    - '0.0'
+    color:
+    - '127'
+    - '247'
+    - '247'
+    mass: '0.0'
+    material: Copper (Pure)_80C
+    name: Ph3_P2_C24_1
+    volume: '0.0'
+  - bounding_box:
+    - '61.2927301917904'
+    - '53.4460925715306'
+    - '0.0'
+    - '64.7479875697172'
+    - '57.0886502840246'
+    - '0.0'
+    color:
+    - '255'
+    - '0'
+    - '160'
+    mass: '0.0'
+    material: Copper (Pure)_80C
+    name: Ph1_P2_C1_2
+    volume: '0.0'
+  - bounding_box:
+    - '64.6867090898834'
+    - '42.4045166467258'
+    - '0.0'
+    - '67.9319034289962'
+    - '46.2084072288865'
+    - '0.0'
+    color:
+    - '255'
+    - '0'
+    - '160'
+    mass: '0.0'
+    material: Copper (Pure)_80C
+    name: Ph1_P2_C5_2
+    volume: '0.0'
+  - bounding_box:
+    - '55.1697467996816'
+    - '48.0763802533557'
+    - '0.0'
+    - '58.6250041776083'
+    - '51.7189379658497'
+    - '0.0'
+    color:
+    - '255'
+    - '0'
+    - '160'
+    mass: '0.0'
+    material: Copper (Pure)_80C
+    name: Ph1_P2_C9_2
+    volume: '0.0'
+  - bounding_box:
+    - '68.0724533511794'
+    - '44.6667986355816'
+    - '0.0'
+    - '71.3176476902922'
+    - '48.4706892177424'
+    - '0.0'
+    color:
+    - '255'
+    - '0'
+    - '160'
+    mass: '0.0'
+    material: Copper (Pure)_80C
+    name: Ph1_P2_C13_2
+    volume: '0.0'
+  - bounding_box:
+    - '58.231238495736'
+    - '50.7612364124431'
+    - '0.0'
+    - '61.6864958736628'
+    - '54.4037941249371'
+    - '0.0'
+    color:
+    - '255'
+    - '0'
+    - '160'
+    mass: '0.0'
+    material: Copper (Pure)_80C
+    name: Ph1_P2_C17_2
+    volume: '0.0'
+  - bounding_box:
+    - '61.3009648285875'
+    - '40.14223465787'
+    - '0.0'
+    - '64.5461591677003'
+    - '43.9461252400307'
+    - '0.0'
+    color:
+    - '255'
+    - '0'
+    - '160'
+    mass: '0.0'
+    material: Copper (Pure)_80C
+    name: Ph1_P2_C21_2
+    volume: '0.0'
+  - bounding_box:
+    - '81.0604686064119'
+    - '14.4068032172799'
+    - '0.0'
+    - '83.3613663140558'
+    - '18.2987332156576'
+    - '0.0'
+    color:
+    - '102'
+    - '205'
+    - '170'
+    mass: '0.0'
+    material: Copper (Pure)_80C
+    name: Ph2_P2_C2_2
+    volume: '0.0'
+  - bounding_box:
+    - '78.6290785090733'
+    - '3.32206078096777'
+    - '0.0'
+    - '80.5284708847276'
+    - '7.10967613948922'
+    - '0.0'
+    color:
+    - '102'
+    - '205'
+    - '170'
+    mass: '0.0'
+    material: Copper (Pure)_80C
+    name: Ph2_P2_C6_2
+    volume: '0.0'
+  - bounding_box:
+    - '73.072953282808'
+    - '12.8179876347805'
+    - '0.0'
+    - '75.3738509904519'
+    - '16.7099176331583'
+    - '0.0'
+    color:
+    - '102'
+    - '205'
+    - '170'
+    mass: '0.0'
+    material: Copper (Pure)_80C
+    name: Ph2_P2_C10_2
+    volume: '0.0'
+  - bounding_box:
+    - '82.6923600445009'
+    - '3.58838232319292'
+    - '0.0'
+    - '84.5917524201552'
+    - '7.37599768171437'
+    - '0.0'
+    color:
+    - '102'
+    - '205'
+    - '170'
+    mass: '0.0'
+    material: Copper (Pure)_80C
+    name: Ph2_P2_C14_2
+    volume: '0.0'
+  - bounding_box:
+    - '77.06671094461'
+    - '13.6123954260302'
+    - '0.0'
+    - '79.3676086522538'
+    - '17.5043254244079'
+    - '0.0'
+    color:
+    - '102'
+    - '205'
+    - '170'
+    mass: '0.0'
+    material: Copper (Pure)_80C
+    name: Ph2_P2_C18_2
+    volume: '0.0'
+  - bounding_box:
+    - '74.5657969736457'
+    - '3.05573923874263'
+    - '0.0'
+    - '76.4651893493'
+    - '6.84335459726408'
+    - '0.0'
+    color:
+    - '102'
+    - '205'
+    - '170'
+    mass: '0.0'
+    material: Copper (Pure)_80C
+    name: Ph2_P2_C22_2
+    volume: '0.0'
+  - bounding_box:
+    - '73.6874379604801'
+    - '35.1232433910016'
+    - '0.0'
+    - '76.6670430858989'
+    - '39.0233812203306'
+    - '0.0'
+    color:
+    - '0'
+    - '0'
+    - '255'
+    mass: '0.0'
+    material: Copper (Pure)_80C
+    name: Ph3_P1_C2_2
+    volume: '0.0'
+  - bounding_box:
+    - '74.1857105889554'
+    - '23.6698182112842'
+    - '0.0'
+    - '76.8487446308817'
+    - '27.5994708481992'
+    - '0.0'
+    color:
+    - '0'
+    - '0'
+    - '255'
+    mass: '0.0'
+    material: Copper (Pure)_80C
+    name: Ph3_P1_C6_2
+    volume: '0.0'
+  - bounding_box:
+    - '66.3833063534379'
+    - '31.5212442978581'
+    - '0.0'
+    - '69.3629114788566'
+    - '35.4213821271871'
+    - '0.0'
+    color:
+    - '0'
+    - '0'
+    - '255'
+    mass: '0.0'
+    material: Copper (Pure)_80C
+    name: Ph3_P1_C10_2
+    volume: '0.0'
+  - bounding_box:
+    - '78.0416100762594'
+    - '24.9787197139987'
+    - '0.0'
+    - '80.7046441181857'
+    - '28.9083723509137'
+    - '0.0'
+    color:
+    - '0'
+    - '0'
+    - '255'
+    mass: '0.0'
+    material: Copper (Pure)_80C
+    name: Ph3_P1_C14_2
+    volume: '0.0'
+  - bounding_box:
+    - '70.035372156959'
+    - '33.3222438444298'
+    - '0.0'
+    - '73.0149772823777'
+    - '37.2223816737588'
+    - '0.0'
+    color:
+    - '0'
+    - '0'
+    - '255'
+    mass: '0.0'
+    material: Copper (Pure)_80C
+    name: Ph3_P1_C18_2
+    volume: '0.0'
+  - bounding_box:
+    - '70.3298111016513'
+    - '22.3609167085698'
+    - '0.0'
+    - '72.9928451435776'
+    - '26.2905693454847'
+    - '0.0'
+    color:
+    - '0'
+    - '0'
+    - '255'
+    mass: '0.0'
+    material: Copper (Pure)_80C
+    name: Ph3_P1_C22_2
+    volume: '0.0'
+  - bounding_box:
+    - '0.0'
+    - '0.0'
+    - '0.0'
+    - '70.77'
+    - '50.041946904572'
+    - '0.0'
+    color:
+    - '143'
+    - '175'
+    - '143'
+    mass: '0.0'
+    material: vacuum
+    name: Rotating_Band
+    volume: '0.0'
+  - bounding_box:
+    - '0.0'
+    - '0.0'
+    - '0.0'
+    - '99.0'
+    - '70.0035713374682'
+    - '0.0'
+    color:
+    - '143'
+    - '175'
+    - '143'
+    mass: '0.0'
+    material: vacuum
+    name: Whole_Region
+    volume: '0.0'
+  - bounding_box:
+    - '0.0'
+    - '0.0'
+    - '0.0'
+    - '99.0'
+    - '0.0'
+    - '0.0'
+    color:
+    - '143'
+    - '175'
+    - '143'
+    mass: '0.0'
+    material: ''
+    name: Boundary_Independent
+    volume: '0.0'
+  - bounding_box:
+    - '0.0'
+    - '0.0'
+    - '0.0'
+    - '70.0035713374682'
+    - '70.0035713374682'
+    - '0.0'
+    color:
+    - '143'
+    - '175'
+    - '143'
+    mass: '0.0'
+    material: ''
+    name: Boundary_Dependent
+    volume: '0.0'
+project_info:
+  design_name: Motor-CAD_tutorial
+  design_type: Maxwell 2D
+  project_name: MaxwellLabTutorial
+  solution_type: Transient
+  version: ANSYSEM_ROOT251
+settings:
+  model_units: mm
+  working_directory: C:\ANSYS_Motor-CAD\2025_1_1\Tutorials\Ansys_Maxwell_Lab\e10_example\MaxwellLabTutorial.pyaedt\Motor-CAD_tutorial

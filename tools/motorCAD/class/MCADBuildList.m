@@ -1,9 +1,9 @@
 classdef MCADBuildList
     properties
-    MotFilePath
-    LabBuildDate
-    MotFileDate
-    IsBuildFromDate  % LabBuildDate가 MotFileDate보다 이후인지 여부
+        MotFilePath
+        LabBuildDate
+        MotFileDate
+        IsBuildFromDate  % LabBuildDate가 MotFileDate보다 이후인지 여부
     end
 
     methods
@@ -12,14 +12,10 @@ classdef MCADBuildList
         if isempty(gcp('nocreate'))
             parpool;  % 기본 설정으로 병렬 풀 시작
         end
-%% MOTFilePath
-        if isstring(input2GetData)    
-            MotFileList = findMOTFiles(input2GetData)';
-            MotFileList = removeAutoSaveFiles(MotFileList)';
-            MotFileList = removeBackupFiles(MotFileList);
-            MotFileList = MotFileList(~contains(MotFileList, 'Scale'));
-            MotFileList = MotFileList(~contains(MotFileList, 'SL'));
-            MotFileList = MotFileList(~contains(MotFileList, 'MCAD'));
+%% MOTFilePath]
+        if  iscell(input2GetData)
+            MotFileList=input2GetData;
+      
         elseif istable(input2GetData)
             if isvarofTable(input2GetData,'ParentPath')
             MotFileDirList=fullfile(input2GetData.ParentPath,input2GetData.FileDir);
@@ -27,8 +23,13 @@ classdef MCADBuildList
             elseif isvarofTable(input2GetData,'MotFilePath')
             MotFileList=input2GetData.MotFilePath;
             end
-        elseif iscell(input2GetData)
-            MotFileList=input2GetData;
+        else isstring(input2GetData)    
+            MotFileList = findMOTFiles(input2GetData)';
+            MotFileList = removeAutoSaveFiles(MotFileList)';
+            MotFileList = removeBackupFiles(MotFileList);
+            MotFileList = MotFileList(~contains(MotFileList, 'Scale'));
+            MotFileList = MotFileList(~contains(MotFileList, 'SL'));
+            MotFileList = MotFileList(~contains(MotFileList, 'MCAD'));
         end
         %% Class       
         % MotFileList = MotFileList';  
@@ -52,7 +53,7 @@ classdef MCADBuildList
                 if ~isempty(MessageLog)
                     MessageDate{MotFileIndex} = MessageLog;
                 else                   
-                    MessageDate(MotFileIndex) =  input2GetData.SatDate(MotFileIndex) ;  % 공백 문자열로 초기화
+                    MessageDate{MotFileIndex} =  getLabBuildDateFromMotFile(MotFileList{MotFileIndex}) ;  % 공백 문자열로 초기화
                 end
             else
                 MessageDate{MotFileIndex} = '';  % 파일 목록이 비어있을 경우 공백 문자열

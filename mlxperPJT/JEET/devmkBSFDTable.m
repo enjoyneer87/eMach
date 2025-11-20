@@ -14,7 +14,7 @@ REFDTmatFileList=REFmatFileList(contains(REFmatFileList,'DT'));
 %% def
 load(MatfileNames{1})
 WireLayerInterGap=WireFitTable.subLineRPos{2}(2)-WireFitTable.subLineRPos{2}(1);
-BrData=WireFitTable.Bt3DLeftArray{1}{:};
+BrData=WireFitTable.Br3DRightArray{1}{:};
 BrDataSize       =size(BrData);
 WireWidth_division=BrDataSize(2);
 TimeSteps=BrDataSize(1);
@@ -70,18 +70,19 @@ parfor caseIndex = 1:len(MatfileNames)  % 병렬 처리
     WireFitTable.BSFDtlPerSLot = BSFDtlPerSLot;
 
     % BSFD FFT
+   
     BrR = cell(height(WireFitTable), height(WireFitTable));
     BtR = cell(height(WireFitTable), height(WireFitTable));
     BrL = cell(height(WireFitTable), height(WireFitTable));
     BtL = cell(height(WireFitTable), height(WireFitTable));
-
     for slotWireIDX = 1:height(WireFitTable)
         NumsubLine = len(WireFitTable.RightX{slotWireIDX});
         for sublineIndex = 1:NumsubLine
-            [BrL{slotWireIDX, sublineIndex}, ~, ~] = getFFT1Dset(WireFitTable.BSFDrlPerSLot{slotWireIDX}{sublineIndex}, 1);
             [BrR{slotWireIDX, sublineIndex}, ~, ~] = getFFT1Dset(WireFitTable.BSFDrrPerSLot{slotWireIDX}{sublineIndex}, 1);
-            [BtL{slotWireIDX, sublineIndex}, ~, ~] = getFFT1Dset(WireFitTable.BSFDtlPerSLot{slotWireIDX}{sublineIndex}, 1);
             [BtR{slotWireIDX, sublineIndex}, ~, ~] = getFFT1Dset(WireFitTable.BSFDtrPerSLot{slotWireIDX}{sublineIndex}, 1);
+            [BrL{slotWireIDX, sublineIndex}, ~, ~] = getFFT1Dset(WireFitTable.BSFDrlPerSLot{slotWireIDX}{sublineIndex}, 1);
+            [BtL{slotWireIDX, sublineIndex}, ~, ~] = getFFT1Dset(WireFitTable.BSFDtlPerSLot{slotWireIDX}{sublineIndex}, 1);
+          
         end
     end
 

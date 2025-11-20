@@ -37,7 +37,7 @@ classdef MCADLabManager
             end
         
             % Python 환경 설정
-            pyenv('Version', 'C:\ANSYS_Motor-CAD\2024_1_3\Python\Python\python.exe');
+            pyenv('Version', 'C:\ANSYS_Motor-CAD\2025_1_1\Python\Python\python.exe');
             currentPool = gcp('nocreate');
             % MCAD 인스턴스 생성
             if isempty(obj.MCADInstances)

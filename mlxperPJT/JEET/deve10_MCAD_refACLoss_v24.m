@@ -5,6 +5,10 @@ McadIndex=1;
 fullpath = mfilename("fullpath");
 MatDir='Z:\01_Codes_Projects\git_fork_emach\mlxperPJT\JEET';
 
+%% Set DefaultPath
+tempdefDefaultPath
+%%
+
 SpeedList=[1000:2000:15000];
 RMSCurrent    =460
 PhaseAdvance  =43.33

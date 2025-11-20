@@ -1,4 +1,4 @@
-function cleanedMatrix = removeColumnsWithNaN(matrix)
+function [cleanedMatrix,nanColumns] = removeColumnsWithNaN(matrix)
     % NaN 값을 포함하는 열을 찾기
     nanColumns = any(isnan(matrix), 1);
     

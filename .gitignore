@@ -94,3 +94,27 @@ fcnExportGraphicGif.m
 *.vscode**
 mlxperPJT/JEET/SCL_AC_HYBTSR1.fig
 mlxperPJT/JEET/SCL_ACvANAHYBTSFQ.fig
+cat >> .gitignore << EOF
+# Large files
+*.pth
+*.pkl
+*.aedt
+*.aedb
+*.lock
+*.aedtresults/
+*.pyaedt_models/
+# AEDT files
+*.aedt.lock
+*.results/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Large data files (over 100MB)
+*.mat
+*.fig
+mlxperPJT/JEET/From38100/*.csv
+ScaledFileListwithTxtExport.mat
+HDEV4DOE.mat

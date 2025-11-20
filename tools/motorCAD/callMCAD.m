@@ -1,4 +1,4 @@
-function mcad=callMCAD(pyMCAD)
+function [mcad,pymotorcad]=callMCAD(pyMCAD)
 if nargin==1
     strcmp(pyMCAD,'pyMCAD')
     pymotorcad = py.importlib.import_module('ansys.motorcad.core');

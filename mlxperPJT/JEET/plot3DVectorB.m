@@ -1,113 +1,121 @@
-%% Mesh 3D 
+%% Table of Contents
+% def Path
+% Get PartStruct
+% Get Wire Element and Node ID
+% Load Mat File From JplotReader  need Do prior -with python Code
+%%
+% JmagResultName='e10MS_ConductorModel_REF_Load~16_';
+JmagResultPath='E:\KDH\e10\MSConductorModel\e10MS_ConductorModel.jfiles\e10MS_ConductorModel~6\e10MS_ConductorModel_SCL_Load~13'
+% JmagResultPath='F:\KDH\KDH\SCL_e10_WTPM_PatternD_R1_4k.jfiles\SC_e10_WirePeriodic~9\SC_e10_WirePeriodic_Load_4k_rough~26'
+% JmagResultPath='F:\KDH\KDH\SCL_e10_WTPM_PatternD_R1_16kMap.jfiles\SC_e10_WirePeriodic~9\SC_e10_WirePeriodic_Load_16k_rough~27';
+% JmagResultName='e10MS_ConductorModel_SCL_Load~13';
+[~,JmagResultName,~]=fileparts(JmagResultPath);
+JmagResultDIR=extractBefore(JmagResultPath,'.jfiles');
+[JmagPJTDIR,JmagPJTName,~]=fileparts(JmagResultDIR);
+JmagPJTPath=fullfile(JmagPJTDIR,[JmagPJTName,'.jproj']);
+%% Get PartStruct
 
 
-
-%% MS 
+% need 2 open Jproj
 app=callJmag
-MotFilePath='Z:\Simulation\JEETACLossValid_e10_v24\refModel\e10_UserRemesh.mot'
-refMSjprojPath='Z:/Simulation/JEETACLossValid_e10_v24/refModel/e10_v24.jfiles';
+app.Show
+app.Load(JmagPJTPath)
+PartStruct=getJMAGDesignerPartStruct(app);
+Lactive=150;
+PartTable=struct2table(PartStruct);
+BoolTargetSlot=contains(PartTable.Name,'Slot1/')|contains(PartTable.Name,'Slot2/');
+WireTable=PartTable(BoolTargetSlot,:);
+WireTable = sortrows(WireTable,'Name'); 
+LayerNumber=4;
+targetSlotNumber=2;
+targetPartIndex=LayerNumber*targetSlotNumber;
 
-[refMSjprojPath] = checkMotNJprojLink(MotFilePath,refMSjprojPath,app);
-jprojFiles=app.GetProjectFolderPath;
+savePartIDToMat(WireTable.partIndex, JmagPJTPath)
 
-if ~strcmp(jprojFiles,refMSjprojPath)
-    app.Load(refMSjprojPath)
-end
-Model=app.GetCurrentModel;
-Model.RestoreCadLink
-geomApp=app.CreateGeometryEditor(0);
-WireTemplateObj=getWireTemplateObject(geomApp);
-
-if WireTemplateObj.IsValid
-    isConductor=2; % wireTemplate
-else
-    isConductor=0;
-end
-%% MS Slot B Vector - on 3D Plane
-%% Model PartName Change & Model Set - PartStruct
-if isConductor==0
-    ConductorModelObj=Model;
-end
-PartStruct          =getJMAGDesignerPartStruct(app);
-PartStruct=getEdgeVertexIdwithXYZCheck(PartStruct,app);   
-PartStructByType    =convertJmagPartStructByType(PartStruct);
-changeJMAGPartNameTable(PartStructByType.StatorCoreTable,app)
-
-
-i_Stator_OD=2*max([PartStruct.VertexMaxRPos]);
-PartStruct          =getJMAGDesignerPartStruct(app);
-idx=findMatchingIndexInStruct(PartStruct,'Name','Stator');
-WireStruct=PartStruct(idx);
-idx=contains({WireStruct.Name},'StatorCore',IgnoreCase=true);
-WireStruct=WireStruct(~idx);
-
-length(WireStruct)
 %% Get Wire Element and Node ID
-for Index=1:length(WireStruct)
-    WireIndex=WireStruct(Index).partIndex;
-    [WireStruct(Index).ElementId, WireStruct(Index).NodeID]=devgetMeshData(app,WireIndex);
+for SlotIndex=1:height(WireTable)
+    WireIndex=WireTable.partIndex(SlotIndex);
+    [ElementId{SlotIndex}, NodeID{SlotIndex},NodeTable{SlotIndex},delaunyObj{SlotIndex}]...
+    =getMeshData(app,WireIndex);
 end
 
+NodeID2Save=[];
+for SlotIndex=1:height(WireTable)
+        NodeID2Save=[NodeID2Save;NodeID{SlotIndex}];
+end
+saveNodeID2Mat(NodeID2Save, JmagPJTPath)
 
-% Babs/Brad/Bt - per time
-    % Ref/SC - 동일하니 하나만  - SC가 mesh가 촘촘
+% As Var 2 Table
+WireTable.NodeTable=NodeTable';
+WireTable.NodeID=NodeID';
+WireTable.ElementId=ElementId';
+WireTable.DT=delaunyObj';
+% Backup
+refWireTableBackup=WireTable;
+%% Load Mat File From JplotReader 
+% -python
+% DataStruct=load('ref_e10_WirePeriodic_Load_18k_rgh~32_Case28_MagB.mat')
+if 38100==getPCRDPPortNumber
+    matFileList=findMatFiles('D:\KangDH\Emlab_emach\tools\jmag\jplotReader');
+else
+    matFileList=findMatFiles('Z:\01_Codes_Projects\git_fork_emach\tools\jmag\jplotReader');
+end
+MagAmatFileList=matFileList(contains(matFileList,JmagResultName)&contains(matFileList,'MagB')&~contains(matFileList,'backup','IgnoreCase',true));
+MagAmatFileList = sort(MagAmatFileList); 
+[~,MatfileNames,~]=fileparts(MagAmatFileList);
+% for caseIndex=1:len(MatfileNames)
+%% temp
+REFDTmatFileList=MagAmatFileList(contains(MagAmatFileList,'Case28'));
+% REFDTmatFileList=REFDTmatFileList(~contains(REFDTmatFileList,'18k'));
 
-%%1) Manual CSV 
-% exportData=exportAirGapBField(i_Stator_OD,app)
-PartIdList=[WireStruct.partIndex];
-exportFilePath=exportFieldData2CSV(app,'B','JEET',PartIdList,'ref','_Load');
-%2) MPT tool >CSV /3) Manual CSV > MPT tool로 결국 Mesh 추출필요
-%3) jquery말고 API JplotReader 이름 뭐였더라 아 c++사용필요 
-% Z:\01_Codes_Projects\git_fork_emach\mlxperPJT\JEET\devSettingJPlotReader.m
-% No AirRegion > EMdyne문의
+% FqmatFileList=REFDTmatFileList(contains(REFDTmatFileList,'Fq'));
+% MSmatFileList=REFDTmatFileList(contains(REFDTmatFileList,'MS'));
+matFileList=REFDTmatFileList
+DataStruct=load(REFDTmatFileList{1,1})
+%5
+parpool;  % 병렬 풀 시작 (필요한 경우)
 
-%% Mesh 플로팅
-% figure;
+% WireTable의 결과를 저장할 셀 배열 선언
+WireTableResults = cell(1, 30);
 
-% MPToolCSVFilePath='Z:/Simulation/JEETACLossValid_e10_v24/refModel/ExportMPtools/MSField.csv';
-MPToolCSVFilePath='Z:/Simulation/JEETACLossValid_e10_v24/refModel/ExportMPtools/MSField_Fillet.csv'
-[model,pdeTriElements,pdeNodes,pdeQuadElements]  = nastran2PDEMesh(MPToolCSVFilePath);
+parfor caseIndex = 1:30  % 'parfor'를 사용하여 병렬 처리
+    % 초기화
+    WireTable = [];    
+    % 데이터 로드
+    % DataStruct = load(MagAmatFileList{caseIndex});
+    %% Mapping 2 WireStruct > WireTable
+    WireTable = mappingB2Slot(DataStruct, refWireTableBackup);  % WireTable 생성
+    WireTable = sortrows(WireTable, "Name", "ascend");  % 정렬
+    WireTable = cart2polPartTable(WireTable);  % 좌표 변환  
+    WireTable=removevars(WireTable,'object')
+    % 결과를 셀 배열에 저장
+    WireTableResults{caseIndex} = WireTable;
+end
+delete(gcp('nocreate'));  % 병렬 풀 종료 (필요한 경우)
 
-
-%% Read B Table
-LoadexportFilePath=exportFilePath(contains(exportFilePath,'_Load','IgnoreCase',true));
-for CaseIndex=1:length(LoadexportFilePath)
-    filePath=LoadexportFilePath{CaseIndex};
-    FieldData{CaseIndex}=readJMAGFieldTable(filePath);
+% 병렬 작업 완료 후 순차적으로 저장
+for caseIndex = 1:30
+    WireTable = WireTableResults{caseIndex};  % 병렬 결과 불러오기
+    save([MatfileNames{caseIndex}, '_wireTable.mat'], 'WireTable');  % 저장
 end
 
-
-StepList=FieldData{1}.AbsTable.Properties.VariableNames;
-view(3)
-%% Abs Table/XTable/YTable
-dev_plot3DVectorB
-figure(2)
-
-[thetaPosAll,RPosAll]=cart2pol(FieldData{caseIndex}.positionTable.("Position X"),FieldData{caseIndex}.positionTable.("Position Y"))
-MaxThetaIndex=find(difftol(thetaPosAll,max(thetaPosAll),1e-2)&difftol(RPosAll,min(RPosAll),1e-2));
-MinThetaIndex=find(difftol(thetaPosAll,min(thetaPosAll),1e-2)&difftol(RPosAll,min(RPosAll),1e-2));
-
-
-plot([0:3:360],FieldData{caseIndex}.AbsTable(MaxThetaIndex,:).Variables,'*--','DisplayName','Left')
-hold on
-plot([0:3:360],FieldData{caseIndex}.AbsTable(MinThetaIndex,:).Variables,'^-','DisplayName','Right')
-formatterFigure4Paper('double','2x2')
-ax=gca
-ax.XLim=[0 360]
-ax.XLabel.String='Electrical Angle[deg]'
-ax.YLabel.String='B_{abs}[T]'
-
-% pdegploaxt(model)
+%% Slot Plot
 close all
-%% MS Core M Vector - on 3D Plane 
-% JplotReaderData - NO Air Region
-outputMatPath='Z:\01_Codes_Projects\git_Pyleecan_fork\output_data.mat'
-JplotReaderData=load(outputMatPath)
-
-scatter3(BData.element_centers(:,4),BData.element_centers(:,5),BData.component_data(:,2),'r')
-hold on
-scatter3(BData.element_centers(:,4),BData.element_centers(:,5),BData.component_data(:,3),'k')
-hold on
-
-%% MQS
-
+C = linspecer(481);
+for slotIndex=1:height(WireTable)
+    for timeIdx=52
+    ElementCenterValueArray= WireTable.TtimeTableByElerow{slotIndex}.Step52;
+    ElementCenterX           = WireTable.TtimeTableByElerow{slotIndex}.x;
+    ElementCenterY           = WireTable.TtimeTableByElerow{slotIndex}.y;
+    DT=WireTable.DT{slotIndex};
+    % 원래 요소중심 데이터 Plot
+    scatter3(ElementCenterX,ElementCenterY,ElementCenterValueArray,'k','.')
+    hold on
+    centerAllFigures
+    % 요소 중심에서의 x, y, z (Btvalues) 데이터
+    % 요소 중심에서의 x, y, z (Btvalues) 데이터
+    fitresult= fitElementCenterData(ElementCenterValueArray,ElementCenterX,ElementCenterY);
+    trSurf=plotMappedDelaunay(DT,fitresult);
+    centerAllFigures
+    end
+end

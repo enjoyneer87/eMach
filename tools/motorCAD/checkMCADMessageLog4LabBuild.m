@@ -2,13 +2,15 @@ function MessageDate=checkMCADMessageLog4LabBuild(MessageLogData)
 
 
     %% 텍스트 검토 알고리즘
-    for i = 1:numel(MessageLogData{1})  
+    % for i = 1:numel(MessageLogData{1})  
         %% Get Lab Build Info (SLFEA or DOE)
-        TotalCalcTime       =find(contains(MessageLogData{1},'SetVariable LabModel_Saturation_Date')); 
+        TotalCalcTime       =find(contains(MessageLogData{1},'LabModel_Saturation_Date')); 
         if ~isempty(TotalCalcTime)
         LastTotalCalcIndex  =TotalCalcTime(end);   
         LastTotalCalcString =MessageLogData{1}{LastTotalCalcIndex}; 
-        splitedString=strsplit(LastTotalCalcString,'= ');
+        splitedString=strsplit(LastTotalCalcString,'=');
+        % splitedString=strsplit(LastTotalCalcString,'= ');
+
             if length(splitedString)>1
             part1=splitedString{2};
             part1=strrep(part1,'-','/');
@@ -25,7 +27,7 @@ function MessageDate=checkMCADMessageLog4LabBuild(MessageLogData)
         %         part2 = LastTotalCalcString(thirdColonIndex+1:end);
         %     end
         end
-    end
+    % end
     
     %% Date
     if exist('part1',"var")&&~isempty(part1)

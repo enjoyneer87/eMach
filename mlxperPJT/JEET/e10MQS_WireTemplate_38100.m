@@ -118,7 +118,7 @@ StatorOneSlotAngle     =max(max(StatorGeomArcTable.EndVertexTabletheta),max(Stat
 %% if no WireTemplate and ConductorTable is not Empty
 % Import Stator Taemplate and Delete exist Stator Assem
 jmdlFileName='JFT145_stator';
-filePathCell=findFilePaths(jmdlFileName,fileparts(jprojFiles));
+filePathCell=findFilePaths(jmdlFileName,fileparts('F:\KDH\Thesis\JEET\e10\refModel\JFT145_stator.jmdl'));
 if isempty(filePathCell)
     filePathCell=findFilePaths(jmdlFileName,pwd);
 end
@@ -348,59 +348,6 @@ end
 
 app.Save
 
-NumModels=app.NumModels;
-for ModelIndex=1:NumModels
-    ModelObj=app.GetModel(ModelIndex-1);
-    NumStudies=ModelObj.NumStudies;
-    %% Material Set
-    BandMaterial                ='Air'                  ;
-    ShaftMaterial               ='Air'                  ;
-    RotorCoreMaterial           ="NO18-1160"     ;    
-    MagNetMaterial              ="N42EH"         ;
-    MagnetTable=PartStructByType.MagnetTable;
-    NumStudies=ModelObj.NumStudies;
-    for StudyIndex=1:NumStudies
-        curStudyObj=ModelObj.GetStudy(StudyIndex-1);
-        app.SetCurrentStudy(curStudyObj.GetName)
-        % Magnet
-        setMagnetMagnetizationbyEdgeSet(app,MagNetMaterial,MagnetTable)
-        % Other
-        curStudyObj.SetMaterialByName("Stator/StatorCore",RotorCoreMaterial)
-        curStudyObj.SetMaterialByName("Rotor/RotorCore", RotorCoreMaterial)
-        curStudyObj.SetMaterialByName("Band",BandMaterial)
-        curStudyObj.SetMaterialByName("Shaft",ShaftMaterial)
-        if isConductor>0
-            for PartIndex = 1:height(PartStructByType.ConductorTable)
-                curStudyObj.SetMaterialByName(PartStructByType.ConductorTable.Name{PartIndex}, "Copper");
-                curStudyObj.GetMaterial(PartStructByType.ConductorTable.Name{PartIndex}).SetValue("EddyCurrentCalculation", 1);
-            end
-        end
-    end
-end
-%% mkDesignerEquation
-for StudyIndex=1:NumStudies
-    curStudyObj=ModelObj.GetStudy(StudyIndex-1);
-    app.SetCurrentStudy(curStudyObj)
-    mkDesignerEquation('speed',num2str(rpm),curStudyObj)
-    mkDesignerEquation('omega','speed/60*2*pi',curStudyObj,'equation')
-    mkDesignerEquation('omegaE','omega*POLES/2',curStudyObj,'equation')
-    mkDesignerEquation('Freq','omega/(2*pi)',curStudyObj,'equation')
-    mkDesignerEquation('FreqE','omegaE/(2*pi)',curStudyObj,'equation')
-    mkDesignerEquation('MCADPhaseAdvance',num2str(MCADPhaseAdvance),curStudyObj)
-end
-
-% %% Winding Setting
-% CoilWindingInfo           =defCoilWindingInfoStruct(MachineData);
-% firstSlotWirePartsTable   =ConductorPartTable(contains(ConductorPartTable.Name,'Slot1'),:);
-% % firstSlotWirePartsTable =getFirstSlotWirePartTableFromPartStruct(PartStruct);  %% 외측 conductor확인
-% ConductorNumber           =CoilWindingInfo.SlotLayerNumber;
-% % Region Setting
-% % Slot Poles 셋팅하는게 문제 있으니까 아예 스터디 템플렛을 Wire가 포함된걸로 저장
-% setWireRegion(app,firstSlotWirePartsTable,ConductorNumber) 
-%% Set Magnet Conductor  
-% setMagnetConductor(app, MagnetTable, 1)
-%% Condition Setting
-setJMAGMotorConditions(app, PartStructByType, isConductor)
 %% Winding Setting
 % getCoilTable
 

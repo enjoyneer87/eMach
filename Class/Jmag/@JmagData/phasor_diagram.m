@@ -1,8 +1,4 @@
-function phasor_diagram(input_obj) 
-% quiver axis
-quiver(0,0,1000,0,'off','k',LineWidth=1,MaxHeadSize=0.05)
-hold on
-quiver(0,0,0,1000,'off','k',LineWidth=1,MaxHeadSize=0.05)
+function phasor_diagram(input_obj)  
 hold on
 quiver(0,0,-1000,0,'off','k',LineWidth=1,MaxHeadSize=0.05)
 

@@ -8,9 +8,13 @@
 
 function setPythonEnv(python2call)
 pe=pyenv;
+% MCADVersion='C:\ANSYS_Motor-CAD\2024_1_3\Python\Python\python.exe';
+MCADVersion='C:\Ansys_Motor-CAD\2025_1_1\Python\Python\pythonw.exe';
+
 if strcmp(python2call,'mcad')
     if pe.Status == 'NotLoaded'
-    pyenv(ExecutionMode="OutOfProcess",Version='C:\ANSYS_Motor-CAD\2024_1_3\Python\Python\python.exe');
+    pyenv(ExecutionMode="OutOfProcess",Version=MCADVersion);
+
     end
 elseif strcmp(python2call,'jmag')
 pyenv('Version', 'C:\Program Files\JMAG-Designer23.1\python3.8\python.exe');

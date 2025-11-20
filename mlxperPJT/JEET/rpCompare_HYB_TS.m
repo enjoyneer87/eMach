@@ -25,21 +25,45 @@ BdisSFTPath='coeffiSCLBdisSFDTableV1.mat'
 
 load(BdisSFTPath)
 
-C = linspecer(1);
+C = linspecer(11);
+
+figure(1)
 
 for sublindeIndex=1:11
 % boxvalue=BrR(1:30,:);
 % bx=boxchart(boxvalue','BoxFaceColor','w','BoxEdgeColor','k','Notch','on','BoxMedianLineColor','r');
 hold on
-figure(1)
 BrR=BdisSFDTable.BrRcell{1,1}{sublindeIndex};
      % for idx=1:100
-bar(BrR(1:30,:),'grouped','EdgeColor',C,'FaceColor',C)
+bar(BrR(1:30,:),'grouped','FaceColor',C(sublindeIndex,:),'FaceAlpha',(11-sublindeIndex/2)/11);
+
+end
+ax=gca
+ax.XLim=[0 18]
+ax.XTick=[1:2:18]
+grid on
+ax.XLabel.String='Harmonic order'
+
+figure(2)
+for sublindeIndex=1:11
+% boxvalue=BrR(1:30,:);
+% bx=boxchart(boxvalue','BoxFaceColor','w','BoxEdgeColor','k','Notch','on','BoxMedianLineColor','r');
+hold on
+BtR=BdisSFDTable.BtRcell{1,1}{sublindeIndex};
+     % for idx=1:100
+bar(BtR(1:30,:),'grouped','FaceColor',C(sublindeIndex,:),'FaceAlpha',(11-sublindeIndex/2)/11);
+end
+
+ax=gca
+ax.XLim=[0 18]
+ax.XTick=[1:2:18]
+grid on
+ax.XLabel.String='Harmonic order'
+
 figure(2)
 BrR=BdisSFDTable.BrRcell{1,1}{sublindeIndex};
 bar(BrR(1:30,:),'grouped','EdgeColor',C,'FaceColor',C)
 figure(2)
-BtR=BdisSFDTable.BtRcell{1,1}{sublindeIndex};
 bar(BtR(1:30,:),'grouped','EdgeColor',C,'FaceColor',C)
 figure(3)
 BrL=BdisSFDTable.BrLcell{1,1}{sublindeIndex};

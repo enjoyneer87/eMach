@@ -8,7 +8,8 @@ rpm = 8000
 % MachineData From MCAD
 addpwd
 mcad=callMCAD
-refPath='Z:\Simulation\JEETACLossValid_e10_v24\refModel\e10_UserRemesh.mot';
+refPath='F:\KDH\Thesis\JEET\e10\refModel\e10_User.mot'
+% refPath='Z:\Simulation\JEETACLossValid_e10_v24\refModel\e10_UserRemesh.mot';
 if ~exist(refPath,"file")
     refPath='D:\KangDH\Thesis\e10\refModel\e10_UserRemesh.mot';
 end
@@ -414,9 +415,11 @@ e10MQS
 % Circuit Modeling
 
 % [TC]winding From MCAD
-windingPatternTxtPath                    ='Z:\Simulation\JEETACLossValid_e10_v24\refModel\e10_8p48s2Para4turn.txt'
+% windingPatternTxtPath                    ='Z:\Simulation\JEETACLossValid_e10_v24\refModel\e10_8p48s2Para4turn.txt'
+windingPatternTxtPath='D:\12p72s_distWinding.txt'
 [McadWindingPatternTable, MachineInfo]   =readMCADWindingPatterTXT(windingPatternTxtPath)
 outputPath                               =convertMCAD2JmagWireTable(McadWindingPatternTable)
+convertMCADPatternTable2JMAGCoilTable(McadWindingPatternTable)
 % generate Winding Table
 
 %

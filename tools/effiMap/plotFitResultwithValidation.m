@@ -1,109 +1,98 @@
-function plotFitResultwithValidation(fitresult, DataSet,plotDatatype)
-%%
-    % 플롯 생성
-    xData              =DataSet.xData        ;
-    yData              =DataSet.yData        ;
-    zData              =DataSet.zData        ;
-    xValidation        =DataSet.xValidation  ;    
-    yValidation        =DataSet.yValidation  ;    
-    zValidation        =DataSet.zValidation  ;    
-    varName            =DataSet.varName      ;
-    statics            =DataSet.statics      ;
-   originDqTable.Properties.Description=    DataSet.originDqTable.Properties.Description          ;    
-   ValidationDqTable.Properties.Description=    DataSet.ValidationDqTable.Properties.Description ;
-    % figure('Name', varName);
-    xlim = [min([xData; xValidation]), max([xData; xValidation])];
-    ylim = [min([yData; yValidation]), max([yData; yValidation])];
-
-    if nargin>2
-        switch plotDatatype
-            case 0
-            % figure(1)
-            a = plot(fitresult, [xData, yData], zData, 'XLim', xlim, 'YLim', ylim);
-            hold on
-            a(end+1) = plot3(xValidation, yValidation, zValidation, 'bo', 'MarkerFaceColor', 'w');
-            hold off            
-            legend(a, 'Interpolation Surface', [originDqTable.Properties.Description], [ValidationDqTable.Properties.Description], 'Location', 'NorthEast', 'Interpreter', 'none');
-            xlabel('Id', 'Interpreter', 'none');
-            ylabel('Iq', 'Interpreter', 'none');
-            autoZlabel(varName)
-            title([replaceUnderscoresWithSpace(varName)]);
-            grid on
-            formatter_sci
-            case 1
-            % 잔차 플로팅.
-            % figure(2)
-            % b = plot(fitresult, [xData, yData], zData, 'Style', 'Residual', 'XLim', xlim, 'YLim', ylim);
-            hold on
-            b = plot3(xValidation, yValidation, zValidation - fitresult(xValidation, yValidation), 'bo', 'MarkerFaceColor', 'w');
-            % legend(b,['Absolute Error',newline,originDqTable.Properties.Description,'-',ValidationDqTable.Properties.Description], 'Location', 'NorthEast', 'Interpreter', 'none');
-
-            % b = plot3(xValidation, yValidation, (zValidation - fitresult(xValidation, yValidation))./zValidation, 'bo', 'MarkerFaceColor', 'w');
-            % legend(b,['Relative Error',newline,originDqTable.Properties.Description,'-',ValidationDqTable.Properties.Description], 'Location', 'NorthEast', 'Interpreter', 'none');
-
-            view(-40, 30)
-            % b = contourf(xValidation, yValidation, zValidation - fitresult(xValidation, yValidation), 'bo', 'MarkerFaceColor', 'w');
-            % b(end+1) = plot3(xValidation, yValidation, zValidation - fitresult(xValidation, yValidation), 'bo', 'MarkerFaceColor', 'w');
-            hold off
-            % legend(b,[ValidationDqTable.Properties.Description], 'Location', 'NorthEast', 'Interpreter', 'none');
-            % legend(b, [originDqTable.Properties.Description], [ValidationDqTable.Properties.Description], 'Location', 'NorthEast', 'Interpreter', 'none');
-            xlabel('Id pk[A]', 'Interpreter', 'none');
-            ylabel('Iq pk[A]', 'Interpreter', 'none');
-            zlabel('Absolute Error', 'Interpreter', 'none');
-            title([replaceUnderscoresWithSpace(varName), newline,'RMSE=',num2str(statics.rmse)]);
-            grid on
-            formatter_sci
-            case 2
-            % 등고선 플롯을 만드십시오.
-            % figure(3)
-            c = plot(fitresult, [xData, yData], zData, 'Style', 'Contour', 'XLim', xlim, 'YLim', ylim);
-            hold on
-            c(end+1) = plot(xValidation, yValidation, 'bo', 'MarkerFaceColor', 'w');
-            hold off
-            legend(c, 'Interpolation Surface', [originDqTable.Properties.Description], [ValidationDqTable.Properties.Description], 'Location', 'NorthEast', 'Interpreter', 'none');
-            xlabel('Id pk[A]', 'Interpreter', 'none');
-            ylabel('Iq pk[A]', 'Interpreter', 'none');
-            title([replaceUnderscoresWithSpace(varName)]);
-            grid on
-            formatter_sci
-        end
+function plotFitResultwithValidation(fitresult, DataSet, plotDatatype)
+    % === 데이터 추출 ===
+    xData       = getFieldOrDefault(DataSet, 'xData', []);
+    yData       = getFieldOrDefault(DataSet, 'yData', []);
+    zData       = getFieldOrDefault(DataSet, 'zData', []);
+    xValidation = getFieldOrDefault(DataSet, 'xValidation', []);
+    yValidation = getFieldOrDefault(DataSet, 'yValidation', []);
+    zValidation = getFieldOrDefault(DataSet, 'zValidation', []);
+    varName     = getFieldOrDefault(DataSet, 'varName', 'Unknown');
+    originDqTableDesc     = getTableDescOrDefault(DataSet, 'originDqTable');
+    ValidationDqTableDesc = getFieldOrDefault(DataSet, 'ValidationDqTable', 'Validation');
+    
+    % === 예측 함수 래핑 ===
+    if isa(fitresult, 'function_handle')
+        predictZ = @(x, y) fitresult(x, y);
+    elseif isa(fitresult, 'cfit') || isa(fitresult, 'sfit') || isa(fitresult, 'curve') || isa(fitresult, 'surface')
+        predictZ = @(x, y) feval(fitresult, x, y);  % 또는 fitresult(x, y)도 가능
+    elseif isa(fitresult, 'curvefit.model.ThinPlateSpline') && ismethod(fitresult, 'evaluate')
+        predictZ = @(x, y) fitresult.evaluate([x(:), y(:)]);
     else
-            figure(1)
-            h = plot(fitresult, [xData, yData], zData, 'XLim', xlim, 'YLim', ylim);
+        error('지원되지 않는 fitresult 타입입니다.');
+    end
+
+    xlimVals = [min(DataSet.XGrid(:)), max(DataSet.XGrid(:))];
+    ylimVals = [min(DataSet.YGrid(:)), max(DataSet.YGrid(:))];
+
+    % === 시각화 분기 ===
+    switch plotDatatype
+        case 0  % Surface plot
+            [X, Y] = meshgrid(linspace(xlimVals(1), xlimVals(2), 100), ...
+                              linspace(ylimVals(1), ylimVals(2), 100));
+            try
+                Z = reshape(predictZ(X, Y), size(X));
+            catch
+                warning('예측 오류 발생. NaN으로 채움');
+                Z = nan(size(X));
+            end
+
+            % NaN 체크
+            if all(isnan(Z), 'all')
+                warning('예측 Z값이 모두 NaN입니다. 보간 범위를 확인하세요.');
+            end
+
+            surf(X, Y, Z); shading interp
             hold on
-            h(end+1) = plot3(xValidation, yValidation, zValidation, 'bo', 'MarkerFaceColor', 'w');
+            plot3(xData, yData, zData, 'bo', 'MarkerFaceColor', 'w');
+            if ~isempty(xValidation)
+                plot3(xValidation, yValidation, zValidation, 'ro', 'MarkerFaceColor', 'w');
+            end
             hold off
-            legend(h, 'Interpolation Surface', [originDqTable.Properties.Description], [ValidationDqTable.Properties.Description], 'Location', 'NorthEast', 'Interpreter', 'none');
-            xlabel('Id pk[A]', 'Interpreter', 'none');
-            ylabel('Iq pk[A]', 'Interpreter', 'none');
-            zlabel(replaceUnderscoresWithSpace(varName), 'Interpreter', 'none');
-            grid on
-            formatter_sci
-            % 잔차 플로팅.
-            figure(2)
-            % h = plot(fitresult, [xData, yData], zData, 'Style', 'Residual', 'XLim', xlim, 'YLim', ylim);
-            hold on
-            b = plot3(xValidation, yValidation, zValidation - fitresult(xValidation, yValidation), 'bo', 'MarkerFaceColor', 'w');
-            
-            % b(end+1) = plot3(xValidation, yValidation, zValidation - fitresult(xValidation, yValidation), 'bo', 'MarkerFaceColor', 'w');
+            legend('Interpolated Surface', originDqTableDesc, ValidationDqTableDesc, ...
+                   'Location', 'NorthEast', 'Interpreter', 'none');
+            xlabel('Id pk[A]'); ylabel('Iq pk[A]'); autoZlabel(varName);
+            title(replaceUnderscoresWithSpace(varName));
+            grid on; formatter_sci
+
+        case 1  % Residual plot
+            if isempty(xValidation)
+                warning('Validation 데이터가 없어 잔차 플롯을 생략합니다.');
+                return;
+            end
+            try
+                zhat = predictZ(xValidation, yValidation);
+                err = zValidation - zhat;
+            catch
+                err = nan(size(zValidation));
+                warning('예측 오류로 잔차 계산 실패');
+            end
+
+            plot3(xValidation, yValidation, err, 'ro', 'MarkerFaceColor', 'w');
+            view(-40, 30)
+            xlabel('Id pk[A]'); ylabel('Iq pk[A]'); zlabel('Residual [z - ẑ]');
+            title([replaceUnderscoresWithSpace(varName), newline, 'Validation Residual']);
+            grid on; formatter_sci
+
+        case 2  % Contour plot
+            [X, Y] = meshgrid(linspace(xlimVals(1), xlimVals(2), 100), ...
+                              linspace(ylimVals(1), ylimVals(2), 100));
+            try
+                Z = reshape(predictZ(X(:), Y(:)), size(X));
+            catch
+                Z = nan(size(X));
+            end
+            contourf(X, Y, Z, 30); hold on
+            if ~isempty(xValidation)
+                plot(xValidation, yValidation, 'ro', 'MarkerFaceColor', 'w');
+            end
             hold off
-            legend(b,['Absolute Error',newline,originDqTable.Properties.Description,'-',ValidationDqTable.Properties.Description], 'Location', 'NorthEast', 'Interpreter', 'none');
-            % legend(h, [originDqTable.Properties.Description], [ValidationDqTable.Properties.Description], 'Location', 'NorthEast', 'Interpreter', 'none');
-            xlabel('Id pk[A]', 'Interpreter', 'none');
-            ylabel('Iq pk[A]', 'Interpreter', 'none');
-            zlabel([replaceUnderscoresWithSpace(varName), ' residual'], 'Interpreter', 'none');
-            grid on
-            formatter_sci
-            % 등고선 플롯을 만드십시오.
-            figure(3)
-            h = plot(fitresult, [xData, yData], zData, 'Style', 'Contour', 'XLim', xlim, 'YLim', ylim);
-            hold on
-            h(end+1) = plot(xValidation, yValidation, 'bo', 'MarkerFaceColor', 'w');
-            hold off
-            legend(h, 'Interpolation Surface', [originDqTable.Properties.Description], [ValidationDqTable.Properties.Description], 'Location', 'NorthEast', 'Interpreter', 'none');
-            xlabel('Id pk[A]', 'Interpreter', 'none');
-            ylabel('Iq pk[A]', 'Interpreter', 'none');
-            grid on
-            formatter_sci
+            legend('Interpolation Contour', originDqTableDesc, ValidationDqTableDesc, ...
+                   'Location', 'NorthEast', 'Interpreter', 'none');
+            xlabel('Id pk[A]'); ylabel('Iq pk[A]');
+            title(replaceUnderscoresWithSpace(varName));
+            grid on; formatter_sci
+
+        otherwise
+            error('plotDatatype는 0 (surf), 1 (residual), 2 (contour) 중 하나여야 합니다.');
     end
 end

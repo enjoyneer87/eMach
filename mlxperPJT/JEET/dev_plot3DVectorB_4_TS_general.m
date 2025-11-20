@@ -5,9 +5,9 @@
 % Load Mat File From JplotReader  need Do prior -with python Code
 %%
 % JmagResultName='e10MS_ConductorModel_REF_Load~16_';
-JmagResultPath='E:\KDH\e10\MSConductorModel\e10MS_ConductorModel.jfiles\e10MS_ConductorModel~6\e10MS_ConductorModel_SCL_Load~13'
+% JmagResultPath='E:\KDH\e10\MSConductorModel\e10MS_ConductorModel.jfiles\e10MS_ConductorModel~6\e10MS_ConductorModel_SCL_Load~13'
 % JmagResultPath='F:\KDH\KDH\SCL_e10_WTPM_PatternD_R1_4k.jfiles\SC_e10_WirePeriodic~9\SC_e10_WirePeriodic_Load_4k_rough~26'
-% JmagResultPath='F:\KDH\KDH\SCL_e10_WTPM_PatternD_R1_16kMap.jfiles\SC_e10_WirePeriodic~9\SC_e10_WirePeriodic_Load_16k_rough~27';
+JmagResultPath='F:\KDH\KDH\SCL_e10_WTPM_PatternD_R1_16kMap.jfiles\SC_e10_WirePeriodic~9\SC_e10_WirePeriodic_Load_16k_rough~27';
 % JmagResultName='e10MS_ConductorModel_SCL_Load~13';
 [~,JmagResultName,~]=fileparts(JmagResultPath);
 JmagResultDIR=extractBefore(JmagResultPath,'.jfiles');
@@ -61,6 +61,8 @@ else
     matFileList=findMatFiles('Z:\01_Codes_Projects\git_fork_emach\tools\jmag\jplotReader');
 end
 MagBmatFileList=matFileList(contains(matFileList,JmagResultName)&contains(matFileList,'MagB')&~contains(matFileList,'backup','IgnoreCase',true));
+% MagBmatFileList=MagBmatFileList(contains(MagBmatFileList,JmagResultName)&contains(MagBmatFileList,'28')&~contains(MagBmatFileList,'backup','IgnoreCase',true));
+
 MagBmatFileList = sort(MagBmatFileList); 
 [~,MatfileNames,~]=fileparts(MagBmatFileList);
 % for caseIndex=1:len(MatfileNames)
@@ -156,32 +158,69 @@ end
 %     % setgcaXYcoor
 % end
 
-% idx=1
-% load(matFileList{idx,1})
-% 
-% for slotIndex = 1:height(WireTable)
-%     x = WireTable.DT{slotIndex}.Points(:,1);
-%     y = WireTable.DT{slotIndex}.Points(:,2);
-%     TR = WireTable.DT{slotIndex};  % triangulation 객체
-%     eleType = WireTable.RtimeTableByElerow{slotIndex}.eleType;
-%     eleCenter = [WireTable.RtimeTableByElerow{slotIndex}.x, WireTable.RtimeTableByElerow{slotIndex}.y];
-% 
-%     figure(3); hold on;
-%     title('Br Field');
-%     for timeIdx = 1:241
-%         Brvalues = WireTable.RtimeTableByElerow{slotIndex}.(sprintf('Step%d', timeIdx));
-%         vertexValues = centroid2VertexValues(TR, eleType, eleCenter, Brvalues');  % 삼각형 및 사각형 모두 처리
-%         trisurf(TR.ConnectivityList, x, y, abs(vertexValues), abs(vertexValues), 'EdgeColor', 'none');
-%     end
-% 
-%     figure(4); hold on;
-%     title('Bt Field');
-%     for timeIdx = 1:241
-%         Btvalues = WireTable.TtimeTableByElerow{slotIndex}.(sprintf('Step%d', timeIdx));
-%         vertexBtValues = centroid2VertexValues(TR, eleType, eleCenter, Btvalues');
-%         trisurf(TR.ConnectivityList, x, y, abs(vertexBtValues), abs(vertexBtValues), 'EdgeColor', 'none');
-%     end
-% end
+matFileList=findMatFiles(pwd)';
+matFileList=matFileList(contains(matFileList,'wire'));
+REFmatFileList=matFileList(contains(matFileList,'SC'));
+REFmatFileList=REFmatFileList(contains(REFmatFileList,'MagB'));
+REFDTmatFileList=REFmatFileList(~contains(REFmatFileList,'DT'));
+REFDTmatFileList=REFDTmatFileList(contains(REFDTmatFileList,'Case28'));
+% REFDTmatFileList=REFDTmatFileList(~contains(REFDTmatFileList,'18k'));
+
+% FqmatFileList=REFDTmatFileList(contains(REFDTmatFileList,'Fq'));
+% MSmatFileList=REFDTmatFileList(contains(REFDTmatFileList,'MS'));
+matFileList=REFDTmatFileList
+
+idx=2
+load(REFDTmatFileList{idx,1})
+%% Scatter Plot
+C = linspecer(481);
+for slotIndex=1:height(WireTable)
+
+    for timeIdx=1:2:120
+    Btvalues = WireTable.TtimeTableByElerow{slotIndex}.(sprintf('Step%d', timeIdx)); 
+
+    scatter3(WireTable.TtimeTableByElerow{slotIndex}.x,WireTable.TtimeTableByElerow{slotIndex}.y,abs(Btvalues),'MarkerFaceColor',C(4*timeIdx,:),'MarkerEdgeColor','none')
+    hold on
+    end
+end
+
+size(WireTable.DT{slotIndex}.Points(:,1))    % Node 
+size(WireTable.TtimeTableByElerow{slotIndex}.x)  % ele
+%% 
+% mesh 2 model
+% solution u and model > pde object
+
+
+emagE = createpde("electromagnetic")
+nodes=msh.POS(:,1:2)';
+elements=msh.TRIANGLES(:,1:3)';
+results = createPDEResults(model,u)
+
+
+%% Fit
+for slotIndex = 1:height(WireTable)
+    x = WireTable.DT{slotIndex}.Points(:,1);  % node
+    y = WireTable.DT{slotIndex}.Points(:,2);  % node 
+    TR = WireTable.DT{slotIndex};  % triangulation 객체
+    eleType = WireTable.RtimeTableByElerow{slotIndex}.eleType;
+    eleCenter = [WireTable.RtimeTableByElerow{slotIndex}.x, WireTable.RtimeTableByElerow{slotIndex}.y];
+
+    figure(3); hold on;
+    title('Br Field');
+    for timeIdx = 1:121
+        Brvalues = WireTable.RtimeTableByElerow{slotIndex}.(sprintf('Step%d', timeIdx));
+        vertexValues = centroid2VertexValues(TR, eleType, eleCenter, Brvalues');  % 삼각형 및 사각형 모두 처리
+        trisurf(TR.ConnectivityList, x, y, abs(vertexValues), abs(vertexValues), 'EdgeColor', 'none');
+    end
+
+    figure(4); hold on;
+    title('Bt Field');
+    for timeIdx = 1:121
+        Btvalues = WireTable.TtimeTableByElerow{slotIndex}.(sprintf('Step%d', timeIdx));
+        vertexBtValues = centroid2VertexValues(TR, eleType, eleCenter, Btvalues');
+        trisurf(TR.ConnectivityList, x, y, abs(vertexBtValues), abs(vertexBtValues), 'EdgeColor', 'none');
+    end
+end
 % % %% quiver
 % timeList=241:1:480;
 % 
@@ -234,12 +273,3 @@ end
 % end
 % 
 % 
-% for slotIndex=1:height(WireTable)
-% 
-%     for timeIdx=1:240
-%     Btvalues = WireTable.TtimeTableByElerow{slotIndex}.(sprintf('Step%d', timeIdx)); 
-% 
-%     scatter3(WireTable.TtimeTableByElerow{slotIndex}.x,WireTable.TtimeTableByElerow{slotIndex}.y,Btvalues)
-%     hold on
-%     end
-% end
