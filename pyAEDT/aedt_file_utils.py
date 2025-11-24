@@ -8,9 +8,158 @@ import os
 import pandas as pd
 from pathlib import Path
 from typing import List, Dict, Union
+import re
 
 
-def find_aedt_files(root_dir: str, recursive: bool = True) -> List[Dict[str, str]]:
+def find_files(
+    root_dir: str,
+    pattern: str = None,
+    extension: str = None,
+    recursive: bool = True,
+    max_depth: int = None,
+    case_sensitive: bool = False
+) -> List[Dict[str, str]]:
+    """
+    특정 디렉토리에서 파일명 패턴 또는 확장자로 파일을 검색합니다.
+    
+    Parameters
+    ----------
+    root_dir : str
+        검색을 시작할 루트 디렉토리 경로
+    pattern : str, optional
+        파일명에 포함되어야 할 문자열 (정규식 지원)
+        예: ".*Design.*", "test_", "result"
+    extension : str, optional
+        검색할 파일 확장자 (점 포함 또는 미포함 모두 가능)
+        예: ".csv", "txt", ".aedt"
+    recursive : bool, optional
+        하위 디렉토리까지 재귀적으로 검색할지 여부 (기본값: True)
+    max_depth : int, optional
+        재귀 검색 최대 깊이 (None이면 무제한)
+    case_sensitive : bool, optional
+        대소문자 구분 여부 (기본값: False)
+    
+    Returns
+    -------
+    List[Dict[str, str]]
+        발견된 파일 정보를 담은 딕셔너리 리스트
+        각 딕셔너리는 다음 키를 포함:
+        - 'full_path': 전체 경로
+        - 'filename': 파일명
+        - 'directory': 디렉토리 경로
+        - 'extension': 파일 확장자
+        - 'size_mb': 파일 크기 (MB)
+        - 'modified': 마지막 수정 시간
+        - 'depth': 루트로부터의 깊이
+    
+    Examples
+    --------
+    >>> # CSV 파일 모두 찾기
+    >>> csv_files = find_files(r"C:\data", extension=".csv")
+    >>> 
+    >>> # "Design"이 포함된 AEDT 파일 찾기
+    >>> design_files = find_files(r"C:\project", pattern="Design", extension=".aedt")
+    >>> 
+    >>> # 현재 디렉토리에서만 txt 파일 찾기
+    >>> txt_files = find_files(r"C:\docs", extension="txt", max_depth=0)
+    >>> 
+    >>> # 정규식으로 특정 패턴 찾기 (Design0001~Design0010)
+    >>> files = find_files(r"C:\project", pattern=r"Design000[0-9]", extension=".aedt")
+    """
+    root_path = Path(root_dir)
+    
+    if not root_path.exists():
+        print(f"❌ 경로가 존재하지 않습니다: {root_dir}")
+        return []
+    
+    # 확장자 정규화 (점 추가)
+    if extension and not extension.startswith('.'):
+        extension = f'.{extension}'
+    
+    # 패턴 컴파일 (정규식)
+    if pattern:
+        flags = 0 if case_sensitive else re.IGNORECASE
+        try:
+            pattern_re = re.compile(pattern, flags)
+        except re.error as e:
+            print(f"❌ 잘못된 정규식 패턴: {pattern} - {e}")
+            return []
+    else:
+        pattern_re = None
+    
+    found_files = []
+    
+    print("=" * 70)
+    print(f"🔍 파일 검색 중...")
+    print(f"📂 경로: {root_dir}")
+    if extension:
+        print(f"📄 확장자: {extension}")
+    if pattern:
+        print(f"🔎 패턴: {pattern}")
+    print(f"🔄 재귀 검색: {'예 (' + (f'{max_depth}단계' if max_depth is not None else '무제한') + ')' if recursive else '아니오'}")
+    print(f"🔤 대소문자 구분: {'예' if case_sensitive else '아니오'}")
+    print("=" * 70)
+    
+    def search_with_depth(current_path: Path, current_depth: int):
+        try:
+            for item in current_path.iterdir():
+                if item.is_file():
+                    # 확장자 필터
+                    if extension and item.suffix.lower() != extension.lower():
+                        continue
+                    
+                    # 패턴 필터
+                    if pattern_re:
+                        if not pattern_re.search(item.name):
+                            continue
+                    
+                    # 파일 정보 수집
+                    try:
+                        file_stat = item.stat()
+                        file_info = {
+                            'full_path': str(item.absolute()),
+                            'filename': item.name,
+                            'directory': str(item.parent),
+                            'extension': item.suffix,
+                            'size_mb': file_stat.st_size / (1024 * 1024),
+                            'modified': pd.Timestamp.fromtimestamp(file_stat.st_mtime),
+                            'depth': current_depth
+                        }
+                        found_files.append(file_info)
+                    except Exception as e:
+                        print(f"⚠️ 파일 정보 읽기 실패: {item.name} - {e}")
+                
+                # 하위 디렉토리 재귀 검색
+                elif item.is_dir() and recursive:
+                    if max_depth is None or current_depth < max_depth:
+                        search_with_depth(item, current_depth + 1)
+        except PermissionError:
+            print(f"⚠️ 접근 권한 없음: {current_path}")
+        except Exception as e:
+            print(f"⚠️ 디렉토리 검색 실패: {current_path} - {e}")
+    
+    # 검색 시작
+    search_with_depth(root_path, 0)
+    
+    # 결과 출력
+    print(f"\n✅ 총 {len(found_files)}개의 파일 발견")
+    
+    if found_files and len(found_files) <= 20:  # 20개 이하일 때만 상세 출력
+        print("\n📋 발견된 파일 목록:")
+        for i, file_info in enumerate(found_files, 1):
+            print(f"\n  {i}. {file_info['filename']}")
+            print(f"     경로: {file_info['directory']}")
+            print(f"     크기: {file_info['size_mb']:.2f} MB")
+            print(f"     수정: {file_info['modified'].strftime('%Y-%m-%d %H:%M:%S')}")
+    elif found_files:
+        print(f"ℹ️  파일이 너무 많아 목록을 생략합니다. DataFrame으로 확인하세요.")
+    
+    print("=" * 70)
+    
+    return found_files
+
+
+def find_aedt_files(root_dir: str, recursive: bool = True, max_depth: int = None) -> List[Dict[str, str]]:
     """
     특정 디렉토리 하위에서 모든 .aedt 파일을 찾습니다.
     
@@ -20,6 +169,9 @@ def find_aedt_files(root_dir: str, recursive: bool = True) -> List[Dict[str, str
         검색을 시작할 루트 디렉토리 경로
     recursive : bool, optional
         하위 디렉토리까지 재귀적으로 검색할지 여부 (기본값: True)
+    max_depth : int, optional
+        재귀 검색 최대 깊이 (None이면 무제한, 0이면 현재 디렉토리만, 1이면 1단계 하위까지)
+        recursive=False인 경우 무시됨 (기본값: None)
     
     Returns
     -------
@@ -31,12 +183,18 @@ def find_aedt_files(root_dir: str, recursive: bool = True) -> List[Dict[str, str
         - 'directory': 디렉토리 경로
         - 'size_mb': 파일 크기 (MB)
         - 'modified': 마지막 수정 시간
+        - 'depth': 루트로부터의 깊이
     
     Examples
     --------
+    >>> # 무제한 재귀 검색
     >>> aedt_files = find_aedt_files(r"E:\KDH\e10\e10_DOE\e10_DOE.opd\AMOP")
-    >>> for file_info in aedt_files:
-    ...     print(file_info['full_path'])
+    >>> 
+    >>> # 현재 디렉토리만 검색
+    >>> aedt_files = find_aedt_files(r"E:\KDH\e10\e10_DOE\e10_DOE.opd\AMOP", max_depth=0)
+    >>> 
+    >>> # 1단계 하위 디렉토리까지만 검색
+    >>> aedt_files = find_aedt_files(r"E:\KDH\e10\e10_DOE\e10_DOE.opd\AMOP", max_depth=1)
     """
     aedt_files = []
     root_path = Path(root_dir)
@@ -46,30 +204,73 @@ def find_aedt_files(root_dir: str, recursive: bool = True) -> List[Dict[str, str
         return aedt_files
     
     # 검색 패턴 설정
-    pattern = "**/*.aedt" if recursive else "*.aedt"
+    if not recursive:
+        pattern = "*.aedt"
+        depth_text = "아니오"
+    elif max_depth is None:
+        pattern = "**/*.aedt"
+        depth_text = "무제한"
+    else:
+        pattern = None  # 수동 깊이 제어
+        depth_text = f"{max_depth}단계"
     
     print("=" * 70)
     print(f"🔍 AEDT 파일 검색 중...")
     print(f"📂 경로: {root_dir}")
-    print(f"🔄 재귀 검색: {'예' if recursive else '아니오'}")
+    print(f"🔄 재귀 검색: {'예 (' + depth_text + ')' if recursive else '아니오'}")
     print("=" * 70)
     
     # .aedt 파일 검색
-    for aedt_file in root_path.glob(pattern):
-        if aedt_file.is_file():
+    if pattern:
+        # glob 패턴 사용
+        for aedt_file in root_path.glob(pattern):
+            if aedt_file.is_file():
+                try:
+                    # 파일 정보 수집
+                    file_stat = aedt_file.stat()
+                    depth = len(aedt_file.relative_to(root_path).parts) - 1
+                    
+                    file_info = {
+                        'full_path': str(aedt_file.absolute()),
+                        'filename': aedt_file.name,
+                        'directory': str(aedt_file.parent),
+                        'size_mb': file_stat.st_size / (1024 * 1024),
+                        'modified': pd.Timestamp.fromtimestamp(file_stat.st_mtime),
+                        'depth': depth
+                    }
+                    aedt_files.append(file_info)
+                except Exception as e:
+                    print(f"⚠️ 파일 정보 읽기 실패: {aedt_file.name} - {e}")
+    else:
+        # max_depth 제어를 위한 수동 검색
+        def search_with_depth(current_path: Path, current_depth: int):
             try:
-                # 파일 정보 수집
-                file_stat = aedt_file.stat()
-                file_info = {
-                    'full_path': str(aedt_file.absolute()),
-                    'filename': aedt_file.name,
-                    'directory': str(aedt_file.parent),
-                    'size_mb': file_stat.st_size / (1024 * 1024),  # 바이트를 MB로 변환
-                    'modified': pd.Timestamp.fromtimestamp(file_stat.st_mtime)
-                }
-                aedt_files.append(file_info)
+                # 현재 디렉토리의 .aedt 파일 검색
+                for item in current_path.iterdir():
+                    if item.is_file() and item.suffix.lower() == '.aedt':
+                        try:
+                            file_stat = item.stat()
+                            file_info = {
+                                'full_path': str(item.absolute()),
+                                'filename': item.name,
+                                'directory': str(item.parent),
+                                'size_mb': file_stat.st_size / (1024 * 1024),
+                                'modified': pd.Timestamp.fromtimestamp(file_stat.st_mtime),
+                                'depth': current_depth
+                            }
+                            aedt_files.append(file_info)
+                        except Exception as e:
+                            print(f"⚠️ 파일 정보 읽기 실패: {item.name} - {e}")
+                    
+                    # 하위 디렉토리 재귀 검색 (깊이 제한 확인)
+                    elif item.is_dir() and current_depth < max_depth:
+                        search_with_depth(item, current_depth + 1)
+            except PermissionError:
+                print(f"⚠️ 접근 권한 없음: {current_path}")
             except Exception as e:
-                print(f"⚠️ 파일 정보 읽기 실패: {aedt_file.name} - {e}")
+                print(f"⚠️ 디렉토리 검색 실패: {current_path} - {e}")
+        
+        search_with_depth(root_path, 0)
     
     # 결과 출력
     print(f"\n✅ 총 {len(aedt_files)}개의 .aedt 파일 발견")
@@ -87,7 +288,7 @@ def find_aedt_files(root_dir: str, recursive: bool = True) -> List[Dict[str, str
     return aedt_files
 
 
-def find_lock_files(aedt_path: Union[str, Path]) -> List[Path]:
+def find_lock_files(aedt_path: Union[str, Path], recursive: bool = True, max_depth: int = None) -> List[Path]:
     """
     AEDT 프로젝트 경로에서 .lock 파일을 찾습니다.
     
@@ -95,6 +296,11 @@ def find_lock_files(aedt_path: Union[str, Path]) -> List[Path]:
     ----------
     aedt_path : Union[str, Path]
         .aedt 파일 경로 또는 프로젝트 디렉토리 경로
+    recursive : bool, optional
+        하위 디렉토리까지 재귀적으로 검색할지 여부 (기본값: True)
+    max_depth : int, optional
+        재귀 검색 최대 깊이 (None이면 무제한, 0이면 현재 디렉토리만, 1이면 1단계 하위까지)
+        recursive=False인 경우 무시됨 (기본값: None)
     
     Returns
     -------
@@ -103,13 +309,14 @@ def find_lock_files(aedt_path: Union[str, Path]) -> List[Path]:
     
     Examples
     --------
-    >>> # 단일 AEDT 파일의 lock 파일 찾기
+    >>> # 단일 AEDT 파일의 lock 파일 찾기 (무제한 재귀)
     >>> lock_files = find_lock_files(r"E:\project\model.aedt")
-    >>> for lock in lock_files:
-    ...     print(lock)
-    
-    >>> # 디렉토리 전체에서 lock 파일 찾기
-    >>> lock_files = find_lock_files(r"E:\project")
+    >>> 
+    >>> # 디렉토리 전체에서 lock 파일 찾기 (현재 디렉토리만)
+    >>> lock_files = find_lock_files(r"E:\project", max_depth=0)
+    >>> 
+    >>> # 1단계 하위 디렉토리까지만 검색
+    >>> lock_files = find_lock_files(r"E:\project", max_depth=1)
     """
     aedt_path = Path(aedt_path)
     
@@ -130,10 +337,37 @@ def find_lock_files(aedt_path: Union[str, Path]) -> List[Path]:
     ]
     
     lock_files = []
-    for pattern in lock_patterns:
-        lock_files.extend(search_dir.glob(pattern))
-        # 하위 디렉토리도 검색 (.aedtresults 등)
-        lock_files.extend(search_dir.glob(f'**/{pattern}'))
+    
+    if not recursive:
+        # 현재 디렉토리만 검색
+        for pattern in lock_patterns:
+            lock_files.extend(search_dir.glob(pattern))
+    elif max_depth is None:
+        # 무제한 재귀 검색
+        for pattern in lock_patterns:
+            lock_files.extend(search_dir.glob(pattern))
+            lock_files.extend(search_dir.glob(f'**/{pattern}'))
+    else:
+        # 깊이 제한 재귀 검색
+        def search_lock_with_depth(current_path: Path, current_depth: int):
+            try:
+                # 현재 디렉토리의 .lock 파일 검색
+                for pattern in lock_patterns:
+                    for item in current_path.glob(pattern):
+                        if item.is_file():
+                            lock_files.append(item)
+                
+                # 하위 디렉토리 재귀 검색 (깊이 제한 확인)
+                if current_depth < max_depth:
+                    for item in current_path.iterdir():
+                        if item.is_dir():
+                            search_lock_with_depth(item, current_depth + 1)
+            except PermissionError:
+                print(f"⚠️ 접근 권한 없음: {current_path}")
+            except Exception as e:
+                print(f"⚠️ 디렉토리 검색 실패: {current_path} - {e}")
+        
+        search_lock_with_depth(search_dir, 0)
     
     # 중복 제거
     lock_files = list(set(lock_files))
