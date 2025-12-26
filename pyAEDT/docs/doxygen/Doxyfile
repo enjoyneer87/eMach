@@ -1,0 +1,69 @@
+# Doxygen configuration for PyAEDT local source
+# Generated on 2025-11-11
+
+# Project
+PROJECT_NAME           = "PyAEDT (local) API docs"
+PROJECT_BRIEF          = "Doxygen docs generated from D:/KDH/gitPyAEDT/pyaedt"
+OUTPUT_DIRECTORY       = ./build
+CREATE_SUBDIRS         = NO
+
+# Input
+INPUT                  = D:/KDH/gitPyAEDT/pyaedt
+FILE_PATTERNS          = *.py
+RECURSIVE              = YES
+EXCLUDE                =
+EXCLUDE_PATTERNS       = */tests/* */examples/* */_build/*
+
+# Parsing / extraction
+EXTRACT_ALL            = YES
+EXTRACT_PRIVATE        = YES
+EXTRACT_PROTECTED      = YES
+EXTRACT_PACKAGE        = YES
+EXTRACT_STATIC         = YES
+EXTRACT_LOCAL_CLASSES  = YES
+HIDE_UNDOC_MEMBERS     = NO
+HIDE_UNDOC_CLASSES     = NO
+OPTIMIZE_OUTPUT_FOR_C  = NO
+OPTIMIZE_OUTPUT_JAVA   = YES
+FULL_PATH_NAMES        = YES
+STRIP_FROM_PATH        =
+
+# Source browsing
+SOURCE_BROWSER         = YES
+REFERENCED_BY_RELATION = YES
+REFERENCES_RELATION    = YES
+INLINE_SOURCES         = NO
+VERBATIM_HEADERS       = YES
+
+# Diagrams (Graphviz)
+HAVE_DOT               = YES
+DOT_NUM_THREADS        = 0
+CLASS_DIAGRAMS         = YES
+CALL_GRAPH             = YES
+CALLER_GRAPH           = YES
+DOT_IMAGE_FORMAT       = svg
+INTERACTIVE_SVG        = YES
+UML_LOOK               = YES
+DOT_TRANSPARENT        = YES
+
+# Output
+GENERATE_HTML          = YES
+HTML_OUTPUT            = html
+GENERATE_TREEVIEW      = YES
+DISABLE_INDEX          = NO
+GENERATE_LATEX         = NO
+GENERATE_XML           = NO
+GENERATE_MAN           = NO
+GENERATE_RTF           = NO
+QUIET                  = NO
+WARN_IF_UNDOCUMENTED   = NO
+WARN_IF_DOC_ERROR      = YES
+WARN_AS_ERROR          = NO
+
+# Misc
+ALPHABETICAL_INDEX     = YES
+SORT_MEMBER_DOCS       = YES
+SORT_BRIEF_DOCS        = YES
+SORT_GROUP_NAMES       = YES
+SORT_BY_SCOPE_NAME     = YES
+TAB_SIZE               = 4

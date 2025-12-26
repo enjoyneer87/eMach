@@ -1,0 +1,25 @@
+1. export하고 python파일 에러나는거 수정코드
+ -  pyMcad2Maxwell.ipynb : sectionII 실행
+2. maxwell에서 run
+3. WorkBench 실행
+ 
+
+
+D:\KDH\gitPyAEDT_example\pyaedt-examples\examples\low_frequency\motor\aedt_motor\pm_synchronous_motor_analysis.ipynb
+C:\Users\EM221\.ansys_python_venvs\pyAEDT_312\Lib\site-packages\ansys\aedt\core\application\analysis_3d.py
+C:\Users\EM221\.ansys_python_venvs\pyAEDT_312\Lib\site-packages\ansys\aedt\core\visualization\post\post_common_3d.py
+> C:\Users\EM221\.ansys_python_venvs\pyAEDT_312\Lib\site-packages\ansys\aedt\core\visualization\plot\pyvista.py 
+
+
+
+pyMCAD_element.ipynb
+
+magnetic Bx,By,A 가져오기
+Contour기능
+Quiver기능 추가
+
+- pyMechanical에서 Stress 데이터가져오기
+- MotorCAD에서 Stress 데이터 가져온거와 
+
+- 데이터 비교
+
