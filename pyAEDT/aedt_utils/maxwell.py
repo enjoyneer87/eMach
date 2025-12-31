@@ -49,11 +49,21 @@ def getRunningMaxwell2d(aedt_version="2025.2", non_graphical=False):
     try:
         # 기존 세션에 붙기 (새 세션 X)
         desktop = Desktop(
-            specified_version=aedt_version,
-            new_desktop_session=False,
+            version=aedt_version,
+            new_desktop=False,
             non_graphical=non_graphical
         )
-        
+    except TypeError:
+        # PyAEDT < 0.23 호환을 위해 구버전 인자도 시도
+        try:
+            desktop = Desktop(
+                specified_version=aedt_version,
+                new_desktop_session=False,
+                non_graphical=non_graphical
+            )
+        except Exception as e:
+            print(f"❌ 기존 Desktop 연결 실패: {e}")
+            return None
     except Exception as e:
         print(f"❌ 기존 Desktop 연결 실패: {e}")
         return None

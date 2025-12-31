@@ -1,0 +1,1247 @@
+{
+    "Boundary Conditions": {
+        "Rotation": {
+            "Speed": 5600,
+            "Direction": [
+                0,
+                0,
+                1
+            ],
+            "Gravity": [
+                0,
+                -1,
+                0
+            ],
+            "Center": [
+                0,
+                0,
+                0
+            ],
+            "Named Selections": [
+                "fluid_internal_rotating"
+            ]
+        },
+        "Conduction": {
+            "housing_active-housing_rear": {
+                "Named Selections": [
+                    [
+                        "housing_active",
+                        "housing_rear"
+                    ]
+                ],
+                "All": {
+                    "Gaps": [
+                        0
+                    ],
+                    "MaterialNames": [
+                        "interface_gap_air_material"
+                    ]
+                }
+            },
+            "bearing_front-shaft_front": {
+                "Named Selections": [
+                    [
+                        "bearing_front",
+                        "shaft_front"
+                    ]
+                ],
+                "All": {
+                    "Gaps": [
+                        0.0112
+                    ],
+                    "MaterialNames": [
+                        "interface_gap_air_material"
+                    ]
+                }
+            },
+            "bearing_front-endcap_front": {
+                "Named Selections": [
+                    [
+                        "bearing_front",
+                        "endcap_front"
+                    ]
+                ],
+                "All": {
+                    "Gaps": [
+                        0.0073
+                    ],
+                    "MaterialNames": [
+                        "interface_gap_air_material"
+                    ]
+                }
+            },
+            "housing_front-endcap_front": {
+                "Named Selections": [
+                    [
+                        "housing_front",
+                        "endcap_front"
+                    ]
+                ],
+                "All": {
+                    "Gaps": [
+                        0.005
+                    ],
+                    "MaterialNames": [
+                        "interface_gap_air_material"
+                    ]
+                }
+            },
+            "bearing_rear-shaft_rear": {
+                "Named Selections": [
+                    [
+                        "bearing_rear",
+                        "shaft_rear"
+                    ]
+                ],
+                "All": {
+                    "Gaps": [
+                        0.0112
+                    ],
+                    "MaterialNames": [
+                        "interface_gap_air_material"
+                    ]
+                }
+            },
+            "housing_active-housing_front": {
+                "Named Selections": [
+                    [
+                        "housing_active",
+                        "housing_front"
+                    ]
+                ],
+                "All": {
+                    "Gaps": [
+                        0
+                    ],
+                    "MaterialNames": [
+                        "interface_gap_air_material"
+                    ]
+                }
+            },
+            "bearing_rear-endcap_rear": {
+                "Named Selections": [
+                    [
+                        "bearing_rear",
+                        "endcap_rear"
+                    ]
+                ],
+                "All": {
+                    "Gaps": [
+                        0.0073
+                    ],
+                    "MaterialNames": [
+                        "interface_gap_air_material"
+                    ]
+                }
+            },
+            "stator_lamination-housing_active": {
+                "Named Selections": [
+                    [
+                        "stator_lamination",
+                        "housing_active"
+                    ]
+                ],
+                "All": {
+                    "Gaps": [
+                        0.01
+                    ],
+                    "MaterialNames": [
+                        "interface_gap_air_material"
+                    ]
+                }
+            },
+            "housing_rear-endcap_rear": {
+                "Named Selections": [
+                    [
+                        "housing_rear",
+                        "endcap_rear"
+                    ]
+                ],
+                "All": {
+                    "Gaps": [
+                        0.005
+                    ],
+                    "MaterialNames": [
+                        "interface_gap_air_material"
+                    ]
+                }
+            },
+            "magnet-rotor_lamination": {
+                "Named Selections": [
+                    [
+                        "magnet",
+                        "rotor_lamination"
+                    ]
+                ],
+                "All": {
+                    "Gaps": [
+                        0.005
+                    ],
+                    "MaterialNames": [
+                        "interface_gap_air_material"
+                    ]
+                }
+            },
+            "rotor_lamination-shaft_active": {
+                "Named Selections": [
+                    [
+                        "rotor_lamination",
+                        "shaft_active"
+                    ]
+                ],
+                "All": {
+                    "Gaps": [
+                        0.005
+                    ],
+                    "MaterialNames": [
+                        "interface_gap_air_material"
+                    ]
+                }
+            }
+        },
+        "Convection": {
+            "housing_active-fluid_external": {
+                "Named Selections": [
+                    [
+                        "housing_active",
+                        "fluid_external"
+                    ]
+                ],
+                "All": {
+                    "HTC": 0,
+                    "Temperature": 0,
+                    "Area": 84446.0105284936
+                }
+            },
+            "endcap_rear-fluid_external": {
+                "Named Selections": [
+                    [
+                        "endcap_rear",
+                        "fluid_external"
+                    ]
+                ],
+                "All": {
+                    "HTC": 0,
+                    "Temperature": 0,
+                    "Area": 84885.8334999962
+                }
+            },
+            "housing_front-fluid_external": {
+                "Named Selections": [
+                    [
+                        "housing_front",
+                        "fluid_external"
+                    ]
+                ],
+                "All": {
+                    "HTC": 0,
+                    "Temperature": 0,
+                    "Area": 24630.086404144
+                }
+            },
+            "housing_rear-fluid_external": {
+                "Named Selections": [
+                    [
+                        "housing_rear",
+                        "fluid_external"
+                    ]
+                ],
+                "All": {
+                    "HTC": 0,
+                    "Temperature": 0,
+                    "Area": 20231.8566891183
+                }
+            },
+            "endcap_front-fluid_external": {
+                "Named Selections": [
+                    [
+                        "endcap_front",
+                        "fluid_external"
+                    ]
+                ],
+                "All": {
+                    "HTC": 0,
+                    "Temperature": 0,
+                    "Area": 42538.1483947377
+                }
+            }
+        },
+        "Heat Source": {
+            "loss_armature_copper_dc": {
+                "Named Selections": [
+                    "armature_endwinding_front",
+                    "armature_winding_active_a",
+                    "armature_winding_active_b",
+                    "armature_winding_active_c",
+                    "armature_winding_active_d",
+                    "armature_winding_active_e",
+                    "armature_winding_active_f",
+                    "armature_winding_active_g",
+                    "armature_winding_active_h",
+                    "armature_endwinding_rear"
+                ],
+                "VolumeLoss": 0
+            },
+            "loss_armature_copper_ac": {
+                "Named Selections": [
+                    "armature_winding_active_a",
+                    "armature_winding_active_b",
+                    "armature_winding_active_c",
+                    "armature_winding_active_d",
+                    "armature_winding_active_e",
+                    "armature_winding_active_f",
+                    "armature_winding_active_g",
+                    "armature_winding_active_h"
+                ],
+                "VolumeLoss": 0
+            },
+            "loss_stator_back_iron": {
+                "Named Selections": [
+                    "stator_lamination"
+                ],
+                "VolumeLoss": 0
+            },
+            "loss_stator_tooth": {
+                "Named Selections": [
+                    "stator_lamination"
+                ],
+                "VolumeLoss": 0
+            },
+            "loss_magnet": {
+                "Named Selections": [
+                    "magnet"
+                ],
+                "VolumeLoss": 0
+            },
+            "loss_rotor_back_iron": {
+                "Named Selections": [
+                    "rotor_lamination"
+                ],
+                "VolumeLoss": 0
+            },
+            "loss_embedded_magnet_pole": {
+                "Named Selections": [
+                    "rotor_lamination"
+                ],
+                "VolumeLoss": 0
+            },
+            "loss_windage_stator": {
+                "Named Selections": [
+                    "stator_lamination",
+                    "fluid_internal_stationary"
+                ],
+                "Inner": {
+                    "SurfaceLoss": 0
+                }
+            },
+            "loss_windage_rotor": {
+                "Named Selections": [
+                    "rotor_lamination",
+                    "fluid_internal_rotating"
+                ],
+                "Outer": {
+                    "SurfaceLoss": 0
+                }
+            },
+            "loss_windage_ext_fan": {
+                "Named Selections": [
+                ],
+                "VolumeLoss": 0
+            },
+            "loss_friction_f_bearing": {
+                "Named Selections": [
+                    "bearing_front"
+                ],
+                "VolumeLoss": 0
+            },
+            "loss_friction_r_bearing": {
+                "Named Selections": [
+                    "bearing_rear"
+                ],
+                "VolumeLoss": 0
+            }
+        },
+        "Inlet": {
+            "fluid_housing_water_jacket": {
+                "Temperature": 75,
+                "VolumetricFlowRate": 0.000133333333333333
+            },
+            "fluid_spray_cooling_radial_housing": {
+                "Temperature": 0,
+                "VolumetricFlowRate": 0.000133333333333333
+            }
+        }
+    },
+    "Geometry": {
+        "Effective Airgap": 0.8,
+        "fluid_housing_water_jacket": {
+            "ActiveOnly": false,
+            "InletPosition": "Front",
+            "PathCount": "1",
+            "DuctWallThickness": "0",
+            "DuctWallFriction": "True",
+            "DuctWallRoughness_Active": "0.0025",
+            "DuctWallRoughness_Front": "0.0025",
+            "DuctWallRoughness_Rear": "0.0025",
+            "ChannelDiameterInner": 256,
+            "ChannelDiameterOuter": 278,
+            "ChannelSpacing": "17.5",
+            "ChannelWidth": "30",
+            "Topology": "Non-Spiral"
+        }
+    },
+    "Material Assignment": {
+        "aluminium_alloy_195_cast": {
+            "Named Selections": [
+                "housing_active",
+                "housing_front",
+                "housing_rear",
+                "shaft_active",
+                "shaft_front",
+                "shaft_rear",
+                "flange",
+                "endcap_front",
+                "endcap_rear"
+            ]
+        },
+        "20pn1150f": {
+            "Named Selections": [
+                "stator_lamination",
+                "rotor_lamination"
+            ]
+        },
+        "armature_winding_active_material": {
+            "Named Selections": [
+                "armature_winding_active_h",
+                "armature_winding_active_a",
+                "armature_winding_active_b",
+                "armature_winding_active_c",
+                "armature_winding_active_d",
+                "armature_winding_active_e",
+                "armature_winding_active_f",
+                "armature_winding_active_g"
+            ]
+        },
+        "nomex_410": {
+            "Named Selections": [
+                "statorwedge"
+            ]
+        },
+        "neorec48duh": {
+            "Named Selections": [
+                "magnet"
+            ]
+        },
+        "air_motor_cad_model": {
+            "Named Selections": [
+                "fluid_rotor_pocket"
+            ]
+        },
+        "bearing_front_material": {
+            "Named Selections": [
+                "bearing_front"
+            ]
+        },
+        "armature_endwinding_front_material": {
+            "Named Selections": [
+                "armature_endwinding_front"
+            ]
+        },
+        "armature_endwinding_rear_material": {
+            "Named Selections": [
+                "armature_endwinding_rear"
+            ]
+        },
+        "bearing_rear_material": {
+            "Named Selections": [
+                "bearing_rear"
+            ]
+        },
+        "atf134_fluid": {
+            "Named Selections": [
+                "fluid_housing_water_jacket",
+                "fluid_spray_cooling"
+            ]
+        }
+    },
+    "Material Data": {
+        "aluminium_alloy_195_cast": {
+            "State": "Solid",
+            "Density": 2790,
+            "SpecificHeat": 833,
+            "ThermalConductivity": 168
+        },
+        "20pn1150f": {
+            "State": "Solid",
+            "Density": 7650,
+            "SpecificHeat": 460,
+            "ThermalConductivity": 27
+        },
+        "armature_winding_active_material": {
+            "State": "Solid",
+            "Density": 8933,
+            "SpecificHeat": 385,
+            "ThermalConductivity": {
+                "Axial": 386,
+                "Radial": 0.25,
+                "Tangential": 0.25
+            }
+        },
+        "nomex_410": {
+            "State": "Solid",
+            "Density": 1400,
+            "SpecificHeat": 1300,
+            "ThermalConductivity": 0.14
+        },
+        "neorec48duh": {
+            "State": "Solid",
+            "Density": 7550,
+            "SpecificHeat": 419,
+            "ThermalConductivity": 7.35
+        },
+        "air_motor_cad_model": {
+            "State": "Solid",
+            "Density": 0.946130994205561,
+            "SpecificHeat": 1011.09250484652,
+            "ThermalConductivity": 0.03171454723964
+        },
+        "bearing_front_material": {
+            "State": "Solid",
+            "Density": 7800,
+            "SpecificHeat": 460,
+            "ThermalConductivity": {
+                "Axial": 30,
+                "Radial": 8.43367085535918,
+                "Tangential": 30
+            }
+        },
+        "armature_endwinding_front_material": {
+            "State": "Solid",
+            "Density": 8933,
+            "SpecificHeat": 385,
+            "ThermalConductivity": {
+                "Axial": 0.25,
+                "Radial": 0.25,
+                "Tangential": 386
+            }
+        },
+        "armature_endwinding_rear_material": {
+            "State": "Solid",
+            "Density": 8933,
+            "SpecificHeat": 385,
+            "ThermalConductivity": {
+                "Axial": 0.25,
+                "Radial": 0.25,
+                "Tangential": 386
+            }
+        },
+        "bearing_rear_material": {
+            "State": "Solid",
+            "Density": 7800,
+            "SpecificHeat": 460,
+            "ThermalConductivity": {
+                "Axial": 30,
+                "Radial": 8.43367085535918,
+                "Tangential": 30
+            }
+        },
+        "interface_gap_air_material": {
+            "State": "Solid",
+            "Density": 0.946130994205561,
+            "SpecificHeat": 1011.09250484652,
+            "ThermalConductivity": 0.03171454723964
+        },
+        "atf134_fluid": {
+            "State": "Fluid",
+            "Density": {
+                "Temperatures": [
+                    0,
+                    15,
+                    50,
+                    100,
+                    160
+                ],
+                "Values": [
+                    855,
+                    845,
+                    822,
+                    788,
+                    749
+                ]
+            },
+            "SpecificHeat": {
+                "Temperatures": [
+                    0,
+                    50,
+                    100,
+                    160
+                ],
+                "Values": [
+                    2000,
+                    2200,
+                    2400,
+                    2700
+                ]
+            },
+            "ThermalConductivity": {
+                "Temperatures": [
+                    0,
+                    50,
+                    100,
+                    160
+                ],
+                "Values": [
+                    0.139,
+                    0.135,
+                    0.131,
+                    0.127
+                ]
+            },
+            "ThermalExpansionCoefficient": {
+                "Temperatures": [
+                ],
+                "Values": [
+                ]
+            },
+            "Viscosity": {
+                "Temperatures": [
+                    0,
+                    40,
+                    50,
+                    100,
+                    160
+                ],
+                "Values": [
+                    0.000182,
+                    2.9E-5,
+                    2.1E-5,
+                    6.3E-6,
+                    2.6E-6
+                ]
+            }
+        }
+    },
+    "Named Selections": {
+        "housing_active": {
+            "BodyNames": [
+                "housing_active",
+                "housing_active_1",
+                "housing_active_2"
+            ]
+        },
+        "housing_front": {
+            "BodyNames": [
+                "housing_front",
+                "housing_front_1",
+                "housing_front_2"
+            ]
+        },
+        "housing_rear": {
+            "BodyNames": [
+                "housing_rear",
+                "housing_rear_1",
+                "housing_rear_2"
+            ]
+        },
+        "stator_lamination": {
+            "BodyNames": [
+                "stator_lamination"
+            ]
+        },
+        "armature_winding_active_h": {
+            "BodyNames": [
+                "armature_winding_active_h1",
+                "armature_winding_active_h48",
+                "armature_winding_active_h47",
+                "armature_winding_active_h46",
+                "armature_winding_active_h45",
+                "armature_winding_active_h44",
+                "armature_winding_active_h43",
+                "armature_winding_active_h42",
+                "armature_winding_active_h41",
+                "armature_winding_active_h40",
+                "armature_winding_active_h39",
+                "armature_winding_active_h38",
+                "armature_winding_active_h37",
+                "armature_winding_active_h36",
+                "armature_winding_active_h35",
+                "armature_winding_active_h34",
+                "armature_winding_active_h33",
+                "armature_winding_active_h32",
+                "armature_winding_active_h31",
+                "armature_winding_active_h30",
+                "armature_winding_active_h29",
+                "armature_winding_active_h28",
+                "armature_winding_active_h27",
+                "armature_winding_active_h26",
+                "armature_winding_active_h25",
+                "armature_winding_active_h24",
+                "armature_winding_active_h23",
+                "armature_winding_active_h22",
+                "armature_winding_active_h21",
+                "armature_winding_active_h20",
+                "armature_winding_active_h19",
+                "armature_winding_active_h18",
+                "armature_winding_active_h17",
+                "armature_winding_active_h16",
+                "armature_winding_active_h15",
+                "armature_winding_active_h14",
+                "armature_winding_active_h13",
+                "armature_winding_active_h12",
+                "armature_winding_active_h11",
+                "armature_winding_active_h10",
+                "armature_winding_active_h9",
+                "armature_winding_active_h8",
+                "armature_winding_active_h7",
+                "armature_winding_active_h6",
+                "armature_winding_active_h5",
+                "armature_winding_active_h4",
+                "armature_winding_active_h3",
+                "armature_winding_active_h2"
+            ]
+        },
+        "armature_winding_active_a": {
+            "BodyNames": [
+                "armature_winding_active_a1",
+                "armature_winding_active_a48",
+                "armature_winding_active_a47",
+                "armature_winding_active_a46",
+                "armature_winding_active_a45",
+                "armature_winding_active_a44",
+                "armature_winding_active_a43",
+                "armature_winding_active_a42",
+                "armature_winding_active_a41",
+                "armature_winding_active_a40",
+                "armature_winding_active_a39",
+                "armature_winding_active_a38",
+                "armature_winding_active_a37",
+                "armature_winding_active_a36",
+                "armature_winding_active_a35",
+                "armature_winding_active_a34",
+                "armature_winding_active_a33",
+                "armature_winding_active_a32",
+                "armature_winding_active_a31",
+                "armature_winding_active_a30",
+                "armature_winding_active_a29",
+                "armature_winding_active_a28",
+                "armature_winding_active_a27",
+                "armature_winding_active_a26",
+                "armature_winding_active_a25",
+                "armature_winding_active_a24",
+                "armature_winding_active_a23",
+                "armature_winding_active_a22",
+                "armature_winding_active_a21",
+                "armature_winding_active_a20",
+                "armature_winding_active_a19",
+                "armature_winding_active_a18",
+                "armature_winding_active_a17",
+                "armature_winding_active_a16",
+                "armature_winding_active_a15",
+                "armature_winding_active_a14",
+                "armature_winding_active_a13",
+                "armature_winding_active_a12",
+                "armature_winding_active_a11",
+                "armature_winding_active_a10",
+                "armature_winding_active_a9",
+                "armature_winding_active_a8",
+                "armature_winding_active_a7",
+                "armature_winding_active_a6",
+                "armature_winding_active_a5",
+                "armature_winding_active_a4",
+                "armature_winding_active_a3",
+                "armature_winding_active_a2"
+            ]
+        },
+        "armature_winding_active_b": {
+            "BodyNames": [
+                "armature_winding_active_b1",
+                "armature_winding_active_b48",
+                "armature_winding_active_b47",
+                "armature_winding_active_b46",
+                "armature_winding_active_b45",
+                "armature_winding_active_b44",
+                "armature_winding_active_b43",
+                "armature_winding_active_b42",
+                "armature_winding_active_b41",
+                "armature_winding_active_b40",
+                "armature_winding_active_b39",
+                "armature_winding_active_b38",
+                "armature_winding_active_b37",
+                "armature_winding_active_b36",
+                "armature_winding_active_b35",
+                "armature_winding_active_b34",
+                "armature_winding_active_b33",
+                "armature_winding_active_b32",
+                "armature_winding_active_b31",
+                "armature_winding_active_b30",
+                "armature_winding_active_b29",
+                "armature_winding_active_b28",
+                "armature_winding_active_b27",
+                "armature_winding_active_b26",
+                "armature_winding_active_b25",
+                "armature_winding_active_b24",
+                "armature_winding_active_b23",
+                "armature_winding_active_b22",
+                "armature_winding_active_b21",
+                "armature_winding_active_b20",
+                "armature_winding_active_b19",
+                "armature_winding_active_b18",
+                "armature_winding_active_b17",
+                "armature_winding_active_b16",
+                "armature_winding_active_b15",
+                "armature_winding_active_b14",
+                "armature_winding_active_b13",
+                "armature_winding_active_b12",
+                "armature_winding_active_b11",
+                "armature_winding_active_b10",
+                "armature_winding_active_b9",
+                "armature_winding_active_b8",
+                "armature_winding_active_b7",
+                "armature_winding_active_b6",
+                "armature_winding_active_b5",
+                "armature_winding_active_b4",
+                "armature_winding_active_b3",
+                "armature_winding_active_b2"
+            ]
+        },
+        "armature_winding_active_c": {
+            "BodyNames": [
+                "armature_winding_active_c1",
+                "armature_winding_active_c48",
+                "armature_winding_active_c47",
+                "armature_winding_active_c46",
+                "armature_winding_active_c45",
+                "armature_winding_active_c44",
+                "armature_winding_active_c43",
+                "armature_winding_active_c42",
+                "armature_winding_active_c41",
+                "armature_winding_active_c40",
+                "armature_winding_active_c39",
+                "armature_winding_active_c38",
+                "armature_winding_active_c37",
+                "armature_winding_active_c36",
+                "armature_winding_active_c35",
+                "armature_winding_active_c34",
+                "armature_winding_active_c33",
+                "armature_winding_active_c32",
+                "armature_winding_active_c31",
+                "armature_winding_active_c30",
+                "armature_winding_active_c29",
+                "armature_winding_active_c28",
+                "armature_winding_active_c27",
+                "armature_winding_active_c26",
+                "armature_winding_active_c25",
+                "armature_winding_active_c24",
+                "armature_winding_active_c23",
+                "armature_winding_active_c22",
+                "armature_winding_active_c21",
+                "armature_winding_active_c20",
+                "armature_winding_active_c19",
+                "armature_winding_active_c18",
+                "armature_winding_active_c17",
+                "armature_winding_active_c16",
+                "armature_winding_active_c15",
+                "armature_winding_active_c14",
+                "armature_winding_active_c13",
+                "armature_winding_active_c12",
+                "armature_winding_active_c11",
+                "armature_winding_active_c10",
+                "armature_winding_active_c9",
+                "armature_winding_active_c8",
+                "armature_winding_active_c7",
+                "armature_winding_active_c6",
+                "armature_winding_active_c5",
+                "armature_winding_active_c4",
+                "armature_winding_active_c3",
+                "armature_winding_active_c2"
+            ]
+        },
+        "armature_winding_active_d": {
+            "BodyNames": [
+                "armature_winding_active_d1",
+                "armature_winding_active_d48",
+                "armature_winding_active_d47",
+                "armature_winding_active_d46",
+                "armature_winding_active_d45",
+                "armature_winding_active_d44",
+                "armature_winding_active_d43",
+                "armature_winding_active_d42",
+                "armature_winding_active_d41",
+                "armature_winding_active_d40",
+                "armature_winding_active_d39",
+                "armature_winding_active_d38",
+                "armature_winding_active_d37",
+                "armature_winding_active_d36",
+                "armature_winding_active_d35",
+                "armature_winding_active_d34",
+                "armature_winding_active_d33",
+                "armature_winding_active_d32",
+                "armature_winding_active_d31",
+                "armature_winding_active_d30",
+                "armature_winding_active_d29",
+                "armature_winding_active_d28",
+                "armature_winding_active_d27",
+                "armature_winding_active_d26",
+                "armature_winding_active_d25",
+                "armature_winding_active_d24",
+                "armature_winding_active_d23",
+                "armature_winding_active_d22",
+                "armature_winding_active_d21",
+                "armature_winding_active_d20",
+                "armature_winding_active_d19",
+                "armature_winding_active_d18",
+                "armature_winding_active_d17",
+                "armature_winding_active_d16",
+                "armature_winding_active_d15",
+                "armature_winding_active_d14",
+                "armature_winding_active_d13",
+                "armature_winding_active_d12",
+                "armature_winding_active_d11",
+                "armature_winding_active_d10",
+                "armature_winding_active_d9",
+                "armature_winding_active_d8",
+                "armature_winding_active_d7",
+                "armature_winding_active_d6",
+                "armature_winding_active_d5",
+                "armature_winding_active_d4",
+                "armature_winding_active_d3",
+                "armature_winding_active_d2"
+            ]
+        },
+        "armature_winding_active_e": {
+            "BodyNames": [
+                "armature_winding_active_e1",
+                "armature_winding_active_e48",
+                "armature_winding_active_e47",
+                "armature_winding_active_e46",
+                "armature_winding_active_e45",
+                "armature_winding_active_e44",
+                "armature_winding_active_e43",
+                "armature_winding_active_e42",
+                "armature_winding_active_e41",
+                "armature_winding_active_e40",
+                "armature_winding_active_e39",
+                "armature_winding_active_e38",
+                "armature_winding_active_e37",
+                "armature_winding_active_e36",
+                "armature_winding_active_e35",
+                "armature_winding_active_e34",
+                "armature_winding_active_e33",
+                "armature_winding_active_e32",
+                "armature_winding_active_e31",
+                "armature_winding_active_e30",
+                "armature_winding_active_e29",
+                "armature_winding_active_e28",
+                "armature_winding_active_e27",
+                "armature_winding_active_e26",
+                "armature_winding_active_e25",
+                "armature_winding_active_e24",
+                "armature_winding_active_e23",
+                "armature_winding_active_e22",
+                "armature_winding_active_e21",
+                "armature_winding_active_e20",
+                "armature_winding_active_e19",
+                "armature_winding_active_e18",
+                "armature_winding_active_e17",
+                "armature_winding_active_e16",
+                "armature_winding_active_e15",
+                "armature_winding_active_e14",
+                "armature_winding_active_e13",
+                "armature_winding_active_e12",
+                "armature_winding_active_e11",
+                "armature_winding_active_e10",
+                "armature_winding_active_e9",
+                "armature_winding_active_e8",
+                "armature_winding_active_e7",
+                "armature_winding_active_e6",
+                "armature_winding_active_e5",
+                "armature_winding_active_e4",
+                "armature_winding_active_e3",
+                "armature_winding_active_e2"
+            ]
+        },
+        "armature_winding_active_f": {
+            "BodyNames": [
+                "armature_winding_active_f1",
+                "armature_winding_active_f48",
+                "armature_winding_active_f47",
+                "armature_winding_active_f46",
+                "armature_winding_active_f45",
+                "armature_winding_active_f44",
+                "armature_winding_active_f43",
+                "armature_winding_active_f42",
+                "armature_winding_active_f41",
+                "armature_winding_active_f40",
+                "armature_winding_active_f39",
+                "armature_winding_active_f38",
+                "armature_winding_active_f37",
+                "armature_winding_active_f36",
+                "armature_winding_active_f35",
+                "armature_winding_active_f34",
+                "armature_winding_active_f33",
+                "armature_winding_active_f32",
+                "armature_winding_active_f31",
+                "armature_winding_active_f30",
+                "armature_winding_active_f29",
+                "armature_winding_active_f28",
+                "armature_winding_active_f27",
+                "armature_winding_active_f26",
+                "armature_winding_active_f25",
+                "armature_winding_active_f24",
+                "armature_winding_active_f23",
+                "armature_winding_active_f22",
+                "armature_winding_active_f21",
+                "armature_winding_active_f20",
+                "armature_winding_active_f19",
+                "armature_winding_active_f18",
+                "armature_winding_active_f17",
+                "armature_winding_active_f16",
+                "armature_winding_active_f15",
+                "armature_winding_active_f14",
+                "armature_winding_active_f13",
+                "armature_winding_active_f12",
+                "armature_winding_active_f11",
+                "armature_winding_active_f10",
+                "armature_winding_active_f9",
+                "armature_winding_active_f8",
+                "armature_winding_active_f7",
+                "armature_winding_active_f6",
+                "armature_winding_active_f5",
+                "armature_winding_active_f4",
+                "armature_winding_active_f3",
+                "armature_winding_active_f2"
+            ]
+        },
+        "armature_winding_active_g": {
+            "BodyNames": [
+                "armature_winding_active_g1",
+                "armature_winding_active_g48",
+                "armature_winding_active_g47",
+                "armature_winding_active_g46",
+                "armature_winding_active_g45",
+                "armature_winding_active_g44",
+                "armature_winding_active_g43",
+                "armature_winding_active_g42",
+                "armature_winding_active_g41",
+                "armature_winding_active_g40",
+                "armature_winding_active_g39",
+                "armature_winding_active_g38",
+                "armature_winding_active_g37",
+                "armature_winding_active_g36",
+                "armature_winding_active_g35",
+                "armature_winding_active_g34",
+                "armature_winding_active_g33",
+                "armature_winding_active_g32",
+                "armature_winding_active_g31",
+                "armature_winding_active_g30",
+                "armature_winding_active_g29",
+                "armature_winding_active_g28",
+                "armature_winding_active_g27",
+                "armature_winding_active_g26",
+                "armature_winding_active_g25",
+                "armature_winding_active_g24",
+                "armature_winding_active_g23",
+                "armature_winding_active_g22",
+                "armature_winding_active_g21",
+                "armature_winding_active_g20",
+                "armature_winding_active_g19",
+                "armature_winding_active_g18",
+                "armature_winding_active_g17",
+                "armature_winding_active_g16",
+                "armature_winding_active_g15",
+                "armature_winding_active_g14",
+                "armature_winding_active_g13",
+                "armature_winding_active_g12",
+                "armature_winding_active_g11",
+                "armature_winding_active_g10",
+                "armature_winding_active_g9",
+                "armature_winding_active_g8",
+                "armature_winding_active_g7",
+                "armature_winding_active_g6",
+                "armature_winding_active_g5",
+                "armature_winding_active_g4",
+                "armature_winding_active_g3",
+                "armature_winding_active_g2"
+            ]
+        },
+        "statorwedge": {
+            "BodyNames": [
+                "statorwedge",
+                "statorwedge_1",
+                "statorwedge_2",
+                "statorwedge_3",
+                "statorwedge_4",
+                "statorwedge_5",
+                "statorwedge_6",
+                "statorwedge_7",
+                "statorwedge_8",
+                "statorwedge_9",
+                "statorwedge_10",
+                "statorwedge_11",
+                "statorwedge_12",
+                "statorwedge_13",
+                "statorwedge_14",
+                "statorwedge_15",
+                "statorwedge_16",
+                "statorwedge_17",
+                "statorwedge_18",
+                "statorwedge_19",
+                "statorwedge_20",
+                "statorwedge_21",
+                "statorwedge_22",
+                "statorwedge_23",
+                "statorwedge_24",
+                "statorwedge_25",
+                "statorwedge_26",
+                "statorwedge_27",
+                "statorwedge_28",
+                "statorwedge_29",
+                "statorwedge_30",
+                "statorwedge_31",
+                "statorwedge_32",
+                "statorwedge_33",
+                "statorwedge_34",
+                "statorwedge_35",
+                "statorwedge_36",
+                "statorwedge_37",
+                "statorwedge_38",
+                "statorwedge_39",
+                "statorwedge_40",
+                "statorwedge_41",
+                "statorwedge_42",
+                "statorwedge_43",
+                "statorwedge_44",
+                "statorwedge_45",
+                "statorwedge_46",
+                "statorwedge_47"
+            ]
+        },
+        "rotor_lamination": {
+            "BodyNames": [
+                "rotor_lamination"
+            ]
+        },
+        "magnet": {
+            "BodyNames": [
+                "magnet_p_1_l1_m0_s0",
+                "magnet_p_1_l1_m0_s_1",
+                "magnet_p_1_l1_m0_s_2",
+                "magnet_p_1_l1_m0_s_3",
+                "magnet_p4_l1_m0_s0",
+                "magnet_p3_l1_m0_s0",
+                "magnet_p6_l1_m0_s0",
+                "magnet_p5_l1_m0_s0",
+                "magnet_p8_l1_m0_s0",
+                "magnet_p7_l1_m0_s0",
+                "magnet_p2_l1_m0_s0",
+                "magnet_p4_l1_m0_s_1",
+                "magnet_p3_l1_m0_s_1",
+                "magnet_p6_l1_m0_s_1",
+                "magnet_p5_l1_m0_s_1",
+                "magnet_p8_l1_m0_s_1",
+                "magnet_p7_l1_m0_s_1",
+                "magnet_p2_l1_m0_s_1",
+                "magnet_p4_l1_m0_s_2",
+                "magnet_p3_l1_m0_s_2",
+                "magnet_p6_l1_m0_s_2",
+                "magnet_p5_l1_m0_s_2",
+                "magnet_p8_l1_m0_s_2",
+                "magnet_p7_l1_m0_s_2",
+                "magnet_p2_l1_m0_s_2",
+                "magnet_p4_l1_m0_s_3",
+                "magnet_p3_l1_m0_s_3",
+                "magnet_p6_l1_m0_s_3",
+                "magnet_p5_l1_m0_s_3",
+                "magnet_p8_l1_m0_s_3",
+                "magnet_p7_l1_m0_s_3",
+                "magnet_p2_l1_m0_s_3"
+            ]
+        },
+        "fluid_rotor_pocket": {
+            "BodyNames": [
+                "fluid_rotor_pocket",
+                "fluid_rotor_pocket_1",
+                "fluid_rotor_pocket_2",
+                "fluid_rotor_pocket_3",
+                "fluid_rotor_pocket_4",
+                "fluid_rotor_pocket_5",
+                "fluid_rotor_pocket_6",
+                "fluid_rotor_pocket_7",
+                "fluid_rotor_pocket_8",
+                "fluid_rotor_pocket_9",
+                "fluid_rotor_pocket_10",
+                "fluid_rotor_pocket_11",
+                "fluid_rotor_pocket_12",
+                "fluid_rotor_pocket_13",
+                "fluid_rotor_pocket_14",
+                "fluid_rotor_pocket_15",
+                "fluid_rotor_pocket_16",
+                "fluid_rotor_pocket_17",
+                "fluid_rotor_pocket_18",
+                "fluid_rotor_pocket_19",
+                "fluid_rotor_pocket_20",
+                "fluid_rotor_pocket_21",
+                "fluid_rotor_pocket_22",
+                "fluid_rotor_pocket_23",
+                "fluid_rotor_pocket_24",
+                "fluid_rotor_pocket_25",
+                "fluid_rotor_pocket_26",
+                "fluid_rotor_pocket_27",
+                "fluid_rotor_pocket_28",
+                "fluid_rotor_pocket_29",
+                "fluid_rotor_pocket_30",
+                "fluid_rotor_pocket_31"
+            ]
+        },
+        "shaft_active": {
+            "BodyNames": [
+                "shaft_active"
+            ]
+        },
+        "shaft_front": {
+            "BodyNames": [
+                "shaft_front"
+            ]
+        },
+        "shaft_rear": {
+            "BodyNames": [
+                "shaft_rear"
+            ]
+        },
+        "flange": {
+            "BodyNames": [
+                "flange"
+            ]
+        },
+        "bearing_front": {
+            "BodyNames": [
+                "bearing_front"
+            ]
+        },
+        "endcap_front": {
+            "BodyNames": [
+                "endcap_front"
+            ]
+        },
+        "armature_endwinding_front": {
+            "BodyNames": [
+                "armature_endwinding_front"
+            ]
+        },
+        "armature_endwinding_rear": {
+            "BodyNames": [
+                "armature_endwinding_rear"
+            ]
+        },
+        "endcap_rear": {
+            "BodyNames": [
+                "endcap_rear"
+            ]
+        },
+        "bearing_rear": {
+            "BodyNames": [
+                "bearing_rear"
+            ]
+        }
+    }
+}

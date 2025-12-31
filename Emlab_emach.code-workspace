@@ -4,7 +4,11 @@
 			"path": "."
 		},
 		{
-			"path": "../pyAEDT"
+			"path": "E:/KDH/KJS"
+		},
+		{
+			"name": "pymotorcad",
+			"path": "../../pyMotorcad/pymotorcad"
 		}
 	],
 	"settings": {}
