@@ -35,6 +35,7 @@ classdef MCADBuildList
         % MotFileList = MotFileList';  
         obj.MotFilePath=MotFileList;
         %% Build MessageLog
+        
         MessageDate = cell(1, numel(MotFileList));  % 초기화
         MotFileDate = cell(1, numel(MotFileList));  % 초기화
     
