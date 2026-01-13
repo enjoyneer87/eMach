@@ -1,11 +1,13 @@
-"""Compatibility wrapper.
+from __future__ import annotations
 
-Canonical implementation lives in `tools.motorCAD.pyMCAD.magnetic`.
-This module remains so older notebooks importing `tool.motorCAD.pyMCAD.magnetic`
-continue to work.
-"""
+import pathlib
+import re
+import tempfile
+import uuid
 
-from tools.motorCAD.pyMCAD.magnetic import *  # noqa: F401,F403
+import matplotlib
+import matplotlib.pyplot as plt
+import numpy as np
 
 
 class MagElement:
@@ -268,6 +270,10 @@ class MagElement:
         ref_step: int | None = None,
         element_stride: int = 1,
         locus_scale: float = 0.2,
+        show_mesh: bool = False,
+        mesh_color: str = "k",
+        mesh_linewidth: float = 0.2,
+        mesh_alpha: float = 0.35,
         ax=None,
         show: bool = True,
         color: str = "0.25",
@@ -292,6 +298,10 @@ class MagElement:
         locus_scale:
             Scale factor converting Tesla to mm for drawing: (x, y) = (xc, yc) + locus_scale * (Bx, By).
             Increase to make loops bigger; decrease to make them smaller.
+        show_mesh:
+            If True, overlay the triangular element mesh (edges) on the same axes.
+        mesh_color, mesh_linewidth, mesh_alpha:
+            Style controls for the mesh overlay.
         """
 
         if steps is None:
@@ -367,6 +377,16 @@ class MagElement:
 
         if ax is None:
             _, ax = plt.subplots(layout="constrained")
+
+        if bool(show_mesh):
+            mr_ref.plot_mesh(
+                reg_code=(int(reg_code) if reg_code is not None else None),
+                ax=ax,
+                show=False,
+                color=mesh_color,
+                linewidth=float(mesh_linewidth),
+                alpha=float(mesh_alpha),
+            )
 
         scale = float(locus_scale)
         stride = int(element_stride)
@@ -911,27 +931,48 @@ def _parse_first_block_magnetic_file(filename) -> MagneticRegions:
     return mag_regions
 
 
-def get_magnetic_data(mc, first_step=1, final_step=1, clean_up=True) -> MagneticRegions:
-    """Export Motor-CAD electromagnetic element data and return MagneticRegions (first block)."""
+def get_magnetic_data(
+    mc,
+    first_step=1,
+    final_step=1,
+    *,
+    filename: str | pathlib.Path | None = None,
+    clean_up: bool = True,
+) -> MagneticRegions:
+    """Export Motor-CAD electromagnetic element data and return MagneticRegions (first block).
 
-    temp_filename = mcad_make_temp_txt_path(mc)
+    If `filename` is provided, the export is written there (and not deleted).
+    Otherwise a temporary file is used.
+    """
+
+    if filename is None:
+        export_path = mcad_make_temp_txt_path(mc)
+        is_temp = True
+    else:
+        export_path = pathlib.Path(filename)
+        export_path.parent.mkdir(parents=True, exist_ok=True)
+        if export_path.suffix.lower() != ".txt":
+            export_path = export_path.with_suffix(".txt")
+        is_temp = False
+
     mc.save_fea_data(
-        str(temp_filename),
+        str(export_path),
         int(first_step),
         int(final_step),
         "RegCode,Bx,By,A,J",
         "",
         ",",
     )
-    mag_regions = _parse_first_block_magnetic_file(temp_filename)
 
-    if clean_up:
+    mag_regions = _parse_first_block_magnetic_file(export_path)
+
+    if clean_up and is_temp:
         try:
-            temp_filename.unlink()
+            export_path.unlink()
         except FileNotFoundError:
             pass
-    else:
-        print(f"Temporary file not deleted: {temp_filename}")
+    elif is_temp:
+        print(f"Temporary file not deleted: {export_path}")
 
     return mag_regions
 
@@ -1152,11 +1193,28 @@ def interactive_magnetic_plot(ts: MagneticRegionsTimeSeries, initial_step=None, 
         description="qty",
     )
     mesh_chk = widgets.Checkbox(value=False, description="mesh", indent=False)
-    reg_text = widgets.Text(
-        value="" if reg_code is None else str(reg_code),
+
+    def _region_options_for_step(step):
+        mr = ts.by_step[int(step)]
+        options = [("all", None)]
+        regions = getattr(mr, "_regions", [])
+        for idx, region in enumerate(regions):
+            if not getattr(region, "elements", None):
+                continue
+            code = getattr(region, "reg_code", 0) or (idx + 1)
+            name = (getattr(region, "region_name", "") or "").strip()
+            label = f"{int(code)}: {name}" if name else str(int(code))
+            options.append((label, int(code)))
+        return options
+
+    reg_dd = widgets.Dropdown(
+        options=_region_options_for_step(step_slider.value),
+        value=(None if reg_code is None else int(reg_code)),
         description="reg_code",
-        placeholder="(blank = all)",
     )
+    if reg_dd.value not in [v for (_, v) in reg_dd.options]:
+        reg_dd.value = None
+
     size_slider = widgets.FloatSlider(
         value=float(s),
         min=0.1,
@@ -1168,11 +1226,12 @@ def interactive_magnetic_plot(ts: MagneticRegionsTimeSeries, initial_step=None, 
     )
     out = widgets.Output()
 
-    def _parse_reg_code(text):
-        t = str(text).strip()
-        if t == "":
-            return None
-        return int(t)
+    def _sync_reg_options(*_):
+        current = reg_dd.value
+        new_options = _region_options_for_step(step_slider.value)
+        reg_dd.options = new_options
+        values = [v for (_, v) in new_options]
+        reg_dd.value = current if current in values else None
 
     def _draw(*_):
         with out:
@@ -1180,7 +1239,7 @@ def interactive_magnetic_plot(ts: MagneticRegionsTimeSeries, initial_step=None, 
             fig, ax = plt.subplots(layout="constrained")
             step = int(step_slider.value)
             qty = str(qty_dd.value).lower()
-            rc = _parse_reg_code(reg_text.value)
+            rc = reg_dd.value
             ax = ts.by_step[step].plot(
                 reg_code=rc,
                 quantity=qty,
@@ -1199,13 +1258,14 @@ def interactive_magnetic_plot(ts: MagneticRegionsTimeSeries, initial_step=None, 
                 plt.close(fig)
             return ax
 
-    step_slider.observe(_draw, names="value")
+            step_slider.observe(_sync_reg_options, names="value")
+            step_slider.observe(_draw, names="value")
     qty_dd.observe(_draw, names="value")
     mesh_chk.observe(_draw, names="value")
-    reg_text.observe(_draw, names="value")
+    reg_dd.observe(_draw, names="value")
     size_slider.observe(_draw, names="value")
 
-    display(widgets.VBox([widgets.HBox([step_slider, qty_dd, mesh_chk]), widgets.HBox([reg_text, size_slider]), out]))
+    display(widgets.VBox([widgets.HBox([step_slider, qty_dd, mesh_chk]), widgets.HBox([reg_dd, size_slider]), out]))
     _draw()
 
 
