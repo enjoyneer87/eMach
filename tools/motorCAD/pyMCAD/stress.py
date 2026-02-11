@@ -2,12 +2,75 @@ from __future__ import annotations
 
 import math
 import pathlib
+import re
 import tempfile
 import uuid
 from dataclasses import dataclass
-from typing import List, Optional, Sequence, Tuple
+from typing import Dict, List, Optional, Sequence, Tuple
 
 import numpy as np
+
+
+def _safe_stem(s: str, *, max_len: int = 80) -> str:
+	s = re.sub(r"[^A-Za-z0-9._-]+", "_", str(s).strip())
+	s = re.sub(r"_+", "_", s).strip("_")
+	return s[: int(max_len)] if len(s) > int(max_len) else s
+
+
+def _unique_path(path: pathlib.Path) -> pathlib.Path:
+	path = pathlib.Path(path)
+	if not path.exists():
+		return path
+	base = path.with_suffix("")
+	suffix = path.suffix
+	for i in range(1, 1000):
+		candidate = pathlib.Path(f"{base}_{i}{suffix}")
+		if not candidate.exists():
+			return candidate
+	return pathlib.Path(tempfile.gettempdir()) / f"{_safe_stem(path.stem)}{suffix}"
+
+
+def export_stress_svgs(
+	stress_regions: "StressRegions",
+	*,
+	out_dir: str | pathlib.Path,
+	stem: str,
+	fields: Sequence[str] = ("svm", "sp1", "sp2", "sx", "sy", "txy"),
+	cmap: str = "jet",
+	point_size: float = 4.0,
+	dpi: int = 140,
+	show_mesh: bool = True,
+	mesh_alpha: float = 0.25,
+	colorbar_location: str = "top",
+) -> Dict[str, pathlib.Path]:
+	"""Export stress fields as SVGs (one per field)."""
+
+	import matplotlib.pyplot as plt
+
+	out_dir = pathlib.Path(out_dir)
+	out_dir.mkdir(parents=True, exist_ok=True)
+
+	exported: Dict[str, pathlib.Path] = {}
+	for f in tuple(fields):
+		fig_ax_list = plot_mesh_stress_fields(
+			stress_regions,
+			fields=(str(f),),
+			cmap=cmap,
+			point_size=float(point_size),
+			show_mesh=bool(show_mesh),
+			mesh_alpha=float(mesh_alpha),
+			colorbar_location=str(colorbar_location),
+			title_suffix=f"({stem})",
+		)
+		if not fig_ax_list:
+			continue
+		svg_path = _unique_path(out_dir / f"Stress_{str(f)}_{_safe_stem(stem)}.svg")
+		fig_ax_list[0][0].savefig(svg_path, dpi=int(dpi))
+		exported[str(f)] = svg_path
+		for fig, _ax in fig_ax_list:
+			plt.close(fig)
+
+	return exported
 
 
 def plot_mesh_stress_fields(
@@ -780,6 +843,24 @@ def get_stress_data(
 		print(f"Temporary file not deleted: {export_path}")
 
 	return stress_regions
+
+
+def export_stress_txt(
+	mc,
+	*,
+	filename: str | pathlib.Path,
+	columns: str = "RegCode,X,Y,Sx,Sy,Txy,Sp1,Sp2,SVM,Ux,Uy",
+	sep: str = ",",
+) -> pathlib.Path:
+	"""Export stress FEA data to a txt file (no parsing)."""
+
+	export_path = pathlib.Path(filename)
+	export_path.parent.mkdir(parents=True, exist_ok=True)
+	if export_path.suffix.lower() != ".txt":
+		export_path = export_path.with_suffix(".txt")
+
+	mc.save_fea_data(str(export_path), 0, 0, str(columns), "", str(sep))
+	return export_path
 
 
 def get_stress_data_from_file(filename: str | pathlib.Path, *, clean_up: bool = False) -> StressRegions:

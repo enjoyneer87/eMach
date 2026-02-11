@@ -1,0 +1,16 @@
+{
+	"folders": [
+		{
+			"path": "../.."
+		},
+		{
+			"path": "../../../../pyMotorcad/pymotorcad"
+		},
+		{
+			"path": "../../../git_syRe"
+		}
+	],
+	"settings": {
+		"notebook.output.textLineLimit": 500
+	}
+}

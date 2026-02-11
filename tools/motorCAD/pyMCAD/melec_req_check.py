@@ -1090,6 +1090,11 @@ def plot_torque_vw_waveform(
     title: str = "Electromagnetic Torque",
     xlabel: str = "Rotor Position",
     ylabel: str = "Electromagnetic Torque [Nm]",
+    export_txt_path: str | Path | None = None,
+    export_delimiter: str = "\t",
+    export_include_header: bool = True,
+    export_float_format: str = "%.12g",
+    export_overwrite: bool = False,
 ):
     """Plot TorqueVW waveform (load)."""
 
@@ -1113,6 +1118,45 @@ def plot_torque_vw_waveform(
 
     _style_waveform_axes(ax, labelsize=22)
     fig.tight_layout()
+
+    if export_txt_path is not None:
+        from datetime import datetime
+
+        def _sanitize_filename(s: str) -> str:
+            s = (s or "TorqueVW").strip()
+            for ch in '<>:/\\|?*"':
+                s = s.replace(ch, "_")
+            s = " ".join(s.split())
+            return s or "TorqueVW"
+
+        def _unique_path_if_exists(path: Path) -> Path:
+            if export_overwrite or not path.exists():
+                return path
+            stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            return path.with_name(f"{path.stem}_{stamp}{path.suffix}")
+
+        export_path = Path(export_txt_path)
+        if export_path.is_dir() or str(export_txt_path).endswith(":"):
+            base = _sanitize_filename(str(title) if title is not None else "TorqueVW")
+            export_path = export_path / f"{base}.txt"
+        if export_path.suffix == "":
+            export_path = export_path.with_suffix(".txt")
+        export_path.parent.mkdir(parents=True, exist_ok=True)
+        export_path = _unique_path_if_exists(export_path)
+
+        data = np.column_stack([np.asarray(x, dtype=float), np.asarray(y, dtype=float)])
+        header = ""
+        if export_include_header:
+            header = str(export_delimiter).join([str(xlabel), str(ylabel)])
+        np.savetxt(
+            export_path,
+            data,
+            delimiter=str(export_delimiter),
+            header=header,
+            comments="",
+            fmt=str(export_float_format),
+        )
+
     return fig, ax
 
 
@@ -1225,8 +1269,17 @@ def plot_multi_graph_waveforms(
     xlabel: str = "X",
     ylabel: str = "Y",
     labels: list[str] | tuple[str, ...] | None = None,
+    export_txt_path: str | Path | None = None,
+    export_format: str = "auto",
+    export_delimiter: str = "\t",
+    export_include_header: bool = True,
+    export_float_format: str = "%.12g",
+    export_overwrite: bool = False,
 ):
-    """Plot multiple graphs on the same axes (e.g., 3-phase waveforms)."""
+    """Plot multiple graphs on the same axes (e.g., 3-phase waveforms).
+
+    If export_txt_path is provided, the fetched waveform data is also written to a .txt.
+    """
 
     import numpy as np
     import matplotlib.pyplot as plt
@@ -1245,9 +1298,15 @@ def plot_multi_graph_waveforms(
             raise ValueError("labels must match length of graph_names")
 
     fig, ax = plt.subplots(figsize=tuple(figsize))
+    xs: list[np.ndarray] = []
+    ys: list[np.ndarray] = []
     for name, lab in zip(names, labels_use):
         x, y = get_graph_xy(mc, name, data_type=data_type, ini_path=ini_path)
-        ax.plot(np.asarray(x, dtype=float), np.asarray(y, dtype=float), linewidth=float(linewidth), label=str(lab))
+        x_arr = np.asarray(x, dtype=float)
+        y_arr = np.asarray(y, dtype=float)
+        xs.append(x_arr)
+        ys.append(y_arr)
+        ax.plot(x_arr, y_arr, linewidth=float(linewidth), label=str(lab))
 
     if title is None:
         title = "Waveforms"
@@ -1257,6 +1316,76 @@ def plot_multi_graph_waveforms(
     _style_waveform_axes(ax, labelsize=22)
     ax.legend(loc="best", fontsize=18, frameon=True, facecolor="white", edgecolor="black")
     fig.tight_layout()
+
+    if export_txt_path is not None:
+        from datetime import datetime
+
+        def _sanitize_filename(s: str) -> str:
+            s = (s or "waveforms").strip()
+            for ch in '<>:/\\|?*"':
+                s = s.replace(ch, "_")
+            s = " ".join(s.split())
+            return s or "waveforms"
+
+        def _unique_path_if_exists(path: Path) -> Path:
+            if export_overwrite or not path.exists():
+                return path
+            stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            return path.with_name(f"{path.stem}_{stamp}{path.suffix}")
+
+        export_path = Path(export_txt_path)
+        if export_path.is_dir() or str(export_txt_path).endswith(":"):
+            base = _sanitize_filename(str(title) if title is not None else "Waveforms")
+            export_path = export_path / f"{base}.txt"
+        if export_path.suffix == "":
+            export_path = export_path.with_suffix(".txt")
+        export_path.parent.mkdir(parents=True, exist_ok=True)
+        export_path = _unique_path_if_exists(export_path)
+
+        fmt = str(export_format or "auto").strip().lower()
+        if fmt not in {"auto", "wide", "long"}:
+            raise ValueError("export_format must be one of: 'auto', 'wide', 'long'")
+
+        can_wide = False
+        if xs and ys and all(len(x) == len(xs[0]) for x in xs) and all(len(y) == len(xs[0]) for y in ys):
+            try:
+                can_wide = all(np.allclose(x, xs[0], rtol=1e-9, atol=1e-12, equal_nan=True) for x in xs[1:])
+            except Exception:
+                can_wide = False
+
+        if fmt == "auto":
+            fmt_use = "wide" if can_wide else "long"
+        elif fmt == "wide" and not can_wide:
+            raise ValueError("export_format='wide' requires all traces to have the same X array")
+        else:
+            fmt_use = fmt
+
+        if fmt_use == "wide":
+            table = np.column_stack([xs[0], *ys])
+            header = ""
+            if export_include_header:
+                col_names = [str(xlabel)] + [str(l) for l in labels_use]
+                header = str(export_delimiter).join(col_names)
+            np.savetxt(
+                export_path,
+                table,
+                delimiter=str(export_delimiter),
+                header=header,
+                comments="",
+                fmt=str(export_float_format),
+            )
+        else:
+            header = ""
+            if export_include_header:
+                header = str(export_delimiter).join(["trace", str(xlabel), str(ylabel)])
+            with export_path.open("w", encoding="utf-8", newline="") as f:
+                if header:
+                    f.write(header + "\n")
+                delim = str(export_delimiter)
+                for lab, x_arr, y_arr in zip(labels_use, xs, ys):
+                    for xv, yv in zip(x_arr.tolist(), y_arr.tolist()):
+                        f.write(f"{lab}{delim}{export_float_format % float(xv)}{delim}{export_float_format % float(yv)}\n")
+
     return fig, ax
 
 

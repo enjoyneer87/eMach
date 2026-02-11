@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import pathlib
 import re
+import tempfile
 from dataclasses import dataclass, field
 from typing import Dict, Iterable, Optional, Sequence, Tuple
 
@@ -64,7 +65,7 @@ class ElementMesh:
                     )
                 )
 
-                return cls(node_xy=node_xy, elements=tuple(elements), region_name_by_code=region_name_by_code)
+        return cls(node_xy=node_xy, elements=tuple(elements), region_name_by_code=region_name_by_code)
 
     def element_centroid_xy(self, element: ElementRecord) -> Optional[Tuple[float, float]]:
         n1 = self.node_xy.get(element.node_1)
@@ -80,6 +81,87 @@ class ElementMesh:
         if reg_code is None:
             return iter(self.elements)
         return (el for el in self.elements if int(el.reg_code) == int(reg_code))
+
+
+def _safe_stem(s: str, *, max_len: int = 80) -> str:
+    s = re.sub(r"[^A-Za-z0-9._-]+", "_", str(s).strip())
+    s = re.sub(r"_+", "_", s).strip("_")
+    return s[: int(max_len)] if len(s) > int(max_len) else s
+
+
+def _unique_path(path: pathlib.Path) -> pathlib.Path:
+    path = pathlib.Path(path)
+    if not path.exists():
+        return path
+
+    base = path.with_suffix("")
+    suffix = path.suffix
+    for i in range(1, 1000):
+        candidate = pathlib.Path(f"{base}_{i}{suffix}")
+        if not candidate.exists():
+            return candidate
+
+    return pathlib.Path(tempfile.gettempdir()) / f"{_safe_stem(path.stem)}{suffix}"
+
+
+def _robust_percentile_clim(values: Iterable[float], *, p_lo: float = 1.0, p_hi: float = 99.0):
+    """Return (vmin, vmax) using percentiles, best-effort."""
+    try:
+        import numpy as np
+
+        arr = np.asarray(list(values), dtype=float)
+        arr = arr[np.isfinite(arr)]
+        if arr.size < 10:
+            return None, None
+        vmin = float(np.nanpercentile(arr, float(p_lo)))
+        vmax = float(np.nanpercentile(arr, float(p_hi)))
+        if not (vmin < vmax):
+            return None, None
+        return vmin, vmax
+    except Exception:
+        return None, None
+
+
+def export_loss_svgs(
+    fields: Dict[str, ElementScalarField],
+    *,
+    out_dir: str | pathlib.Path,
+    stem: str,
+    cmap: str = "jet",
+    point_size: float = 2,
+    dpi: int = 140,
+    clip_percentiles: tuple[float, float] = (1.0, 99.0),
+) -> Dict[str, pathlib.Path]:
+    """Export each loss field to its own SVG (non-interactive).
+
+    Returns dict[field_name -> svg_path].
+    """
+
+    import matplotlib.pyplot as plt
+
+    out_dir = pathlib.Path(out_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    exported: Dict[str, pathlib.Path] = {}
+    for name, field in (fields or {}).items():
+        if field is None:
+            continue
+
+        vmin, vmax = _robust_percentile_clim(
+            field.values_by_tri.values(),
+            p_lo=float(clip_percentiles[0]),
+            p_hi=float(clip_percentiles[1]),
+        )
+
+        fig, ax = plt.subplots(layout="constrained")
+        field.plot(cmap=cmap, s=float(point_size), ax=ax, show=False, vmin=vmin, vmax=vmax)
+        ax.set_title(f"Loss {name} ({stem})")
+        svg_path = _unique_path(out_dir / f"Loss_{_safe_stem(name)}_{_safe_stem(stem)}.svg")
+        fig.savefig(svg_path, dpi=int(dpi))
+        plt.close(fig)
+        exported[str(name)] = svg_path
+
+    return exported
 
 
 @dataclass
@@ -445,6 +527,29 @@ def get_element_loss_fields(
             pass
 
     return fields
+
+
+def export_element_loss_txt(
+    mc,
+    *,
+    filename: str | pathlib.Path,
+    step: int,
+    columns: Sequence[str] = ("Pt", "Phys", "Pj", "Peddy"),
+    sep: str = ",",
+) -> pathlib.Path:
+    """Export element-wise losses to a txt file (no parsing).
+
+    Use :func:`get_element_loss_fields_from_file` later when you actually need to parse/plot.
+    """
+
+    export_path = pathlib.Path(filename)
+    export_path.parent.mkdir(parents=True, exist_ok=True)
+    if export_path.suffix.lower() != ".txt":
+        export_path = export_path.with_suffix(".txt")
+
+    col_spec = "RegCode," + ",".join(tuple(columns))
+    mc.save_fea_data(str(export_path), int(step), int(step), col_spec, "", str(sep))
+    return export_path
 
 
 def get_element_loss_fields_from_file(

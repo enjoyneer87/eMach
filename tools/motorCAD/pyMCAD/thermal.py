@@ -1,12 +1,76 @@
 from __future__ import annotations
 
 import pathlib
+import re
+import tempfile
 from dataclasses import dataclass
-from typing import Optional, Sequence
+from typing import Dict, Optional, Sequence
 
 import numpy as np
 
 from .stress import mcad_make_temp_txt_path
+
+
+def _safe_stem(s: str, *, max_len: int = 80) -> str:
+	s = re.sub(r"[^A-Za-z0-9._-]+", "_", str(s).strip())
+	s = re.sub(r"_+", "_", s).strip("_")
+	return s[: int(max_len)] if len(s) > int(max_len) else s
+
+
+def _unique_path(path: pathlib.Path) -> pathlib.Path:
+	path = pathlib.Path(path)
+	if not path.exists():
+		return path
+	base = path.with_suffix("")
+	suffix = path.suffix
+	for i in range(1, 1000):
+		candidate = pathlib.Path(f"{base}_{i}{suffix}")
+		if not candidate.exists():
+			return candidate
+	return pathlib.Path(tempfile.gettempdir()) / f"{_safe_stem(path.stem)}{suffix}"
+
+
+def export_thermal_svgs(
+	thermal_regions: "ThermalRegions",
+	*,
+	out_dir: str | pathlib.Path,
+	stem: str,
+	fields: Sequence[str] = ("t", "g", "q"),
+	cmap: str = "jet",
+	point_size: float = 4.0,
+	dpi: int = 140,
+	show_mesh: bool = True,
+	mesh_alpha: float = 0.25,
+	colorbar_location: str = "top",
+) -> Dict[str, pathlib.Path]:
+	"""Export thermal fields as SVGs (one per field)."""
+
+	import matplotlib.pyplot as plt
+
+	out_dir = pathlib.Path(out_dir)
+	out_dir.mkdir(parents=True, exist_ok=True)
+
+	exported: Dict[str, pathlib.Path] = {}
+	for f in tuple(fields):
+		fig_ax_list = plot_mesh_thermal_fields(
+			thermal_regions,
+			fields=(str(f),),
+			cmap=cmap,
+			point_size=float(point_size),
+			show_mesh=bool(show_mesh),
+			mesh_alpha=float(mesh_alpha),
+			colorbar_location=str(colorbar_location),
+			title_suffix=f"({stem})",
+		)
+		if not fig_ax_list:
+			continue
+		svg_path = _unique_path(out_dir / f"Thermal_{str(f)}_{_safe_stem(stem)}.svg")
+		fig_ax_list[0][0].savefig(svg_path, dpi=int(dpi))
+		exported[str(f)] = svg_path
+		for fig, _ax in fig_ax_list:
+			plt.close(fig)
+
+	return exported
 
 
 @dataclass
@@ -268,6 +332,28 @@ def get_thermal_data(
 			pass
 
 	return regions
+
+
+def export_thermal_txt(
+	mc,
+	*,
+	step: int = 1,
+	variables: str = "RegCode,X,Y,T,G,q",
+	filename: str | pathlib.Path,
+	sep: str = ",",
+) -> pathlib.Path:
+	"""Export thermal FEA data to a txt file (no parsing).
+
+	Use :func:`get_thermal_data_from_file` later when you actually need to parse/plot.
+	"""
+
+	export_path = pathlib.Path(filename)
+	export_path.parent.mkdir(parents=True, exist_ok=True)
+	if export_path.suffix.lower() != ".txt":
+		export_path = export_path.with_suffix(".txt")
+
+	mc.save_fea_data(str(export_path), int(step), int(step), str(variables), "", str(sep))
+	return export_path
 
 
 def get_thermal_data_from_file(filename: str | pathlib.Path, *, clean_up: bool = False) -> ThermalRegions:

@@ -14,7 +14,10 @@ addpath(DOEDir)
 
 mcad=callMCAD
 
-
+%%
+%[text] ## 화면전환
+mcad.InitialiseTabNames()
+mcad.DisplayScreen("Geometry;Axial")
 %%
 %[text] ## get MachineData
 Obj_SLLAWLabList_8p48sVV                               =MCADBuildList(refFilePath);
@@ -58,10 +61,11 @@ mcad.loadfromfile(refFilePath)
 
 
 
+%% set 
 
 %% set id,iq
 
-%% set rpm
+%% set rpm 
 
 % calculation
 
