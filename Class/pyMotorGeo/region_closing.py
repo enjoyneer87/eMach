@@ -7,10 +7,20 @@ pyMotorGeo.region_closing
 열린 상태이므로, 방사 직선(boundary line)과 호(arc)를 추가하여 닫힌 영역을 형성합니다.
 에어갭 경계는 별도로 추가하지 않습니다.
 
-핵심 흐름:
-  1) close_period_model() → 경계선(boundary) EntityInfo 추가
-  2) detect_closed_faces()  → planar graph 기반 닫힌 면(face) 탐지
-  3) auto_name_faces()      → 반경/위치 기반 자동 이름 할당
+권장 워크플로우 (v1.5.1):
+  **1극/1슬롯 단위 close → circular array pattern**
+
+  1) extract_half_pole_entities() → half-pole
+  2) reconstruct_from_half(..., n_repeats=1) → 1 pole
+  3) close_one_pole(one_pole_entities, ...) → 닫힌 1극
+  4) detect_closed_faces() → faces 탐지
+  5) auto_name_faces() → 이름 할당
+  6) rotate & pattern으로 전체 재구성
+
+레거시 워크플로우 (v1.4):
+  1) close_period_model() → 주기모델 전체 닫기
+  2) detect_closed_faces()
+  3) auto_name_faces()
 """
 
 import math
@@ -277,6 +287,180 @@ def close_period_model(
         'r_rotor_outer': r_rotor_outer,
         'r_stator_inner': r_stator_inner,
         'r_stator_outer': r_stator_outer,
+    }
+
+
+# ═══════════════════════════════════════════════════════════════
+# v1.5.1: 1극/1슬롯 단위 닫기 (권장)
+# ═══════════════════════════════════════════════════════════════
+
+def close_one_pole(
+    one_pole_entities: List[EntityInfo],
+    origin: Tuple[float, float],
+    pole_pitch_deg: float,
+    r_shaft: float,
+    r_rotor_outer: float,
+    start_angle_deg: float = 0.0,
+    layer: str = '_BOUNDARY_',
+) -> Dict:
+    """
+    1극(one pole) 엔티티에 경계선을 추가하여 닫힌 영역을 형성합니다.
+
+    half-pole → mirror → 1 pole → close_one_pole() 순서로 사용.
+    이 방식이 주기모델 전체를 한 번에 닫는 것보다 더 자연스럽고,
+    각 극이 독립적인 완결 단위가 됩니다.
+
+    Parameters
+    ----------
+    one_pole_entities : 1극 엔티티 리스트 (reconstruct_from_half 결과)
+    origin : 원점
+    pole_pitch_deg : 극 피치 (deg) = 360 / n_poles
+    r_shaft : 샤프트 반경 (내측 경계)
+    r_rotor_outer : 로터 외경 (외측 경계 = airgap 내측)
+    start_angle_deg : 시작 각도 (보통 0°)
+    layer : 경계선 레이어 이름
+
+    Returns
+    -------
+    Dict:
+        closed_entities : 원본 + 경계선
+        boundaries : 추가된 경계선만
+        pole_pitch_deg, r_shaft, r_rotor_outer, start_angle_deg
+
+    사용 예시::
+
+        # 1) half-pole 추출
+        half_pole = extract_half_pole_entities(rotor_entities, origin, pole_pitch_deg)
+
+        # 2) 1극 재구성 (mirror)
+        one_pole = reconstruct_from_half(half_pole, origin, n_repeats=1)
+
+        # 3) 1극 닫기
+        result = close_one_pole(one_pole, origin, pole_pitch_deg, r_shaft, r_rotor_outer)
+
+        # 4) face 탐지 및 이름 할당
+        faces = detect_closed_faces(result['closed_entities'], origin)
+        auto_name_faces(faces, r_shaft, r_rotor_outer, r_stator_inner, r_stator_outer)
+
+        # 5) 필요시 n_poles번 circular pattern
+    """
+    boundaries = []
+    end_angle_deg = start_angle_deg + pole_pitch_deg
+
+    # 시작각 경계 (방사 직선)
+    line_start = create_radial_line(
+        r_shaft, r_rotor_outer, start_angle_deg, origin, layer=layer)
+    boundaries.append(line_start)
+
+    # 끝각 경계 (방사 직선)
+    line_end = create_radial_line(
+        r_shaft, r_rotor_outer, end_angle_deg, origin, layer=layer)
+    boundaries.append(line_end)
+
+    # 샤프트 호 (내측)
+    arc_shaft = create_arc_boundary(
+        r_shaft, start_angle_deg, end_angle_deg, origin, layer=layer)
+    boundaries.append(arc_shaft)
+
+    # 로터 외경 호 (외측)
+    arc_outer = create_arc_boundary(
+        r_rotor_outer, start_angle_deg, end_angle_deg, origin, layer=layer)
+    boundaries.append(arc_outer)
+
+    closed = list(one_pole_entities) + boundaries
+
+    return {
+        'closed_entities': closed,
+        'boundaries': boundaries,
+        'pole_pitch_deg': pole_pitch_deg,
+        'r_shaft': r_shaft,
+        'r_rotor_outer': r_rotor_outer,
+        'start_angle_deg': start_angle_deg,
+        'end_angle_deg': end_angle_deg,
+    }
+
+
+def close_one_slot(
+    one_slot_entities: List[EntityInfo],
+    origin: Tuple[float, float],
+    slot_pitch_deg: float,
+    r_stator_inner: float,
+    r_stator_outer: float,
+    start_angle_deg: float = 0.0,
+    layer: str = '_BOUNDARY_',
+) -> Dict:
+    """
+    1슬롯(one slot) 엔티티에 경계선을 추가하여 닫힌 영역을 형성합니다.
+
+    half-slot → mirror → 1 slot → close_one_slot() 순서로 사용.
+
+    Parameters
+    ----------
+    one_slot_entities : 1슬롯 엔티티 리스트 (reconstruct_from_half 결과)
+    origin : 원점
+    slot_pitch_deg : 슬롯 피치 (deg) = 360 / n_slots
+    r_stator_inner : 스테이터 내경 (내측 경계 = airgap 외측)
+    r_stator_outer : 스테이터 외경 (외측 경계)
+    start_angle_deg : 시작 각도 (보통 0°)
+    layer : 경계선 레이어 이름
+
+    Returns
+    -------
+    Dict:
+        closed_entities : 원본 + 경계선
+        boundaries : 추가된 경계선만
+        slot_pitch_deg, r_stator_inner, r_stator_outer, start_angle_deg
+
+    사용 예시::
+
+        # 1) half-slot 추출
+        half_slot = extract_half_slot_entities(stator_entities, origin, slot_pitch_deg, n_slots)
+
+        # 2) 1슬롯 재구성 (mirror)
+        one_slot = reconstruct_from_half(half_slot, origin, n_repeats=1)
+
+        # 3) 1슬롯 닫기
+        result = close_one_slot(one_slot, origin, slot_pitch_deg, r_stator_inner, r_stator_outer)
+
+        # 4) face 탐지 및 이름 할당
+        faces = detect_closed_faces(result['closed_entities'], origin)
+        auto_name_faces(faces, ...)
+
+        # 5) 필요시 n_slots번 circular pattern
+    """
+    boundaries = []
+    end_angle_deg = start_angle_deg + slot_pitch_deg
+
+    # 시작각 경계 (방사 직선)
+    line_start = create_radial_line(
+        r_stator_inner, r_stator_outer, start_angle_deg, origin, layer=layer)
+    boundaries.append(line_start)
+
+    # 끝각 경계 (방사 직선)
+    line_end = create_radial_line(
+        r_stator_inner, r_stator_outer, end_angle_deg, origin, layer=layer)
+    boundaries.append(line_end)
+
+    # 스테이터 내경 호 (내측)
+    arc_inner = create_arc_boundary(
+        r_stator_inner, start_angle_deg, end_angle_deg, origin, layer=layer)
+    boundaries.append(arc_inner)
+
+    # 스테이터 외경 호 (외측)
+    arc_outer = create_arc_boundary(
+        r_stator_outer, start_angle_deg, end_angle_deg, origin, layer=layer)
+    boundaries.append(arc_outer)
+
+    closed = list(one_slot_entities) + boundaries
+
+    return {
+        'closed_entities': closed,
+        'boundaries': boundaries,
+        'slot_pitch_deg': slot_pitch_deg,
+        'r_stator_inner': r_stator_inner,
+        'r_stator_outer': r_stator_outer,
+        'start_angle_deg': start_angle_deg,
+        'end_angle_deg': end_angle_deg,
     }
 
 

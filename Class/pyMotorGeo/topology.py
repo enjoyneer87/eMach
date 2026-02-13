@@ -405,7 +405,7 @@ def _extract_half_entities(entities: List[EntityInfo],
                            full_pitch_deg: float,
                            reference_angle: float = 0.0,
                            normalize_to_zero: bool = True,
-                           angle_tol: float = 0.5) -> Dict:
+                           angle_tol: float = 0.05) -> Dict:
     """
     엔티티에서 [reference_angle, reference_angle + full_pitch/2] 범위를 추출.
     반극/반슬롯 공통 로직.
@@ -457,14 +457,7 @@ def _extract_half_entities(entities: List[EntityInfo],
                 'relative_angle': a_rel,
             })
 
-    # 중복 동심원 제거
-    seen_r = set()
-    unique_conc = []
-    for ei in concentric_arcs:
-        r_key = round(ei.radius, 2) if ei.radius else 0
-        if r_key not in seen_r:
-            seen_r.add(r_key)
-            unique_conc.append(ei)
+    # 중복 동심원 제거는 여기서 하지 않음 (각 extract_half_*에서 처리)
 
     # 0° 기준으로 역회전 정규화
     normalized = []
@@ -500,7 +493,7 @@ def _extract_half_entities(entities: List[EntityInfo],
     return {
         'half_entities': half_entities,
         'normalized_entities': normalized,
-        'concentric_arcs': unique_conc,
+        'concentric_arcs': concentric_arcs,
         'half_pitch_deg': half_pitch,
     }
 
@@ -558,6 +551,61 @@ def extract_half_pole_entities(entities: List[EntityInfo],
         entities, origin, pole_pitch_deg, reference_angle, normalize_to_zero
     )
 
+    # shaft/rotor 외경 ARC만 half-pitch 각도 ARC 생성, 나머지는 원본 각도 그대로
+                                    shaft_r = None
+                                    rotor_outer_r = None
+                                    # split_result에서 airgap_r_inner/airgap_r_outer 우선 사용
+                                    import inspect
+                                    frame = inspect.currentframe()
+                                    while frame:
+                                        if 'split_result' in frame.f_locals:
+                                            split_result = frame.f_locals['split_result']
+                                            shaft_r = split_result.get('airgap_r_inner', None)
+                                            rotor_outer_r = split_result.get('airgap_r_outer', None)
+                                            break
+                                        frame = frame.f_back
+                                    # fallback: ARC/CIRCLE에서 추출
+                                    if shaft_r is None or rotor_outer_r is None:
+                                        all_radii = [ei.radius for ei in result['concentric_arcs'] if ei.radius]
+                                        if all_radii:
+                                            # shaft_r: 가장 작은 반경 (shaft 또는 중심부)
+                                            if shaft_r is None:
+                                                shaft_r = min(all_radii)
+                                            # rotor_outer_r: ARC/CIRCLE 중 가장 큰 반경
+                                            if rotor_outer_r is None:
+                                                rotor_outer_r = max(all_radii)
+    processed_arcs = []
+    for ei in result['concentric_arcs']:
+        if ei.etype == 'ARC':
+            # shaft/rotor 외경 ARC는 half-pitch ARC 추가 + 원본 ARC도 반드시 포함
+            is_shaft = shaft_r and abs(ei.radius - shaft_r) < 1e-2
+            is_rotor_outer = rotor_outer_r and abs(ei.radius - rotor_outer_r) < 1e-2
+            if is_shaft or is_rotor_outer:
+                # half-pitch ARC 생성
+                new_arc = EntityInfo(
+                    etype='ARC',
+                    layer=ei.layer,
+                    points=[],
+                    radius=ei.radius,
+                    center=ei.center,
+                    start_angle=reference_angle,
+                    end_angle=reference_angle + half_pitch,
+                    raw=None,
+                )
+                cx, cy = new_arc.center
+                r = new_arc.radius
+                n_pts = max(3, int(half_pitch / 2))
+                pts = []
+                for j in range(n_pts + 1):
+                    a = math.radians(reference_angle + half_pitch * j / n_pts)
+                    pts.append((cx + r * math.cos(a), cy + r * math.sin(a)))
+                new_arc.points = pts
+                processed_arcs.append(new_arc)
+            # 원본 ARC는 무조건 포함 (air barrier 등 누락 방지)
+            processed_arcs.append(ei)
+        else:
+            processed_arcs.append(ei)
+    result['concentric_arcs'] = processed_arcs
     result.update({
         'pole_pitch_deg': pole_pitch_deg,
         'n_poles': n_poles,
@@ -629,6 +677,40 @@ def extract_half_slot_entities(entities: List[EntityInfo],
         entities, origin, slot_pitch_deg, reference_angle, normalize_to_zero
     )
 
+    # stator 외경 ARC만 half-pitch ARC 생성, 나머지는 원본 각도 그대로
+    stator_outer_r = None
+    circle_radii = [ei.radius for ei in result['concentric_arcs'] if ei.etype == 'CIRCLE' and ei.radius]
+    if circle_radii:
+        stator_outer_r = max(circle_radii)
+    processed_arcs = []
+    for ei in result['concentric_arcs']:
+        if ei.etype == 'ARC':
+            if stator_outer_r and abs(ei.radius - stator_outer_r) < 1e-2:
+                # half-pitch ARC 생성
+                new_arc = EntityInfo(
+                    etype='ARC',
+                    layer=ei.layer,
+                    points=[],
+                    radius=ei.radius,
+                    center=ei.center,
+                    start_angle=reference_angle,
+                    end_angle=reference_angle + half_pitch,
+                    raw=None,
+                )
+                cx, cy = new_arc.center
+                r = new_arc.radius
+                n_pts = max(3, int(half_pitch / 2))
+                pts = []
+                for j in range(n_pts + 1):
+                    a = math.radians(reference_angle + half_pitch * j / n_pts)
+                    pts.append((cx + r * math.cos(a), cy + r * math.sin(a)))
+                new_arc.points = pts
+                processed_arcs.append(new_arc)
+            else:
+                processed_arcs.append(ei)
+        else:
+            processed_arcs.append(ei)
+    result['concentric_arcs'] = processed_arcs
     result.update({
         'slot_pitch_deg': slot_pitch_deg,
         'n_slots': n_slots,

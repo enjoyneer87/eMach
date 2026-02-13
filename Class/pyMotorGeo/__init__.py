@@ -19,7 +19,7 @@ Motor-CAD Adaptive Geometry 또는 ANSYS Maxwell으로 내보내는 패키지.
     motor_type = classify_inner_outer_rotor(entities)
 """
 
-__version__ = "1.5.0"
+__version__ = "1.5.1"
 __author__ = "EMLab"
 
 # Core data structures
@@ -118,6 +118,9 @@ from .region_closing import (
     close_rotor_period,
     close_stator_period,
     close_period_model,
+    # v1.5.1: 1극/1슬롯 단위 close (권장)
+    close_one_pole,
+    close_one_slot,
     detect_closed_faces,
     auto_name_faces,
     get_face_summary,
@@ -204,4 +207,7 @@ __all__ = [
     "close_rotor_period",
     "close_stator_period",
     "close_period_model",
+    # v1.5.1: 1극/1슬롯 단위 close
+    "close_one_pole",
+    "close_one_slot",
 ]
