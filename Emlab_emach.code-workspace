@@ -1,15 +1,22 @@
 {
 	"folders": [
 		{
+			"path": "../pyAEDT"
+		},
+		{
+			"path": "../../gitfolder/.git"
+		},
+		{
+			"path": "../../gitfolder"
+		},
+		{
 			"path": "."
 		},
 		{
-			"path": "E:/KDH/KJS"
-		},
-		{
-			"name": "pymotorcad",
-			"path": "../../pyMotorcad/pymotorcad"
+			"path": "../gitSyREpub/syre_public"
 		}
 	],
-	"settings": {}
+	"settings": {
+		"git.ignoreLimitWarning": true
+	}
 }
