@@ -300,6 +300,7 @@ def close_one_pole(
     pole_pitch_deg: float,
     r_shaft: float,
     r_rotor_outer: float,
+    concentric_radials: Optional[List[EntityInfo]] = None,
     start_angle_deg: float = 0.0,
     layer: str = '_BOUNDARY_',
 ) -> Dict:
@@ -317,6 +318,7 @@ def close_one_pole(
     pole_pitch_deg : 극 피치 (deg) = 360 / n_poles
     r_shaft : 샤프트 반경 (내측 경계)
     r_rotor_outer : 로터 외경 (외측 경계 = airgap 내측)
+    concentric_radials : half-pole 동심원 경계용 방사선(선택)
     start_angle_deg : 시작 각도 (보통 0°)
     layer : 경계선 레이어 이름
 
@@ -366,6 +368,9 @@ def close_one_pole(
     arc_outer = create_arc_boundary(
         r_rotor_outer, start_angle_deg, end_angle_deg, origin, layer=layer)
     boundaries.append(arc_outer)
+
+    if concentric_radials:
+        boundaries.extend(concentric_radials)
 
     closed = list(one_pole_entities) + boundaries
 

@@ -12,6 +12,11 @@ from typing import List, Tuple, Dict, Optional
 from collections import defaultdict
 
 from .core import EntityInfo
+from .half_unit import (
+    extract_half_pole_entities,
+    extract_half_slot_entities,
+    reconstruct_from_half,
+)
 
 
 @dataclass
@@ -124,85 +129,91 @@ def extract_single_pole_entities(entities: List[EntityInfo],
     Returns
     -------
     dict with:
-        - 'pole_entities': 한 극 영역의 엔티티들
+        - 'pole_entities': 한 극 영역의 엔티티들 (dict list)
         - 'normalized_entities': 0° 기준으로 역회전된 엔티티들
+        - 'one_pole_entities': 1극 재구성 EntityInfo 리스트
         - 'pole_pitch_deg': 사용된 극 피치
         - 'n_poles': 극수
     """
     ox, oy = origin
-    
+
     # 극 피치 자동 감지
     if pole_pitch_deg is None:
         pattern = detect_circular_array_pattern(entities, origin)
         if pattern['has_pattern']:
             pole_pitch_deg = pattern['pole_pitch_deg']
         else:
-            # 기본값: 30° (12극)
             pole_pitch_deg = 30.0
-    
+
     n_poles = int(round(360 / pole_pitch_deg))
-    half_pitch = pole_pitch_deg / 2
-    
-    # 한 극 영역에 속하는 엔티티 추출
+
+    # half-unit 기반 1극 재구성
+    half_pole = extract_half_pole_entities(
+        entities,
+        origin,
+        pole_pitch_deg=pole_pitch_deg,
+        reference_angle=reference_angle,
+        normalize_to_zero=normalize_to_zero,
+    )
+    one_pole_entities = reconstruct_from_half(half_pole, origin, n_repeats=1)
+
+    # 1극 엔티티를 dict list로 변환
     pole_entities = []
-    
-    for ei in entities:
-        # 엔티티의 평균 각도 계산
+    for ei in one_pole_entities:
+        if not ei.points:
+            continue
         angles = [np.degrees(np.arctan2(p[1] - oy, p[0] - ox)) % 360 for p in ei.points]
-        avg_angle = np.mean(angles)
-        
-        # reference_angle 기준으로 한 극 범위 내인지 확인
+        avg_angle = float(np.mean(angles))
         angle_diff = (avg_angle - reference_angle + 180) % 360 - 180
-        
-        if -half_pitch <= angle_diff <= half_pitch:
-            pole_entities.append({
-                'entity': ei,
-                'original_angle': avg_angle,
-                'relative_angle': angle_diff
-            })
-    
-    # 0° 기준으로 역회전 (normalize)
+        pole_entities.append({
+            'entity': ei,
+            'original_angle': avg_angle,
+            'relative_angle': angle_diff,
+        })
+
     normalized_entities = []
     if normalize_to_zero and pole_entities:
+        rot_rad = np.radians(-reference_angle)
+        cos_r, sin_r = np.cos(rot_rad), np.sin(rot_rad)
         for item in pole_entities:
             ei = item['entity']
-            rotation_angle = -item['original_angle']  # 역회전 각도
-            
-            # 좌표 역회전
-            rad = np.radians(rotation_angle)
-            cos_r, sin_r = np.cos(rad), np.sin(rad)
-            
             new_points = []
             for px, py in ei.points:
                 dx, dy = px - ox, py - oy
                 new_x = ox + dx * cos_r - dy * sin_r
                 new_y = oy + dx * sin_r + dy * cos_r
                 new_points.append((new_x, new_y))
-            
-            # 새 EntityInfo 생성
+            new_center = None
+            if ei.center:
+                dx, dy = ei.center[0] - ox, ei.center[1] - oy
+                new_center = (ox + dx * cos_r - dy * sin_r,
+                              oy + dx * sin_r + dy * cos_r)
+            new_sa = (ei.start_angle - reference_angle) if ei.start_angle is not None else None
+            new_ea = (ei.end_angle - reference_angle) if ei.end_angle is not None else None
             new_ei = EntityInfo(
                 etype=ei.etype,
                 layer=ei.layer,
                 points=new_points,
                 radius=ei.radius,
-                center=ei.center,
-                start_angle=ei.start_angle,
-                end_angle=ei.end_angle,
+                center=new_center,
+                start_angle=new_sa,
+                end_angle=new_ea,
                 is_closed=ei.is_closed,
-                raw=None
+                raw=None,
             )
             normalized_entities.append({
                 'entity': new_ei,
                 'original_angle': item['original_angle'],
-                'relative_angle': item['relative_angle']
+                'relative_angle': item['relative_angle'],
             })
-    
+
     return {
         'pole_entities': pole_entities,
         'normalized_entities': normalized_entities,
+        'one_pole_entities': one_pole_entities,
         'pole_pitch_deg': pole_pitch_deg,
         'n_poles': n_poles,
-        'reference_angle': reference_angle
+        'reference_angle': reference_angle,
     }
 
 
@@ -339,452 +350,6 @@ def extract_single_slot_entities(entities: List[EntityInfo],
     }
 
 
-# ═══════════════════════════════════════════════════════════════
-# Half-Unit 추출 함수 (최소 반복 단위)
-# ═══════════════════════════════════════════════════════════════
-
-def _find_best_reference_angle(entities: List[EntityInfo],
-                                origin: Tuple[float, float],
-                                full_pitch_deg: float) -> float:
-    """
-    엔티티 각도 분포에서 가장 적합한 극/슬롯 경계 각도를 찾습니다.
-    
-    로직: 엔티티가 가장 적은 각도(gap) 위치를 경계로 선택.
-    즉, 극/슬롯 사이의 빈 공간이 경계가 됩니다.
-    
-    Returns
-    -------
-    float : 가장 좋은 경계 각도 (도, 0~full_pitch_deg)
-    """
-    ox, oy = origin
-    
-    # 엔티티 각도 수집 (동심원 제외)
-    angles = []
-    for ei in entities:
-        if ei.etype in ('CIRCLE', 'ARC') and ei.center:
-            if math.hypot(ei.center[0] - ox, ei.center[1] - oy) < 1e-3:
-                continue
-        if not ei.points:
-            continue
-        pts_angles = [math.degrees(math.atan2(p[1] - oy, p[0] - ox)) % 360
-                      for p in ei.points]
-        angles.append(float(np.mean(pts_angles)))
-    
-    if not angles:
-        return 0.0
-    
-    # 각도를 pitch 기준으로 정규화 (0 ~ full_pitch_deg)
-    normalized = [(a % full_pitch_deg) for a in angles]
-    normalized.sort()
-    
-    if len(normalized) < 2:
-        return 0.0
-    
-    # 각 위치에서의 엔티티 밀도가 가장 낮은 곳 = 경계
-    # 히스토그램 방식: 1° 빈으로 나누고 가장 비어있는 구간 찾기
-    n_bins = max(4, int(full_pitch_deg))
-    bin_size = full_pitch_deg / n_bins
-    hist = [0] * n_bins
-    for a in normalized:
-        b = int(a / bin_size) % n_bins
-        hist[b] += 1
-    
-    # 가장 빈 빈의 중심 = 경계 후보
-    min_count = min(hist)
-    min_bins = [i for i, c in enumerate(hist) if c == min_count]
-    
-    # 연속된 빈 빈 중 중간을 선택
-    best_bin = min_bins[len(min_bins) // 2]
-    boundary_in_pitch = (best_bin + 0.5) * bin_size
-    
-    return boundary_in_pitch
-
-
-def _extract_half_entities(entities: List[EntityInfo],
-                           origin: Tuple[float, float],
-                           full_pitch_deg: float,
-                           reference_angle: float = 0.0,
-                           normalize_to_zero: bool = True,
-                           angle_tol: float = 0.05) -> Dict:
-    """
-    엔티티에서 [reference_angle, reference_angle + full_pitch/2] 범위를 추출.
-    반극/반슬롯 공통 로직.
-    
-    Parameters
-    ----------
-    entities : 엔티티 리스트
-    origin : 원점
-    full_pitch_deg : 풀 피치 (극 피치 또는 슬롯 피치)
-    reference_angle : 기준 각도 (도)
-    normalize_to_zero : 0° 기준으로 역회전
-    angle_tol : 경계 허용 오차 (도)
-    
-    Returns
-    -------
-    dict : half_entities, normalized_entities, concentric_arcs, half_pitch_deg
-    """
-    import math
-    ox, oy = origin
-    half_pitch = full_pitch_deg / 2.0
-    ang_start = reference_angle
-    ang_end = reference_angle + half_pitch
-
-    half_entities = []
-    concentric_arcs = []
-
-    for ei in entities:
-        # 동심원/호(원점 중심) → 별도 보관
-        if ei.etype in ('CIRCLE', 'ARC') and ei.center:
-            cx, cy = ei.center
-            if math.hypot(cx - ox, cy - oy) < 1e-3:
-                concentric_arcs.append(ei)
-                continue
-
-        if not ei.points:
-            continue
-
-        # 엔티티 대표 각도
-        angles = [math.degrees(math.atan2(p[1] - oy, p[0] - ox)) % 360
-                  for p in ei.points]
-        avg_angle = float(np.mean(angles))
-
-        # [ang_start, ang_end] 범위 체크 (순환 고려)
-        a_rel = (avg_angle - ang_start + 360) % 360
-        if a_rel <= half_pitch + angle_tol:
-            half_entities.append({
-                'entity': ei,
-                'original_angle': avg_angle,
-                'relative_angle': a_rel,
-            })
-
-    # 중복 동심원 제거는 여기서 하지 않음 (각 extract_half_*에서 처리)
-
-    # 0° 기준으로 역회전 정규화
-    normalized = []
-    if normalize_to_zero and half_entities:
-        rot_rad = math.radians(-reference_angle)
-        cos_r, sin_r = math.cos(rot_rad), math.sin(rot_rad)
-
-        for item in half_entities:
-            ei = item['entity']
-            new_points = []
-            for px, py in ei.points:
-                dx, dy = px - ox, py - oy
-                new_points.append((ox + dx * cos_r - dy * sin_r,
-                                   oy + dx * sin_r + dy * cos_r))
-
-            new_center = None
-            if ei.center:
-                dx, dy = ei.center[0] - ox, ei.center[1] - oy
-                new_center = (ox + dx * cos_r - dy * sin_r,
-                              oy + dx * sin_r + dy * cos_r)
-
-            new_sa = (ei.start_angle - reference_angle) if ei.start_angle is not None else None
-            new_ea = (ei.end_angle - reference_angle) if ei.end_angle is not None else None
-
-            new_ei = EntityInfo(
-                etype=ei.etype, layer=ei.layer, points=new_points,
-                radius=ei.radius, center=new_center,
-                start_angle=new_sa, end_angle=new_ea,
-                is_closed=ei.is_closed, raw=None
-            )
-            normalized.append(new_ei)
-
-    return {
-        'half_entities': half_entities,
-        'normalized_entities': normalized,
-        'concentric_arcs': concentric_arcs,
-        'half_pitch_deg': half_pitch,
-    }
-
-
-def extract_half_pole_entities(entities: List[EntityInfo],
-                                origin: Tuple[float, float] = (0.0, 0.0),
-                                pole_pitch_deg: float = None,
-                                reference_angle: float = None,
-                                normalize_to_zero: bool = True) -> Dict:
-    """
-    반극(Half-Pole) 엔티티 추출 — 로터 최소 반복 단위.
-    
-    극 피치의 절반 [ref, ref + pole_pitch/2] 범위의 엔티티만 추출합니다.
-    로터 극은 mirror symmetry를 가지므로, 반극이 최소 고유 기하입니다.
-    
-    복원 방법: mirror(반극, axis=half_pitch) → 1극 → circular_array(n_poles)
-    
-    Parameters
-    ----------
-    entities : 로터 엔티티 리스트
-    origin : 원점
-    pole_pitch_deg : 극 피치 (None이면 자동 감지)
-    reference_angle : 기준 극 시작 각도 (None이면 자동 감지)
-    normalize_to_zero : True면 0° 기준으로 역회전
-    
-    Returns
-    -------
-    dict:
-        - half_entities: 반극 엔티티 [{entity, original_angle, relative_angle}, ...]
-        - normalized_entities: 0° 기준 정규화된 EntityInfo 리스트
-        - concentric_arcs: 동심원/호 리스트
-        - half_pitch_deg: 반극 피치 (= pole_pitch / 2)
-        - pole_pitch_deg: 극 피치
-        - n_poles: 극수
-        - mirror_axis_deg: mirror 대칭축 각도 (정규화 후, = half_pitch)
-        - reference_angle: 사용된 기준 각도
-    """
-    # 극 피치 자동 감지
-    if pole_pitch_deg is None:
-        pattern = detect_circular_array_pattern(entities, origin)
-        if pattern['has_pattern']:
-            pole_pitch_deg = pattern['pole_pitch_deg']
-        else:
-            pole_pitch_deg = 30.0
-
-    n_poles = int(round(360.0 / pole_pitch_deg))
-    half_pitch = pole_pitch_deg / 2.0
-
-    # reference_angle: 기본 0° (x축 오른쪽)
-    # mirror 축 = pole_pitch / 2 = half_pitch (극수에서 명시적 계산)
-    if reference_angle is None:
-        reference_angle = 0.0
-
-    result = _extract_half_entities(
-        entities, origin, pole_pitch_deg, reference_angle, normalize_to_zero
-    )
-
-    # shaft/rotor 외경 ARC만 half-pitch 각도 ARC 생성, 나머지는 원본 각도 그대로
-                                    shaft_r = None
-                                    rotor_outer_r = None
-                                    # split_result에서 airgap_r_inner/airgap_r_outer 우선 사용
-                                    import inspect
-                                    frame = inspect.currentframe()
-                                    while frame:
-                                        if 'split_result' in frame.f_locals:
-                                            split_result = frame.f_locals['split_result']
-                                            shaft_r = split_result.get('airgap_r_inner', None)
-                                            rotor_outer_r = split_result.get('airgap_r_outer', None)
-                                            break
-                                        frame = frame.f_back
-                                    # fallback: ARC/CIRCLE에서 추출
-                                    if shaft_r is None or rotor_outer_r is None:
-                                        all_radii = [ei.radius for ei in result['concentric_arcs'] if ei.radius]
-                                        if all_radii:
-                                            # shaft_r: 가장 작은 반경 (shaft 또는 중심부)
-                                            if shaft_r is None:
-                                                shaft_r = min(all_radii)
-                                            # rotor_outer_r: ARC/CIRCLE 중 가장 큰 반경
-                                            if rotor_outer_r is None:
-                                                rotor_outer_r = max(all_radii)
-    processed_arcs = []
-    for ei in result['concentric_arcs']:
-        if ei.etype == 'ARC':
-            # shaft/rotor 외경 ARC는 half-pitch ARC 추가 + 원본 ARC도 반드시 포함
-            is_shaft = shaft_r and abs(ei.radius - shaft_r) < 1e-2
-            is_rotor_outer = rotor_outer_r and abs(ei.radius - rotor_outer_r) < 1e-2
-            if is_shaft or is_rotor_outer:
-                # half-pitch ARC 생성
-                new_arc = EntityInfo(
-                    etype='ARC',
-                    layer=ei.layer,
-                    points=[],
-                    radius=ei.radius,
-                    center=ei.center,
-                    start_angle=reference_angle,
-                    end_angle=reference_angle + half_pitch,
-                    raw=None,
-                )
-                cx, cy = new_arc.center
-                r = new_arc.radius
-                n_pts = max(3, int(half_pitch / 2))
-                pts = []
-                for j in range(n_pts + 1):
-                    a = math.radians(reference_angle + half_pitch * j / n_pts)
-                    pts.append((cx + r * math.cos(a), cy + r * math.sin(a)))
-                new_arc.points = pts
-                processed_arcs.append(new_arc)
-            # 원본 ARC는 무조건 포함 (air barrier 등 누락 방지)
-            processed_arcs.append(ei)
-        else:
-            processed_arcs.append(ei)
-    result['concentric_arcs'] = processed_arcs
-    result.update({
-        'pole_pitch_deg': pole_pitch_deg,
-        'n_poles': n_poles,
-        'reference_angle': reference_angle,
-        'mirror_axis_deg': half_pitch,  # = pole_pitch / 2
-    })
-    return result
-
-
-def extract_half_slot_entities(entities: List[EntityInfo],
-                                origin: Tuple[float, float] = (0.0, 0.0),
-                                slot_pitch_deg: float = None,
-                                n_slots: int = None,
-                                reference_angle: float = None,
-                                normalize_to_zero: bool = True) -> Dict:
-    """
-    반슬롯(Half-Slot) 엔티티 추출 — 스테이터 최소 반복 단위.
-    
-    슬롯 피치의 절반 [ref, ref + slot_pitch/2] 범위의 엔티티만 추출합니다.
-    스테이터 슬롯은 mirror symmetry를 가지므로, 반슬롯이 최소 고유 기하입니다.
-    
-    복원 방법: mirror(반슬롯, axis=half_pitch) → 1슬롯 → circular_array(n_slots)
-    
-    Parameters
-    ----------
-    entities : 스테이터 엔티티 리스트
-    origin : 원점
-    slot_pitch_deg : 슬롯 피치 (None이면 자동 감지)
-    n_slots : 슬롯 수 (None이면 slot_pitch에서 계산)
-    reference_angle : 기준 슬롯 시작 각도
-    normalize_to_zero : True면 0° 기준으로 역회전
-    
-    Returns
-    -------
-    dict:
-        - half_entities: 반슬롯 엔티티
-        - normalized_entities: 정규화된 EntityInfo 리스트
-        - concentric_arcs: 동심원/호
-        - half_pitch_deg: 반슬롯 피치 (= slot_pitch / 2)
-        - slot_pitch_deg: 슬롯 피치
-        - n_slots: 슬롯수
-        - mirror_axis_deg: mirror 대칭축 각도
-    """
-    from .analysis import count_slots as _count_slots
-
-    # 슬롯 피치 자동 감지
-    if slot_pitch_deg is None:
-        if n_slots is not None:
-            slot_pitch_deg = 360.0 / n_slots
-        else:
-            _ns = _count_slots(entities, origin)
-            if _ns and _ns > 0:
-                n_slots = _ns
-                slot_pitch_deg = 360.0 / n_slots
-            else:
-                slot_pitch_deg = 10.0
-
-    if n_slots is None:
-        n_slots = int(round(360.0 / slot_pitch_deg))
-
-    half_pitch = slot_pitch_deg / 2.0
-
-    # reference_angle: 기본 0° (x축 오른쪽)
-    # mirror 축 = slot_pitch / 2 = half_pitch (슬롯수에서 명시적 계산)
-    if reference_angle is None:
-        reference_angle = 0.0
-
-    result = _extract_half_entities(
-        entities, origin, slot_pitch_deg, reference_angle, normalize_to_zero
-    )
-
-    # stator 외경 ARC만 half-pitch ARC 생성, 나머지는 원본 각도 그대로
-    stator_outer_r = None
-    circle_radii = [ei.radius for ei in result['concentric_arcs'] if ei.etype == 'CIRCLE' and ei.radius]
-    if circle_radii:
-        stator_outer_r = max(circle_radii)
-    processed_arcs = []
-    for ei in result['concentric_arcs']:
-        if ei.etype == 'ARC':
-            if stator_outer_r and abs(ei.radius - stator_outer_r) < 1e-2:
-                # half-pitch ARC 생성
-                new_arc = EntityInfo(
-                    etype='ARC',
-                    layer=ei.layer,
-                    points=[],
-                    radius=ei.radius,
-                    center=ei.center,
-                    start_angle=reference_angle,
-                    end_angle=reference_angle + half_pitch,
-                    raw=None,
-                )
-                cx, cy = new_arc.center
-                r = new_arc.radius
-                n_pts = max(3, int(half_pitch / 2))
-                pts = []
-                for j in range(n_pts + 1):
-                    a = math.radians(reference_angle + half_pitch * j / n_pts)
-                    pts.append((cx + r * math.cos(a), cy + r * math.sin(a)))
-                new_arc.points = pts
-                processed_arcs.append(new_arc)
-            else:
-                processed_arcs.append(ei)
-        else:
-            processed_arcs.append(ei)
-    result['concentric_arcs'] = processed_arcs
-    result.update({
-        'slot_pitch_deg': slot_pitch_deg,
-        'n_slots': n_slots,
-        'reference_angle': reference_angle,
-        'mirror_axis_deg': half_pitch,  # = slot_pitch / 2
-    })
-    return result
-
-
-def reconstruct_from_half(half_result: Dict,
-                          origin: Tuple[float, float] = (0.0, 0.0),
-                          n_repeats: int = 1,
-                          include_concentric: bool = True) -> List[EntityInfo]:
-    """
-    반극/반슬롯에서 mirror + circular array로 기하를 재구성합니다.
-    
-    Parameters
-    ----------
-    half_result : extract_half_pole_entities 또는 extract_half_slot_entities 결과
-    origin : 원점
-    n_repeats : 반복 횟수 (1 = 1극/1슬롯, n_poles/n_slots = 360°)
-    include_concentric : 동심원/호 포함 여부
-    
-    Returns
-    -------
-    List[EntityInfo] : 재구성된 엔티티
-    """
-    from .core import rotate_entity, mirror_entity
-
-    half_ents = half_result['normalized_entities']
-    mirror_axis = half_result['mirror_axis_deg']
-    full_pitch = mirror_axis * 2  # pole_pitch or slot_pitch
-
-    # 1) mirror → 1단위 (1극 또는 1슬롯)
-    one_unit = list(half_ents)
-    for ei in half_ents:
-        mirrored = mirror_entity(ei, mirror_axis, origin)
-        one_unit.append(mirrored)
-
-    # 2) circular array → n_repeats 단위
-    reconstructed = []
-    for i in range(n_repeats):
-        rot_deg = i * full_pitch
-        for ei in one_unit:
-            if i == 0:
-                reconstructed.append(ei)
-            else:
-                reconstructed.append(rotate_entity(ei, rot_deg, origin))
-
-    # 3) 동심원/호
-    if include_concentric:
-        for ei in half_result.get('concentric_arcs', []):
-            if ei.etype == 'CIRCLE':
-                reconstructed.append(ei)
-            elif ei.etype == 'ARC':
-                import math
-                total_deg = n_repeats * full_pitch
-                new_arc = EntityInfo(
-                    etype='ARC', layer=ei.layer, points=[],
-                    radius=ei.radius, center=ei.center,
-                    start_angle=0, end_angle=min(total_deg, 360),
-                    is_closed=False, raw=None
-                )
-                cx, cy = new_arc.center
-                r = new_arc.radius
-                n_pts = max(3, int(total_deg / 2))
-                pts = []
-                for j in range(n_pts + 1):
-                    a = math.radians(total_deg * j / n_pts)
-                    pts.append((cx + r * math.cos(a), cy + r * math.sin(a)))
-                new_arc.points = pts
-                reconstructed.append(new_arc)
-
-    return reconstructed
 
 
 def _cluster_by_angle(items: List[Dict],
