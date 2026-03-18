@@ -200,19 +200,10 @@ def extract_half_unit(entities: List[EntityInfo],
     half_slot_stator = [ei for ei in stator_non_conc if _in_sector(ei, ang_s, ang_e)]
     half_pole_rotor = [ei for ei in rotor_non_conc if _in_sector(ei, ang_s, ang_s + half_pole)]
 
-    # 동심원 중복 제거
-    seen_r = set()
-    unique_conc = []
-    for ei in concentric:
-        r_key = round(ei.radius, 2) if ei.radius else 0
-        if r_key not in seen_r:
-            seen_r.add(r_key)
-            unique_conc.append(ei)
-
     result = {
         'half_slot_stator': half_slot_stator,
         'half_pole_rotor': half_pole_rotor,
-        'concentric_circles': unique_conc,
+        'concentric_circles': concentric,
         'half_slot_deg': half_slot,
         'half_pole_deg': half_pole,
         'slot_pitch_deg': slot_pitch,
@@ -224,7 +215,7 @@ def extract_half_unit(entities: List[EntityInfo],
     print(f'  pole_pitch={pole_pitch:.2f}°, half_pole={half_pole:.2f}°')
     print(f'  half_slot_stator: {len(half_slot_stator)} entities')
     print(f'  half_pole_rotor:  {len(half_pole_rotor)} entities')
-    print(f'  concentric:       {len(unique_conc)} circles')
+    print(f'  concentric:       {len(concentric)} circles')
     return result
 
 
@@ -310,30 +301,43 @@ def reconstruct_geometry(half_unit: Dict,
                 rotated = rotate_entity(ei, rot_angle, origin)
                 result_entities.append(rotated)
 
-    # 동심원
+    # 동심원: CIRCLE은 그대로, ARC는 shaft/rotor 외경 반경만 pole-pitch 각도만큼 확장, 나머지는 원본 각도만 추가
+    # shaft/rotor 외경 반경 추출 (가장 작은/큰 반경)
+    shaft_r = None
+    rotor_outer_r = None
+    # CIRCLE 기준으로 shaft/rotor 외경 추정
+    circle_radii = [ei.radius for ei in half_unit['concentric_circles'] if ei.etype == 'CIRCLE' and ei.radius]
+    if circle_radii:
+        shaft_r = min(circle_radii)
+        rotor_outer_r = max(circle_radii)
     for ei in half_unit['concentric_circles']:
         if ei.etype == 'CIRCLE':
             result_entities.append(ei)
         elif ei.etype == 'ARC':
-            new_arc = EntityInfo(
-                etype='ARC',
-                layer=ei.layer,
-                points=[],
-                radius=ei.radius,
-                center=ei.center,
-                start_angle=ref_start,
-                end_angle=ref_start + target_deg,
-                raw=None,
-            )
-            cx, cy = new_arc.center
-            r = new_arc.radius
-            n_pts = max(3, int(target_deg / 2))
-            pts = []
-            for j in range(n_pts + 1):
-                a = math.radians(ref_start + target_deg * j / n_pts)
-                pts.append((cx + r * math.cos(a), cy + r * math.sin(a)))
-            new_arc.points = pts
-            result_entities.append(new_arc)
+            # shaft/rotor 외경 반경이면 pole-pitch 각도만큼 확장 ARC 생성
+            if (shaft_r and abs(ei.radius - shaft_r) < 1e-2) or (rotor_outer_r and abs(ei.radius - rotor_outer_r) < 1e-2):
+                new_arc = EntityInfo(
+                    etype='ARC',
+                    layer=ei.layer,
+                    points=[],
+                    radius=ei.radius,
+                    center=ei.center,
+                    start_angle=ref_start,
+                    end_angle=ref_start + pole_pitch,
+                    raw=None,
+                )
+                cx, cy = new_arc.center
+                r = new_arc.radius
+                n_pts = max(3, int(pole_pitch / 2))
+                pts = []
+                for j in range(n_pts + 1):
+                    a = math.radians(ref_start + pole_pitch * j / n_pts)
+                    pts.append((cx + r * math.cos(a), cy + r * math.sin(a)))
+                new_arc.points = pts
+                result_entities.append(new_arc)
+            else:
+                # 그 외 ARC는 원본 각도 그대로 추가
+                result_entities.append(ei)
 
     print(f'[reconstruct_geometry] coverage={coverage} ({target_deg:.0f}°)')
     print(f'  stator: {n_slots_to_build} slots × 2×{len(half_s)} = '

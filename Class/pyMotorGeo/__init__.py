@@ -19,7 +19,7 @@ Motor-CAD Adaptive Geometry 또는 ANSYS Maxwell으로 내보내는 패키지.
     motor_type = classify_inner_outer_rotor(entities)
 """
 
-__version__ = "1.5.0"
+__version__ = "1.5.1"
 __author__ = "EMLab"
 
 # Core data structures
@@ -75,12 +75,13 @@ from .topology import (
     detect_circular_array_pattern,
     extract_single_pole_entities,
     extract_single_slot_entities,
-    # Half-unit (최소 반복 단위) 추출
+    classify_pole_topology,
+    analyze_rotor_topology,
+)
+from .half_unit import (
     extract_half_pole_entities,
     extract_half_slot_entities,
     reconstruct_from_half,
-    classify_pole_topology,
-    analyze_rotor_topology,
 )
 
 # ── v1.3 신규: 분리된 토폴로지 모듈 ──
@@ -114,12 +115,16 @@ from .gui_region import (
     FaceRegionGUI,
     FaceRegionGUILite,
 )
+from .plotting import HalfUnitPlotter, HalfPoleView, OnePoleView
 from .region_closing import (
     create_radial_line,
     create_arc_boundary,
     close_rotor_period,
     close_stator_period,
     close_period_model,
+    # v1.5.1: 1극/1슬롯 단위 close (권장)
+    close_one_pole,
+    close_one_slot,
     detect_closed_faces,
     auto_name_faces,
     get_face_summary,
@@ -208,4 +213,10 @@ __all__ = [
     "close_rotor_period",
     "close_stator_period",
     "close_period_model",
+    # v1.5.1: 1극/1슬롯 단위 close
+    "close_one_pole",
+    "close_one_slot",
+    "HalfUnitPlotter",
+    "HalfPoleView",
+    "OnePoleView",
 ]
