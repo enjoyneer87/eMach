@@ -86,6 +86,7 @@ from .topology import (
 # ── v1.3 신규: 분리된 토폴로지 모듈 ──
 from .topology_rotor import (
     classify_rotor_entities,
+    classify_rotor_entities_with_closing_compare,
     reassign_rotor_region,
     get_rotor_region_summary,
     ROTOR_REGION_NAMES,
@@ -93,6 +94,7 @@ from .topology_rotor import (
 )
 from .topology_stator import (
     classify_stator_entities,
+    classify_stator_entities_with_closing_compare,
     reassign_stator_region,
     get_stator_region_summary,
     STATOR_REGION_NAMES,
@@ -176,11 +178,13 @@ __all__ = [
     "analyze_rotor_topology",
     # v1.3: 분리 토폴로지
     "classify_rotor_entities",
+    "classify_rotor_entities_with_closing_compare",
     "reassign_rotor_region",
     "get_rotor_region_summary",
     "ROTOR_REGION_NAMES",
     "ROTOR_REGION_COLORS",
     "classify_stator_entities",
+    "classify_stator_entities_with_closing_compare",
     "reassign_stator_region",
     "get_stator_region_summary",
     "STATOR_REGION_NAMES",
