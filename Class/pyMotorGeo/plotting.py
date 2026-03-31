@@ -9,9 +9,225 @@ import matplotlib.pyplot as plt
 from matplotlib.patches import Polygon as MplPolygon, Patch, Arc as MplArc
 from typing import List, Tuple, Dict, Optional
 
-from .core import EntityInfo, StatorRotorSplit, rotate_point, mirror_point
+from .core import EntityInfo, StatorRotorSplit, rotate_point, mirror_point, mirror_entity
 from .regions import REGION_NAMES, REGION_COLORS, SHORT_NAMES
 from .symmetry import extract_one_period
+
+
+class HalfUnitPlotter:
+    """Half-pole/one-pole plotting helpers for interactive use."""
+
+    def __init__(self, origin: Tuple[float, float] = (0.0, 0.0)):
+        self.origin = origin
+
+    def draw_entities(self,
+                      ax,
+                      entities: List[EntityInfo],
+                      color: str = 'blue',
+                      lw: float = 0.5,
+                      fill_closed: bool = False,
+                      fill_alpha: float = 0.15,
+                      fill_color: str = 'green'):
+        """Draw EntityInfo list on the given axes."""
+        for ei in entities:
+            if ei.etype == 'LINE' and ei.points:
+                xs, ys = zip(*ei.points)
+                ax.plot(xs, ys, color=color, lw=lw)
+            elif ei.etype == 'ARC' and ei.center and ei.radius:
+                ax.add_patch(MplArc(
+                    ei.center, 2 * ei.radius, 2 * ei.radius,
+                    angle=0, theta1=ei.start_angle or 0,
+                    theta2=ei.end_angle or 360,
+                    ec=color, lw=lw))
+            elif ei.etype == 'CIRCLE' and ei.center and ei.radius:
+                ax.add_patch(plt.Circle(ei.center, ei.radius,
+                                        fill=False, ec=color, lw=lw))
+            elif ei.etype in ('LWPOLYLINE', 'POLYLINE', 'SPLINE') and ei.points:
+                xs, ys = zip(*ei.points)
+                if fill_closed and getattr(ei, 'is_closed', False):
+                    ax.fill(xs, ys, alpha=fill_alpha, color=fill_color)
+                ax.plot(xs, ys, color=fill_color, lw=lw)
+
+    def plot_half_pole(self,
+                       half_pole: Dict,
+                       include_concentric: bool = True,
+                       include_radials: bool = True,
+                       show_wedge: bool = True,
+                       show_mirror: bool = True,
+                       figsize: Tuple = (7, 7),
+                       ax=None):
+        """Plot half-pole normalized entities with optional concentric arcs/radials."""
+        if ax is None:
+            fig, ax = plt.subplots(figsize=figsize)
+        else:
+            fig = ax.figure
+
+        hp = half_pole.get('normalized_entities', [])
+        self.draw_entities(ax, hp, color='red', lw=0.8)
+
+        if include_concentric:
+            self.draw_entities(ax, half_pole.get('concentric_arcs', []),
+                               color='orange', lw=1.2)
+        if include_radials:
+            self.draw_entities(ax, half_pole.get('concentric_radials', []),
+                               color='purple', lw=1.2)
+
+        hp_d = half_pole.get('half_pitch_deg', 0.0)
+        r_m = max((ei.r_max for ei in hp), default=30)
+        if show_wedge:
+            ax.add_patch(plt.matplotlib.patches.Wedge(
+                self.origin, r_m * 1.05, 0, hp_d,
+                alpha=0.08, color='red'))
+        if show_mirror:
+            mx = r_m * 1.1 * math.cos(math.radians(hp_d))
+            my = r_m * 1.1 * math.sin(math.radians(hp_d))
+            ax.plot([0, mx], [0, my], 'r--', lw=1, label=f'mirror {hp_d:.1f}°')
+            ax.legend(fontsize=7)
+
+        ax.plot(*self.origin, 'r*', ms=6)
+        ax.set_aspect('equal')
+        ax.set_title(f"Half-Pole ({len(hp)} ent, {hp_d:.1f}°)", fontsize=9)
+        return fig, ax
+
+    def plot_one_pole(self,
+                      one_pole_entities: List[EntityInfo],
+                      pole_pitch_deg: float,
+                      show_wedge: bool = True,
+                      show_mirror: bool = True,
+                      figsize: Tuple = (7, 7),
+                      ax=None):
+        """Plot one-pole entities."""
+        if ax is None:
+            fig, ax = plt.subplots(figsize=figsize)
+        else:
+            fig = ax.figure
+
+        self.draw_entities(ax, one_pole_entities, color='darkred', lw=0.8)
+        r_m = max((ei.r_max for ei in one_pole_entities), default=30)
+        if show_wedge:
+            ax.add_patch(plt.matplotlib.patches.Wedge(
+                self.origin, r_m * 1.05, 0, float(pole_pitch_deg),
+                alpha=0.08, color='darkred'))
+        if show_mirror:
+            mx = r_m * 1.1 * math.cos(math.radians(pole_pitch_deg / 2.0))
+            my = r_m * 1.1 * math.sin(math.radians(pole_pitch_deg / 2.0))
+            ax.plot([0, mx], [0, my], 'g:', lw=1, label=f'mirror {pole_pitch_deg/2.0:.1f}°')
+            ax.legend(fontsize=7)
+
+        ax.plot(*self.origin, 'r*', ms=6)
+        ax.set_aspect('equal')
+        ax.set_title(f"One-Pole ({len(one_pole_entities)} ent, {pole_pitch_deg:.1f}°)",
+                     fontsize=9)
+        return fig, ax
+
+
+class HalfPoleView:
+    """Half-pole container with a single-call plot method."""
+
+    def __init__(self, half_pole: Dict, origin: Tuple[float, float] = (0.0, 0.0)):
+        self.half_pole = half_pole
+        self.origin = origin
+        self._plotter = HalfUnitPlotter(origin)
+
+    def plot(self,
+             ax=None,
+             figsize: Tuple = (7, 7),
+             include_concentric: bool = True,
+             include_radials: bool = True,
+             show_wedge: bool = True,
+             show_mirror: bool = True):
+        """Plot half-pole entities in one call."""
+        return self._plotter.plot_half_pole(
+            self.half_pole,
+            include_concentric=include_concentric,
+            include_radials=include_radials,
+            show_wedge=show_wedge,
+            show_mirror=show_mirror,
+            figsize=figsize,
+            ax=ax,
+        )
+
+
+class OnePoleView:
+    """One-pole container built from a half-pole result."""
+
+    def __init__(self, half_pole: Dict, origin: Tuple[float, float] = (0.0, 0.0)):
+        self.half_pole = half_pole
+        self.origin = origin
+        self._plotter = HalfUnitPlotter(origin)
+
+    def build(self,
+              include_concentric: bool = True,
+              include_radials: bool = True) -> Dict:
+        """Build one-pole entities from half-pole (mirror-based)."""
+        hp = self.half_pole.get('normalized_entities', [])
+        mirror_axis = float(self.half_pole.get('mirror_axis_deg', 0.0))
+
+        one_pole = list(hp)
+        for ei in hp:
+            one_pole.append(mirror_entity(ei, mirror_axis, self.origin))
+
+        concentric_arcs = []
+        if include_concentric:
+            for ei in self.half_pole.get('concentric_arcs', []):
+                concentric_arcs.append(ei)
+                concentric_arcs.append(mirror_entity(ei, mirror_axis, self.origin))
+
+        concentric_radials = []
+        if include_radials:
+            for ei in self.half_pole.get('concentric_radials', []):
+                concentric_radials.append(ei)
+                concentric_radials.append(mirror_entity(ei, mirror_axis, self.origin))
+
+        pole_pitch = float(self.half_pole.get('pole_pitch_deg', mirror_axis * 2.0))
+        return {
+            'one_pole_entities': one_pole,
+            'concentric_arcs': concentric_arcs,
+            'concentric_radials': concentric_radials,
+            'pole_pitch_deg': pole_pitch,
+            'mirror_axis_deg': mirror_axis,
+        }
+
+    def plot(self,
+             ax=None,
+             figsize: Tuple = (7, 7),
+             include_concentric: bool = True,
+             include_radials: bool = True,
+             show_wedge: bool = True,
+             show_mirror: bool = True):
+        """Plot one-pole entities in one call."""
+        data = self.build(include_concentric=include_concentric,
+                          include_radials=include_radials)
+
+        if ax is None:
+            fig, ax = plt.subplots(figsize=figsize)
+        else:
+            fig = ax.figure
+
+        self._plotter.draw_entities(ax, data['one_pole_entities'], color='darkred', lw=0.8)
+
+        if include_concentric:
+            self._plotter.draw_entities(ax, data['concentric_arcs'], color='orange', lw=1.2)
+        if include_radials:
+            self._plotter.draw_entities(ax, data['concentric_radials'], color='purple', lw=1.2)
+
+        r_m = max((ei.r_max for ei in data['one_pole_entities']), default=30)
+        if show_wedge:
+            ax.add_patch(plt.matplotlib.patches.Wedge(
+                self.origin, r_m * 1.05, 0, float(data['pole_pitch_deg']),
+                alpha=0.08, color='darkred'))
+        if show_mirror:
+            mx = r_m * 1.1 * math.cos(math.radians(data['mirror_axis_deg']))
+            my = r_m * 1.1 * math.sin(math.radians(data['mirror_axis_deg']))
+            ax.plot([0, mx], [0, my], 'g:', lw=1,
+                    label=f"mirror {data['mirror_axis_deg']:.1f}°")
+            ax.legend(fontsize=7)
+
+        ax.plot(*self.origin, 'r*', ms=6)
+        ax.set_aspect('equal')
+        ax.set_title(f"One-Pole ({len(data['one_pole_entities'])} ent, {data['pole_pitch_deg']:.1f}°)",
+                     fontsize=9)
+        return fig, ax, data
 
 
 def _edge_to_patch_points(ei: EntityInfo, k0: Tuple, k1: Tuple, n_arc_pts: int = 20) -> List:

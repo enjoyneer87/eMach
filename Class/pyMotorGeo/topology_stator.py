@@ -13,6 +13,7 @@ from typing import List, Tuple, Dict, Optional
 from collections import Counter
 
 from .core import EntityInfo
+from .region_closing import create_radial_line, create_arc_boundary, detect_closed_faces
 
 
 # ═══════════════════════════════════════════════════════════════
@@ -214,3 +215,103 @@ def get_stator_region_summary(regions: List[Dict]) -> Dict:
     """영역별 엔티티 수 요약."""
     cnt = Counter(r['region'] for r in regions)
     return dict(cnt)
+
+
+def classify_stator_entities_with_closing_compare(
+    slot_entities: List[Dict],
+    origin: Tuple[float, float] = (0.0, 0.0),
+    airgap_r: float = None,
+    r_outer: float = None,
+    slot_pitch_deg: float = None,
+    min_area: float = 1.0,
+    verbose: bool = False,
+) -> Dict:
+    """
+    1) 기존 엔티티로 분류
+    2) 한 슬롯 경계를 닫아 face 생성 후 재분류
+    3) 두 결과를 상세 비교
+    """
+    raw = classify_stator_entities(
+        slot_entities,
+        origin=origin,
+        airgap_r=airgap_r,
+        r_outer=r_outer,
+        slot_pitch_deg=slot_pitch_deg,
+        verbose=verbose,
+    )
+
+    if not slot_entities or airgap_r is None or r_outer is None or slot_pitch_deg is None:
+        return {
+            'raw': raw,
+            'closed': None,
+            'comparison': {'note': 'insufficient inputs for closing'},
+        }
+
+    boundaries = [
+        create_radial_line(airgap_r, r_outer, 0.0, origin),
+        create_radial_line(airgap_r, r_outer, float(slot_pitch_deg), origin),
+        create_arc_boundary(airgap_r, 0.0, float(slot_pitch_deg), origin),
+        create_arc_boundary(r_outer, 0.0, float(slot_pitch_deg), origin),
+    ]
+
+    base_entities = [item['entity'] for item in slot_entities]
+    closed_entities = list(base_entities) + boundaries
+    faces = detect_closed_faces(closed_entities, origin, min_area=min_area)
+    faces = [
+        fi for fi in faces
+        if fi.get('centroid_r', 0.0) >= airgap_r * 0.98
+    ]
+
+    face_entities = []
+    for fi in faces:
+        verts = fi.get('vertices', [])
+        if len(verts) < 3:
+            continue
+        face_entities.append(EntityInfo(
+            etype='LWPOLYLINE',
+            layer='_FACE_',
+            points=verts,
+            is_closed=True,
+        ))
+
+    closed_items = [
+        {'entity': ei, 'original_angle': 0.0, 'relative_angle': 0.0}
+        for ei in face_entities
+    ]
+
+    closed = classify_stator_entities(
+        closed_items,
+        origin=origin,
+        airgap_r=airgap_r,
+        r_outer=r_outer,
+        slot_pitch_deg=slot_pitch_deg,
+        verbose=verbose,
+    )
+
+    raw_regions = Counter(r['region'] for r in raw.get('regions', []))
+    closed_regions = Counter(r['region'] for r in closed.get('regions', []))
+    all_keys = sorted(set(raw_regions) | set(closed_regions))
+    region_diff = {
+        k: {'raw': raw_regions.get(k, 0), 'closed': closed_regions.get(k, 0)}
+        for k in all_keys
+    }
+
+    comparison = {
+        'slot_regions': {
+            'raw': raw.get('n_slot_regions'),
+            'closed': closed.get('n_slot_regions'),
+        },
+        'conductor_regions': {
+            'raw': raw.get('n_conductor_regions'),
+            'closed': closed.get('n_conductor_regions'),
+        },
+        'region_counts': region_diff,
+        'face_count': len(faces),
+    }
+
+    return {
+        'raw': raw,
+        'closed': closed,
+        'faces': faces,
+        'comparison': comparison,
+    }

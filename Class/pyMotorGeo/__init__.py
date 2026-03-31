@@ -75,17 +75,19 @@ from .topology import (
     detect_circular_array_pattern,
     extract_single_pole_entities,
     extract_single_slot_entities,
-    # Half-unit (최소 반복 단위) 추출
+    classify_pole_topology,
+    analyze_rotor_topology,
+)
+from .half_unit import (
     extract_half_pole_entities,
     extract_half_slot_entities,
     reconstruct_from_half,
-    classify_pole_topology,
-    analyze_rotor_topology,
 )
 
 # ── v1.3 신규: 분리된 토폴로지 모듈 ──
 from .topology_rotor import (
     classify_rotor_entities,
+    classify_rotor_entities_with_closing_compare,
     reassign_rotor_region,
     get_rotor_region_summary,
     ROTOR_REGION_NAMES,
@@ -93,6 +95,7 @@ from .topology_rotor import (
 )
 from .topology_stator import (
     classify_stator_entities,
+    classify_stator_entities_with_closing_compare,
     reassign_stator_region,
     get_stator_region_summary,
     STATOR_REGION_NAMES,
@@ -112,6 +115,7 @@ from .gui_region import (
     FaceRegionGUI,
     FaceRegionGUILite,
 )
+from .plotting import HalfUnitPlotter, HalfPoleView, OnePoleView
 from .region_closing import (
     create_radial_line,
     create_arc_boundary,
@@ -179,11 +183,13 @@ __all__ = [
     "analyze_rotor_topology",
     # v1.3: 분리 토폴로지
     "classify_rotor_entities",
+    "classify_rotor_entities_with_closing_compare",
     "reassign_rotor_region",
     "get_rotor_region_summary",
     "ROTOR_REGION_NAMES",
     "ROTOR_REGION_COLORS",
     "classify_stator_entities",
+    "classify_stator_entities_with_closing_compare",
     "reassign_stator_region",
     "get_stator_region_summary",
     "STATOR_REGION_NAMES",
@@ -210,4 +216,7 @@ __all__ = [
     # v1.5.1: 1극/1슬롯 단위 close
     "close_one_pole",
     "close_one_slot",
+    "HalfUnitPlotter",
+    "HalfPoleView",
+    "OnePoleView",
 ]

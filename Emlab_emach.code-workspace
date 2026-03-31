@@ -1,19 +1,20 @@
 {
 	"folders": [
 		{
-			"path": "../pyAEDT"
-		},
-		{
 			"path": "../../gitfolder/.git"
-		},
-		{
-			"path": "../../gitfolder"
 		},
 		{
 			"path": "."
 		},
 		{
-			"path": "../gitSyREpub/syre_public"
+			"path": "../../gitPyleecan"
+		},
+		{
+			"path": "../../NvidiaNemo"
+		},
+		{
+			"name": "multiscale-pde-operators",
+			"path": "../../gitMerantix/multiscale-pde-operators"
 		}
 	],
 	"settings": {

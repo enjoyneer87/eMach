@@ -10,9 +10,10 @@ pyMotorGeo.topology_rotor
 import math
 import numpy as np
 from typing import List, Tuple, Dict, Optional
-from collections import defaultdict
+from collections import defaultdict, Counter
 
 from .core import EntityInfo
+from .region_closing import create_radial_line, create_arc_boundary, detect_closed_faces
 
 
 # ═══════════════════════════════════════════════════════════════
@@ -268,6 +269,105 @@ def classify_rotor_entities(
         'magnet_embedded': magnet_embedded,
         'magnet_clusters': magnet_clusters,
         'detail': detail,
+    }
+
+
+def classify_rotor_entities_with_closing_compare(
+    pole_entities: List[Dict],
+    origin: Tuple[float, float] = (0.0, 0.0),
+    airgap_r: float = None,
+    pole_pitch_deg: float = None,
+    r_shaft: float = None,
+    min_area: float = 1.0,
+    verbose: bool = False,
+) -> Dict:
+    """
+    1) 기존 엔티티로 분류
+    2) 한극 경계를 닫아 face 생성 후 재분류
+    3) 두 결과를 상세 비교
+    """
+    raw = classify_rotor_entities(
+        pole_entities,
+        origin=origin,
+        airgap_r=airgap_r,
+        pole_pitch_deg=pole_pitch_deg,
+        r_shaft=r_shaft,
+        verbose=verbose,
+    )
+
+    if not pole_entities or airgap_r is None or pole_pitch_deg is None:
+        return {
+            'raw': raw,
+            'closed': None,
+            'comparison': {'note': 'insufficient inputs for closing'},
+        }
+
+    r_inner = r_shaft if (r_shaft is not None and r_shaft > 0) else 0.0
+    boundaries = [
+        create_radial_line(r_inner, airgap_r, 0.0, origin),
+        create_radial_line(r_inner, airgap_r, float(pole_pitch_deg), origin),
+        create_arc_boundary(airgap_r, 0.0, float(pole_pitch_deg), origin),
+    ]
+    if r_inner > 0:
+        boundaries.append(
+            create_arc_boundary(r_inner, 0.0, float(pole_pitch_deg), origin)
+        )
+
+    base_entities = [item['entity'] for item in pole_entities]
+    closed_entities = list(base_entities) + boundaries
+    faces = detect_closed_faces(closed_entities, origin, min_area=min_area)
+
+    face_entities = []
+    for fi in faces:
+        verts = fi.get('vertices', [])
+        if len(verts) < 3:
+            continue
+        face_entities.append(EntityInfo(
+            etype='LWPOLYLINE',
+            layer='_FACE_',
+            points=verts,
+            is_closed=True,
+        ))
+
+    closed_items = [
+        {'entity': ei, 'original_angle': 0.0, 'relative_angle': 0.0}
+        for ei in face_entities
+    ]
+
+    closed = classify_rotor_entities(
+        closed_items,
+        origin=origin,
+        airgap_r=airgap_r,
+        pole_pitch_deg=pole_pitch_deg,
+        r_shaft=r_shaft,
+        verbose=verbose,
+    )
+
+    raw_regions = Counter(r['region'] for r in raw.get('regions', []))
+    closed_regions = Counter(r['region'] for r in closed.get('regions', []))
+    all_keys = sorted(set(raw_regions) | set(closed_regions))
+    region_diff = {
+        k: {'raw': raw_regions.get(k, 0), 'closed': closed_regions.get(k, 0)}
+        for k in all_keys
+    }
+
+    comparison = {
+        'topology': {'raw': raw.get('topology'), 'closed': closed.get('topology')},
+        'magnets': {'raw': raw.get('n_magnets'), 'closed': closed.get('n_magnets')},
+        'barriers': {'raw': raw.get('n_barriers'), 'closed': closed.get('n_barriers')},
+        'magnet_entities': {
+            'raw': raw.get('n_magnet_entities'),
+            'closed': closed.get('n_magnet_entities'),
+        },
+        'region_counts': region_diff,
+        'face_count': len(faces),
+    }
+
+    return {
+        'raw': raw,
+        'closed': closed,
+        'faces': faces,
+        'comparison': comparison,
     }
 
 

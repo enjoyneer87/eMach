@@ -12,6 +12,11 @@ from typing import List, Tuple, Dict, Optional
 from collections import defaultdict
 
 from .core import EntityInfo
+from .half_unit import (
+    extract_half_pole_entities,
+    extract_half_slot_entities,
+    reconstruct_from_half,
+)
 
 
 @dataclass
@@ -124,85 +129,91 @@ def extract_single_pole_entities(entities: List[EntityInfo],
     Returns
     -------
     dict with:
-        - 'pole_entities': 한 극 영역의 엔티티들
+        - 'pole_entities': 한 극 영역의 엔티티들 (dict list)
         - 'normalized_entities': 0° 기준으로 역회전된 엔티티들
+        - 'one_pole_entities': 1극 재구성 EntityInfo 리스트
         - 'pole_pitch_deg': 사용된 극 피치
         - 'n_poles': 극수
     """
     ox, oy = origin
-    
+
     # 극 피치 자동 감지
     if pole_pitch_deg is None:
         pattern = detect_circular_array_pattern(entities, origin)
         if pattern['has_pattern']:
             pole_pitch_deg = pattern['pole_pitch_deg']
         else:
-            # 기본값: 30° (12극)
             pole_pitch_deg = 30.0
-    
+
     n_poles = int(round(360 / pole_pitch_deg))
-    half_pitch = pole_pitch_deg / 2
-    
-    # 한 극 영역에 속하는 엔티티 추출
+
+    # half-unit 기반 1극 재구성
+    half_pole = extract_half_pole_entities(
+        entities,
+        origin,
+        pole_pitch_deg=pole_pitch_deg,
+        reference_angle=reference_angle,
+        normalize_to_zero=normalize_to_zero,
+    )
+    one_pole_entities = reconstruct_from_half(half_pole, origin, n_repeats=1)
+
+    # 1극 엔티티를 dict list로 변환
     pole_entities = []
-    
-    for ei in entities:
-        # 엔티티의 평균 각도 계산
+    for ei in one_pole_entities:
+        if not ei.points:
+            continue
         angles = [np.degrees(np.arctan2(p[1] - oy, p[0] - ox)) % 360 for p in ei.points]
-        avg_angle = np.mean(angles)
-        
-        # reference_angle 기준으로 한 극 범위 내인지 확인
+        avg_angle = float(np.mean(angles))
         angle_diff = (avg_angle - reference_angle + 180) % 360 - 180
-        
-        if -half_pitch <= angle_diff <= half_pitch:
-            pole_entities.append({
-                'entity': ei,
-                'original_angle': avg_angle,
-                'relative_angle': angle_diff
-            })
-    
-    # 0° 기준으로 역회전 (normalize)
+        pole_entities.append({
+            'entity': ei,
+            'original_angle': avg_angle,
+            'relative_angle': angle_diff,
+        })
+
     normalized_entities = []
     if normalize_to_zero and pole_entities:
+        rot_rad = np.radians(-reference_angle)
+        cos_r, sin_r = np.cos(rot_rad), np.sin(rot_rad)
         for item in pole_entities:
             ei = item['entity']
-            rotation_angle = -item['original_angle']  # 역회전 각도
-            
-            # 좌표 역회전
-            rad = np.radians(rotation_angle)
-            cos_r, sin_r = np.cos(rad), np.sin(rad)
-            
             new_points = []
             for px, py in ei.points:
                 dx, dy = px - ox, py - oy
                 new_x = ox + dx * cos_r - dy * sin_r
                 new_y = oy + dx * sin_r + dy * cos_r
                 new_points.append((new_x, new_y))
-            
-            # 새 EntityInfo 생성
+            new_center = None
+            if ei.center:
+                dx, dy = ei.center[0] - ox, ei.center[1] - oy
+                new_center = (ox + dx * cos_r - dy * sin_r,
+                              oy + dx * sin_r + dy * cos_r)
+            new_sa = (ei.start_angle - reference_angle) if ei.start_angle is not None else None
+            new_ea = (ei.end_angle - reference_angle) if ei.end_angle is not None else None
             new_ei = EntityInfo(
                 etype=ei.etype,
                 layer=ei.layer,
                 points=new_points,
                 radius=ei.radius,
-                center=ei.center,
-                start_angle=ei.start_angle,
-                end_angle=ei.end_angle,
+                center=new_center,
+                start_angle=new_sa,
+                end_angle=new_ea,
                 is_closed=ei.is_closed,
-                raw=None
+                raw=None,
             )
             normalized_entities.append({
                 'entity': new_ei,
                 'original_angle': item['original_angle'],
-                'relative_angle': item['relative_angle']
+                'relative_angle': item['relative_angle'],
             })
-    
+
     return {
         'pole_entities': pole_entities,
         'normalized_entities': normalized_entities,
+        'one_pole_entities': one_pole_entities,
         'pole_pitch_deg': pole_pitch_deg,
         'n_poles': n_poles,
-        'reference_angle': reference_angle
+        'reference_angle': reference_angle,
     }
 
 
