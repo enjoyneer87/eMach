@@ -552,28 +552,28 @@ def extract_half_pole_entities(entities: List[EntityInfo],
     )
 
     # shaft/rotor 외경 ARC만 half-pitch 각도 ARC 생성, 나머지는 원본 각도 그대로
-                                    shaft_r = None
-                                    rotor_outer_r = None
-                                    # split_result에서 airgap_r_inner/airgap_r_outer 우선 사용
-                                    import inspect
-                                    frame = inspect.currentframe()
-                                    while frame:
-                                        if 'split_result' in frame.f_locals:
-                                            split_result = frame.f_locals['split_result']
-                                            shaft_r = split_result.get('airgap_r_inner', None)
-                                            rotor_outer_r = split_result.get('airgap_r_outer', None)
-                                            break
-                                        frame = frame.f_back
-                                    # fallback: ARC/CIRCLE에서 추출
-                                    if shaft_r is None or rotor_outer_r is None:
-                                        all_radii = [ei.radius for ei in result['concentric_arcs'] if ei.radius]
-                                        if all_radii:
-                                            # shaft_r: 가장 작은 반경 (shaft 또는 중심부)
-                                            if shaft_r is None:
-                                                shaft_r = min(all_radii)
-                                            # rotor_outer_r: ARC/CIRCLE 중 가장 큰 반경
-                                            if rotor_outer_r is None:
-                                                rotor_outer_r = max(all_radii)
+    shaft_r = None
+    rotor_outer_r = None
+    # split_result에서 airgap_r_inner/airgap_r_outer 우선 사용
+    import inspect
+    frame = inspect.currentframe()
+    while frame:
+        if 'split_result' in frame.f_locals:
+            split_result = frame.f_locals['split_result']
+            shaft_r = split_result.get('airgap_r_inner', None)
+            rotor_outer_r = split_result.get('airgap_r_outer', None)
+            break
+        frame = frame.f_back
+    # fallback: ARC/CIRCLE에서 추출
+    if shaft_r is None or rotor_outer_r is None:
+        all_radii = [ei.radius for ei in result['concentric_arcs'] if ei.radius]
+        if all_radii:
+            # shaft_r: 가장 작은 반경 (shaft 또는 중심부)
+            if shaft_r is None:
+                shaft_r = min(all_radii)
+            # rotor_outer_r: ARC/CIRCLE 중 가장 큰 반경
+            if rotor_outer_r is None:
+                rotor_outer_r = max(all_radii)
     processed_arcs = []
     for ei in result['concentric_arcs']:
         if ei.etype == 'ARC':

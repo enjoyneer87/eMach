@@ -17,6 +17,12 @@
 		}
 	],
 	"settings": {
-		"git.ignoreLimitWarning": true
+		"git.ignoreLimitWarning": true,
+		"matlab-in-vscode.matlabPybackend": true,
+		"matlab-in-vscode.matlabPythonPath": "C:\\Users\\user\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+		"matlab-in-vscode.matlabStartup": [
+			"addpath('C:/Users/user/.vscode/extensions/shinyypig.matlab-in-vscode-0.5.4/matlab_code');",
+			"rehash;"
+		]
 	}
 }

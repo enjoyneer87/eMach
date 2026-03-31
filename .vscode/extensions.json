@@ -1,3 +1,6 @@
 {
-    "recommendations": []
+    "recommendations": [
+        "mathworks.language-matlab",
+        "shinyypig.matlab-in-vscode"
+    ]
 }

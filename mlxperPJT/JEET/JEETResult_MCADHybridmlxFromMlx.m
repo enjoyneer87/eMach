@@ -1,5 +1,5 @@
 
-totalNumberMcad=2
+totalNumberMcad=1
 for i=1:totalNumberMcad
     mcad(i)=actxserver('motorcad.appautomation');
 end
