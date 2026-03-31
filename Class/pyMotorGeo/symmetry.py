@@ -1,7 +1,39 @@
 """
 pyMotorGeo.symmetry
 ===================
-대칭성 분석, 주기 추출, 반슬롯/반극 추출 및 기하 재구성 함수.
+
+Motor symmetry analysis, periodic pattern reconstruction, and minimum repeating unit extraction.
+
+This module provides tools for:
+- **Symmetry Detection**: Identify rotational and mirror symmetries in motor geometry
+- **Periodic Pattern Analysis**: Extract minimum repeating units (half-pole, quarter-pole, full-pole)
+- **Geometry Reconstruction**: Expand minimum units back to full motor via rotation and mirroring
+- **Symmetry Breaking**: Detect and report asymmetries (useful for motor design validation)
+
+**Key Concepts**:
+
+- **Minimum Repeating Unit (MRU)**: Smallest sector that, when rotated/mirrored, reconstructs the motor
+  - Half-pole: 180°/poles (often used for symmetric rotor)
+  - Quarter-pole: 90°/poles (for doubly-symmetric designs)
+  - Full-pole: 360°/poles (no symmetry; sector is the pole itself)
+  
+- **Symmetry Types**:
+  - **Rotational**: Motor pattern repeats every `period_deg`
+  - **Mirror/Bilateral**: Motor is symmetric about a radial plane (0°-180° line, etc.)
+
+- **Use Cases**:
+  - Reduce CAD model complexity by storing only MRU
+  - Speed up FEA analysis by exploiting symmetry
+  - Validate motor design (e.g., ensure 4-pole motor has 4-fold symmetry)
+  - Reconstruct full motor for visualization or export
+
+**Typical Workflow**:
+
+1. Load full motor geometry from DXF
+2. Detect period/symmetry via `identify_symmetry()` or user specification
+3. Extract MRU: `extract_half_pole_entities()` or similar
+4. Perform analysis on MRU (lighter computation)
+5. Reconstruct full motor for visualization: `expand_sector()` or `reconstruct_from_half()`
 """
 
 import math

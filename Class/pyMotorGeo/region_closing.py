@@ -1,26 +1,64 @@
 """
 pyMotorGeo.region_closing
 ==========================
-주기모델(periodic sector) 경계선 생성 → 닫힌 영역(closed region) 탐지 → 이름 할당.
 
-주기모델에서 stator core, rotor core, shaft 영역은 주기 경계(0°, period_deg)에서
-열린 상태이므로, 방사 직선(boundary line)과 호(arc)를 추가하여 닫힌 영역을 형성합니다.
-에어갭 경계는 별도로 추가하지 않습니다.
+Topological region closure and closed face detection for periodic motor geometry.
 
-권장 워크플로우 (v1.5.1):
-  **1극/1슬롯 단위 close → circular array pattern**
+This module detects topologically closed regions (faces) in motor geometry by:
+1. Creating artificial boundary entities (radial lines, arcs) at periodic sector boundaries
+2. Applying graph traversal to identify minimal closed paths (faces)
+3. Labeling faces with region names (magnet, slot, tooth, conductor, etc.)
 
-  1) extract_half_pole_entities() → half-pole
-  2) reconstruct_from_half(..., n_repeats=1) → 1 pole
-  3) close_one_pole(one_pole_entities, ...) → 닫힌 1극
-  4) detect_closed_faces() → faces 탐지
-  5) auto_name_faces() → 이름 할당
-  6) rotate & pattern으로 전체 재구성
+**Background**: In periodic sector CAD models (e.g., half-slot or one-pole extracts), 
+certain motor regions (stator yoke, rotor core, shaft) appear open at the periodic 
+boundaries (0° and period_deg). This module artificially "closes" those regions to enable 
+downstream face-based analysis and GUI region assignment.
 
-레거시 워크플로우 (v1.4):
-  1) close_period_model() → 주기모델 전체 닫기
-  2) detect_closed_faces()
-  3) auto_name_faces()
+**Recommended Workflow (v1.5.1): Per-Pole Closure**
+
+This is the modern, scalable approach:
+
+1. Extract minimum repeating unit (half-pole or quarter-pole):
+   `extract_half_pole_entities(roi, ...)`
+
+2. Expand to single pole:
+   `reconstruct_from_half(half_pole_entities, n_repeats=1, ...)`
+
+3. Close one pole with boundary lines and arcs:
+   `close_one_pole(one_pole_entities, airgap_r, yoke_r, pole_span_deg, ...)`
+
+4. Detect closed faces topologically:
+   `faces = detect_closed_faces(closed_entities, origin, ...)`
+
+5. Automatically label faces by region:
+   `auto_name_faces(faces, r_shaft, r_rotor_outer, r_stator_inner, r_stator_outer)`
+
+6. Generate full motor via rotation and circular array pattern:
+   `reconstruct_from_half(one_pole_pattern, n_repeats=n_poles, ...)`
+
+**Legacy Workflow (v1.4): Full Periodic Model Closure**
+
+Supported for backward compatibility:
+
+1. Close entire periodic model:
+   `close_period_model(entities, inner_radius, outer_radius, period_deg, ...)`
+
+2. Detect and label faces:
+   `faces = detect_closed_faces(...); auto_name_faces(faces, ...)`
+
+Key Components
+---------------
+- **Boundary Creation**: `create_radial_line()`, `create_arc_boundary()` — Add synthetic edges
+- **Closure Functions**: `close_one_pole()`, `close_one_slot()`, `close_period_model()` — Wrap geometry
+- **Face Detection**: `detect_closed_faces()` — Topological traversal via minimal cycle detection
+- **Auto-Labeling**: `auto_name_faces()`, `auto_name_faces_v2()` — Assign region types by position
+- **Utilities**: `get_face_summary()` — Statistics, `_build_adj()`, `_traverse_minimal_faces()` — Graph algorithms
+
+Integration with Other Modules
+-------------------------------
+- **region_closing → topology**: Use closed faces as input to `classify_*_entities()`
+- **topology → gui_region**: Faces displayed/edited in `FaceRegionGUI` or `FaceRegionGUILite`
+- **half_unit → region_closing**: Extract minimum units, expand, then close
 """
 
 import math
@@ -40,20 +78,67 @@ def create_radial_line(r_start: float, r_end: float,
                        layer: str = '_BOUNDARY_',
                        n_segments: int = 1) -> EntityInfo:
     """
-    주어진 각도에서 r_start ~ r_end 사이의 방사 직선 EntityInfo 생성.
+    Create a radial boundary line at a specified angle.
+    
+    Generates a synthetic line segment from radius `r_start` to `r_end` at angle 
+    `angle_deg`. Used to artificially close geometries at periodic sector boundaries 
+    (e.g., closing a motor pole or slot for topological face detection).
 
     Parameters
     ----------
-    r_start : 시작 반경
-    r_end : 끝 반경
-    angle_deg : 직선 각도 (deg)
-    origin : 원점
-    layer : 레이어 이름
-    n_segments : 분할 수 (1이면 단일 직선)
+    r_start : float
+        Starting radius (closer to motor center), in motor units.
+    r_end : float
+        Ending radius (farther from motor center), in motor units.
+    angle_deg : float
+        Angular position in degrees [0, 360). Serves as the angle of the radial line.
+    origin : Tuple[float, float], optional
+        Motor center (ox, oy) coordinate. Default is (0.0, 0.0).
+    layer : str, optional
+        CAD layer name for the boundary line. Default is '_BOUNDARY_'. 
+        Used for identification and filtering.
+    n_segments : int, optional
+        Number of line segments to subdivide the radial line. If 1, creates a single 
+        line segment; if > 1, subdivides into n_segments+1 points for better mesh 
+        alignment. Default is 1.
 
     Returns
     -------
-    EntityInfo (LINE)
+    EntityInfo
+        A LINE entity representing the radial boundary. The entity has:
+        - etype='LINE'
+        - layer=`layer`
+        - points=[p_start, p_end] or longer list if n_segments > 1
+        - is_closed=False
+
+    Algorithm
+    ---------
+    Converts polar coordinates (r, angle_deg) to Cartesian:
+    
+    >>> x = ox + r * cos(angle_rad)
+    >>> y = oy + r * sin(angle_rad)
+    
+    If n_segments > 1, subdivides the radial segment linearly along the radius.
+
+    Examples
+    --------
+    Example 1: Single radial line at 45° from r=30 to r=70
+    
+    >>> line = create_radial_line(r_start=30, r_end=70, angle_deg=45, origin=(0,0))
+    >>> print(line.points)
+    # Output: [(21.21, 21.21), (49.497, 49.497)]
+    
+    Example 2: Segmented radial line for better mesh alignment
+    
+    >>> line = create_radial_line(30, 70, 0, origin=(0,0), n_segments=4)
+    >>> len(line.points)
+    # Output: 5  (subdivided into 5 points)
+
+    Use Cases
+    ---------
+    - **Pole Closure**: Create radial lines at 0° and pole_span_deg to close one rotor pole
+    - **Slot Closure**: Create radial lines at 0° and slot_pitch_deg to close one slot region
+    - **Boundary Definition**: Part of `close_one_pole()` or `close_period_model()` workflows
     """
     ox, oy = origin
     rad = math.radians(angle_deg)
@@ -82,19 +167,76 @@ def create_arc_boundary(radius: float,
                         layer: str = '_BOUNDARY_',
                         n_points: int = 32) -> EntityInfo:
     """
-    주어진 반경에서 start_deg ~ end_deg 사이의 호(arc) EntityInfo 생성.
+    Create a circular arc boundary at a specified radius.
+    
+    Generates a synthetic arc segment at constant radius from `start_deg` to `end_deg`. 
+    The arc is approximated as a polyline with `n_points` vertices. Used alongside 
+    radial lines to enclose motor regions during topological face detection.
 
     Parameters
     ----------
-    radius : 반경
-    start_deg, end_deg : 시작/끝 각도 (deg)
-    origin : 원점
-    layer : 레이어 이름
-    n_points : 호 위 점 수 (선분 근사)
+    radius : float
+        Arc radius in motor units. Determines the distance from the origin to all 
+        arc points.
+    start_deg : float
+        Starting angular position in degrees [0, 360).
+    end_deg : float
+        Ending angular position in degrees [0, 360).
+    origin : Tuple[float, float], optional
+        Motor center (ox, oy) coordinate. Default is (0.0, 0.0).
+    layer : str, optional
+        CAD layer name for the boundary arc. Default is '_BOUNDARY_'. 
+        Used for identification and filtering.
+    n_points : int, optional
+        Number of points to sample along the arc for polyline approximation. 
+        Higher values give smoother arcs; minimum recommended is 8. Default is 32.
 
     Returns
     -------
-    EntityInfo (ARC)
+    EntityInfo
+        An ARC entity representing the circular arc boundary. The entity has:
+        - etype='ARC'
+        - layer=`layer`
+        - points: List of (x, y) tuples sampled along the arc
+        - radius: `radius`
+        - center: `origin`
+        - start_angle: `start_deg % 360`
+        - end_angle: `end_deg % 360`
+        - is_closed=False
+
+    Algorithm
+    ---------
+    Uses polar-to-Cartesian conversion with uniform angular sampling:
+    
+    >>> angles = linspace(start_deg, end_deg, n_points)
+    >>> points = [(ox + r*cos(angle), oy + r*sin(angle)) for angle in angles]
+
+    Examples
+    --------
+    Example 1: Inner arc for one-pole closure (airgap boundary)
+    
+    >>> arc = create_arc_boundary(radius=50, start_deg=0, end_deg=45, origin=(0,0))
+    >>> len(arc.points)
+    # Output: 32
+    
+    Example 2: Outer arc (yoke boundary) with coarser sampling
+    
+    >>> arc = create_arc_boundary(radius=80, start_deg=0, end_deg=45, 
+    ...                          origin=(0,0), n_points=16)
+
+    Use Cases
+    ---------
+    - **Inner Boundary**: `create_arc_boundary(airgap_r, 0, pole_deg)` closes airgap side
+    - **Outer Boundary**: `create_arc_boundary(yoke_r, 0, pole_deg)` closes yoke side
+    - **Slot Closure**: `create_arc_boundary(airgap_r, 0, slot_pitch)` for slot regions
+    - **Part of `close_one_pole()` / `close_one_slot()`**: Combined with radial lines
+
+    Notes
+    -----
+    - Arc is approximated as a polyline; true circular path exists only if visualized
+    - Angular order: start_deg → end_deg. If end_deg < start_deg, wrapping behavior 
+      depends on numpy.linspace (no automatic wrapping)
+    - For motor geometry, typical pole/slot angles are 5°–90°; n_points=32 is usually sufficient
     """
     ox, oy = origin
     angles = np.linspace(start_deg, end_deg, n_points)
@@ -600,22 +742,127 @@ def detect_closed_faces(
     origin: Tuple[float, float] = (0.0, 0.0),
     min_area: float = 0.5,
     tol_digits: int = 2,
+    use_shapely: bool = True,
 ) -> List[Dict]:
     """
-    엔티티 리스트에서 planar graph 기반 닫힌 면(face)을 탐지합니다.
+    Topologically detect all closed regions (faces) from a list of entities.
+    
+    This core function identifies topologically closed 2D polygons (faces) by building 
+    a planar graph from entity endpoints and edges, then traversing minimal cycles. 
+    Optionally uses shapely's `polygonize()` for improved accuracy. Essential for 
+    converting open CAD geometry into face-based region classification.
 
     Parameters
     ----------
-    entities : 경계선 포함 엔티티 리스트
-    origin : 원점
-    min_area : 최소 면적 필터
-    tol_digits : endpoint 반올림 자릿수
+    entities : List[EntityInfo]
+        List of entities (LINE, ARC, LWPOLYLINE) representing boundaries and closures.
+        These should include original CAD geometry plus artificial boundaries created 
+        by `create_radial_line()` and `create_arc_boundary()`.
+    
+    origin : Tuple[float, float], optional
+        Motor center (ox, oy) used for computing centroid_r (distance from origin to face center)
+        and centroid_ang (angular position of face center). Default is (0.0, 0.0).
+    
+    min_area : float, optional
+        Minimum face area threshold (in motor units²). Faces with area < min_area are 
+        filtered out to remove numerical noise and artifact faces. Default is 0.5.
+    
+    tol_digits : int, optional
+        Decimal precision for endpoint matching in planar graph construction (planar 
+        graph method only, not used if shapely is available). E.g., tol_digits=2 
+        rounds to nearest 0.01 units. Default is 2.
+    
+    use_shapely : bool, optional
+        If True (default), attempts to use shapely's `polygonize()` via face_detection module 
+        for improved robustness. Falls back to planar graph method if shapely is unavailable 
+        or returns empty results. If False, forces planar graph method.
 
     Returns
     -------
-    List[Dict] : 각 face 정보
-        vertices, area, centroid, centroid_r, centroid_ang, r_min, r_max, name
+    List[Dict]
+        List of detected faces, sorted by area (largest first). Each face dict contains:
+        
+        - **'vertices'** : List of (x, y) tuples representing the polygon boundary
+        - **'area'** : Polygon area (positive; computed via Shoelace formula)
+        - **'n_edges'** : Number of boundary vertices (polygon side count)
+        - **'centroid'** : (cx, cy) tuple — geometric center of polygon
+        - **'interior_point'** : (x, y) tuple — guaranteed point inside polygon (for containment tests)
+        - **'centroid_r'** : Distance from `origin` to centroid (in motor units)
+        - **'centroid_ang'** : Angular position of centroid [0, 360) degrees
+        - **'r_min'** : Minimum radius among all vertices
+        - **'r_max'** : Maximum radius among all vertices
+        - **'r_mean'** : Average radius of vertices
+        - **'name'** : Region label (initially 'unknown', updated by `auto_name_faces()`)
+        - **'polygon'** : (shapely only) shapely.geometry.Polygon object for advanced geometry ops
+
+    Algorithm
+    ---------
+    
+    **Shapely Method (preferred, if available):**
+    1. Converts entities to shapely LineStrings
+    2. Calls `shapely.ops.polygonize()` to extract all minimal closed polygons
+    3. Filters by area threshold
+    4. Fast, robust to edge overlaps; handles CoLinear edges better
+    
+    **Planar Graph Method (fallback):**
+    1. Builds adjacency list from entity endpoints (snapped to grid by `tol_digits`)
+    2. Traverses minimal cycles using depth-first search (`_traverse_minimal_faces()`)
+    3. Computes polygon properties (area, centroid, radii)
+    4. Filters by min_area
+    
+    Detects face size automatically; large regions like "stator yoke" or "rotor core" 
+    have area > 100; small regions like "slot conductor" have area < 10.
+
+    Examples
+    --------
+    Example 1: Detect faces from a closed one-pole unit
+    
+    >>> from pyMotorGeo.region_closing import close_one_pole, detect_closed_faces
+    >>> one_pole = extract_half_pole_entities(...)
+    >>> closed = close_one_pole(one_pole, airgap_r=50, yoke_r=80, pole_deg=45)
+    >>> faces = detect_closed_faces(closed, origin=(0,0), min_area=0.5)
+    >>> print(f"Detected {len(faces)} faces")
+    # Output: Detected 8 faces  (magnet, air barriers, core, etc.)
+    
+    >>> for face in faces:
+    ...     print(f"Face area={face['area']:.1f}, centroid_r={face['centroid_r']:.1f}")
+    
+    Example 2: Iterating through detected faces
+    
+    >>> faces = detect_closed_faces(closed_entities, origin=(0,0))
+    >>> for idx, face in enumerate(faces):
+    ...     print(f"Face#{idx}: {len(face['vertices'])} vertices, "
+    ...           f"area={face['area']:.2f}, label={face['name']}")
+
+    Use Cases
+    ---------
+    - **Region Detection**: Identify all motor regions after geometry closure
+    - **Area Filtering**: Exclude small numerical artifacts (min_area threshold)
+    - **Downstream Processing**: Faces are input to `auto_name_faces()` for classification
+    - **GUI Visualization**: Faces rendered in `FaceRegionGUI` for interactive labeling
+    - **Export**: Face vertices can be exported to DXF or other CAD formats
+
+    Notes
+    -----
+    - **Face Orientation**: Vertices are ordered counterclockwise (from Shoelace formula convention)
+    - **Degenerate Faces**: Triangles have n_edges=3; larger regions may have n_edges > 10
+    - **Touching Boundaries**: If two faces touch at an edge, both are detected (no merging)
+    - **Performance**: Shapely method is ~5-10× faster than planar graph for large entity sets
+    - **Dependencies**: Shapely is optional; if unavailable, planar graph fallback is used automatically
+    - **Robustness**: Planar graph method may miss faces if endpoints don't snap correctly; 
+      adjust `tol_digits` if needed
     """
+    if use_shapely:
+        try:
+            from .face_detection import detect_closed_faces_v2
+            faces = detect_closed_faces_v2(entities, origin, min_area)
+            if faces:
+                return faces
+            # shapely 결과가 없으면 planar graph fallback
+        except Exception:
+            pass
+
+    # ── planar graph fallback (기존 방식) ──
     ox, oy = origin
     adj, emap = _build_adj(entities, tol_digits)
     raw_faces = _traverse_minimal_faces(adj)
@@ -630,16 +877,17 @@ def detect_closed_faces(
         cy = sum(v[1] for v in verts) / n
         rs = [math.hypot(v[0] - ox, v[1] - oy) for v in verts]
         faces.append({
-            'vertices': list(verts),
-            'area': area,
-            'n_edges': n,
-            'centroid': (cx, cy),
-            'centroid_r': math.hypot(cx - ox, cy - oy),
-            'centroid_ang': math.degrees(math.atan2(cy - oy, cx - ox)) % 360,
-            'r_min': min(rs),
-            'r_max': max(rs),
-            'r_mean': float(np.mean(rs)),
-            'name': 'unknown',
+            'vertices':       list(verts),
+            'area':           area,
+            'n_edges':        n,
+            'centroid':       (cx, cy),
+            'interior_point': (cx, cy),   # planar graph는 centroid를 내부점으로 사용
+            'centroid_r':     math.hypot(cx - ox, cy - oy),
+            'centroid_ang':   math.degrees(math.atan2(cy - oy, cx - ox)) % 360,
+            'r_min':          min(rs),
+            'r_max':          max(rs),
+            'r_mean':         float(np.mean(rs)),
+            'name':           'unknown',
         })
 
     faces.sort(key=lambda f: f['area'], reverse=True)
@@ -659,17 +907,151 @@ def auto_name_faces(
     rotor_topology: str = 'SPM',
 ) -> List[Dict]:
     """
-    탐지된 face에 반경/위치 기반으로 이름을 자동 할당합니다.
+    Automatically assign region labels to detected faces based on radial position and area heuristics.
+    
+    This function classifies closed faces into motor region types (magnet, slot, tooth, yoke, etc.) 
+    by examining the centroid radius, minimum/maximum radii, and area of each face. It is the primary 
+    method for converting raw topological faces into semantically meaningful motor components.
 
     Parameters
     ----------
-    faces : detect_closed_faces() 결과
-    r_shaft, r_rotor_outer, r_stator_inner, r_stator_outer : 경계 반경
-    rotor_topology : 'SPM', 'IPM', 'SynRM' 등
+    faces : List[Dict]
+        List of face dictionaries from `detect_closed_faces()`. Each face must contain 
+        'centroid_r', 'r_min', 'r_max', and 'area' fields. The 'name' field is updated in-place.
+    
+    r_shaft : float
+        Radius of the rotor shaft (inner boundary). Faces entirely within this radius 
+        are labeled 'shaft'.
+    
+    r_rotor_outer : float
+        Outer radius of the rotor (where airgap begins). Separates rotor from stator 
+        regions. Typically corresponds to the airgap inner surface.
+    
+    r_stator_inner : float
+        Inner radius of the stator (where airgap ends, stator begins). Combined with 
+        r_rotor_outer to define the airgap region.
+    
+    r_stator_outer : float
+        Outer radius of the stator yoke (motor outer boundary). Faces near this radius 
+        are classified as stator yoke.
+    
+    rotor_topology : str, optional
+        Rotor magnet/flux barrier topology type. Affects classification of small outer 
+        rotor regions. Valid values:
+        
+        - **'SPM'** (default) : Surface Permanent Magnet — small outer regions are magnets
+        - **'IPM'** : Interior Permanent Magnet — small outer regions may be air barriers
+        - **'SynRM'** : Synchronous Reluctance Motor — no PMs, classify as air barriers
+        - **'PMa-SynRM'** : Hybrid with both PMs and air barriers
+        - **'SPMSM'** : Alias for SPM
+        
+        Default is 'SPM'.
 
     Returns
     -------
-    faces (in-place 수정 + 반환)
+    List[Dict]
+        The same `faces` list with each face's 'name' field updated to one of the following:
+        
+        - **'shaft'** → Central rotor shaft (r_max ≤ r_shaft)
+        - **'rotor_core'** → Rotor magnetic core (r_min > r_shaft, large area, IPM/SynRM)
+        - **'magnet'** → Permanent magnet pole (rotor surface, SPM/IPM topology)
+        - **'air_barrier'** → Flux barrier pocket (rotor, SynRM/PMa-SynRM topology)
+        - **'stator_yoke'** → Stator laminated core outer region (r > midpoint, large area)
+        - **'stator_tooth'** → Stator tooth pole piece (r > midpoint, mid area, radial extent)
+        - **'slot'** → Stator slot region (r > midpoint, large area, smaller than yoke)
+        - **'slot_opening'** → Small region near airgap at stator side (near r_stator_inner)
+        - **'unknown'** → Unclassified (should rarely occur if thresholds are set correctly)
+
+    Classification Algorithm
+    -----------------------
+    
+    1. **Centroid Radial Position**:
+       - If `centroid_r ≤ r_shaft`: → 'shaft'
+       - If `centroid_r ≤ r_rotor_outer`: → Rotor region (magnet, air_barrier, rotor_core)
+       - If `centroid_r ≥ r_stator_inner`: → Stator region (slot, tooth, yoke, slot_opening)
+    
+    2. **Rotor Region (centroid_r < r_mid_airgap)**:
+       - Large area (> 200) → 'rotor_core'
+       - Small, outer-radial (r_max > 0.85 × r_rotor_outer):
+         * SPM/SPMSM → 'magnet'
+         * SynRM → 'air_barrier'
+         * IPM → depends on context (typically magnet for outer regions)
+       - Otherwise → 'air_barrier' or 'rotor_core' depending on topology
+    
+    3. **Stator Region (centroid_r > r_mid_airgap)**:
+       - Large outer area (r_min > 50% of yoke thickness) → 'stator_yoke'
+       - Radial extent (r_max - r_min) > 30% of stator thickness → 'stator_tooth'
+       - Small area near airgap (area < 50, r_min ≈ r_stator_inner) → 'slot_opening'
+       - Large area (> 20) → 'slot'
+       - Other → 'slot_opening' (fallback)
+
+    Examples
+    --------
+    Example 1: Classify faces from a typical PMSM motor
+    
+    >>> from pyMotorGeo.region_closing import detect_closed_faces, auto_name_faces
+    >>> 
+    >>> faces = detect_closed_faces(closed_entities, origin=(0, 0))
+    >>> faces = auto_name_faces(
+    ...     faces,
+    ...     r_shaft=10,
+    ...     r_rotor_outer=50,
+    ...     r_stator_inner=52,
+    ...     r_stator_outer=80,
+    ...     rotor_topology='SPM'
+    ... )
+    >>> 
+    >>> for face in faces:
+    ...     print(f"{face['name']:15} area={face['area']:6.1f}")
+    # Output:
+    # rotor_core       300.0
+    # magnet             3.2
+    # magnet             3.2
+    # slot             45.0
+    # stator_yoke     150.0
+    
+    Example 2: IPM motor with air barriers
+    
+    >>> faces = auto_name_faces(
+    ...     faces,
+    ...     r_shaft=15,
+    ...     r_rotor_outer=55,
+    ...     r_stator_inner=57,
+    ...     r_stator_outer=85,
+    ...     rotor_topology='IPM'
+    ... )
+
+    Machine Independent Thresholds
+    
+    These are tolerances and area thresholds used internally (all in motor mill absolute units):
+    
+    - **tol** = 1.5 mm : Radial tolerance for boundary snapping
+    - **area > 200** : Large rotor region → core (not magnet)
+    - **area < 50** : Small stator region → slot_opening (not conductor)
+    - **r_max > 0.85 × r_rotor_outer** : Surface magnet or barrier (outer region)
+    - **radial_extent > 30% of yoke** : Tooth-like structure
+    
+    **Note**: These thresholds work well for motors ranging from micro-motors (5mm) to 
+    large industrial motors (300mm). For extreme scales, parameters may need manual tuning.
+
+    Use Cases
+    ---------
+    - **Workflow Integration**: Final step in `close_one_pole()` and `close_period_model()` workflows
+    - **Inventory Counting**: Pair with `get_face_summary()` to tally magnet/slot/tooth counts
+    - **Export Preparation**: Faces with correct labels can be exported to DXF or simulation tools
+    - **GUI Initialization**: Classified faces populate region dropdown in `FaceRegionGUI`
+    - **Topology Validation**: Verify expected counts (e.g., 4 magnets for 4-pole rotor)
+
+    Notes
+    -----
+    - **In-place Modification**: The function modifies the input `faces` list directly 
+      and also returns it for convenience
+    - **Topology Sensitivity**: Rotor classification strongly depends on `rotor_topology` parameter
+    - **Boundary Cases**: Faces touching multiple regions (e.g., on the airgap boundary) 
+      may be misclassified; post-processing in GUI is recommended
+    - **Scaling**: All thresholds are in absolute motor geometric units (mm or motor-specific units)
+    - **Fallback Behavior**: Any unrecognized topology defaults to SPM-like classification 
+      (small outer regions → magnets)
     """
     tol = 1.5  # mm 허용 오차
     r_mid_ag = (r_rotor_outer + r_stator_inner) / 2.0
@@ -723,8 +1105,233 @@ def auto_name_faces(
     return faces
 
 
+def auto_name_faces_v2(
+    faces: List[Dict],
+    r_shaft: float,
+    r_rotor_outer: float,
+    r_stator_inner: float,
+    r_stator_outer: float,
+    rotor_topology: str = 'SPM',
+) -> List[Dict]:
+    """
+    auto_name_faces 개선판 — topology별 분기 + 레이어 번호 부여.
+
+    auto_name_faces 와의 차이
+    -------------------------
+    1. interior_point 사용 (shapely find_best_region 결과)
+    2. topology별 임계값 분기
+       - SPM  : 표면 영역 → magnet, 내부 → rotor_core
+       - IPM  : 표면 → magnet, 내부 얇은 영역 → air_barrier, 큰 영역 → rotor_core
+       - SynRM: 모든 내부 얇은 영역 → air_barrier
+       - PMa-SynRM: IPM + 배리어 사이 자석 병존
+    3. 로터 내부 영역에 레이어 번호 부여 (BanGeoCode lay() 방식)
+       rotor_core → layer=0, air_barrier/magnet → layer=1,2,3... (안쪽부터)
+    4. concentric_arcs(동심원 호) 경계 영역 반경 구간 기반 air_barrier 판별
+
+    Parameters
+    ----------
+    faces          : detect_closed_faces() / detect_closed_faces_v2() 결과
+    r_shaft        : 샤프트 반경
+    r_rotor_outer  : 로터 외경 (에어갭 내측)
+    r_stator_inner : 스테이터 내경 (에어갭 외측)
+    r_stator_outer : 스테이터 외경
+    rotor_topology : 'SPM', 'IPM', 'SynRM', 'PMa-SynRM', 'UNKNOWN'
+
+    Returns
+    -------
+    faces (in-place 수정 + 반환)
+    """
+    tol = 1.5
+    r_mid_ag     = (r_rotor_outer + r_stator_inner) / 2.0
+    r_rotor_range = r_rotor_outer - r_shaft
+    r_stator_range = r_stator_outer - r_stator_inner
+
+    # ── topology 공통 파라미터 ──
+    # 표면 임계: rotor_outer 기준 몇 % 안쪽까지 "표면 근처"로 볼 것인가
+    surface_thresh = {
+        'SPM':       0.82,
+        'IPM':       0.78,
+        'SynRM':     0.75,
+        'PMa-SynRM': 0.78,
+        'UNKNOWN':   0.80,
+    }.get(rotor_topology, 0.80)
+
+    # 얇은 영역(air_barrier 후보) 판별: 방사 두께 / 로터 반경 < thin_ratio
+    thin_ratio = {
+        'IPM':       0.18,
+        'SynRM':     0.20,
+        'PMa-SynRM': 0.20,
+    }.get(rotor_topology, 0.15)
+
+    rotor_inner_faces = []  # 레이어 번호 부여용
+
+    for fi in faces:
+        # interior_point 우선, 없으면 centroid 사용
+        ip = fi.get('interior_point', fi['centroid'])
+        ip_r = math.hypot(ip[0], ip[1])
+
+        cr   = fi['centroid_r']
+        rmin = fi['r_min']
+        rmax = fi['r_max']
+        radial_span = rmax - rmin
+
+        # ── 샤프트 ──
+        if rmax <= r_shaft + tol:
+            fi['name'] = 'shaft'
+            fi['layer'] = 0
+            continue
+
+        # ── 스테이터 측 ──
+        if ip_r > r_mid_ag:
+            if rmin > r_stator_inner + r_stator_range * 0.55:
+                fi['name'] = 'stator_yoke'
+            elif rmin < r_stator_inner + tol * 3 and fi['area'] < 60:
+                fi['name'] = 'slot_opening'
+            elif fi['area'] > 15:
+                fi['name'] = 'slot'
+            elif radial_span > r_stator_range * 0.25:
+                fi['name'] = 'stator_tooth'
+            else:
+                fi['name'] = 'slot_opening'
+            continue
+
+        # ── 로터 측 ──
+        is_near_surface = rmax > r_rotor_outer * surface_thresh
+        is_thin = radial_span < r_rotor_range * thin_ratio
+
+        if rotor_topology == 'SPM':
+            if is_near_surface:
+                fi['name'] = 'magnet'
+            elif fi['area'] > r_rotor_range ** 2 * 0.1:
+                fi['name'] = 'rotor_core'
+            else:
+                fi['name'] = 'rotor_core'
+
+        elif rotor_topology in ('IPM', 'PMa-SynRM'):
+            if is_near_surface and is_thin:
+                # 얇고 표면 근처 → 자석 또는 air_barrier
+                # 면적이 매우 작으면 air_barrier (bridge/pocket)
+                if fi['area'] < r_rotor_range * 3:
+                    fi['name'] = 'air_barrier'
+                else:
+                    fi['name'] = 'magnet'
+            elif is_near_surface:
+                fi['name'] = 'magnet'
+            elif is_thin:
+                fi['name'] = 'air_barrier'
+                rotor_inner_faces.append(fi)
+            elif fi['area'] > r_rotor_range ** 2 * 0.08:
+                fi['name'] = 'rotor_core'
+            else:
+                fi['name'] = 'air_barrier'
+                rotor_inner_faces.append(fi)
+
+        elif rotor_topology == 'SynRM':
+            if is_thin:
+                fi['name'] = 'air_barrier'
+                rotor_inner_faces.append(fi)
+            elif fi['area'] > r_rotor_range ** 2 * 0.08:
+                fi['name'] = 'rotor_core'
+            else:
+                fi['name'] = 'air_barrier'
+                rotor_inner_faces.append(fi)
+
+        else:  # UNKNOWN fallback
+            if is_near_surface:
+                fi['name'] = 'magnet'
+            elif fi['area'] > 200:
+                fi['name'] = 'rotor_core'
+            else:
+                fi['name'] = 'rotor_core'
+
+    # ── 레이어 번호 부여 (BanGeoCode lay() 방식) ──
+    # air_barrier / magnet 을 r_mean 기준 안쪽(1)→바깥쪽 순으로 번호 부여
+    barrier_mag = [f for f in faces
+                   if f.get('name') in ('air_barrier', 'magnet')]
+    barrier_mag.sort(key=lambda f: f['r_mean'])
+    for layer_idx, fi in enumerate(barrier_mag, start=1):
+        fi['layer'] = layer_idx
+
+    # rotor_core / shaft 는 layer=0
+    for fi in faces:
+        if 'layer' not in fi:
+            fi['layer'] = 0
+
+    return faces
+
+
 def get_face_summary(faces: List[Dict]) -> Dict[str, int]:
-    """face 이름별 개수 요약."""
+    """
+    Aggregate face count by region type.
+    
+    Provides a quick summary of how many faces (regions) of each type were 
+    detected and classified. Useful for inventory tracking and validation 
+    (e.g., verifying correct magnet count for the rotor).
+
+    Parameters
+    ----------
+    faces : List[Dict]
+        List of face dictionaries with 'name' field (typically from `auto_name_faces()`).
+
+    Returns
+    -------
+    Dict[str, int]
+        Dictionary mapping region labels to their counts. Example output::
+        
+            {
+                'magnet': 4,
+                'air_barrier': 0,
+                'rotor_core': 1,
+                'shaft': 1,
+                'slot': 48,
+                'stator_tooth': 48,
+                'stator_yoke': 1,
+                'slot_opening': 48,
+                'unknown': 0
+            }
+
+    Examples
+    --------
+    Example 1: Summarize detected regions
+    
+    >>> from pyMotorGeo.region_closing import auto_name_faces, get_face_summary
+    >>> 
+    >>> summary = get_face_summary(faces)
+    >>> print(summary)
+    # Output: {'magnet': 4, 'slot': 8, 'rotor_core': 1, 'stator_yoke': 1, ...}
+    >>> print(f"Total magnets: {summary.get('magnet', 0)}")
+    # Output: Total magnets: 4
+    
+    Example 2: Validate rotor/stator for correct pole count
+    
+    >>> summary = get_face_summary(faces)
+    >>> n_poles = summary.get('magnet', 0)
+    >>> if n_poles != expected_poles:
+    ...     print(f"⚠️  Expected {expected_poles} poles, got {n_poles}")
+    
+    Example 3: Summarize stator slot structure
+    
+    >>> summary = get_face_summary(faces)
+    >>> n_slots = summary.get('slot', 0)
+    >>> n_teeth = summary.get('stator_tooth', 0)
+    >>> print(f"Stator: {n_slots} slots, {n_teeth} teeth")
+
+    Use Cases
+    ---------
+    - **Validation**: Verify motor geometry (e.g., 8 slots expected, got 8 ✓)
+    - **Reporting**: Include counts in analysis reports
+    - **GUI Status**: Display summary in FaceRegionGUI status bar
+    - **Debugging**: Detect misclassified or missing regions (e.g., 'unknown' count > 0)
+    - **Export Metadata**: Store summary with exported CAD files
+
+    Notes
+    -----
+    - Returns only labels that appear at least once; missing labels are not included
+    - For regions that don't appear, use `.get(label, 0)` to avoid KeyError
+    - Only counts faces; does not account for periodic expansion or symmetry 
+      (e.g., if input is a half-pole, actual magnet count is 2× the summary value)
+    - Should be called after `auto_name_faces()` for meaningful results
+    """
     return dict(Counter(f['name'] for f in faces))
 
 

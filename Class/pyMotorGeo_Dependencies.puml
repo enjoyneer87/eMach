@@ -1,0 +1,39 @@
+@startuml pyMotorGeo_Dependencies
+!theme plain
+title pyMotorGeo Module Dependency Flow
+
+object numpy
+object matplotlib
+object shapely
+object ezdxf
+
+object core
+object reader
+object analysis
+object topology
+object region_closing
+object gui_region
+object plotting
+object export
+object pipeline
+
+core --> reader
+core --> analysis
+analysis --> topology
+topology --> region_closing
+region_closing --> gui_region
+region_closing --> export
+region_closing --> plotting
+pipeline --> analysis
+pipeline --> topology
+pipeline --> region_closing
+pipeline --> export
+
+analysis --> numpy
+region_closing --> numpy
+region_closing --> shapely
+export --> ezdxf
+gui_region --> matplotlib
+plotting --> matplotlib
+
+@enduml

@@ -1,14 +1,16 @@
 """
 pyMotorGeo.analysis_stator
-===========================
-고정자(스테이터) 분석: 슬롯수 추정, 닫힌 영역 기반 슬롯수 추정, 컨덕터 탐지.
+==========================
+
+고정자(Stator) 기하 데이터로부터 모터의 슬롯수(Slot Number)를 추정하고 
+슬롯 내부의 컨덕터 배열 패턴을 탐지하는 모듈입니다.
 
 주요 함수
 ---------
-- count_slots               : Radial LINE 각도 분포 기반 슬롯수 추정
-- count_slots_by_regions    : 닫힌 영역(closed region) 기반 슬롯수 추정
-- estimate_slots_robust     : 두 방법 교차 검증 → 강건한 슬롯수
-- detect_slot_conductors    : 슬롯 내 반복 객체(컨덕터) 탐지
+- count_slots               : 방사형 선분(Radial Line)을 클러스터링하여 슬롯수 단면 벽면 감지
+- count_slots_by_regions    : 고정자 체적 내부의 닫힌 면적(슬롯 / 권선) 주기 패턴을 통한 슬롯수 감지
+- estimate_slots_robust     : 두 방법의 신뢰도를 교차 검증하여 최종 슬롯 피치와 개수 판별
+- detect_slot_conductors    : 식별된 1슬롯 내에 위치한 동일 패턴의 컨덕터 요소 개수 분석
 """
 
 import math
@@ -26,14 +28,21 @@ from .core import EntityInfo
 def count_slots(entities: List[EntityInfo],
                 origin: Tuple[float, float] = (0.0, 0.0),
                 tol_angle: float = 2.0) -> int:
-    """
-    방사형 LINE의 각도 분포로 슬롯 수를 추정합니다.
+    """방사형으로 뻗어있는 원형 배열 선분(LINE)의 각도 분포를 사용하여 슬롯 수를 추정합니다.
 
-    개선 로직:
-    1. 방사형 LINE 각도 수집
-    2. 근접 각도 클러스터링 → 개별 슬롯 벽(slot wall) 위치
-    3. 인접 클러스터 쌍(pair) 감지 → 한 슬롯 = 2 벽
-    4. 슬롯 수 = 슬롯 쌍 수
+    알고리즘:
+    1. 고정자 엔티티 중 수직 방향으로 그어진(반경 방향 차이가 큰) 선분들을 찾아 방위각을 기록.
+    2. 매우 좁은 각도 편차(`tol_angle`) 내에 모여있는 선분들을 단일 '슬롯 벽면(Slot Wall)' 클러스터로 묶음.
+    3. 일반적인 모터에서 하나의 슬롯(Open Space)은 2개의 양측 벽면으로 이루어지므로, 
+       도출된 독립 벽면 클러스터의 개수를 2로 나누어 슬롯 수를 추정함.
+
+    Args:
+        entities (List[EntityInfo]): 고정자로 속하는 형상 엔티티.
+        origin (Tuple[float, float]): 원형 구조의 중심 좌표. 기본값은 (0.0, 0.0).
+        tol_angle (float): 같은 벽면으로 취급할 선형 분산의 허용 치수(도 단위). 기본값은 2.0.
+
+    Returns:
+        int: 방사형 벽면들을 카운트하여 추산한 전체 슬롯 수. 측정 실패시 0.
     """
     ox, oy = origin
 
@@ -112,28 +121,33 @@ def count_slots_by_regions(entities: List[EntityInfo],
                            r_outer_max: float = None,
                            tol_angle: float = 2.0,
                            verbose: bool = True) -> Dict:
-    """
-    닫힌 영역 분석으로 슬롯수를 추정합니다.
+    """고정자 내부의 닫힌 다각형(Closed Polylines) 면적 및 배열 패턴 분석을 통해 슬롯(Slot) 수를 추정합니다.
 
-    알고리즘
-    --------
-    1. 스테이터 내 닫힌 폴리라인 → 슬롯/코일 후보
-    2. 후보의 centroid 각도 분포 → 등간격 반복 → 슬롯수
-    3. 닫힌 폴리라인이 없으면 → ARC 배열 각도 분석
-    4. Radial LINE 벽 쌍 분석 (fallback)
+    고정자에는 권선이 들어가는 슬롯이 일정한 각도의 피치를 두고 원형 배열로 반복됩니다.
+    이 함수는 먼저 고정자 철심 내부에 존재하는 닫힌 면적들을 찾아내고(슬롯 및 권선 후보), 
+    해당 후보군들의 면적 중심점(Centroid)이 이루는 각도 주기성을 통해 슬롯의 총 개수를 역산합니다.
 
-    Parameters
-    ----------
-    entities     : 스테이터 엔티티
-    origin       : 원점
-    airgap_r_outer : 에어갭 외측 반경 (슬롯은 이 바깥)
-    r_outer_max  : 스테이터 외경 (슬롯은 이 안쪽)
-    tol_angle    : 각도 클러스터 허용 오차
-    verbose      : 상세 출력
+    알고리즘:
+    1. 고정자 형상 중 `is_closed=True` 인 폴리라인/스플라인을 선별하여 슬롯 또는 코일 단면으로 간주함.
+    2. 필터링된 도형들의 면적 및 중심점을 계산하고 방위각(도 단위) 분포를 산출.
+    3. 측정된 방위각이 균등한 피치 각도로 반복 배치된 패턴을 분석하여 슬롯 개수 도출.
+    4. 명확한 닫힌 영역이 발견되지 않을 경우 ARC 엔티티나 Radial Line 쌍을 통한 보조(Fallback) 분석 수행.
 
-    Returns
-    -------
-    dict with n_slots, method, slot_pitch_deg, slot_regions, confidence
+    Args:
+        entities (List[EntityInfo]): 고정자 도면 엔티티들.
+        origin (Tuple[float, float]): 원형 구조의 회전 기준방향 좌표. 기본값 (0.0, 0.0).
+        airgap_r_outer (float, optional): 공극(Airgap)의 외측 반경. 슬롯 데이터 필터링 시 너무 안쪽 형상을 배제하기 위함.
+        r_outer_max (float, optional): 고정자 전체의 외부 반경 최댓값. 스크랩 형상을 배제하기 위함.
+        tol_angle (float): 동일한 각도로 취급하기 위한 병합 오차 한계. 기본값 2.0도.
+        verbose (bool): 콘솔 진행상황 로깅 여부. 기본값 True.
+
+    Returns:
+        Dict: 분석 결과를 담은 딕셔너리로, 다음 키들을 포함:
+            - 'n_slots' (int): 최종 도출된 슬롯의 수.
+            - 'method' (str): 추정에 사용된 최종 성공 알고리즘 (예: 'closed_polylines', 'radial_lines').
+            - 'slot_pitch_deg' (float): 산출된 슬롯간 핏치 각도 (단위: Degree).
+            - 'slot_regions' (List[Dict]): 분석 과정에서 확보된 권선/슬롯의 닫힌 면적 정보 리스트.
+            - 'confidence' (float): 해당 결과에 대한 알고리즘적 신뢰도 평가 점수 (0.0 ~ 1.0).
     """
     ox, oy = origin
 
@@ -317,12 +331,23 @@ def estimate_slots_robust(entities: List[EntityInfo],
                           origin: Tuple[float, float] = (0.0, 0.0),
                           airgap_r_outer: float = None,
                           verbose: bool = True) -> Dict:
-    """
-    여러 방법으로 슬롯수를 추정하고 교차 검증합니다.
+    """여러 모터 분석 알고리즘(방사형 선분 패턴 검사, 닫힌 면적 클러스터 반복 검사)을 
+    동시에 수행하고 다수결/신뢰도 원칙으로 최종 고정자 슬롯 개수를 교차 검증(Cross-validation)합니다.
 
-    Returns
-    -------
-    dict with n_slots, results, agreement
+    단일 방법론에 비해 파손된 도면의 DXF나 엔티티에서도 누락 없이 정확한 슬롯 수를 
+    판별할 수 있도록 다방면으로 기하학적 형상을 분석합니다.
+
+    Args:
+        entities (List[EntityInfo]): 고정자에 속하는 모든 단면 분석 엔티티.
+        origin (Tuple[float, float]): 모터 회전 축의 중심 좌표점 (기본값: (0.0, 0.0)).
+        airgap_r_outer (float, optional): 공극 반경 값으로 주어질 시 이보다 내부의 엔티티는 검증에서 배제함.
+        verbose (bool): 콘솔에 추정된 알고리즘의 세부 결과 로깅 여부를 제어. 기본값 True.
+
+    Returns:
+        Dict: 다음 정보를 포함하는 분석 결과 검증 딕셔너리:
+            - 'n_slots' (int): 최종적으로 여러 방법에 의해 가장 유력하게 합의된 슬롯 수. 측정 불가 시 0.
+            - 'results' (List[Tuple[str, int, str]]): 사용된 방식의 이름, 추정된 개수, 각 기법별 신뢰수준 내역.
+            - 'agreement' (bool): 복수의 기법의 결과가 일치하여 확정되었는지 여부를 나타내는 참/거짓 값.
     """
     results = []
 
@@ -382,37 +407,37 @@ def detect_slot_conductors(entities: List[EntityInfo],
                            r_outer_max: float = None,
                            area_tol: float = 0.3,
                            verbose: bool = True) -> Dict:
-    """
-    스테이터 슬롯 내 반복 객체(컨덕터/코일)를 탐지합니다.
+    """고정자의 각 슬롯 내부에 반복적으로 배치된 컨덕터(Conductor/Coil) 객체를 탐지합니다.
 
-    알고리즘
-    --------
-    1. 슬롯 영역 내 닫힌 폴리라인 수집
-    2. 면적이 비슷한 그룹 → 같은 타입의 객체
-    3. 같은 슬롯 내에서 radial 방향 반복 → 컨덕터
-    4. 각 슬롯에 N개 컨덕터 → 권선 정보 추출
+    단일 슬롯 공간 안에 배치된 개별 권선의 가닥(도선 단면)을 분석하여 슬롯 1개당 속해 있는 
+    도체의 총 가닥 수와 그 배열(반경 방향 직렬/병렬 분할 등)을 도출합니다.
 
-    Parameters
-    ----------
-    entities       : 스테이터 엔티티
-    origin         : 원점
-    n_slots        : 슬롯수 (미리 알고 있으면)
-    slot_pitch_deg : 슬롯 피치 (미리 알고 있으면)
-    airgap_r_outer : 에어갭 외측 반경
-    r_outer_max    : 스테이터 외경
-    area_tol       : 면적 비교 허용 오차 (비율, 기본 0.3 = ±30%)
-    verbose        : 상세 출력
+    알고리즘:
+    1. 고정자 설계 평면에서 작은 면적을 보유한 폐곡선(닫힌 폴리라인)들을 수집.
+    2. 수집된 다각형들의 면적 편차가 `area_tol` 허용 범위 안에 드는 것들을 동일 도체 그룹으로 묶음.
+    3. 확보된 고정자 슬롯 피치 정보(`slot_pitch_deg`)를 기준으로 전체 도체들의 방위각을 
+       슬롯 각도 단위의 모듈로 연산(`% pitch`)하여 단일 슬롯 좌표계 안으로 사상(Mapping)시킴.
+    4. 중첩된 도체들의 반경(R) 위치와 각도 분포를 군집화하여 단일 슬롯 내 도체의 총 개수(N) 산출.
 
-    Returns
-    -------
-    dict with:
-        - 'has_conductors'       : bool
-        - 'conductors_per_slot'  : int — 슬롯당 컨덕터 수
-        - 'total_conductors'     : int — 전체 컨덕터 수
-        - 'conductor_entities'   : list[EntityInfo] — 컨덕터로 식별된 엔티티
-        - 'conductor_area'       : float — 개별 컨덕터 면적 (대표값)
-        - 'conductor_groups'     : list[dict] — 슬롯별 컨덕터 정보
-        - 'confidence'           : str
+    Args:
+        entities (List[EntityInfo]): 고정자 도면 엔티티 리스트.
+        origin (Tuple[float, float]): 회전 중심(0.0, 0.0) 기본값.
+        n_slots (int): 사전 분석된 모터의 슬롯 수 (선택사항, 입력 시 슬롯 할당 최적화에 사용).
+        slot_pitch_deg (float): 사전 분석된 슬롯 간 각도 간격 (입력 시 군집화 성능 향상).
+        airgap_r_outer (float, optional): 해당 값보다 안쪽의 형상은 도체가 아니라고 간주하여 무시(에어갭 경계).
+        r_outer_max (float, optional): 해당 값보다 먼 외곽 데이터(고정자 요크/외피) 무시.
+        area_tol (float): 컨덕터 면적 편차의 상대 허용치. 0.3 이면 ±30% 면적 간 같은 도체로 인정함. 기본값 0.3.
+        verbose (bool): 세부 진행 로깅 활성화. 기본값 True.
+
+    Returns:
+        Dict: 단면 검사를 통해 파악한 권선 컨덕터 데이터셋. 주요 키:
+            - 'has_conductors' (bool): 컨덕터 형상 탐지 성공 여부.
+            - 'conductors_per_slot' (int): 슬롯 1개 내부에서 검출된 컨덕터 가닥들의 평균 수량.
+            - 'total_conductors' (int): 전체 360도 공간에서 탐지된 모든 도체의 총 수.
+            - 'conductor_entities' (List[EntityInfo]): 컨덕터로 식별 통과된 원본 형상 엔티티들.
+            - 'conductor_area' (float): 추출된 단일 도체 단면들의 평균 면적.
+            - 'conductor_groups' (List[Dict]): 슬롯 번호별로 소속된 컨덕터들의 로컬 정보 딕셔너리 리스트.
+            - 'confidence' (str): 추론 결과의 신뢰수준 ('high', 'medium', 'low').
     """
     ox, oy = origin
 

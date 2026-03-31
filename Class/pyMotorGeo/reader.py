@@ -1,15 +1,17 @@
 """
 pyMotorGeo.reader
 =================
-DXF 파일 읽기 및 엔티티 추출 함수.
-INSERT/BLOCK 확장, 다양한 엔티티 타입 지원.
+
+ezdxf를 기반으로 DXF 파일을 파싱하여 내부 구조체(`EntityInfo`)로 변환해 주는 모듈입니다.
+단순 기본 엔티티(LINE, ARC, CIRCLE 등) 외에도 INSERT(블록 참조)를 재귀적으로 전개(Explode)하여 
+동일한 평면 엔티티로 평탄화하는 기능을 포함하고 있습니다.
 """
 
 import math
 import numpy as np
 import ezdxf
 from collections import Counter
-from typing import List, Tuple, Dict
+from typing import List, Tuple, Dict, Any
 
 from .core import EntityInfo
 
@@ -36,7 +38,23 @@ def transform_point(x: float, y: float,
                     insert_x: float, insert_y: float,
                     rotation_deg: float = 0.0,
                     scale_x: float = 1.0, scale_y: float = 1.0) -> Tuple[float, float]:
-    """INSERT 변환 적용: 스케일 → 회전 → 이동."""
+    """블록 참조(INSERT) 시 적용된 공간 변환(스케일, 회전, 평행 이동) 행렬을 점 좌표에 적용합니다.
+
+    스케일 변환이 가장 먼저 적용되고, 지정된 회전 각도로 원점(0,0) 기준 회전을 수행한 후, 
+    최종 위치에 기반해 좌표를 평행 이동합니다.
+
+    Args:
+        x (float): 원본 x 좌표.
+        y (float): 원본 y 좌표.
+        insert_x (float): 블록이 삽입된 기준 x 좌표 (평행 이동량).
+        insert_y (float): 블록이 삽입된 기준 y 좌표 (평행 이동량).
+        rotation_deg (float): 블록에 적용된 회전 각도 (도 단위). 기본값은 0.0.
+        scale_x (float): x축 방향의 스케일 팩터. 기본값은 1.0.
+        scale_y (float): y축 방향의 스케일 팩터. 기본값은 1.0.
+
+    Returns:
+        Tuple[float, float]: 공간 변환이 완료된 새로운 (x', y') 좌표.
+    """
     x_scaled = x * scale_x
     y_scaled = y * scale_y
 
@@ -51,8 +69,23 @@ def transform_point(x: float, y: float,
     return (x_rot + insert_x, y_rot + insert_y)
 
 
-def explode_insert(insert_entity, doc, depth: int = 0, max_depth: int = 5) -> List[dict]:
-    """INSERT 엔티티를 전개(explode)하여 기본 엔티티 목록으로 변환."""
+def explode_insert(insert_entity, doc: Any, depth: int = 0, max_depth: int = 5) -> List[Dict[str, Any]]:
+    """DXF 문서 내의 INSERT(블록 참조) 엔티티를 재귀적으로 분석하여 기본 기하 평면 엔티티로 전개합니다.
+
+    중첩된 블록 구조를 처리하기 위해 `max_depth`에 도달할 때까지 재귀 호출을 수행합니다. 전개 과정에서 
+    각 하위 엔티티의 기하(포인트, 중점 등)에는 블록의 Scale, Rotation, Translation 변환이 누적 적용됩니다.
+
+    Args:
+        insert_entity (ezdxf.entities.Insert): 전개할 대상 INSERT 엔티티 객체.
+        doc (ezdxf.document.Drawing): 원본 DXF 블록과 데이터를 들고 있는 문서 객체.
+        depth (int): 현재 재귀 계층의 깊이. 무한 루프 방지를 위해 사용됨. 기본값은 0.
+        max_depth (int): 최대 허용 재귀 깊이. 이 값을 넘어가면 빈 리스트를 반환함. 기본값은 5.
+
+    Returns:
+        List[Dict[str, Any]]: 블록에서 풀려나온 평탄화(flattened)된 엔티티 속성 딕셔너리 리스트. 
+                              내부에 `type`, `points`, `radius`, `center`, `start_angle`, `end_angle`, 
+                              `is_closed`, `layer`, `source_block` 등의 키를 가집니다.
+    """
     if depth > max_depth:
         return []
 
@@ -192,19 +225,25 @@ def read_entity_list(dxf_path: str,
                      skip_text: bool = True,
                      expand_inserts: bool = True,
                      verbose: bool = True) -> Tuple[List[EntityInfo], 'ezdxf.document.Drawing']:
-    """
-    DXF 파일의 modelspace 엔티티를 읽어 EntityInfo 리스트로 반환합니다.
+    """DXF 파일을 파싱하여 내부 구조망인 `EntityInfo` 리스트로 반환합니다.
 
-    Parameters
-    ----------
-    dxf_path : str
-        DXF 파일 경로
-    skip_text : bool
-        TEXT, MTEXT 등 주석 엔티티 제외 (기본값 True)
-    expand_inserts : bool
-        INSERT(BLOCK 참조) 전개 (기본값 True)
-    verbose : bool
-        로딩 정보 출력 (기본값 True)
+    `ezdxf`를 사용하여 DXF의 modelspace 엔티티를 순회하며 지정된 타입(LINE, ARC, CIRCLE 등)의 좌표와
+    기하학적 속성들을 추출합니다. 불필요한 주석 엔티티는 건너뛰며, BLOCK과 같은 복합 요소는 
+    기본 평면 기하로 전개할 수 있습니다.
+
+    Args:
+        dxf_path (str): 읽어들일 DXF 파일의 절대 또는 상대 경로.
+        skip_text (bool, optional): TEXT, MTEXT, DIMENSION 등 텍스트 주석 보조 객체들의 
+                                    무시 여부. 기본값은 True.
+        expand_inserts (bool, optional): INSERT(블록 참조) 객체가 나타났을 때 전개(flattening)하여 
+                                         기본 기하들로 풀어버릴지 여부. 기본값은 True.
+        verbose (bool, optional): 로딩 과정의 통계치(예: 남겨진/무시된 요소 개수)를 콘솔(stdout)에 
+                                  출력할지 여부. 기본값은 True.
+
+    Returns:
+        Tuple[List[EntityInfo], ezdxf.document.Drawing]: 
+            - 파싱된 추상화된 원본 지오메트리 데이터를 담은 `EntityInfo` 객체들의 리스트.
+            - 로드된 `ezdxf.document.Drawing` 원본 파싱 문서 객체.
     """
     doc = ezdxf.readfile(dxf_path)
     msp = doc.modelspace()

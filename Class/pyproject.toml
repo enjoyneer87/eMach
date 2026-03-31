@@ -1,0 +1,41 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pyMotorGeo"
+version = "1.5.1"
+description = "DXF Motor Geometry Analysis — 모터 DXF 기하구조 자동 분석 및 영역 식별"
+authors = [{ name = "EMLab" }]
+license = { text = "MIT" }
+readme = "README.md"
+requires-python = ">=3.9"
+
+dependencies = [
+    "ezdxf>=1.1",
+    "numpy>=1.23",
+    "matplotlib>=3.6",
+]
+
+[project.optional-dependencies]
+jupyter = [
+    "ipywidgets>=8.0",
+    "ipympl>=0.9",
+]
+pyleecan = [
+    "pyleecan",
+]
+dev = [
+    "pytest>=7",
+    "pytest-cov",
+]
+
+[project.scripts]
+pymotorgeo = "pyMotorGeo.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["pyMotorGeo*"]
+
+[tool.setuptools.package-data]
+pyMotorGeo = ["py.typed"]

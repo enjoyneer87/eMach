@@ -22,6 +22,9 @@ Motor-CAD Adaptive Geometry 또는 ANSYS Maxwell으로 내보내는 패키지.
 __version__ = "1.5.1"
 __author__ = "EMLab"
 
+# v1.5.1 파이프라인 (권장)
+from .pipeline import analyze_dxf_v2, export_result_json
+
 # Core data structures
 from .core import (
     EntityInfo,
@@ -108,6 +111,12 @@ from .pyleecan_bridge import (
     extract_dimensions_from_dxf,
     create_pyleecan_machine,
     dims_to_summary,
+    # v1.6 face 기반 변환
+    faces_to_surf_dict,
+    face_to_surfline,
+    build_rotor_from_faces,
+    build_stator_from_faces,
+    build_machine_from_faces,
 )
 
 # ── v1.5 신규: 닫힌 영역(face) 기반 GUI + face 탐지/자동이름 ──
@@ -127,15 +136,32 @@ from .region_closing import (
     close_one_slot,
     detect_closed_faces,
     auto_name_faces,
+    auto_name_faces_v2,
     get_face_summary,
     plot_faces_static,
     REGION_NAMES as FACE_REGION_NAMES,
     REGION_COLORS as FACE_REGION_COLORS,
 )
 
+# ── v1.6: face_detection (BanGeoCode shapely 이식) ──
+from .face_detection import (
+    detect_closed_faces_v2,
+    find_interior_point,
+    entities_to_polygons,
+    check_polygon_feasibility,
+)
+
 __all__ = [
     # Version
     "__version__",
+    # v1.5.1 pipeline
+    "analyze_dxf_v2",
+    "export_result_json",
+    # v1.6 face_detection (BanGeoCode shapely 이식)
+    "detect_closed_faces_v2",
+    "find_interior_point",
+    "entities_to_polygons",
+    "check_polygon_feasibility",
     # Core
     "EntityInfo",
     "StatorRotorSplit",
@@ -199,11 +225,18 @@ __all__ = [
     "extract_dimensions_from_dxf",
     "create_pyleecan_machine",
     "dims_to_summary",
+    # v1.6 face 기반 변환
+    "faces_to_surf_dict",
+    "face_to_surfline",
+    "build_rotor_from_faces",
+    "build_stator_from_faces",
+    "build_machine_from_faces",
     # v1.5: face-based region GUI + face detection
     "FaceRegionGUI",
     "FaceRegionGUILite",
     "detect_closed_faces",
     "auto_name_faces",
+    "auto_name_faces_v2",
     "get_face_summary",
     "plot_faces_static",
     "FACE_REGION_NAMES",

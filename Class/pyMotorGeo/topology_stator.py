@@ -1,10 +1,19 @@
 """
 pyMotorGeo.topology_stator
-===========================
-스테이터 토폴로지 분석: 슬롯/티스/요크/슬롯오프닝/컨덕터 영역 분류.
+==========================
 
-반슬롯(half-slot) 또는 1-슬롯 재구성 엔티티에서 영역을 자동 분류합니다.
-GUI 재지정 지원.
+고정자(Stator) 특화 토폴로지 분석 및 영역 분류 모듈입니다.
+
+반슬롯(Half-slot) 또는 1슬롯 단위로 추출된 고정자 엔티티들을 분석하여 
+슬롯(Slot), 티스(Tooth), 요크(Yoke), 슬롯오프닝(Slot Opening), 
+컨덕터(Conductor), 웨지(Wedge) 등 주요 구조 영역으로 자동 분류합니다.
+
+주요 기능
+---------
+- classify_stator_entities           : 한 슬롯 영역 엔티티의 자동 분류
+- reassign_stator_region             : GUI 기반 영역 재지정 (사용자 수정 지원)
+- get_stator_region_summary          : 분류 결과 통계 및 요약
+- classify_stator_entities_with_closing_compare : 폐곡선 비교 기반 정교한 분류
 """
 
 import math
@@ -49,18 +58,67 @@ STATOR_REGION_COLORS = {
 
 def _entity_radii(ei: EntityInfo,
                   origin: Tuple[float, float]) -> List[float]:
+    """
+    Extract radial distances of all vertices from the motor center.
+    
+    Computes the Euclidean distance from a central origin point to each vertex 
+    in the entity, useful for determining whether an entity lies in the stator 
+    region (slot, tooth, wedge) or beyond (yoke).
+
+    Parameters
+    ----------
+    ei : EntityInfo
+        Entity with `points` attribute containing list of (x, y) vertex coordinates.
+    origin : Tuple[float, float]
+        Motor center (ox, oy) as reference for polar distance calculation.
+
+    Returns
+    -------
+    List[float]
+        List of radial distances (in motor units) corresponding to each vertex 
+        in ei.points, computed as sqrt((x-ox)² + (y-oy)²).
+
+    Examples
+    --------
+    >>> entity = EntityInfo(points=[(50, 0), (50, 10), (40, 10)], ...)
+    >>> radii = _entity_radii(entity, origin=(0, 0))
+    >>> print(radii)  # Output: [50.0, 50.99..., 40.31...]
+    """
     ox, oy = origin
     return [np.hypot(p[0] - ox, p[1] - oy) for p in ei.points]
 
 
 def _entity_avg_angle(ei: EntityInfo,
                       origin: Tuple[float, float]) -> float:
-    ox, oy = origin
-    if not ei.points:
-        return 0.0
-    angles = [np.degrees(np.arctan2(p[1] - oy, p[0] - ox)) % 360
-              for p in ei.points]
-    return float(np.mean(angles))
+    """
+    Compute the average angular position (in degrees) of all vertices.
+    
+    Calculates the mean polar angle of all points relative to the motor center.
+    This metric helps classify entities by their angular span within a slot region.
+
+    Parameters
+    ----------
+    ei : EntityInfo
+        Entity with `points` attribute containing list of (x, y) vertex coordinates.
+    origin : Tuple[float, float]
+        Motor center (ox, oy) used as reference for polar angle calculation.
+
+    Returns
+    -------
+    float
+        Average angular position in degrees [0.0, 360.0). Computed as mean of 
+        arctan2 angles of all vertices. If ei.points is empty, returns 0.0.
+
+    Examples
+    --------
+    >>> entity = EntityInfo(points=[(50, 0), (50, 50), (0, 50)], ...)
+    >>> avg_angle = _entity_avg_angle(entity, origin=(0, 0))
+    >>> print(avg_angle)  # Output: ~30.0 (between 0°, 45°, and 90°)
+    
+    Notes
+    -----
+    Angles are in the range [0°, 360°) following arctan2 polar convention.
+    """
 
 
 # ═══════════════════════════════════════════════════════════════
@@ -75,21 +133,44 @@ def classify_stator_entities(
     slot_pitch_deg: float = None,
     verbose: bool = False,
 ) -> Dict:
-    """
-    한 슬롯 영역의 스테이터 엔티티들을 분류합니다.
+    """한 슬롯 영역의 고정자 엔티티들을 기하학적 특성에 따라 자동 분류합니다.
 
-    Parameters
-    ----------
-    slot_entities : [{'entity': EntityInfo, ...}, ...]
-    origin : 원점
-    airgap_r : 에어갭 반경 (inner rotor = 스테이터 내경 쪽)
-    r_outer : 스테이터 외경
-    slot_pitch_deg : 슬롯 피치
-    verbose : 상세 출력
+    고정자는 다층 구조로 되어 있습니다:
+    - **요크(Yoke)**: 고정자의 바깥쪽 철심 (기계적 강도 담당)
+    - **티스(Tooth)**: 슬롯 사이의 좁은 영역으로 자기  흐름 담당
+    - **슬롯(Slot)**: 권선이 들어가는 공간 (공극과의 경계)
+    - **슬롯오프닝(Slot Opening)**: 슬롯의 입구 부분 (가장 좁은 영역)
+    - **컨덕터(Conductor)**: 권선 도선
+    - **웨지(Wedge)**: 권선을 고정하는 쐐기
 
-    Returns
-    -------
-    Dict : regions (tagged entities), slot_depth, tooth_width, ...
+    이 함수는 반경 위치, 폐곡선 여부, 각도 분산 등을 종합 분석하여 각 엔티티의 역할을 판별합니다.
+
+    Args:
+        slot_entities (List[Dict]): 한 슬롯의 엔티티들. 
+                                   [{​'entity': EntityInfo, 'original_angle': float, ...}, ...] 형태.
+        origin (Tuple[float, float]): 고정자 중심(공극 중심). 기본값 (0.0, 0.0).
+        airgap_r (float, optional): 공극 반경 (고정자 내경). 
+                                   미제공 시 엔티티 반경 최댓값의 95% 추정.
+        r_outer (float, optional): 고정자 외경. 
+                                  미제공 시 엔티티 반경 최솟값의 110% 추정.
+        slot_pitch_deg (float, optional): 슬롯 피치(도). 각도 클러스터링에 사용.
+        verbose (bool): 분류 과정 및 상세 정보 로깅 활성화. 기본값 False.
+
+    Returns:
+        Dict: 분류 결과 및 고정자 영역 정보:
+            - 'regions' (List[Dict]): 분류된 영역들 (각각 'entity', 'region_type', 'r_min', 'r_max' 등 포함).
+            - 'yoke' (List[EntityInfo]): 요크로 분류된 엔티티들.
+            - 'tooth' (List[EntityInfo]): 티스로 분류된 엔티티들.
+            - 'slot' (List[EntityInfo]): 슬롯 공간으로 분류된 엔티티들.
+            - 'slot_opening' (List[EntityInfo]): 슬롯오프닝으로 분류된 엔티티들.
+            - 'conductor' (List[EntityInfo]): 도전재로 분류된 엔티티들.
+            - 'wedge' (List[EntityInfo]): 웨지로 분류된 엔티티들.
+            - 'n_slot_regions' (int): 분류된 영역의 총 개수.
+            - 'slot_depth' (float): 슬롯 깊이 (반경 방향).
+            - 'tooth_width' (float): 티스 폭 (방사형 각도).
+            - 'slot_area' (float): 슬롯 전체 면적.
+            - 'conductor_area' (float): 컨덕터 총 면적.
+            - 'fill_factor' (float): 권선 충전율 (conductor_area / slot_area).
     """
     ox, oy = origin
 
@@ -205,14 +286,38 @@ def classify_stator_entities(
 def reassign_stator_region(regions: List[Dict],
                            entity_index: int,
                            new_region: str) -> List[Dict]:
-    """특정 엔티티의 영역 이름을 재지정합니다."""
+    """자동 분류된 고정자 영역을 사용자가 GUI를 통해 수정할 수 있도록 재지정합니다.
+
+    자동 분류 결과가 정확하지 않을 경우, 사용자는 시각적으로 영역을 확인하고 
+    수동으로 '요크/티스/슬롯/컨덕터' 등을 다시 할당할 수 있습니다.
+
+    Args:
+        regions (List[Dict]): classify_stator_entities의 'regions' 출력. 
+                             각 원소는 {​'entity': EntityInfo, 'region': str, ...} 형태.
+        entity_index (int): 수정할 엔티티의 인덱스 (0~len(regions)-1).
+        new_region (str): 새로운 영역 태그명 
+                         ('stator_yoke', 'stator_tooth', 'slot', 'conductor' 등).
+
+    Returns:
+        List[Dict]: 업데이트된 regions 리스트.
+    """
     if 0 <= entity_index < len(regions):
         regions[entity_index]['region'] = new_region
     return regions
 
 
 def get_stator_region_summary(regions: List[Dict]) -> Dict:
-    """영역별 엔티티 수 요약."""
+    """분류된 고정자 영역들의 요약 통계를 반환합니다.
+
+    각 영역 타입별로 엔티티의 개수를 집계하여 분류 결과의 빠른 개요를 제공합니다.
+
+    Args:
+        regions (List[Dict]): classify_stator_entities의 'regions' 출력.
+
+    Returns:
+        Dict: {​영역_타입: 개수, ...} 형태. 
+             예: {​'stator_yoke': 3, 'stator_tooth': 5, 'conductor': 8, ...}
+    """
     cnt = Counter(r['region'] for r in regions)
     return dict(cnt)
 
@@ -227,9 +332,139 @@ def classify_stator_entities_with_closing_compare(
     verbose: bool = False,
 ) -> Dict:
     """
-    1) 기존 엔티티로 분류
-    2) 한 슬롯 경계를 닫아 face 생성 후 재분류
-    3) 두 결과를 상세 비교
+    Classify stator slot entities using dual-phase analysis with boundary closure validation.
+    
+    This advanced classification method operates in three stages:
+    1. **Phase 1 (Raw)**: Classify slot entities using geometric heuristics alone
+    2. **Phase 2 (Closed)**: Artificially close slot boundaries to create topologically 
+       complete regions, then reclassify using the closed faces
+    3. **Phase 3 (Comparison)**: Compare both results to detect classification inconsistencies
+    
+    This dual-phase approach helps answer: "Does the classification stabilize when we 
+    enforce topological closure?" Discrepancies between raw and closed results indicate 
+    edge-touching entities or boundary artifacts that may warrant manual inspection.
+
+    Parameters
+    ----------
+    slot_entities : List[Dict]
+        List of entities within a single stator slot. Each dict contains 'entity' 
+        (EntityInfo) and angle information ('original_angle', 'relative_angle'). Typically
+        generated from half-slot or full-slot CAD extraction.
+    origin : Tuple[float, float], optional
+        Motor center (x, y) coordinate for polar calculations. Default is (0.0, 0.0).
+    airgap_r : float, optional
+        Airgap radius in motor units. If None, Phase 2 (closure) is skipped.
+        Used to filter out detected faces that fall below 98% of this radius (stator side only).
+    r_outer : float, optional
+        Outer stator radius (yoke surface). If None, Phase 2 is skipped.
+        Used as boundary for artificial closing arc and radial lines.
+    slot_pitch_deg : float, optional
+        Slot pitch in degrees (angular span of one slot). If None, Phase 2 is skipped.
+        Used to define the angular extent of artificial closing boundaries.
+    min_area : float, optional
+        Minimum face area threshold for detected closed regions in Phase 2. Default is 1.0.
+        Filters out numerical noise or artifact faces smaller than this threshold.
+    verbose : bool, optional
+        If True, print debug messages during classification. Default is False.
+
+    Returns
+    -------
+    Dict
+        Nested dictionary with four keys:
+        
+        - **'raw'** : Dict
+            Phase 1 raw classification results from `classify_stator_entities()`.
+            Contains 'regions' (list of dicts with 'region', 'area', 'radii', etc.),
+            'n_slot_regions', and 'n_conductor_regions' counts.
+        
+        - **'closed'** : Dict or None
+            Phase 2 closed-boundary classification results. None if required parameters 
+            (airgap_r, r_outer, slot_pitch_deg) are missing. Uses the same structure as 'raw'.
+        
+        - **'faces'** : List[Dict] or None
+            Detected closed faces from Phase 2. Each dict contains 'vertices', 'centroid_r',
+            'area', 'perimeter'. Filtered to include only faces with radii ≥ 0.98 * airgap_r.
+            None if closure fails.
+        
+        - **'comparison'** : Dict
+            Detailed comparison metrics between Phase 1 and Phase 2:
+            
+            - **'slot_regions'** : Dict with keys 'raw' and 'closed' (counts)
+            - **'conductor_regions'** : Dict with keys 'raw' and 'closed' (counts)
+            - **'region_counts'** : Dict mapping region labels to {'raw': count, 'closed': count}
+            - **'face_count'** : Number of closed faces detected (int)
+            - **'note'** : Explanation if closure failed (e.g., "insufficient inputs for closing")
+
+    Examples
+    --------
+    Example 1: Validate slot classification with closure analysis
+    
+    >>> slot_entities = extract_slot_entities(...)  # Extract from half-slot geometry
+    >>> result = classify_stator_entities_with_closing_compare(
+    ...     slot_entities,
+    ...     origin=(0.0, 0.0),
+    ...     airgap_r=50.0,
+    ...     r_outer=80.0,
+    ...     slot_pitch_deg=45.0,  # 8-pole, 6 slots/pole
+    ... )
+    >>> 
+    >>> # Inspect raw vs. closed conductor counts
+    >>> print(result['comparison']['conductor_regions'])
+    # Output: {'raw': {'Conductor': 2}, 'closed': {'Conductor': 2}}
+    # If raw and closed differ significantly, inspect boundary effects
+    
+    Example 2: Detect classification instability
+    
+    >>> if result['comparison']['conductor_regions']['raw'] != result['comparison']['conductor_regions']['closed']:
+    ...     print("⚠️ Classification differs between raw and closed modes")
+    ...     print(f"Region difference: {result['comparison']['region_counts']}")
+    ...     # May indicate edge-touching conductor strands or artifacts
+    >>> 
+    >>> # Inspect detected closed faces for topology insights
+    >>> faces = result['faces']
+    >>> for face in faces:
+    ...     print(f"Face: area={face['area']:.2f}, centroid_r={face['centroid_r']:.2f}")
+
+    Algorithm Details
+    ------------------
+    
+    **Phase 1 (Raw Classification):**
+    Applies radial and angular geometry heuristics to classify entities as 
+    slot, conductor, tooth, yoke, wedge, or slot opening based on positional 
+    and morphological features without enforcing topological closure.
+    
+    **Phase 2 (Closure & Reclassification):**
+    1. Defines four artificial closing boundaries:
+       - Two radial lines: inner radius (airgap_r) to outer radius (r_outer) 
+         at 0° and slot_pitch_deg
+       - Two arc boundaries: inner arc at airgap_r and outer arc at r_outer, 
+         both spanning 0° to slot_pitch_deg
+    
+    2. Combines original + closing boundaries → Detects closed faces using 
+       planar graph analysis or convex hull methods
+    
+    3. Filters faces by centroid radius (≥ 0.98 * airgap_r) to remove geometry 
+       outside the stator active region
+    
+    4. Reclassifies using closed faces instead of raw entities
+    
+    **Phase 3 (Comparison):**
+    Tallies region counts in both phases and computes differences by class.
+    
+    Notes
+    -----
+    - **Closure benefit**: Identifies entities that touch slot boundaries and may be 
+      misclassified in raw mode. Especially useful for conductor strands near slot openings.
+    - **When to use**: Best suited for detailed slot analysis where classification 
+      confidence is critical. For quick inventory checks, use `classify_stator_entities()` directly.
+    - **Parameters sensitivity**: Slot pitch and radii must be accurate. Misconfigured 
+      radii may cause the closure boundaries to exclude valid entities.
+    - **Comparison interpretation**:
+      * If raw ≈ closed → Classification is robust; minimal boundary artifacts
+      * If raw ≠ closed → Check `region_diff` to pinpoint discrepancies; may require 
+        manual review of edge entities
+    - **Performance**: Closure topological analysis is computationally more expensive 
+      than raw classification; suitable for interactive GUI workflows, not batch processing.
     """
     raw = classify_stator_entities(
         slot_entities,

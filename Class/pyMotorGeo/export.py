@@ -1,7 +1,27 @@
 """
 pyMotorGeo.export
 =================
-DXF 내보내기 함수: 일반 DXF 및 ANSYS Maxwell용 DXF.
+
+Export motor geometry analysis results to CAD formats (DXF).
+
+This module provides utilities to save analyzed motor geometry and classified regions 
+back to DXF files, with support for standard DXF and simulation tool-specific formats 
+(e.g., ANSYS Maxwell). Region colors and layers are preserved for visualization in CAD editors.
+
+**Export Modes**:
+
+- **Coverage**: Control which parts of the motor are exported
+  - 'period': Single periodic sector (default)
+  - 'full': Complete motor with all poles/slots
+  
+- **Filtering**: Include/exclude regions by type or name
+  - part_filter: Export stator or rotor only
+  - name_filter: Include specific region types (magnet, slot, conductor, etc.)
+
+**Target Tools**:
+- ANSYS Maxwell FEA: Maxwell-compatible DXF with special layer naming
+- Standard CAD: AutoCAD, LibreCAD, etc. via standard DXF format
+- Manufacturing: Layer-based export for CNC toolpath generation
 """
 
 import math

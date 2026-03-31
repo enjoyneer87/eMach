@@ -1,0 +1,69 @@
+@startuml pyMotorGeo_DataTransform
+!theme plain
+title pyMotorGeo Data Transformation Pipeline
+
+object DXF_File
+object EntityList
+object EntityInfo
+object StatorRotorSplit
+object ClosedFaces
+object FaceList
+object FaceWithRegion
+object MotorGeometry
+
+DXF_File : "motor.dxf"
+DXF_File : - polylines
+DXF_File : - arcs
+DXF_File : - regions
+
+EntityList : list[EntityInfo]
+EntityList : size: 100-1000
+EntityList : - geometry
+EntityList : - layer info
+EntityList : - connectivity
+
+EntityInfo : etype: LINE|ARC|LWPOLYLINE
+EntityInfo : layer: str
+EntityInfo : points: list[(x,y)]
+EntityInfo : is_closed: bool
+EntityInfo : properties: dict
+
+StatorRotorSplit : stator: list[EntityInfo]
+StatorRotorSplit : rotor: list[EntityInfo]
+StatorRotorSplit : shaft: list[EntityInfo]
+StatorRotorSplit : airgap_inner_r: float
+StatorRotorSplit : airgap_outer_r: float
+
+ClosedFaces : list[Face]
+ClosedFaces : vertices: list[polygon]
+ClosedFaces : properties: centroid, area, r_min, r_max
+
+FaceList : [{Face[0], Face[1], ...}]
+FaceList : Face[0]: vertices=[(x,y)...]
+FaceList : Face[1]: area=150.5
+FaceList : Face[n]: name='unknown'
+
+FaceWithRegion : [{FaceFinal}]
+FaceWithRegion : name='magnet' | 'slot' | 'tooth'
+FaceWithRegion : centroid_r, confidence
+FaceWithRegion : color, tags
+
+MotorGeometry : summary
+MotorGeometry : n_poles: int
+MotorGeometry : n_slots: int
+MotorGeometry : rotor_topo: str
+MotorGeometry : stator_topo: str
+
+' Transformations
+DXF_File --> EntityList : reader.read_entity_list()
+EntityList --> StatorRotorSplit : analysis_airgap.split_stator_rotor()
+StatorRotorSplit --> StatorRotorSplit : analysis_rotor.count_poles()\nanalysis_stator.count_slots()
+
+StatorRotorSplit --> ClosedFaces : region_closing.close_one_pole()\nregion_closing.detect_closed_faces()
+ClosedFaces --> FaceList : face_detection.find_interior_point()\nface_detection.check_polygon_feasibility()
+FaceList --> FaceWithRegion : region_closing.auto_name_faces()\ntopology_rotor.classify_rotor_entities()\ntopology_stator.classify_stator_entities()
+
+FaceWithRegion --> MotorGeometry : region_closing.get_face_summary()
+FaceWithRegion --> DXF_File : export.export_regions_to_dxf()
+
+@enduml

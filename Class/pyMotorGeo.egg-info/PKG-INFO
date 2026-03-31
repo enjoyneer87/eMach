@@ -1,0 +1,19 @@
+Metadata-Version: 2.4
+Name: pyMotorGeo
+Version: 1.5.1
+Summary: DXF Motor Geometry Analysis — 모터 DXF 기하구조 자동 분석 및 영역 식별
+Author: EMLab
+License: MIT
+Requires-Python: >=3.9
+Description-Content-Type: text/markdown
+Requires-Dist: ezdxf>=1.1
+Requires-Dist: numpy>=1.23
+Requires-Dist: matplotlib>=3.6
+Provides-Extra: jupyter
+Requires-Dist: ipywidgets>=8.0; extra == "jupyter"
+Requires-Dist: ipympl>=0.9; extra == "jupyter"
+Provides-Extra: pyleecan
+Requires-Dist: pyleecan; extra == "pyleecan"
+Provides-Extra: dev
+Requires-Dist: pytest>=7; extra == "dev"
+Requires-Dist: pytest-cov; extra == "dev"

@@ -1,7 +1,37 @@
 """
 pyMotorGeo.plotting
 ===================
-시각화 함수: 주기 플롯, 재구성 플롯, 닫힌 영역 플롯, 네이밍된 영역 플롯.
+
+Matplotlib-based visualization utilities for motor geometry analysis.
+
+Provides functions to display motor geometry at various stages of analysis:
+
+- **Periodic Sector Plot**: Visualize one periodic sector with boundary lines
+- **Reconstructed Motor Plot**: Show expanded motor with all poles/slots after reconstruction
+- **Closed Faces Plot**: Display topologically detected regions with colors and labels
+- **Region Annotation**: Overlay region names and properties (area, centroid, radii)
+- **Comparative Plots**: Side-by-side before/after geometry transformations
+
+**Typical Usage**:
+
+1. Load motor geometry from DXF
+2. Extract and analyze periodic sector
+3. Use `plot_period()` to visualize extraction results
+4. After region detection, use `plot_named_faces()` for classified region visualization
+5. For publications, use `plot_reconstructed_motor()` to show final motor structure
+
+**Color Coding**:
+
+Regions are colored according to `REGION_COLORS` dictionary:
+- Stator yoke, tooth, slot, conductor, wedge (stator regions)
+- Rotor magnet, air barrier, rotor core, shaft (rotor regions)
+- Custom colors can be provided for specialized visualizations
+
+**Output Formats**:
+
+- Interactive matplotlib plots (Jupyter, VS Code)
+- PNG/PDF export for reports
+- matplotlib figure objects for further customization
 """
 
 import math

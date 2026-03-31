@@ -1,7 +1,10 @@
 """
 pyMotorGeo.half_unit
 ===================
-Half-unit (half-pole / half-slot) extraction and reconstruction utilities.
+
+모터 단면 데이터의 최소 반복 단위(Minimum Repeating Unit)인 Half-Pole 및 Half-Slot을 
+추출하고, 이를 거울 반사(Mirroring) 및 원형 배열(Circular Array)을 통해 
+전체 모델이나 주기 모델로 복원하는 기능들을 제공합니다.
 """
 
 import math
@@ -14,17 +17,25 @@ from .core import EntityInfo
 def detect_circular_array_pattern(entities: List[EntityInfo],
                                    origin: Tuple[float, float] = (0.0, 0.0),
                                    min_repeats: int = 4) -> Dict:
-    """
-    엔티티들에서 Circular Array 패턴을 감지합니다.
+    """엔티티 집합 내에 존재하는 원형 배열(Circular Array) 패턴을 감지하여 극수를 추정합니다.
 
-    Returns
-    -------
-    dict with:
-        - 'has_pattern': bool - 패턴 감지 여부
-        - 'n_poles': int - 추정 극수
-        - 'pole_pitch_deg': float - 극 피치 (도)
-        - 'entity_groups': dict - 시그니처별 엔티티 그룹
-        - 'angular_positions': dict - 그룹별 각도 위치
+    각 엔티티의 중심 이격 반경과 타입을 기준으로 '시그니처'를 생성하여 그룹화합니다. 
+    동일한 시그니처를 가진 그룹들이 원형 배열을 이룰 때, 각도 사이의 간격(Pitch)을 계산합니다.
+    중앙값을 통해 모터의 극수(Pole)나 슬롯수를 1차적으로 추정하는 휴리스틱 기반 탐지기입니다.
+
+    Args:
+        entities (List[EntityInfo]): 패턴을 분석할 대상 엔티티 리스트.
+        origin (Tuple[float, float]): 원형 배열의 기준 중심점. 기본값은 (0.0, 0.0).
+        min_repeats (int): 패턴으로 간주하기 위한 최소 반복 등장 횟수. 기본값은 4.
+
+    Returns:
+        Dict: 다음 정보를 포함하는 딕셔너리:
+            - 'has_pattern' (bool): 원형 배열 패턴의 감지 여부
+            - 'n_poles' (int): 추정된 극수 (또는 슬롯수)
+            - 'pole_pitch_deg' (float): 추정된 단일 주기(극 피치) 각도 (도)
+            - 'entity_groups' (dict): 패턴에 부합하는 시그니처별 엔티티들의 리스트
+            - 'angular_positions' (dict): 시그니처별 발견된 위상 각도 리스트
+            - 'all_groups' (dict): 필터링 전의 모든 시그니처별 엔티티 및 각도 정보
     """
     ox, oy = origin
 
@@ -84,13 +95,26 @@ def _extract_half_entities(entities: List[EntityInfo],
                            reference_angle: float = 0.0,
                            normalize_to_zero: bool = True,
                            angle_tol: float = 0.05) -> Dict:
-    """
-    엔티티에서 [reference_angle, reference_angle + full_pitch/2] 범위를 추출.
-    반극/반슬롯 공통 로직.
+    """반극(Half-Pole) 및 반슬롯(Half-Slot)을 추출하는 공통 코어 함수입니다.
 
-    Returns
-    -------
-    dict : half_entities, normalized_entities, concentric_arcs, half_pitch_deg
+    지정된 `reference_angle`을 기준으로 전체 피치의 절반(half_pitch)에 해당하는 각도 
+    섹터 내부의 엔티티들을 모두 수집합니다. 
+    로터 및 스테이터의 형상이 가진 대칭성(Mirror Symmetry)을 이용하여 기하 중복을 제거합니다.
+
+    Args:
+        entities (List[EntityInfo]): 필터링 대상이 될 원본 엔티티 리스트.
+        origin (Tuple[float, float]): 모터 극좌표계의 원점.
+        full_pitch_deg (float): 로터의 1극 피치 / 스테이터의 1슬롯 전체 피치 각도.
+        reference_angle (float): 엔티티를 수집할 부채꼴의 시작 기준 각도. 기본값은 0.0.
+        normalize_to_zero (bool): 추출된 엔티티들을 물리적 x축(0도)을 기준으로 회전하여 반환할지 여부.
+        angle_tol (float): 경계선상에 걸친 요소 포함을 여부를 판단할 논리적 마진 각도.
+
+    Returns:
+        Dict: 분석된 엔티티 및 속성이 담긴 딕셔너리
+            - 'half_entities' (List[Dict]): 추출된 원본 엔티티와 상대각도 기록 객체들.
+            - 'normalized_entities' (List[EntityInfo]): x축에 정렬된 새로운 엔티티 리스트 (옵션 적용시).
+            - 'concentric_arcs' (List[EntityInfo]): 각도 판별에서 예외 처리된 동심원 및 에어갭 궤적들.
+            - 'half_pitch_deg' (float): 산출된 반극/반슬롯의 섹터 각도 사이즈.
     """
     ox, oy = origin
     half_pitch = full_pitch_deg / 2.0
@@ -161,6 +185,9 @@ def _extract_half_entities(entities: List[EntityInfo],
 
 
 def _angle_in_sector(angle_deg: float, start_deg: float, end_deg: float) -> bool:
+    """단일 점의 각도가 호(Sector)의 시작과 끝 각도 내에 존재하는지(포함 여부)를 검증합니다.
+    360도를 넘어가는 구간이 겹치는 경우(wrap-around)를 처리합니다.
+    """
     a = angle_deg % 360
     s = start_deg % 360
     e = end_deg % 360
@@ -170,6 +197,7 @@ def _angle_in_sector(angle_deg: float, start_deg: float, end_deg: float) -> bool
 
 
 def _angle_in_arc(angle_deg: float, start_deg: float, end_deg: float) -> bool:
+    """호(Arc)의 각도 구간 안에 주어진 각도가 위치하는지 판별하는 래퍼 함수입니다."""
     a = angle_deg % 360
     s = start_deg % 360
     e = end_deg % 360
@@ -180,6 +208,9 @@ def _angle_in_arc(angle_deg: float, start_deg: float, end_deg: float) -> bool:
 
 def _arc_overlaps_sector(ei: EntityInfo, start_deg: float, end_deg: float,
                          origin: Tuple[float, float]) -> bool:
+    """기하 엔티티(주로 호 또는 선분) 중 일부가 주어진 각도 섹터 안에 포함되어 교차하는지 검사합니다.
+    시작점, 끝점 또는 중간점이 하나라도 섹터의 내부 궤적에 걸치면 True를 반환합니다.
+    """
     if ei.points:
         ox, oy = origin
         for px, py in ei.points:
@@ -203,8 +234,21 @@ def _clip_concentric_arc(ei: EntityInfo,
                           sect_start: float,
                           sect_end: float,
                           origin: Tuple[float, float]) -> Optional[EntityInfo]:
-    """동심 ARC를 섹터 범위로 클리핑하여 새 EntityInfo를 반환.
-    완전히 범위 밖이면 None."""
+    """동심원(CIRCLE) 또는 호(ARC)를 모터 해석의 1극/1슬롯 각도 구간만큼으로 클리핑(수정)하여 
+    시작점과 끝점을 재생성한 새로운 EntityInfo 사본을 반환합니다.
+
+    단일 모터 주기 범위를 벗어나는 외부 객체라면 None을 반환합니다. 이 함수는 연속된 에어갭의 
+    동심원이 다른 형상과 겹치지 않게 해석 주기 단위로 쪼개기 위해 사용됩니다.
+
+    Args:
+        ei (EntityInfo): 자를 대상인 원/호 객체.
+        sect_start (float): 남길 섹터의 시작 각도.
+        sect_end (float): 남길 섹터의 종료 각도.
+        origin (Tuple[float, float]): 원점 좌표.
+
+    Returns:
+        Optional[EntityInfo]: 클리핑 처리된 새로운 ARC 객체. 허용 범위를 완전히 벗어나면 None.
+    """
     if ei.etype == 'CIRCLE':
         cx, cy = ei.center
         r = ei.radius
@@ -260,8 +304,19 @@ def _clip_concentric_arc(ei: EntityInfo,
 
 
 def _make_radial_line(r0: float, r1: float, angle_deg: float,
-                       origin: Tuple[float, float], layer: str) -> EntityInfo:
-    ox, oy = origin
+                       origin: Tuple[float, float], layer: str) -> EntityInfo:    """원형 구조물(주기 모델)의 열린 양측 단면 경계를 닫기 위해 원점으로부터
+    특정 방위각을 향해 일직선으로 뻗어나가는 인위적인 선분(Boundary Line)을 생성합니다.
+
+    Args:
+        r0 (float): 선분이 시작하는 내부 원 반경.
+        r1 (float): 선분이 끝나는 외부 원 반경.
+        angle_deg (float): 선의 도달 궤적이 되는 방위각.
+        origin (Tuple[float, float]): 극좌표 기준이 되는 중심점의 좌표.
+        layer (str): 가상으로 생성된 선분이 소속될 이름/레이어 속성.
+
+    Returns:
+        EntityInfo: 경계선 역할을 수행하기 위해 인위로 생성된 `LINE` 엔티티 객체.
+    """    ox, oy = origin
     rad = math.radians(angle_deg)
     x0 = ox + r0 * math.cos(rad)
     y0 = oy + r0 * math.sin(rad)
@@ -281,6 +336,19 @@ def _make_concentric_radials(concentric_arcs: List[EntityInfo],
                              sect_end: float,
                              origin: Tuple[float, float],
                              layer: str = '_HALF_RADIAL_') -> List[EntityInfo]:
+    """동심원으로 식별된 호들의 반경 간격 사이를 직교하며 메워주는 시각적/물리적 분리 경계선들을 생성합니다.
+    주로 스테이터와 로터 혹은 다양한 컴포넌트 간의 레이어를 닫힌 영역(Planar Graph)으로 완성하기 위해 사용합니다.
+
+    Args:
+        concentric_arcs (List[EntityInfo]): 동심원 기하 특성을 가진 에어갭/샤프트 호의 리스트.
+        sect_start (float): 동심원 부채꼴 조각이 시작되는 각도.
+        sect_end (float): 동심원 부채꼴 조각이 닫히는 끝 각도.
+        origin (Tuple[float, float]): 원 중심 좌표.
+        layer (str): 가상 경계들이 편입될 임시 레이어 식별자. 기본값은 '_HALF_RADIAL_'.
+
+    Returns:
+        List[EntityInfo]: 생성된 일련의 `LINE` 엔티티들. 반경 그룹이 2개 미만이면 즉 열린 영역이 불가능하면 빈 리스트 반환.
+    """
     radii = sorted({float(ei.radius) for ei in concentric_arcs if ei.radius is not None})
     if len(radii) < 2:
         return []
@@ -299,21 +367,20 @@ def extract_half_pole_entities(entities: List[EntityInfo],
                                pole_pitch_deg: float = None,
                                reference_angle: float = None,
                                normalize_to_zero: bool = True) -> Dict:
-    """
-    반극(Half-Pole) 엔티티 추출 — 로터 최소 반복 단위.
+    """회전자(Rotor)의 최소 반복 단위인 **반극(Half-Pole)** 기계를 구성하는 엔티티들을 필터링 추출합니다.
+    
+    1극 내에서도 자석이나 공극 배리어는 좌우 대칭성(Mirror Symmetry)을 가지므로 전체 모델을 해석하기 위한 
+    가장 작은 조각 단위로 사용할 수 있도록 `pole_pitch_deg / 2` 각도로 절반을 슬라이싱합니다.
 
-    Returns
-    -------
-    dict:
-        - half_entities
-        - normalized_entities
-        - concentric_arcs
-        - concentric_radials
-        - half_pitch_deg
-        - pole_pitch_deg
-        - n_poles
-        - mirror_axis_deg
-        - reference_angle
+    Args:
+        entities (List[EntityInfo]): 로터로 분류된 전체 엔티티 리스트.
+        origin (Tuple[float, float]): 기준이 되는 로터 회전 중심.
+        pole_pitch_deg (float): 1극(Pole) 기계 각도. 미제공시 내부적으로 패턴 탐지를 통해 자동 추정됨.
+        reference_angle (float): 반극 슬라이스 시작 축. 미제공시 자동 추정됨.
+        normalize_to_zero (bool): 추출된 원본 조각들을 물리적 0도 좌표축으로 밀착(회전)시킬지 여부. 기본값은 True.
+
+    Returns:
+        Dict: 분석 및 변환된 반극 컴포넌트들을 담은 딕셔너리 리스트 등
     """
     if pole_pitch_deg is None:
         pattern = detect_circular_array_pattern(entities, origin)
@@ -340,11 +407,41 @@ def extract_half_pole_entities(entities: List[EntityInfo],
     ]
 
     processed_arcs = []
+    partial_arcs = []
     for ei in result['concentric_arcs']:
         clipped = _clip_concentric_arc(ei, sector_start, sector_end, origin)
         if clipped is not None:
-            processed_arcs.append(clipped)
+            span = (clipped.end_angle - clipped.start_angle) % 360 if clipped.end_angle is not None else 0
+            if abs(span - half_pitch) < 1e-2 or ei.etype == 'CIRCLE':
+                processed_arcs.append(clipped)
+            else:
+                partial_arcs.append(clipped)
     result['concentric_arcs'] = processed_arcs
+
+    if partial_arcs:
+        rot_rad = math.radians(-reference_angle) if normalize_to_zero else 0.0
+        cos_r, sin_r = math.cos(rot_rad), math.sin(rot_rad)
+        ox, oy = origin
+        for arc in partial_arcs:
+            new_points = []
+            for px, py in arc.points:
+                dx, dy = px - ox, py - oy
+                new_points.append((ox + dx * cos_r - dy * sin_r,
+                                   oy + dx * sin_r + dy * cos_r))
+            new_center = None
+            if arc.center:
+                dx, dy = arc.center[0] - ox, arc.center[1] - oy
+                new_center = (ox + dx * cos_r - dy * sin_r,
+                              oy + dx * sin_r + dy * cos_r)
+            new_sa = (arc.start_angle - reference_angle) if (arc.start_angle is not None and normalize_to_zero) else arc.start_angle
+            new_ea = (arc.end_angle - reference_angle) if (arc.end_angle is not None and normalize_to_zero) else arc.end_angle
+            new_arc = EntityInfo(
+                etype=arc.etype, layer=arc.layer, points=new_points,
+                radius=arc.radius, center=new_center,
+                start_angle=new_sa, end_angle=new_ea,
+                is_closed=arc.is_closed, raw=None
+            )
+            result['normalized_entities'].append(new_arc)
 
     result['concentric_radials'] = _make_concentric_radials(
         result['concentric_arcs'], sector_start, sector_end, origin
@@ -365,14 +462,27 @@ def extract_half_slot_entities(entities: List[EntityInfo],
                                n_slots: int = None,
                                reference_angle: float = None,
                                normalize_to_zero: bool = True) -> Dict:
-    """
-    반슬롯(Half-Slot) 엔티티 추출 — 스테이터 최소 반복 단위.
-    """
-    from .analysis import count_slots as _count_slots
+    """고정자(Stator)의 최소 반복 단위인 **반슬롯(Half-Slot)** 기하 정보를 추출합니다.
+    
+    내부적으로 `_extract_half_entities`를 사용하여 `reference_angle`부터 `slot_pitch_deg / 2` 
+    영역 내에 존재하는 모든 선분과 호를 분리해 수집하여 하나의 단위 섹터를 형성합니다. 이는 고정자 
+    요소의 주기성과 거울 대칭성(Mirror Symmetry)을 나타내는 가장 기초적인 공간 데이터입니다.
 
-    if slot_pitch_deg is None:
-        if n_slots is not None:
-            slot_pitch_deg = 360.0 / n_slots
+    Args:
+        entities (List[EntityInfo]): 분리해 낸 고정자 전체 요소 리스트.
+        origin (Tuple[float, float]): 원형 구조의 회전 중심.
+        slot_pitch_deg (float): 단일 슬롯이 차지하는 피치 각도 (360 / n_slots).
+        n_slots (int): 고정자의 전체 슬롯 개수.
+        reference_angle (float): 반슬롯 절단의 기준 축 각도. 기본값은 0.0.
+        normalize_to_zero (bool): 단면을 x축 양의 방향(0도)부터 시작하도록 회전 정렬할지 여부. 기본값은 True.
+
+    Returns:
+        Dict: 반슬롯 구성 요소들과 대칭 정보가 기록된 출력 딕셔너리:
+            - 'half_pitch_deg': 추출된 반슬롯 각도(절반 피치)
+            - 'mirror_axis_deg': 대칭면(Mirroring) 생성을 위한 기준선 각도
+            - 'normalized_entities': 정규화 처리가 된 도면 요소 리스트
+            - 'concentric_arcs': 원점에 대한 동심원(또는 에어갭 경계)으로 잘라낸 특수 객체 리스트
+            - 'n_slots': 계산에 사용된 슬롯 수
         else:
             _ns = _count_slots(entities, origin)
             if _ns and _ns > 0:
@@ -393,39 +503,45 @@ def extract_half_slot_entities(entities: List[EntityInfo],
         entities, origin, slot_pitch_deg, reference_angle, normalize_to_zero
     )
 
-    stator_outer_r = None
-    circle_radii = [ei.radius for ei in result['concentric_arcs'] if ei.etype == 'CIRCLE' and ei.radius]
-    if circle_radii:
-        stator_outer_r = max(circle_radii)
+    sector_start = reference_angle
+    sector_end = reference_angle + half_pitch
 
     processed_arcs = []
+    partial_arcs = []
     for ei in result['concentric_arcs']:
-        if ei.etype == 'ARC':
-            if stator_outer_r and abs(ei.radius - stator_outer_r) < 1e-2:
-                new_arc = EntityInfo(
-                    etype='ARC',
-                    layer=ei.layer,
-                    points=[],
-                    radius=ei.radius,
-                    center=ei.center,
-                    start_angle=reference_angle,
-                    end_angle=reference_angle + half_pitch,
-                    raw=None,
-                )
-                cx, cy = new_arc.center
-                r = new_arc.radius
-                n_pts = max(3, int(half_pitch / 2))
-                pts = []
-                for j in range(n_pts + 1):
-                    a = math.radians(reference_angle + half_pitch * j / n_pts)
-                    pts.append((cx + r * math.cos(a), cy + r * math.sin(a)))
-                new_arc.points = pts
-                processed_arcs.append(new_arc)
+        clipped = _clip_concentric_arc(ei, sector_start, sector_end, origin)
+        if clipped is not None:
+            span = (clipped.end_angle - clipped.start_angle) % 360 if clipped.end_angle is not None else 0
+            if abs(span - half_pitch) < 1e-2 or ei.etype == 'CIRCLE':
+                processed_arcs.append(clipped)
             else:
-                processed_arcs.append(ei)
-        else:
-            processed_arcs.append(ei)
+                partial_arcs.append(clipped)
     result['concentric_arcs'] = processed_arcs
+
+    if partial_arcs:
+        rot_rad = math.radians(-reference_angle) if normalize_to_zero else 0.0
+        cos_r, sin_r = math.cos(rot_rad), math.sin(rot_rad)
+        ox, oy = origin
+        for arc in partial_arcs:
+            new_points = []
+            for px, py in arc.points:
+                dx, dy = px - ox, py - oy
+                new_points.append((ox + dx * cos_r - dy * sin_r,
+                                   oy + dx * sin_r + dy * cos_r))
+            new_center = None
+            if arc.center:
+                dx, dy = arc.center[0] - ox, arc.center[1] - oy
+                new_center = (ox + dx * cos_r - dy * sin_r,
+                              oy + dx * sin_r + dy * cos_r)
+            new_sa = (arc.start_angle - reference_angle) if (arc.start_angle is not None and normalize_to_zero) else arc.start_angle
+            new_ea = (arc.end_angle - reference_angle) if (arc.end_angle is not None and normalize_to_zero) else arc.end_angle
+            new_arc = EntityInfo(
+                etype=arc.etype, layer=arc.layer, points=new_points,
+                radius=arc.radius, center=new_center,
+                start_angle=new_sa, end_angle=new_ea,
+                is_closed=arc.is_closed, raw=None
+            )
+            result['normalized_entities'].append(new_arc)
     result.update({
         'slot_pitch_deg': slot_pitch_deg,
         'n_slots': n_slots,
@@ -438,9 +554,16 @@ def extract_half_slot_entities(entities: List[EntityInfo],
 def reconstruct_from_half(half_result: Dict,
                           origin: Tuple[float, float] = (0.0, 0.0),
                           n_repeats: int = 1,
-                          include_concentric: bool = True) -> List[EntityInfo]:
+                          include_concentric: bool = True,
+                          include_boundaries: bool = True) -> List[EntityInfo]:
     """
     반극/반슬롯에서 mirror + circular array로 기하를 재구성합니다.
+    
+    Parameters
+    ----------
+    include_boundaries : bool, default True
+        전체 재구성 시 concentric_radials (경계선)를 포함할지 여부.
+        False로 하면 face 탐지 시 분절 방지.
     """
     from .core import rotate_entity, mirror_entity
 
@@ -463,14 +586,15 @@ def reconstruct_from_half(half_result: Dict,
                 reconstructed.append(rotate_entity(ei, rot_deg, origin))
 
     if include_concentric:
-        for ei in half_result.get('concentric_radials', []):
-            if ei.etype in ('LINE', 'ARC', 'CIRCLE'):
-                for i in range(n_repeats):
-                    rot_deg = i * full_pitch
-                    if i == 0:
-                        reconstructed.append(ei)
-                    else:
-                        reconstructed.append(rotate_entity(ei, rot_deg, origin))
+        if include_boundaries:
+            for ei in half_result.get('concentric_radials', []):
+                if ei.etype in ('LINE', 'ARC', 'CIRCLE'):
+                    for i in range(n_repeats):
+                        rot_deg = i * full_pitch
+                        if i == 0:
+                            reconstructed.append(ei)
+                        else:
+                            reconstructed.append(rotate_entity(ei, rot_deg, origin))
         for ei in half_result.get('concentric_arcs', []):
             if ei.etype == 'CIRCLE':
                 reconstructed.append(ei)

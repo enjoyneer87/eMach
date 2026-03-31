@@ -1,0 +1,28 @@
+@startuml pyMotorGeo_Refactoring_Plan
+!theme plain
+title pyMotorGeo Refactoring: OOP Architecture
+
+object "Current State" as current
+object "Analysis Duplication" as dup1
+object "Topology Duplication" as dup2
+object "Base Classes" as base
+object "ComponentCounter" as counter
+object "ComponentTopologyClassifier" as classifier
+object "Refactored Rotor" as rotor_r
+object "Refactored Stator" as stator_r
+object "DRY Complete" as final
+
+current --> dup1
+current --> dup2
+dup1 --> base
+dup2 --> base
+base --> counter
+base --> classifier
+counter --> rotor_r
+counter --> stator_r
+classifier --> rotor_r
+classifier --> stator_r
+rotor_r --> final
+stator_r --> final
+
+@enduml

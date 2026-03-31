@@ -1,0 +1,60 @@
+@startuml pyMotorGeo_Workflow
+!theme plain
+title pyMotorGeo Data Flow & Analysis Workflow
+
+actor User
+participant "CLI/Pipeline" as pipe
+participant "Reader" as read
+participant "Analyzer\n(Rotor/Stator)" as ana
+participant "Topology\nClassifier" as topo
+participant "Region\nClosure" as close
+participant "GUI\nRegion\nAssignment" as gui
+participant "Exporter" as exp
+database "Output"
+
+== Phase 1: Read DXF ==
+User -> pipe: analyze_dxf_v2(motor.dxf)
+pipe -> read: read_entity_list()
+read -> read: Extract entities by layer
+read --> pipe: [EntityInfo, ...]
+
+== Phase 2: Split Stator/Rotor ==
+pipe -> ana: split_stator_rotor()
+ana -> ana: Find airgap radii
+ana --> pipe: StatorRotorSplit
+
+== Phase 3: Analyze Topology ==
+pipe -> ana: count_poles(), count_slots()
+pipe -> topo: analyze_rotor_topology()
+topo -> topo: FFT pattern, ARC detection
+topo --> pipe: rotor_topology (SPM/IPM/SynRM)
+
+== Phase 4: Detect Closed Faces ==
+pipe -> close: close_one_pole()
+close -> close: Create boundaries (radial lines, arcs)
+close -> close: detect_closed_faces() [shapely]
+close --> pipe: List[faces]
+
+== Phase 5: Auto-Classify Faces ==
+pipe -> close: auto_name_faces()
+close -> close: Classify by centroid_r, area
+close --> pipe: faces[name='magnet'|'slot'|'tooth'|...]
+
+== Phase 6: Optional GUI Refinement ==
+alt User wants manual correction
+    pipe -> gui: FaceRegionGUI.show()
+    gui -> gui: User clicks & reassigns regions
+    gui -> User: Visual feedback (colors update)
+    User -> gui: Finalize
+    gui --> pipe: Updated faces
+end
+
+== Phase 7: Export Results ==
+pipe -> exp: Export to DXF/JSON/Pyleecan
+exp -> Output: motor_analyzed.dxf
+exp -> Output: motor_analysis.json
+exp -> Output: machine.pkl (if Pyleecan)
+
+pipe --> User: Analysis complete
+
+@enduml

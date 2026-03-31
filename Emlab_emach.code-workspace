@@ -15,6 +15,9 @@
 		{
 			"name": "multiscale-pde-operators",
 			"path": "../../gitMerantix/multiscale-pde-operators"
+		},
+		{
+			"path": "../gitSyREpub/syre_public"
 		}
 	],
 	"settings": {
@@ -24,6 +27,15 @@
 		"matlab-in-vscode.matlabStartup": [
 			"addpath('C:/Users/user/.vscode/extensions/shinyypig.matlab-in-vscode-0.5.4/matlab_code');",
 			"rehash;"
-		]
+		],
+		"plantuml.render": "PlantUMLServer",
+		"plantuml.server": "https://www.plantuml.com/plantuml",
+		"plantuml.exportFormat": "png",
+		"plantuml.exportOutDir": "./Class/diagrams",
+		"plantuml.previewAutoUpdate": true,
+		"plantuml.commandLine": false,
+		"files.associations": {
+			"*.puml": "plaintext"
+		}
 	}
 }

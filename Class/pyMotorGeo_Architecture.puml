@@ -1,0 +1,238 @@
+@startuml pyMotorGeo_Architecture
+!theme plain
+title pyMotorGeo Architecture & Class Diagram (v1.5.1)
+
+package "Core Data Structures" {
+    class EntityInfo {
+        - etype: str
+        - layer: str
+        - points: list[tuple]
+        - is_closed: bool
+        - radius: float
+        - center: tuple
+        - start_angle: float
+        - end_angle: float
+        --
+        + distance_to_point()
+        + rotate()
+        + mirror()
+    }
+
+    class StatorRotorSplit {
+        - stator: list[EntityInfo]
+        - rotor: list[EntityInfo]
+        - shaft: list[EntityInfo]
+        - airgap_inner: float
+        - airgap_outer: float
+    }
+}
+
+package "Analysis Layer - Phase 1-2" {
+    class ReaderModule {
+        - read_by_layer()
+        - read_by_block()
+        - read_by_color()
+    }
+
+    class HalfUnitExtraction {
+        - extract_half_pole_entities()
+        - extract_half_slot_entities()
+        + compute_min_max_radii()
+        + compute_polygon_area_shoelace()
+        + detect_mirror_symmetry()
+    }
+}
+
+package "Analysis Layer - Phase 3-4" {
+    abstract class ComponentCounter {
+        - {abstract} count_features()
+    }
+
+    class RotorAnalysis extends ComponentCounter {
+        + count_poles()
+        + count_poles_by_pattern()
+        + detect_pole_pattern()
+        + estimate_poles_robust()
+    }
+
+    class StatorAnalysis extends ComponentCounter {
+        + count_slots()
+        + count_slots_by_regions()
+        + estimate_slots_robust()
+        + detect_slot_conductors()
+    }
+
+    class AirgapAnalysis {
+        + find_origin_candidates()
+        + find_concentric_radii()
+        + find_closed_regions()
+        + classify_inner_outer_rotor()
+        + split_stator_rotor()
+    }
+}
+
+package "Topology Layer - Phase 5-1" {
+    abstract class ComponentTopologyClassifier {
+        - {abstract} classify_regions()
+    }
+
+    class TopologyCore extends ComponentTopologyClassifier {
+        + detect_circular_array_pattern()
+        + extract_single_pole_entities()
+        + extract_single_slot_entities()
+        + classify_pole_topology()
+        + analyze_rotor_topology()
+        + reconstruct_from_half()
+        --
+        Supports: SPM, IPM, SynRM, PMa-SynRM
+    }
+}
+
+package "Topology Specialization - Phase 5-2" {
+    class TopologyStator extends ComponentTopologyClassifier {
+        + classify_stator_entities()
+        + classify_stator_entities_with_closing_compare()
+        + reassign_stator_region()
+        + get_stator_region_summary()
+        --
+        Classifications: Yoke, Tooth, Slot, Conductor, Wedge
+    }
+
+    class TopologyRotor extends ComponentTopologyClassifier {
+        + classify_rotor_entities()
+        + reassign_rotor_region()
+        + get_rotor_region_summary()
+        --
+        Classifications: Magnet, AirBarrier, Core, Shaft
+    }
+
+    class ClosureAndFaceDetection {
+        + create_radial_line()
+        + create_arc_boundary()
+        + close_one_pole()
+        + close_one_slot()
+        + detect_closed_faces()
+        + auto_name_faces()
+        + get_face_summary()
+    }
+}
+
+package "UI & Export Layer - Phase 5-3 to 5-4" {
+    class FaceRegionGUI {
+        - selected_idx: int
+        - fig: matplotlib.figure.Figure
+        + show()
+        + get_faces()
+        + get_summary()
+        --
+        Platform: Jupyter with %matplotlib widget
+    }
+
+    class FaceRegionGUILite {
+        - selected_idx: int
+        + show()
+        + get_faces()
+        + keyboard_controls()
+        --
+        Platform: VS Code, Standard Python
+    }
+
+    class PlotModule {
+        + plot_period()
+        + plot_reconstructed_motor()
+        + plot_named_faces()
+        + plot_with_annotation()
+    }
+
+    class ExportModule {
+        + export_regions_to_dxf()
+        + export_to_ansys_maxwell_dxf()
+        + faces_to_surf_dict()
+    }
+}
+
+package "Pipeline & Integration" {
+    class PipelineV1_5_1 {
+        + analyze_dxf_v2()
+        --
+        Workflow: Read → Analyze → Detect Faces
+        → Classify → Export
+    }
+
+    class PipelineV1_0_Legacy {
+        + analyze_motor_dxf()
+        + quick_analyze()
+    }
+
+    class SymmetryModule {
+        + identify_symmetry_break()
+        + extract_one_period()
+        + expand_sector()
+        + reconstruct_full_motor()
+    }
+}
+
+package "Advanced Features" {
+    class FaceDetectionV2 {
+        + entity_to_linestring()
+        + entities_to_polygons()
+        + find_interior_point()
+        + check_polygon_feasibility()
+        --
+        Backend: Shapely/GEOS
+    }
+
+    class PyleecanBridge {
+        + extract_dimensions_from_dxf()
+        + create_pyleecan_machine()
+        + build_rotor_from_faces()
+        + build_stator_from_faces()
+        --
+        Targets: MachineSIPMSM, MachineIPMSM, MachineSyRM
+    }
+
+    class CLIModule {
+        + command_analyze()
+        + command_quick()
+        + command_export()
+        --
+        Entry: python -m pyMotorGeo
+    }
+}
+
+' Relationships
+ReaderModule ..> EntityInfo : creates
+HalfUnitExtraction ..> EntityInfo : processes
+HalfUnitExtraction ..> ComponentCounter : uses
+
+RotorAnalysis ..> StatorRotorSplit : analyzes
+StatorAnalysis ..> StatorRotorSplit : analyzes
+AirgapAnalysis ..> StatorRotorSplit : splits
+
+TopologyCore ..> ComponentTopologyClassifier : inherits
+TopologyStator ..> ComponentTopologyClassifier : inherits
+TopologyRotor ..> ComponentTopologyClassifier : inherits
+
+ClosureAndFaceDetection ..> EntityInfo : creates boundaries
+ClosureAndFaceDetection --> TopologyStator : uses for classification
+ClosureAndFaceDetection --> TopologyRotor : uses for classification
+
+FaceRegionGUI --> ClosureAndFaceDetection : visualizes faces
+FaceRegionGUILite --> ClosureAndFaceDetection : visualizes faces
+PlotModule --> StatorRotorSplit : visualizes
+ExportModule --> ClosureAndFaceDetection : exports faces
+
+PipelineV1_5_1 ..> ReaderModule : calls
+PipelineV1_5_1 ..> RotorAnalysis : calls
+PipelineV1_5_1 ..> StatorAnalysis : calls
+PipelineV1_5_1 ..> TopologyCore : calls
+PipelineV1_5_1 ..> ClosureAndFaceDetection : calls
+PipelineV1_5_1 --> FaceRegionGUI : can launch
+
+SymmetryModule --> HalfUnitExtraction : expands from
+
+FaceDetectionV2 --> ClosureAndFaceDetection : improves
+PyleecanBridge --> ClosureAndFaceDetection : converts to Pyleecan
+CLIModule --> PipelineV1_5_1 : invokes
+
+@enduml
