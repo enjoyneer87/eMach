@@ -6,8 +6,12 @@ pyMotorGeo.analysis_rotor
 닫힌 영역(매입 자석 등)의 방위각 분포, 원호(구조물 경계) 배열의 주기성, 혹은 선분들의 
 조화 해석(FFT) 등 다양한 알고리즘을 혼합하여 가장 신뢰도 높은 극수를 도출합니다.
 
-주요 함수
----------
+주요 클래스
+-----------
+- RotorCounter             : 회전자 극수 분석 클래스 (ComponentCounter 상속)
+
+주요 함수 (하위 호환성)
+-----------------------
 - count_poles               : 원점 기준 반경 분포 내의 ARC 배열 간격을 통한 극수 추정
 - count_poles_by_regions    : 닫힌 폴리라인(자석 후보 영역등)의 중심점 주기성을 통한 극수 추정
 - estimate_poles_robust     : 여러 추정 방식을 교차 검증하여 최종적으로 가장 강건한 극수를 반환
@@ -18,11 +22,92 @@ import numpy as np
 from collections import Counter
 from typing import List, Tuple, Dict, Optional
 
-from .core import EntityInfo
+from core import EntityInfo
+from analysis_base import ComponentCounter
 
 
 # ═══════════════════════════════════════════════════════════════
-# ARC 각도 분포 기반 극수
+# RotorCounter 클래스 (OOP 기반)
+# ═══════════════════════════════════════════════════════════════
+
+class RotorCounter(ComponentCounter):
+    """
+    회전자(Rotor)의 극수를 다양한 방법으로 추정하는 클래스입니다.
+    
+    ComponentCounter 추상 클래스를 구현하며, ARC 분포, 닫힌 영역 패턴,
+    FFT 주파수 분석 등 여러 알고리즘을 조합하여 가장 신뢰도 높은 극수를 도출합니다.
+    
+    Attributes:
+        component_type (str): "rotor"
+        count_keyword (str): "poles"
+    """
+    
+    def __init__(self):
+        """RotorCounter 초기화."""
+        super().__init__(component_type="rotor", count_keyword="poles")
+    
+    def count(self, 
+              entities: List[EntityInfo],
+              origin: Tuple[float, float] = (0.0, 0.0),
+              **kwargs) -> int:
+        """
+        ARC 기반 극수 추정 (count_poles와 동일).
+        
+        Args:
+            entities (List[EntityInfo]): 회전자 엔티티 리스트.
+            origin (Tuple[float, float]): 회전 중심 좌표.
+            **kwargs: tol_r, tol_angle 등.
+        
+        Returns:
+            int: 추정된 극수.
+        """
+        tol_r = kwargs.get('tol_r', 0.5)
+        tol_angle = kwargs.get('tol_angle', 3.0)
+        return count_poles(entities, origin, tol_r, tol_angle)
+    
+    def count_by_regions(self,
+                        entities: List[EntityInfo],
+                        origin: Tuple[float, float] = (0.0, 0.0),
+                        **kwargs) -> Dict:
+        """
+        닫힌 영역 기반 극수 추정 (count_poles_by_regions와 동일).
+        
+        Args:
+            entities (List[EntityInfo]): 회전자 엔티티 리스트.
+            origin (Tuple[float, float]): 회전 중심 좌표.
+            **kwargs: airgap_r_inner, tol_angle, verbose 등.
+        
+        Returns:
+            Dict: 분석 결과.
+        """
+        airgap_r_inner = kwargs.get('airgap_r_inner', None)
+        tol_angle = kwargs.get('tol_angle', 3.0)
+        verbose = kwargs.get('verbose', False)
+        return count_poles_by_regions(entities, origin, airgap_r_inner, tol_angle, verbose)
+    
+    def estimate_robust(self,
+                       entities: List[EntityInfo],
+                       origin: Tuple[float, float] = (0.0, 0.0),
+                       verbose: bool = True,
+                       **kwargs) -> Dict:
+        """
+        교차 검증을 통한 강건한 극수 추정 (estimate_poles_robust와 동일).
+        
+        Args:
+            entities (List[EntityInfo]): 회전자 엔티티 리스트.
+            origin (Tuple[float, float]): 회전 중심 좌표.
+            verbose (bool): 상세 로깅 여부.
+            **kwargs: airgap_r_inner 등.
+        
+        Returns:
+            Dict: 검증 결과.
+        """
+        airgap_r_inner = kwargs.get('airgap_r_inner', None)
+        return estimate_poles_robust(entities, origin, airgap_r_inner, verbose)
+
+
+# ═══════════════════════════════════════════════════════════════
+# ARC 각도 분포 기반 극수 (함수형 인터페이스 - 하위 호환성)
 # ═══════════════════════════════════════════════════════════════
 
 def count_poles(entities: List[EntityInfo],

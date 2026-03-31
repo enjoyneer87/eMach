@@ -26,7 +26,12 @@ import matplotlib.pyplot as plt
 from collections import defaultdict, Counter
 from typing import List, Tuple, Dict, Optional
 
-from .core import EntityInfo
+try:
+    # Package import path: pyMotorGeo.analysis_airgap
+    from .core import EntityInfo
+except ImportError:
+    # Direct import path: analysis_airgap
+    from core import EntityInfo
 
 
 # ═══════════════════════════════════════════════════════════════
@@ -321,7 +326,6 @@ def classify_inner_outer_rotor(entities: List[EntityInfo],
 
     Returns:
         str: 'inner_rotor' 또는 'outer_rotor' 중 하나. 판별 불가 시 'unknown'.
-    """
     """
     ox, oy = origin
 

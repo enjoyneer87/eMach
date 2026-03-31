@@ -10,9 +10,9 @@ from matplotlib.patches import Polygon as MplPolygon, Patch, Arc as MplArc
 from matplotlib.path import Path
 from typing import Dict, Tuple
 
-from .core import StatorRotorSplit
-from .regions import REGION_NAMES, REGION_COLORS, SHORT_NAMES, _compute_face_geometry
-from .plotting import _render_face_patch
+from core import StatorRotorSplit
+from regions import REGION_NAMES, REGION_COLORS, SHORT_NAMES, _compute_face_geometry
+from plotting import _render_face_patch
 
 
 def interactive_region_editor(half_unit_regions: Dict,

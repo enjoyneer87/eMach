@@ -9,8 +9,8 @@ import numpy as np
 from collections import defaultdict
 from typing import List, Tuple, Dict, Optional
 
-from .core import EntityInfo, StatorRotorSplit, endpoint_key
-from .symmetry import extract_one_period, identify_symmetry_break
+from core import EntityInfo, StatorRotorSplit, endpoint_key
+from symmetry import extract_one_period, identify_symmetry_break
 
 
 # ═══════════════════════════════════════════════════════════════

@@ -371,7 +371,7 @@ def faces_to_surf_dict(faces: list) -> dict:
     형식: { complex(interior_x, interior_y): label_string }
     interior_point은 find_best_region(BanGeoCode) 결과.
     """
-    from .region_closing import REGION_NAMES
+    from region_closing import REGION_NAMES
     result = {}
     for f in faces:
         ix, iy = f.get('interior_point', f['centroid'])

@@ -1,60 +1,52 @@
 @startuml pyMotorGeo_Workflow
 !theme plain
-title pyMotorGeo Data Flow & Analysis Workflow
+title pyMotorGeo Data Flow & Analysis Workflow (code-aligned)
 
 actor User
-participant "CLI/Pipeline" as pipe
-participant "Reader" as read
-participant "Analyzer\n(Rotor/Stator)" as ana
-participant "Topology\nClassifier" as topo
-participant "Region\nClosure" as close
-participant "GUI\nRegion\nAssignment" as gui
-participant "Exporter" as exp
-database "Output"
+participant "CLI / pipeline.py" as pipe
+participant "reader.py" as read
+participant "analysis_airgap.py" as air
+participant "analysis_rotor.py\nanalysis_stator.py" as ana
+participant "topology*.py" as topo
+participant "region_closing.py" as close
+participant "gui_region.py" as gui
+participant "export.py / pyleecan_bridge.py" as exp
+database "Outputs"
 
-== Phase 1: Read DXF ==
+== 1. Read DXF ==
 User -> pipe: analyze_dxf_v2(motor.dxf)
-pipe -> read: read_entity_list()
-read -> read: Extract entities by layer
-read --> pipe: [EntityInfo, ...]
+pipe -> read: read_entity_list(...)
+read --> pipe: entities
 
-== Phase 2: Split Stator/Rotor ==
-pipe -> ana: split_stator_rotor()
-ana -> ana: Find airgap radii
-ana --> pipe: StatorRotorSplit
+== 2. Split by Airgap ==
+pipe -> air: classify_inner_outer_rotor(...)
+pipe -> air: split_stator_rotor_by_arc_span(...)
+air --> pipe: stator_entities, rotor_entities, airgap
 
-== Phase 3: Analyze Topology ==
-pipe -> ana: count_poles(), count_slots()
-pipe -> topo: analyze_rotor_topology()
-topo -> topo: FFT pattern, ARC detection
-topo --> pipe: rotor_topology (SPM/IPM/SynRM)
+== 3. Count / Topology ==
+pipe -> ana: estimate_poles_robust(...)
+pipe -> ana: estimate_slots_robust(...)
+pipe -> topo: classify_pole_topology(...)
+topo --> pipe: topology summary
 
-== Phase 4: Detect Closed Faces ==
-pipe -> close: close_one_pole()
-close -> close: Create boundaries (radial lines, arcs)
-close -> close: detect_closed_faces() [shapely]
-close --> pipe: List[faces]
+== 4. Half Unit / Close Faces ==
+pipe -> close: close_one_pole(...)
+pipe -> close: close_one_slot(...)
+pipe -> close: detect_closed_faces(...)
+pipe -> close: auto_name_faces(...)
+close --> pipe: named faces
 
-== Phase 5: Auto-Classify Faces ==
-pipe -> close: auto_name_faces()
-close -> close: Classify by centroid_r, area
-close --> pipe: faces[name='magnet'|'slot'|'tooth'|...]
-
-== Phase 6: Optional GUI Refinement ==
-alt User wants manual correction
-    pipe -> gui: FaceRegionGUI.show()
-    gui -> gui: User clicks & reassigns regions
-    gui -> User: Visual feedback (colors update)
-    User -> gui: Finalize
-    gui --> pipe: Updated faces
+== 5. Optional GUI Review ==
+alt manual correction needed
+    pipe -> gui: FaceRegionGUI / FaceRegionGUILite
+    gui --> pipe: updated faces
 end
 
-== Phase 7: Export Results ==
-pipe -> exp: Export to DXF/JSON/Pyleecan
-exp -> Output: motor_analyzed.dxf
-exp -> Output: motor_analysis.json
-exp -> Output: machine.pkl (if Pyleecan)
+== 6. Export ==
+pipe -> exp: export_regions_to_dxf(...)
+pipe -> exp: create_pyleecan_machine(...) [optional]
+exp -> Outputs: analyzed DXF / summary / machine data
 
-pipe --> User: Analysis complete
+pipe --> User: analysis completed
 
 @enduml

@@ -65,7 +65,7 @@ import math
 import numpy as np
 from collections import defaultdict, Counter
 from typing import List, Tuple, Dict, Optional
-from .core import EntityInfo, endpoint_key
+from core import EntityInfo, endpoint_key
 
 
 # ═══════════════════════════════════════════════════════════════
@@ -854,7 +854,7 @@ def detect_closed_faces(
     """
     if use_shapely:
         try:
-            from .face_detection import detect_closed_faces_v2
+            from face_detection import detect_closed_faces_v2
             faces = detect_closed_faces_v2(entities, origin, min_area)
             if faces:
                 return faces

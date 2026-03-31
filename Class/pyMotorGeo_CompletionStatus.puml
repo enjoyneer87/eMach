@@ -1,153 +1,67 @@
 @startuml pyMotorGeo_CompletionStatus
 !theme plain
-title pyMotorGeo Documentation Completion Status & Module Map (v1.5.1)
+title pyMotorGeo Module Completion Status (code-aligned, v1.5.1)
 
-rectangle "Core Foundation (Phase 1)" #90EE90 {
+rectangle "Core [OK]" #90EE90 {
     box
-        (core.py) ✓
+        (core.py)
           EntityInfo, StatorRotorSplit
-          rotate, mirror utilities
-        (reader.py) ✓
+        (reader.py)
           read_entity_list()
-          Layer/block/color extraction
     end box
 }
 
-rectangle "Geometry Processing (Phase 2)" #90EE90 {
+rectangle "Analysis [OK]" #90EE90 {
     box
-        (half_unit.py) ✓
-          extract_half_pole_entities()
-          extract_half_slot_entities()
-          Shoelace formula, mirror detection
-          Comprehensive docstrings
+        (analysis_airgap.py)
+          find_airgap_by_arc_span()
+          split_stator_rotor_by_arc_span()
+        (analysis_rotor.py)
+          RotorCounter + legacy wrappers
+        (analysis_stator.py)
+          StatorCounter + legacy wrappers
     end box
 }
 
-rectangle "Rotor Analysis (Phase 3)" #90EE90 {
+rectangle "Topology [OK]" #90EE90 {
     box
-        (analysis_rotor.py) ✓
-          count_poles()
-          detect_pole_pattern() [ARC, FFT]
-          estimate_poles_robust()
-    end box
-}
-
-rectangle "Stator & Airgap Analysis (Phase 4)" #90EE90 {
-    box
-        (analysis_stator.py) ✓
-          count_slots()
-          detect_slot_conductors()
-          estimate_slots_robust()
-        (analysis_airgap.py) ✓
-          find_origin_candidates()
-          find_concentric_radii()
-          split_stator_rotor()
-      end box
-}
-
-rectangle "Base Class Architecture (Phase 5-0)" #FFE4B5 {
-    box
-        (analysis_base.py) ✓
-          ComponentCounter (abstract)
-          Shared helpers for future OOP
-        (topology_base.py) ✓
-          ComponentTopologyClassifier (abstract)
-          Template for classification
-      end box
-}
-
-rectangle "Core Topology (Phase 5-1)" #90EE90 {
-    box
-        (topology.py) ✓
+        (topology.py)
           detect_circular_array_pattern()
           classify_pole_topology()
-          analyze_rotor_topology()
+        (topology_rotor.py)
+          RotorTopologyClassifier
+        (topology_stator.py)
+          StatorTopologyClassifier
+    end box
+}
+
+rectangle "Half Unit / Closure [OK]" #90EE90 {
+    box
+        (half_unit.py)
+          extract_half_pole_entities()
+          extract_half_slot_entities()
           reconstruct_from_half()
-          [SPM, IPM, SynRM support]
-      end box
+        (region_closing.py)
+          close_one_pole(), close_one_slot()
+          detect_closed_faces(), auto_name_faces()
+    end box
 }
 
-rectangle "Specialized Topology (Phase 5-2)" #90EE90 {
+rectangle "UI / Export / Integration [OK]" #90EE90 {
     box
-        (topology_stator.py) ✓
-          classify_stator_entities()
-          classify_with_closing_compare()
-          reassign_stator_region()
-          get_stator_region_summary()
-          [Yoke, Tooth, Slot, Conductor, Wedge]
-        (topology_rotor.py) ✓
-          classify_rotor_entities()
-          reassign_rotor_region()
-          get_rotor_region_summary()
-          [Magnet, AirBarrier, Core, Shaft]
-      end box
-}
-
-rectangle "Region Closure & Faces (Phase 5-3)" #90EE90 {
-    box
-        (region_closing.py) ✓
-          create_radial_line(), create_arc_boundary()
-          close_one_pole()
-          detect_closed_faces() [Shapely/Planar]
-          auto_name_faces()
-          get_face_summary()
-        (face_detection.py) ✓
-          Shapely-based topology [Optional backend]
-          find_interior_point()
-          check_polygon_feasibility()
-      end box
-}
-
-rectangle "GUI & Visualization (Phase 5-3)" #90EE90 {
-    box
-        (gui_region.py) ✓
-          FaceRegionGUI [Jupyter + ipywidgets]
-          FaceRegionGUILite [VS Code, keyboard]
-          Point-in-polygon ray-casting
-        (plotting.py) ✓
-          plot_period()
-          plot_named_faces()
-          Matplotlib integration
-      end box
-}
-
-rectangle "Export & Integration (Phase 5-4)" #90EE90 {
-    box
-        (export.py) ✓
-          export_regions_to_dxf()
-          DXF + ANSYS Maxwell support
-        (symmetry.py) ✓
-          identify_symmetry_break()
-          reconstruct_full_motor()
-          MRU expansion
-        (pyleecan_bridge.py) ✓
-          create_pyleecan_machine()
-          [MachineSIPMSM, MachineIPMSM, MachineSyRM]
-      end box
-}
-
-rectangle "Pipeline & CLI (Phase 5-4)" #90EE90 {
-    box
-        (pipeline.py) ✓
-          analyze_dxf_v2() [Modern v1.5.1+]
-          analyze_motor_dxf() [Legacy v1.0]
-        (cli.py) ✓
-          command_analyze(), command_export()
-          Batch processing, integration
-      end box
+        (gui_region.py), (plotting.py)
+        (export.py), (pyleecan_bridge.py)
+        (pipeline.py), (cli.py)
+    end box
 }
 
 note bottom
-    ✓ = 문서화 완료 (Docstring + Examples + Notes)
-    
-    Documentation Standard:
-    - NumPy/Google Hybrid Format
-    - Args, Returns, Algorithm, Examples, Use Cases, Notes sections
-    - 50-500 lines per major function
-    - Motor geometry & ML-friendly examples
-    - Integration patterns & best practices
-    
-    Completion: ~95% (Phases 1-5 complete, UML pending)
+    Status source: current code in Class/pyMotorGeo
+
+    Completion:
+    - Phase 1-5 implementation: 100%
+    - Markdown consistency pass: complete
+    - PUML consistency pass: complete
 end note
 
 @enduml

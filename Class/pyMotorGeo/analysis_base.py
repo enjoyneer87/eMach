@@ -13,7 +13,7 @@ import numpy as np
 from typing import List, Tuple, Dict, Optional
 from collections import Counter
 
-from .core import EntityInfo
+from core import EntityInfo
 
 
 class ComponentCounter(ABC):

@@ -64,7 +64,13 @@ The result dictionary contains:
 import json
 from typing import Dict, List, Optional, Tuple
 
-from .reader import read_entity_list
+from reader import read_entity_list
+
+# OOP-기반 클래스들 (v1.5.1+)
+from analysis_rotor import RotorCounter
+from analysis_stator import StatorCounter
+from topology_rotor import RotorTopologyClassifier
+from topology_stator import StatorTopologyClassifier
 
 
 # ═══════════════════════════════════════════════════════════════
@@ -114,18 +120,18 @@ def analyze_dxf_v2(
         - dims                        : 치수 요약 dict
         - fallback_info               : fallback 적용 정보
     """
-    from .analysis_airgap import find_airgap_by_arc_span, split_stator_rotor_by_arc_span
-    from .analysis import classify_inner_outer_rotor, find_concentric_radii
-    from .analysis_rotor import estimate_poles_robust
-    from .analysis_stator import estimate_slots_robust
-    from .half_unit import (extract_half_pole_entities, extract_half_slot_entities,
+    from analysis_airgap import find_airgap_by_arc_span, split_stator_rotor_by_arc_span
+    from analysis import classify_inner_outer_rotor, find_concentric_radii
+    from analysis_rotor import estimate_poles_robust
+    from analysis_stator import estimate_slots_robust
+    from half_unit import (extract_half_pole_entities, extract_half_slot_entities,
                             reconstruct_from_half)
-    from .region_closing import (close_one_pole, close_one_slot,
+    from region_closing import (close_one_pole, close_one_slot,
                                  detect_closed_faces, auto_name_faces,
                                  auto_name_faces_v2)
-    from .face_detection import detect_closed_faces_v2
-    from .topology import extract_single_pole_entities, extract_single_slot_entities
-    from .topology_rotor import classify_rotor_entities
+    from face_detection import detect_closed_faces_v2
+    from topology import extract_single_pole_entities, extract_single_slot_entities
+    from topology_rotor import classify_rotor_entities
 
     def _log(msg):
         if verbose:
@@ -544,14 +550,14 @@ def analyze_motor_dxf(dxf_path: str,
     {'n_poles': 8, 'n_slots': 48}
     """
     import ezdxf
-    from .analysis_airgap import find_origin_candidates
-    from .analysis import (classify_inner_outer_rotor, split_stator_rotor,
+    from analysis_airgap import find_origin_candidates
+    from analysis import (classify_inner_outer_rotor, split_stator_rotor,
                            group_identical_entities, classify_group_patterns,
                            detect_model_periodicity, infer_poles_and_slots,
                            classify_motor_topology)
-    from .symmetry import (identify_symmetry_break, extract_one_period,
+    from symmetry import (identify_symmetry_break, extract_one_period,
                            extract_half_unit)
-    from .regions import classify_half_unit_regions
+    from regions import classify_half_unit_regions
 
     if verbose:
         print(f"\n{'='*60}")

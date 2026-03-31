@@ -24,8 +24,8 @@ from dataclasses import dataclass
 from typing import List, Tuple, Dict, Optional
 from collections import defaultdict
 
-from .core import EntityInfo
-from .half_unit import (
+from core import EntityInfo
+from half_unit import (
     extract_half_pole_entities,
     extract_half_slot_entities,
     reconstruct_from_half,
@@ -692,7 +692,7 @@ def extract_half_slot_entities(entities: List[EntityInfo],
         - n_slots: 슬롯수
         - mirror_axis_deg: mirror 대칭축 각도
     """
-    from .analysis import count_slots as _count_slots
+    from analysis import count_slots as _count_slots
 
     # 슬롯 피치 자동 감지
     if slot_pitch_deg is None:
@@ -794,7 +794,7 @@ def reconstruct_from_half(half_result: Dict,
         - half_result = extract_half_pole_entities(...)  # 반극 추출
         - reconstructed = reconstruct_from_half(half_result, n_repeats=6)  # 6극 전체 복원
     """
-    from .core import rotate_entity, mirror_entity
+    from core import rotate_entity, mirror_entity
 
     half_ents = half_result['normalized_entities']
     mirror_axis = half_result['mirror_axis_deg']

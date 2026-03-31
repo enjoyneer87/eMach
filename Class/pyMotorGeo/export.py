@@ -29,7 +29,7 @@ import ezdxf
 import os
 from typing import Dict, List, Optional, Tuple
 
-from .regions import SHORT_NAMES
+from regions import SHORT_NAMES
 
 
 def export_regions_to_dxf(result: Dict,

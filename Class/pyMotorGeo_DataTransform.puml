@@ -1,69 +1,51 @@
 @startuml pyMotorGeo_DataTransform
 !theme plain
-title pyMotorGeo Data Transformation Pipeline
+title pyMotorGeo Data Transformation Pipeline (code-aligned)
 
 object DXF_File
-object EntityList
-object EntityInfo
-object StatorRotorSplit
+object Entities
+object SplitResult
+object CountSummary
+object HalfUnits
 object ClosedFaces
-object FaceList
-object FaceWithRegion
-object MotorGeometry
+object NamedFaces
+object ExportArtifacts
 
-DXF_File : "motor.dxf"
-DXF_File : - polylines
-DXF_File : - arcs
-DXF_File : - regions
+DXF_File : motor.dxf
 
-EntityList : list[EntityInfo]
-EntityList : size: 100-1000
-EntityList : - geometry
-EntityList : - layer info
-EntityList : - connectivity
+Entities : list[EntityInfo]
+Entities : etype / points / layer / radii
 
-EntityInfo : etype: LINE|ARC|LWPOLYLINE
-EntityInfo : layer: str
-EntityInfo : points: list[(x,y)]
-EntityInfo : is_closed: bool
-EntityInfo : properties: dict
+SplitResult : stator: list[EntityInfo]
+SplitResult : rotor: list[EntityInfo]
+SplitResult : airgap_r_inner / outer / mid
 
-StatorRotorSplit : stator: list[EntityInfo]
-StatorRotorSplit : rotor: list[EntityInfo]
-StatorRotorSplit : shaft: list[EntityInfo]
-StatorRotorSplit : airgap_inner_r: float
-StatorRotorSplit : airgap_outer_r: float
+CountSummary : n_poles
+CountSummary : n_slots
+CountSummary : topology hints
 
-ClosedFaces : list[Face]
-ClosedFaces : vertices: list[polygon]
-ClosedFaces : properties: centroid, area, r_min, r_max
+HalfUnits : half_pole
+HalfUnits : half_slot
+HalfUnits : reconstructed units
 
-FaceList : [{Face[0], Face[1], ...}]
-FaceList : Face[0]: vertices=[(x,y)...]
-FaceList : Face[1]: area=150.5
-FaceList : Face[n]: name='unknown'
+ClosedFaces : detect_closed_faces output
+ClosedFaces : polygons + area + radius stats
 
-FaceWithRegion : [{FaceFinal}]
-FaceWithRegion : name='magnet' | 'slot' | 'tooth'
-FaceWithRegion : centroid_r, confidence
-FaceWithRegion : color, tags
+NamedFaces : auto_name_faces + classifier results
+NamedFaces : magnet / slot / tooth / yoke / etc
 
-MotorGeometry : summary
-MotorGeometry : n_poles: int
-MotorGeometry : n_slots: int
-MotorGeometry : rotor_topo: str
-MotorGeometry : stator_topo: str
+ExportArtifacts : analyzed.dxf
+ExportArtifacts : summary json
+ExportArtifacts : pyleecan machine (optional)
 
-' Transformations
-DXF_File --> EntityList : reader.read_entity_list()
-EntityList --> StatorRotorSplit : analysis_airgap.split_stator_rotor()
-StatorRotorSplit --> StatorRotorSplit : analysis_rotor.count_poles()\nanalysis_stator.count_slots()
+DXF_File --> Entities : reader.read_entity_list(...)
+Entities --> SplitResult : analysis_airgap.split_stator_rotor_by_arc_span(...)
+SplitResult --> CountSummary : analysis_rotor.estimate_poles_robust(...)\nanalysis_stator.estimate_slots_robust(...)
 
-StatorRotorSplit --> ClosedFaces : region_closing.close_one_pole()\nregion_closing.detect_closed_faces()
-ClosedFaces --> FaceList : face_detection.find_interior_point()\nface_detection.check_polygon_feasibility()
-FaceList --> FaceWithRegion : region_closing.auto_name_faces()\ntopology_rotor.classify_rotor_entities()\ntopology_stator.classify_stator_entities()
+SplitResult --> HalfUnits : half_unit.extract_half_pole_entities(...)\nhalf_unit.extract_half_slot_entities(...)
+HalfUnits --> ClosedFaces : region_closing.close_one_pole/slot(...)\nregion_closing.detect_closed_faces(...)
+ClosedFaces --> NamedFaces : region_closing.auto_name_faces(...)\ntopology_rotor/stator classify(...)
 
-FaceWithRegion --> MotorGeometry : region_closing.get_face_summary()
-FaceWithRegion --> DXF_File : export.export_regions_to_dxf()
+NamedFaces --> ExportArtifacts : export.export_regions_to_dxf(...)\npyleecan_bridge.create_pyleecan_machine(...)
 
 @enduml

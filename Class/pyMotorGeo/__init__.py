@@ -23,10 +23,10 @@ __version__ = "1.5.1"
 __author__ = "EMLab"
 
 # v1.5.1 파이프라인 (권장)
-from .pipeline import analyze_dxf_v2, export_result_json
+from pipeline import analyze_dxf_v2, export_result_json
 
 # Core data structures
-from .core import (
+from core import (
     EntityInfo,
     StatorRotorSplit,
     rotate_point,
@@ -39,16 +39,17 @@ from .core import (
 )
 
 # DXF reading functions
-from .reader import (
+from reader import (
     SKIP_ENTITY_TYPES,
     EXPANDABLE_ENTITY_TYPES,
     transform_point,
     explode_insert,
     read_entity_list,
+    manual_parse_dxf_entities,
 )
 
 # Motor analysis functions
-from .analysis import (
+from analysis import (
     find_origin_candidates,
     find_concentric_radii,
     find_closed_regions,
@@ -73,7 +74,7 @@ from .analysis import (
 )
 
 # Rotor topology analysis (legacy — still re-exported)
-from .topology import (
+from topology import (
     PoleRegionInfo,
     detect_circular_array_pattern,
     extract_single_pole_entities,
@@ -81,14 +82,14 @@ from .topology import (
     classify_pole_topology,
     analyze_rotor_topology,
 )
-from .half_unit import (
+from half_unit import (
     extract_half_pole_entities,
     extract_half_slot_entities,
     reconstruct_from_half,
 )
 
 # ── v1.3 신규: 분리된 토폴로지 모듈 ──
-from .topology_rotor import (
+from topology_rotor import (
     classify_rotor_entities,
     classify_rotor_entities_with_closing_compare,
     reassign_rotor_region,
@@ -96,7 +97,7 @@ from .topology_rotor import (
     ROTOR_REGION_NAMES,
     ROTOR_REGION_COLORS,
 )
-from .topology_stator import (
+from topology_stator import (
     classify_stator_entities,
     classify_stator_entities_with_closing_compare,
     reassign_stator_region,
@@ -106,7 +107,7 @@ from .topology_stator import (
 )
 
 # ── pyleecan 브릿지 ──
-from .pyleecan_bridge import (
+from pyleecan_bridge import (
     check_pyleecan_available,
     extract_dimensions_from_dxf,
     create_pyleecan_machine,
@@ -120,12 +121,12 @@ from .pyleecan_bridge import (
 )
 
 # ── v1.5 신규: 닫힌 영역(face) 기반 GUI + face 탐지/자동이름 ──
-from .gui_region import (
+from gui_region import (
     FaceRegionGUI,
     FaceRegionGUILite,
 )
-from .plotting import HalfUnitPlotter, HalfPoleView, OnePoleView
-from .region_closing import (
+from plotting import HalfUnitPlotter, HalfPoleView, OnePoleView
+from region_closing import (
     create_radial_line,
     create_arc_boundary,
     close_rotor_period,
@@ -144,7 +145,7 @@ from .region_closing import (
 )
 
 # ── v1.6: face_detection (BanGeoCode shapely 이식) ──
-from .face_detection import (
+from face_detection import (
     detect_closed_faces_v2,
     find_interior_point,
     entities_to_polygons,
@@ -178,6 +179,7 @@ __all__ = [
     "transform_point",
     "explode_insert",
     "read_entity_list",
+    "manual_parse_dxf_entities",
     # Analysis
     "find_origin_candidates",
     "find_concentric_radii",

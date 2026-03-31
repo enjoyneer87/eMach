@@ -11,7 +11,7 @@ import math
 import numpy as np
 from typing import List, Tuple, Dict, Optional
 
-from .core import EntityInfo
+from core import EntityInfo
 
 
 def detect_circular_array_pattern(entities: List[EntityInfo],
@@ -304,7 +304,8 @@ def _clip_concentric_arc(ei: EntityInfo,
 
 
 def _make_radial_line(r0: float, r1: float, angle_deg: float,
-                       origin: Tuple[float, float], layer: str) -> EntityInfo:    """원형 구조물(주기 모델)의 열린 양측 단면 경계를 닫기 위해 원점으로부터
+                      origin: Tuple[float, float], layer: str) -> EntityInfo:
+    """원형 구조물(주기 모델)의 열린 양측 단면 경계를 닫기 위해 원점으로부터
     특정 방위각을 향해 일직선으로 뻗어나가는 인위적인 선분(Boundary Line)을 생성합니다.
 
     Args:
@@ -316,7 +317,8 @@ def _make_radial_line(r0: float, r1: float, angle_deg: float,
 
     Returns:
         EntityInfo: 경계선 역할을 수행하기 위해 인위로 생성된 `LINE` 엔티티 객체.
-    """    ox, oy = origin
+    """
+    ox, oy = origin
     rad = math.radians(angle_deg)
     x0 = ox + r0 * math.cos(rad)
     y0 = oy + r0 * math.sin(rad)
@@ -483,6 +485,10 @@ def extract_half_slot_entities(entities: List[EntityInfo],
             - 'normalized_entities': 정규화 처리가 된 도면 요소 리스트
             - 'concentric_arcs': 원점에 대한 동심원(또는 에어갭 경계)으로 잘라낸 특수 객체 리스트
             - 'n_slots': 계산에 사용된 슬롯 수
+    """
+    if slot_pitch_deg is None:
+        if n_slots and n_slots > 0:
+            slot_pitch_deg = 360.0 / n_slots
         else:
             _ns = _count_slots(entities, origin)
             if _ns and _ns > 0:
@@ -565,7 +571,7 @@ def reconstruct_from_half(half_result: Dict,
         전체 재구성 시 concentric_radials (경계선)를 포함할지 여부.
         False로 하면 face 탐지 시 분절 방지.
     """
-    from .core import rotate_entity, mirror_entity
+    from core import rotate_entity, mirror_entity
 
     half_ents = half_result['normalized_entities']
     mirror_axis = half_result['mirror_axis_deg']

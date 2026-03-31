@@ -12,7 +12,7 @@ pyMotorGeo.analysis
 """
 
 # ?? analysis_airgap ??
-from .analysis_airgap import (          # noqa: F401
+from analysis_airgap import (          # noqa: F401
     find_origin_candidates,
     find_concentric_radii,
     _group_radii,
@@ -28,14 +28,14 @@ from .analysis_airgap import (          # noqa: F401
 )
 
 # ?? analysis_rotor ??
-from .analysis_rotor import (           # noqa: F401
+from analysis_rotor import (           # noqa: F401
     count_poles,
     count_poles_by_regions,
     estimate_poles_robust,
 )
 
 # ?? analysis_stator ??
-from .analysis_stator import (          # noqa: F401
+from analysis_stator import (          # noqa: F401
     count_slots,
     count_slots_by_regions,
     estimate_slots_robust,

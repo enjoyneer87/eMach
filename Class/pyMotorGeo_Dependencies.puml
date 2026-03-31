@@ -1,6 +1,6 @@
 @startuml pyMotorGeo_Dependencies
 !theme plain
-title pyMotorGeo Module Dependency Flow
+title pyMotorGeo Module Dependency Flow (code-aligned)
 
 object numpy
 object matplotlib
@@ -9,31 +9,70 @@ object ezdxf
 
 object core
 object reader
-object analysis
+object analysis_airgap
+object analysis_rotor
+object analysis_stator
 object topology
+object topology_rotor
+object topology_stator
+object half_unit
 object region_closing
+object face_detection
 object gui_region
 object plotting
 object export
+object pyleecan_bridge
 object pipeline
+object cli
 
 core --> reader
-core --> analysis
-analysis --> topology
-topology --> region_closing
-region_closing --> gui_region
-region_closing --> export
-region_closing --> plotting
-pipeline --> analysis
+core --> analysis_airgap
+core --> analysis_rotor
+core --> analysis_stator
+core --> topology
+core --> topology_rotor
+core --> topology_stator
+core --> half_unit
+core --> region_closing
+
+reader --> ezdxf
+
+analysis_rotor --> analysis_airgap
+analysis_stator --> analysis_airgap
+
+topology_rotor --> topology
+topology_stator --> topology
+
+half_unit --> analysis_rotor
+half_unit --> analysis_stator
+
+region_closing --> face_detection
+region_closing --> topology_rotor
+region_closing --> topology_stator
+
+gui_region --> region_closing
+plotting --> matplotlib
+export --> ezdxf
+pyleecan_bridge --> region_closing
+
+pipeline --> reader
+pipeline --> analysis_airgap
+pipeline --> analysis_rotor
+pipeline --> analysis_stator
 pipeline --> topology
+pipeline --> topology_rotor
+pipeline --> topology_stator
+pipeline --> half_unit
 pipeline --> region_closing
 pipeline --> export
+pipeline --> pyleecan_bridge
 
-analysis --> numpy
+analysis_airgap --> numpy
+analysis_rotor --> numpy
+analysis_stator --> numpy
+face_detection --> shapely
 region_closing --> numpy
-region_closing --> shapely
-export --> ezdxf
-gui_region --> matplotlib
-plotting --> matplotlib
+
+cli --> pipeline
 
 @enduml

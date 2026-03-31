@@ -5,8 +5,12 @@ pyMotorGeo.analysis_stator
 고정자(Stator) 기하 데이터로부터 모터의 슬롯수(Slot Number)를 추정하고 
 슬롯 내부의 컨덕터 배열 패턴을 탐지하는 모듈입니다.
 
-주요 함수
----------
+주요 클래스
+-----------
+- StatorCounter            : 고정자 슬롯수 분석 클래스 (ComponentCounter 상속)
+
+주요 함수 (하위 호환성)
+-----------------------
 - count_slots               : 방사형 선분(Radial Line)을 클러스터링하여 슬롯수 단면 벽면 감지
 - count_slots_by_regions    : 고정자 체적 내부의 닫힌 면적(슬롯 / 권선) 주기 패턴을 통한 슬롯수 감지
 - estimate_slots_robust     : 두 방법의 신뢰도를 교차 검증하여 최종 슬롯 피치와 개수 판별
@@ -18,11 +22,120 @@ import numpy as np
 from collections import Counter, defaultdict
 from typing import List, Tuple, Dict, Optional
 
-from .core import EntityInfo
+from core import EntityInfo
+from analysis_base import ComponentCounter
 
 
 # ═══════════════════════════════════════════════════════════════
-# Radial LINE 기반 슬롯수
+# StatorCounter 클래스 (OOP 기반)
+# ═══════════════════════════════════════════════════════════════
+
+class StatorCounter(ComponentCounter):
+    """
+    고정자(Stator)의 슬롯 수를 다양한 방법으로 추정하고 
+    슬롯 내 컨덕터를 탐지하는 클래스입니다.
+    
+    ComponentCounter 추상 클래스를 구현하며, 방사형 선분, 닫힌 영역,
+    FFT 분석 등 여러 알고리즘을 조합하여 가장 신뢰도 높은 슬롯 수를 도출합니다.
+    
+    Attributes:
+        component_type (str): "stator"
+        count_keyword (str): "slots"
+    """
+    
+    def __init__(self):
+        """StatorCounter 초기화."""
+        super().__init__(component_type="stator", count_keyword="slots")
+    
+    def count(self, 
+              entities: List[EntityInfo],
+              origin: Tuple[float, float] = (0.0, 0.0),
+              **kwargs) -> int:
+        """
+        방사형 선분 기반 슬롯수 추정 (count_slots와 동일).
+        
+        Args:
+            entities (List[EntityInfo]): 고정자 엔티티 리스트.
+            origin (Tuple[float, float]): 회전 중심 좌표.
+            **kwargs: tol_angle 등.
+        
+        Returns:
+            int: 추정된 슬롯수.
+        """
+        tol_angle = kwargs.get('tol_angle', 2.0)
+        return count_slots(entities, origin, tol_angle)
+    
+    def count_by_regions(self,
+                        entities: List[EntityInfo],
+                        origin: Tuple[float, float] = (0.0, 0.0),
+                        **kwargs) -> Dict:
+        """
+        닫힌 영역 기반 슬롯수 추정 (count_slots_by_regions와 동일).
+        
+        Args:
+            entities (List[EntityInfo]): 고정자 엔티티 리스트.
+            origin (Tuple[float, float]): 회전 중심 좌표.
+            **kwargs: airgap_r_outer, r_outer_max, tol_angle, verbose 등.
+        
+        Returns:
+            Dict: 분석 결과.
+        """
+        airgap_r_outer = kwargs.get('airgap_r_outer', None)
+        r_outer_max = kwargs.get('r_outer_max', None)
+        tol_angle = kwargs.get('tol_angle', 2.0)
+        verbose = kwargs.get('verbose', False)
+        return count_slots_by_regions(entities, origin, airgap_r_outer, r_outer_max, tol_angle, verbose)
+    
+    def estimate_robust(self,
+                       entities: List[EntityInfo],
+                       origin: Tuple[float, float] = (0.0, 0.0),
+                       verbose: bool = True,
+                       **kwargs) -> Dict:
+        """
+        교차 검증을 통한 강건한 슬롯수 추정 (estimate_slots_robust와 동일).
+        
+        Args:
+            entities (List[EntityInfo]): 고정자 엔티티 리스트.
+            origin (Tuple[float, float]): 회전 중심 좌표.
+            verbose (bool): 상세 로깅 여부.
+            **kwargs: airgap_r_outer 등.
+        
+        Returns:
+            Dict: 검증 결과.
+        """
+        airgap_r_outer = kwargs.get('airgap_r_outer', None)
+        return estimate_slots_robust(entities, origin, airgap_r_outer, verbose)
+    
+    def detect_conductors(self,
+                         entities: List[EntityInfo],
+                         origin: Tuple[float, float] = (0.0, 0.0),
+                         n_slots: int = 0,
+                         slot_pitch_deg: float = 0.0,
+                         verbose: bool = True,
+                         **kwargs) -> Dict:
+        """
+        슬롯 내 컨덕터 탐지 (detect_slot_conductors와 동일).
+        
+        Args:
+            entities (List[EntityInfo]): 고정자 엔티티 리스트.
+            origin (Tuple[float, float]): 회전 중심 좌표.
+            n_slots (int): 슬롯 수.
+            slot_pitch_deg (float): 슬롯 피치 각도.
+            verbose (bool): 상세 로깅 여부.
+            **kwargs: airgap_r_outer, r_outer_max, area_tol 등.
+        
+        Returns:
+            Dict: 컨덕터 탐지 결과.
+        """
+        airgap_r_outer = kwargs.get('airgap_r_outer', None)
+        r_outer_max = kwargs.get('r_outer_max', None)
+        area_tol = kwargs.get('area_tol', 0.3)
+        return detect_slot_conductors(entities, origin, n_slots, slot_pitch_deg, 
+                                      airgap_r_outer, r_outer_max, area_tol, verbose)
+
+
+# ═══════════════════════════════════════════════════════════════
+# Radial LINE 기반 슬롯수 (함수형 인터페이스 - 하위 호환성)
 # ═══════════════════════════════════════════════════════════════
 
 def count_slots(entities: List[EntityInfo],

@@ -41,7 +41,7 @@ import numpy as np
 from collections import Counter, defaultdict
 from typing import List, Tuple, Dict, Optional
 
-from .core import (
+from core import (
     EntityInfo, StatorRotorSplit,
     rotate_entity, mirror_entity, entity_angle
 )

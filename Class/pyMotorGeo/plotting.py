@@ -39,9 +39,9 @@ import matplotlib.pyplot as plt
 from matplotlib.patches import Polygon as MplPolygon, Patch, Arc as MplArc
 from typing import List, Tuple, Dict, Optional
 
-from .core import EntityInfo, StatorRotorSplit, rotate_point, mirror_point, mirror_entity
-from .regions import REGION_NAMES, REGION_COLORS, SHORT_NAMES
-from .symmetry import extract_one_period
+from core import EntityInfo, StatorRotorSplit, rotate_point, mirror_point, mirror_entity
+from regions import REGION_NAMES, REGION_COLORS, SHORT_NAMES
+from symmetry import extract_one_period
 
 
 class HalfUnitPlotter:
@@ -374,7 +374,7 @@ def plot_reconstructed(half_unit: Dict,
                        split: Optional[StatorRotorSplit] = None,
                        figsize: Tuple = (10, 10)):
     """반슬롯/반극에서 재구성한 기하를 시각화합니다."""
-    from .symmetry import reconstruct_geometry
+    from symmetry import reconstruct_geometry
     
     recon = reconstruct_geometry(half_unit, origin, coverage,
                                  n_poles, n_slots, period_deg)
@@ -461,7 +461,7 @@ def plot_closed_regions(entities: List[EntityInfo],
                         min_area: float = 0.5,
                         figsize: Tuple = (12, 12)):
     """한 주기의 닫힌 영역(closed region)들을 각각 색칠하여 시각화합니다."""
-    from .regions import _build_planar_graph, _traverse_faces, _face_area_signed
+    from regions import _build_planar_graph, _traverse_faces, _face_area_signed
     
     ox, oy = origin
     one_period = extract_one_period(entities, period_deg, reference_sector, origin)
@@ -821,3 +821,216 @@ def plot_reconstructed_named(half_unit: Dict,
     plt.tight_layout()
     plt.show()
     return fig, ax
+
+
+def create_interactive_visualization(stator_entities: List[EntityInfo],
+                                     rotor_entities: List[EntityInfo],
+                                     half_pole: Optional[Dict] = None,
+                                     half_slot: Optional[Dict] = None,
+                                     origin: Tuple[float, float] = (0.0, 0.0),
+                                     airgap_r: Optional[float] = None,
+                                     n_poles: Optional[int] = None,
+                                     n_slots: Optional[int] = None,
+                                     pole_pitch_deg: Optional[float] = None,
+                                     slot_pitch_deg: Optional[float] = None,
+                                     show_ui: bool = True):
+    """Notebook interactive visualization cell을 재사용 가능한 함수로 추출한 래퍼.
+
+    Notes:
+        - ipywidgets 기반 UI를 생성합니다.
+        - 반극/반슬롯 데이터가 있으면 one-pole/one-slot/period/recon_360 뷰를 함께 제공합니다.
+        - 반환된 update 함수를 직접 호출해 수동 갱신도 가능합니다.
+
+    Returns:
+        Dict: widgets, output, update 콜백, 준비된 엔티티 묶음
+    """
+    try:
+        import ipywidgets as widgets
+        from IPython.display import display, clear_output
+    except Exception as e:
+        raise ImportError("ipywidgets 환경이 필요합니다.") from e
+
+    from half_unit import reconstruct_from_half
+
+    plotter = HalfUnitPlotter(origin=origin)
+
+    poles = int(n_poles or (half_pole.get('n_poles', 1) if half_pole else 1))
+    slots = int(n_slots or (half_slot.get('n_slots', 1) if half_slot else 1))
+
+    pole_pitch = pole_pitch_deg
+    if pole_pitch is None and poles > 0:
+        pole_pitch = 360.0 / poles
+
+    slot_pitch = slot_pitch_deg
+    if slot_pitch is None and slots > 0:
+        slot_pitch = 360.0 / slots
+
+    one_pole_ents = reconstruct_from_half(half_pole, origin, n_repeats=1,
+                                          include_boundaries=False) if half_pole else []
+    one_slot_ents = reconstruct_from_half(half_slot, origin, n_repeats=1,
+                                          include_boundaries=False) if half_slot else []
+    full_recon_rotor = reconstruct_from_half(half_pole, origin, n_repeats=poles,
+                                             include_boundaries=False) if half_pole else []
+    full_recon_stator = reconstruct_from_half(half_slot, origin, n_repeats=slots,
+                                              include_boundaries=False) if half_slot else []
+
+    n_period = math.gcd(max(1, poles), max(1, slots)) if (poles and slots) else 1
+    period_deg = 360.0 / n_period if n_period else 360.0
+    poles_per_period = poles // n_period if n_period else poles
+    slots_per_period = slots // n_period if n_period else slots
+    period_rotor = reconstruct_from_half(half_pole, origin, n_repeats=poles_per_period,
+                                         include_boundaries=False) if half_pole else []
+    period_stator = reconstruct_from_half(half_slot, origin, n_repeats=slots_per_period,
+                                          include_boundaries=False) if half_slot else []
+
+    view_dropdown = widgets.Dropdown(
+        options=[
+            ('전체 도면 (Stator + Rotor)', 'full'),
+            ('Half-Pole (반극)', 'half_pole'),
+            ('1 Pole (1극 재구성)', 'one_pole'),
+            ('Half-Slot (반슬롯)', 'half_slot'),
+            ('1 Slot (1슬롯 재구성)', 'one_slot'),
+            (f'주기모델 ({period_deg:.0f}°)', 'period'),
+            ('360° 재구성', 'recon_360'),
+            ('Half-Unit 확대 (반극 + 반슬롯)', 'half_unit'),
+        ],
+        value='full',
+        description='View:',
+        layout=widgets.Layout(width='380px'),
+    )
+    chk_stator = widgets.Checkbox(value=True, description='Stator', indent=False)
+    chk_rotor = widgets.Checkbox(value=True, description='Rotor', indent=False)
+    chk_airgap = widgets.Checkbox(value=True, description='Airgap', indent=False)
+    chk_wedge = widgets.Checkbox(value=True, description='Wedge', indent=False)
+    chk_mirror = widgets.Checkbox(value=True, description='Mirror Axis', indent=False)
+
+    controls_box = widgets.HBox([
+        view_dropdown,
+        widgets.VBox([chk_stator, chk_rotor]),
+        widgets.VBox([chk_airgap, chk_wedge, chk_mirror]),
+    ])
+
+    fig_out = widgets.Output()
+
+    def _update_plot(*_):
+        view = view_dropdown.value
+        with fig_out:
+            clear_output(wait=True)
+            fig, ax = plt.subplots(figsize=(8, 8))
+            title_str = ''
+
+            if view == 'full':
+                title_str = f'전체 도면 ({len(stator_entities) + len(rotor_entities)} ent)'
+                if chk_stator.value:
+                    plotter.draw_entities(ax, stator_entities, color='navy', lw=0.5)
+                if chk_rotor.value:
+                    plotter.draw_entities(ax, rotor_entities, color='red', lw=0.5)
+
+            elif view == 'half_pole' and half_pole:
+                hp = half_pole.get('normalized_entities', [])
+                hp_d = half_pole.get('half_pitch_deg', 0.0)
+                title_str = f'Half-Pole ({len(hp)} ent, {hp_d:.1f}°)'
+                plotter.draw_entities(ax, hp, color='red', lw=0.8)
+                plotter.draw_entities(ax, half_pole.get('concentric_arcs', []), color='orange', lw=1.2)
+                r_m = max((ei.r_max for ei in hp), default=30)
+                if chk_wedge.value:
+                    ax.add_patch(plt.matplotlib.patches.Wedge(origin, r_m * 1.05, 0, hp_d,
+                                                              alpha=0.08, color='red'))
+                if chk_mirror.value:
+                    mx = r_m * 1.1 * math.cos(math.radians(hp_d))
+                    my = r_m * 1.1 * math.sin(math.radians(hp_d))
+                    ax.plot([0, mx], [0, my], 'r--', lw=1, label=f'mirror {hp_d:.1f}°')
+                    ax.legend(fontsize=7)
+
+            elif view == 'one_pole' and one_pole_ents:
+                ppd = float(pole_pitch or 0.0)
+                title_str = f'1 Pole ({len(one_pole_ents)} ent, {ppd:.1f}°)'
+                plotter.draw_entities(ax, one_pole_ents, color='darkred', lw=0.8)
+                r_m = max((ei.r_max for ei in one_pole_ents), default=30)
+                if chk_wedge.value:
+                    ax.add_patch(plt.matplotlib.patches.Wedge(origin, r_m * 1.05, 0, ppd,
+                                                              alpha=0.08, color='darkred'))
+
+            elif view == 'half_slot' and half_slot:
+                hs = half_slot.get('normalized_entities', [])
+                hs_d = half_slot.get('half_pitch_deg', 0.0)
+                title_str = f'Half-Slot ({len(hs)} ent, {hs_d:.1f}°)'
+                plotter.draw_entities(ax, hs, color='navy', lw=0.8)
+                r_m = max((ei.r_max for ei in hs), default=60)
+                if chk_wedge.value:
+                    ax.add_patch(plt.matplotlib.patches.Wedge(origin, r_m * 1.05, 0, hs_d,
+                                                              alpha=0.08, color='navy'))
+                if chk_mirror.value:
+                    mx = r_m * 1.1 * math.cos(math.radians(hs_d))
+                    my = r_m * 1.1 * math.sin(math.radians(hs_d))
+                    ax.plot([0, mx], [0, my], 'b--', lw=1, label=f'mirror {hs_d:.1f}°')
+                    ax.legend(fontsize=7)
+
+            elif view == 'one_slot' and one_slot_ents:
+                spd = float(slot_pitch or 0.0)
+                title_str = f'1 Slot ({len(one_slot_ents)} ent, {spd:.1f}°)'
+                plotter.draw_entities(ax, one_slot_ents, color='darkblue', lw=0.8)
+                r_m = max((ei.r_max for ei in one_slot_ents), default=60)
+                if chk_wedge.value:
+                    ax.add_patch(plt.matplotlib.patches.Wedge(origin, r_m * 1.05, 0, spd,
+                                                              alpha=0.08, color='darkblue'))
+
+            elif view == 'period':
+                n_total = len(period_rotor) + len(period_stator)
+                title_str = f'주기모델 {period_deg:.0f}° ({n_total} ent, {poles_per_period}P/{slots_per_period}S)'
+                if chk_rotor.value:
+                    plotter.draw_entities(ax, period_rotor, color='darkred', lw=0.6)
+                if chk_stator.value:
+                    plotter.draw_entities(ax, period_stator, color='darkblue', lw=0.6)
+                r_m = max(max((ei.r_max for ei in period_stator), default=60),
+                          max((ei.r_max for ei in period_rotor), default=30))
+                if chk_wedge.value:
+                    ax.add_patch(plt.matplotlib.patches.Wedge(origin, r_m * 1.05, 0, period_deg,
+                                                              alpha=0.04, color='gray'))
+
+            elif view == 'recon_360':
+                n_total = len(full_recon_rotor) + len(full_recon_stator)
+                title_str = f'360° 재구성 ({n_total} ent)'
+                if chk_rotor.value:
+                    plotter.draw_entities(ax, full_recon_rotor, color='darkred', lw=0.4)
+                if chk_stator.value:
+                    plotter.draw_entities(ax, full_recon_stator, color='darkblue', lw=0.4)
+
+            elif view == 'half_unit':
+                title_str = 'Half-Unit 확대'
+                if half_pole:
+                    hp = half_pole.get('normalized_entities', [])
+                    plotter.draw_entities(ax, hp, color='red', lw=1.0)
+                if half_slot:
+                    hs = half_slot.get('normalized_entities', [])
+                    plotter.draw_entities(ax, hs, color='navy', lw=1.0)
+
+            if chk_airgap.value and airgap_r is not None and view in ('full', 'recon_360', 'period'):
+                ax.add_patch(plt.Circle(origin, float(airgap_r), fill=False,
+                                        color='gray', lw=1, ls='--'))
+            ax.plot(*origin, 'r*', ms=6)
+            ax.set_aspect('equal')
+            ax.set_title(title_str, fontsize=10)
+            fig.tight_layout()
+            plt.show()
+
+    for w in [view_dropdown, chk_stator, chk_rotor, chk_airgap, chk_wedge, chk_mirror]:
+        w.observe(_update_plot, names='value')
+
+    if show_ui:
+        display(controls_box, fig_out)
+        _update_plot()
+
+    return {
+        'controls': controls_box,
+        'output': fig_out,
+        'update': _update_plot,
+        'prepared': {
+            'one_pole_ents': one_pole_ents,
+            'one_slot_ents': one_slot_ents,
+            'period_rotor': period_rotor,
+            'period_stator': period_stator,
+            'full_recon_rotor': full_recon_rotor,
+            'full_recon_stator': full_recon_stator,
+        },
+    }

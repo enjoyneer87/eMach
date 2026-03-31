@@ -57,7 +57,7 @@ from shapely.geometry import LineString, Point, MultiPolygon, Polygon, box
 from shapely.ops import polygonize, unary_union, split
 from shapely.validation import make_valid
 
-from .core import EntityInfo
+from core import EntityInfo
 
 
 # ═══════════════════════════════════════════════════════════════

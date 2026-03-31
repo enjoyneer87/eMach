@@ -89,7 +89,7 @@ import os
 
 def _print_face_table(faces, label: str) -> None:
     """face 리스트를 테이블 형태로 출력."""
-    from .region_closing import REGION_NAMES
+    from region_closing import REGION_NAMES
     if not faces:
         return
     print(f"\n  {label} 영역 ({len(faces)}개):")
@@ -114,7 +114,7 @@ def cmd_analyze(args) -> int:
 
     origin = (args.origin[0], args.origin[1]) if args.origin else (0.0, 0.0)
 
-    from .pipeline import analyze_dxf_v2, export_result_json
+    from pipeline import analyze_dxf_v2, export_result_json
 
     result = analyze_dxf_v2(
         dxf_path,
@@ -147,12 +147,12 @@ def cmd_analyze(args) -> int:
 
 def _export_pyleecan(result: dict, output_path: str) -> None:
     """pyleecan Machine 객체를 JSON으로 저장."""
-    from .pyleecan_bridge import check_pyleecan_available, create_pyleecan_machine
+    from pyleecan_bridge import check_pyleecan_available, create_pyleecan_machine
 
     if not check_pyleecan_available():
         print("[경고] pyleecan이 설치되지 않았습니다. JSON 치수 파일로 대체합니다.",
               file=sys.stderr)
-        from .pipeline import export_result_json
+        from pipeline import export_result_json
         export_result_json(result, output_path)
         return
 
@@ -176,7 +176,7 @@ def cmd_info(args) -> int:
 
     origin = (args.origin[0], args.origin[1]) if args.origin else (0.0, 0.0)
 
-    from .pipeline import analyze_dxf_v2
+    from pipeline import analyze_dxf_v2
 
     result = analyze_dxf_v2(
         dxf_path,

@@ -13,7 +13,7 @@ import ezdxf
 from collections import Counter
 from typing import List, Tuple, Dict, Any
 
-from .core import EntityInfo
+from core import EntityInfo
 
 # ═══════════════════════════════════════════════════════════════
 # 상수 정의
@@ -374,3 +374,132 @@ def read_entity_list(dxf_path: str,
             print(f"  {name:30s}  {cnt}")
 
     return entities, doc
+
+
+def manual_parse_dxf_entities(dxf_path: str,
+                              encoding: str = 'cp932',
+                              errors: str = 'ignore') -> List[EntityInfo]:
+    """ezdxf 로드에 실패한 경우를 위한 최소 수동 DXF 파서입니다.
+
+    Notes:
+        - ENTITIES 섹션에서 LINE/LWPOLYLINE/ARC/CIRCLE만 파싱합니다.
+        - 엔티티 속성은 핵심 좌표 정보 위주로 추출합니다.
+        - fallback 경로를 위한 유틸 함수이므로 복잡 엔티티는 의도적으로 제외합니다.
+
+    Args:
+        dxf_path (str): DXF 파일 경로.
+        encoding (str): 파일 읽기 인코딩. 기본값은 'cp932'.
+        errors (str): 인코딩 오류 처리 방식. 기본값은 'ignore'.
+
+    Returns:
+        List[EntityInfo]: 파싱된 엔티티 리스트.
+    """
+    entities: List[EntityInfo] = []
+
+    with open(dxf_path, 'r', encoding=encoding, errors=errors) as f:
+        lines = [ln.strip() for ln in f.readlines()]
+
+    i = 0
+    in_entities = False
+    while i < len(lines) - 1:
+        code = lines[i]
+        val = lines[i + 1]
+
+        if code == '2' and val == 'ENTITIES':
+            in_entities = True
+            i += 2
+            continue
+        if in_entities and code == '0' and val == 'ENDSEC':
+            break
+
+        if in_entities and code == '0' and val in ('LINE', 'LWPOLYLINE', 'ARC', 'CIRCLE'):
+            etype = val
+            j = i + 2
+            layer = 'DEFAULT'
+            pts = []
+            center = None
+            radius = None
+            start_angle = None
+            end_angle = None
+            x_tmp = None
+
+            x1 = y1 = x2 = y2 = None
+            cx = cy = None
+
+            while j < len(lines) - 1:
+                c = lines[j]
+                v = lines[j + 1]
+                if c == '0':
+                    break
+                try:
+                    ci = int(c)
+                except Exception:
+                    j += 2
+                    continue
+
+                if ci == 8:
+                    layer = v
+                elif etype == 'LINE':
+                    if ci == 10:
+                        x1 = float(v)
+                    elif ci == 20:
+                        y1 = float(v)
+                    elif ci == 11:
+                        x2 = float(v)
+                    elif ci == 21:
+                        y2 = float(v)
+                elif etype == 'LWPOLYLINE':
+                    if ci == 10:
+                        x_tmp = float(v)
+                    elif ci == 20 and x_tmp is not None:
+                        pts.append((x_tmp, float(v)))
+                        x_tmp = None
+                elif etype in ('ARC', 'CIRCLE'):
+                    if ci == 10:
+                        cx = float(v)
+                    elif ci == 20:
+                        cy = float(v)
+                    elif ci == 40:
+                        radius = float(v)
+                    elif ci == 50:
+                        start_angle = float(v)
+                    elif ci == 51:
+                        end_angle = float(v)
+
+                j += 2
+
+            if etype == 'LINE' and None not in (x1, y1, x2, y2):
+                pts = [(x1, y1), (x2, y2)]
+
+            if etype in ('ARC', 'CIRCLE') and (cx is not None and cy is not None):
+                center = (cx, cy)
+                if radius is not None:
+                    # core.EntityInfo의 r_min/r_max는 points 기반 property이므로 샘플 포인트를 생성합니다.
+                    pts = [
+                        (cx + radius, cy),
+                        (cx - radius, cy),
+                        (cx, cy + radius),
+                        (cx, cy - radius),
+                    ]
+                else:
+                    pts = [(cx, cy)]
+
+            if pts:
+                entities.append(EntityInfo(
+                    etype=etype,
+                    layer=layer,
+                    points=pts,
+                    center=center,
+                    radius=radius,
+                    start_angle=start_angle,
+                    end_angle=end_angle,
+                    is_closed=(etype == 'CIRCLE'),
+                    raw=None,
+                ))
+
+            i = j
+            continue
+
+        i += 2
+
+    return entities

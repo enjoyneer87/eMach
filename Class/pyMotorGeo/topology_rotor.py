@@ -11,8 +11,12 @@ pyMotorGeo.topology_rotor
 특히 IPM 모터의 경우 자석 개수, 배리어 배치, 플럭스 방향 등을 정확히 추출하여 
 설계 분석에 활용됩니다.
 
-주요 기능
----------
+주요 클래스
+-----------
+- RotorTopologyClassifier    : 회전자 토폴로지 분석 클래스 (ComponentTopologyClassifier 상속)
+
+주요 기능 (함수형 인터페이스 - 하위 호환성)
+---------------------------------------------
 - classify_rotor_entities            : 한 극 영역 엔티티의 자동 분류 및 토폴로지 판별
 - reassign_rotor_region              : GUI 기반 영역 재지정 (사용자 수정 지원)
 - get_rotor_region_summary           : 분류 결과 통계 및 요약
@@ -24,12 +28,146 @@ import numpy as np
 from typing import List, Tuple, Dict, Optional
 from collections import defaultdict, Counter
 
-from .core import EntityInfo
-from .region_closing import create_radial_line, create_arc_boundary, detect_closed_faces
+from core import EntityInfo
+from topology_base import ComponentTopologyClassifier
+from region_closing import create_radial_line, create_arc_boundary, detect_closed_faces
 
 
 # ═══════════════════════════════════════════════════════════════
-# 유틸리티
+# RotorTopologyClassifier 클래스 (OOP 기반)
+# ═══════════════════════════════════════════════════════════════
+
+ROTOR_REGION_NAMES = {
+    'magnet':        'Magnet',
+    'air_barrier':   'Air Barrier',
+    'rotor_core':    'Rotor Core',
+    'shaft':         'Shaft',
+    'airgap_rotor':  'Airgap (rotor side)',
+    'unknown':       'Unknown',
+}
+
+ROTOR_REGION_COLORS = {
+    'magnet':        '#FF4444',
+    'air_barrier':   '#C0C0C0',
+    'rotor_core':    '#FF8C42',
+    'shaft':         '#8B8B8B',
+    'airgap_rotor':  '#E0E0E0',
+    'unknown':       '#D0D0D0',
+}
+
+
+class RotorTopologyClassifier(ComponentTopologyClassifier):
+    """
+    회전자(Rotor)의 토폴로지를 분석 및 분류하는 클래스입니다.
+    
+    ComponentTopologyClassifier를 상속하여 회전자 특화 분류 로직을 구현합니다.
+    자석(Magnet), 공기 배리어(Air Barrier), 철심(Rotor Core) 등의 영역을 
+    기하학적 특성에 따라 자동 분류하고 SPM/IPM/SynRM 토폴로지를 판별합니다.
+    
+    Attributes:
+        component_type (str): "rotor"
+        region_names (Dict): 회전자 영역명 매핑
+        region_colors (Dict): 회전자 영역 색상 매핑
+    """
+    
+    def __init__(self):
+        """RotorTopologyClassifier 초기화."""
+        super().__init__(
+            component_type="rotor",
+            region_names=ROTOR_REGION_NAMES,
+            region_colors=ROTOR_REGION_COLORS
+        )
+    
+    def classify_entities(self,
+                         component_entities: List[Dict],
+                         origin: Tuple[float, float] = (0.0, 0.0),
+                         **kwargs) -> Dict:
+        """
+        회전자 엔티티를 분류하여 토폴로지를 판별합니다 (classify_rotor_entities 래퍼).
+        
+        Args:
+            component_entities (List[Dict]): 회전자 엔티티 리스트.
+            origin (Tuple[float, float]): 회전 중심 좌표.
+            **kwargs: airgap_r, pole_pitch_deg, r_shaft, verbose 등.
+        
+        Returns:
+            Dict: 분류 결과 및 토폴로지 정보.
+        """
+        airgap_r = kwargs.get('airgap_r', None)
+        pole_pitch_deg = kwargs.get('pole_pitch_deg', None)
+        r_shaft = kwargs.get('r_shaft', None)
+        verbose = kwargs.get('verbose', False)
+        
+        return classify_rotor_entities(
+            component_entities, origin, airgap_r, pole_pitch_deg, r_shaft, verbose
+        )
+    
+    def classify_with_closing_compare(self,
+                                      component_entities: List[Dict],
+                                      origin: Tuple[float, float] = (0.0, 0.0),
+                                      **kwargs) -> Dict:
+        """
+        폐곡선 비교 기반 정교한 분류 (classify_rotor_entities_with_closing_compare 래퍼).
+        
+        Args:
+            component_entities (List[Dict]): 회전자 엔티티 리스트.
+            origin (Tuple[float, float]): 회전 중심 좌표.
+            **kwargs: 분석 파라미터.
+        
+        Returns:
+            Dict: 정교한 분류 결과.
+        """
+        verbose = kwargs.get('verbose', False)
+        return classify_rotor_entities_with_closing_compare(
+            component_entities, origin, verbose
+        )
+    
+    def reassign_region(self,
+                       regions: List[Dict],
+                       new_assignment: Dict[int, str]) -> List[Dict]:
+        """
+        분류된 영역들의 태그를 재지정합니다.
+        
+        Args:
+            regions (List[Dict]): 분류된 영역들.
+            new_assignment (Dict[int, str]): {region_index: new_tag} 매핑.
+        
+        Returns:
+            List[Dict]: 업데이트된 영역들.
+        """
+        updated_regions = []
+        for idx, region in enumerate(regions):
+            if idx in new_assignment:
+                region = dict(region)
+                region['region_type'] = new_assignment[idx]
+            updated_regions.append(region)
+        return updated_regions
+    
+    def get_region_summary(self,
+                          regions: List[Dict]) -> Dict:
+        """
+        분류된 영역들의 요약 통계를 반환합니다.
+        
+        Args:
+            regions (List[Dict]): 분류된 영역들.
+        
+        Returns:
+            Dict: 영역 요약 통계.
+        """
+        from collections import Counter
+        region_types = Counter(r.get('region_type', 'unknown') for r in regions)
+        total_area = sum(r.get('area', 0.0) for r in regions)
+        
+        return {
+            'n_region': len(regions),
+            'region_types': dict(region_types),
+            'total_area': total_area,
+            'component_type': self.component_type
+        }
+
+
+# ═══════════════════════════════════════════════════════════════
+# Utility 함수들
 # ═══════════════════════════════════════════════════════════════
 
 def _entity_radii(ei: EntityInfo,
