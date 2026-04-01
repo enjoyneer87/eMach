@@ -911,12 +911,60 @@ def run_plan_db_sync(server_id: str, python_executable: str) -> ActionState:
     return ActionState("in_progress", err[-1] if err else "sync failed")
 
 
+def _run_rc_readiness_refresh(
+    server_id: str,
+    python_executable: str,
+    notion_sync_status: str,
+) -> ActionState:
+    script_path = Path(__file__).resolve().parent / "rc_readiness_automation.py"
+    if not script_path.exists():
+        return ActionState("in_progress", "rc_readiness_automation.py missing")
+
+    cmd = [
+        python_executable,
+        str(script_path),
+        "--python-executable",
+        python_executable,
+        "--server-id",
+        server_id,
+        "--notion-sync-status",
+        notion_sync_status,
+    ]
+    try:
+        proc = _run(cmd, cwd=ROOT, timeout_sec=300)
+    except subprocess.TimeoutExpired:
+        return ActionState("in_progress", "rc readiness timeout (300s)")
+
+    out_lines = (proc.stdout or "").strip().splitlines()
+    status = "done" if proc.returncode == 0 else "in_progress"
+    evidence = ""
+    for line in out_lines:
+        if line.startswith("RC_READINESS_STATUS="):
+            if line.split("=", 1)[1].strip() == "done":
+                status = "done"
+            else:
+                status = "in_progress"
+        elif line.startswith("RC_READINESS_EVIDENCE="):
+            evidence = line.split("=", 1)[1].strip()
+
+    if not evidence:
+        err_lines = (proc.stderr or proc.stdout or "rc readiness failed").strip().splitlines()
+        evidence = err_lines[-1] if err_lines else "rc readiness failed"
+
+    return ActionState(status, evidence)
+
+
 def run_cycle(server_id: str, python_executable: str) -> dict:
     REPORT_DIR.mkdir(parents=True, exist_ok=True)
     started = _now_str()
 
     sync_state = run_plan_db_sync(server_id, python_executable=python_executable)
     action_states = evaluate_actions()
+    action_states[12] = _run_rc_readiness_refresh(
+        server_id=server_id,
+        python_executable=python_executable,
+        notion_sync_status=sync_state.status,
+    )
     git_hash, git_subject = _latest_git_commit()
     _sync_action_status_to_notion(
         action_states,
