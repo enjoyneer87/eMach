@@ -7,9 +7,6 @@
 			"path": "."
 		},
 		{
-			"path": "../../gitPyleecan"
-		},
-		{
 			"path": "../../NvidiaNemo"
 		},
 		{
@@ -18,6 +15,15 @@
 		},
 		{
 			"path": "../gitSyREpub/syre_public"
+		},
+		{
+			"path": "../../gitfolder"
+		},
+		{
+			"path": "../../pyMotorcad"
+		},
+		{
+			"path": "../pyAEDT/pyaedt"
 		}
 	],
 	"settings": {

@@ -1,0 +1,89 @@
+@startuml PyMotorCAD_Architecture
+!theme plain
+skinparam backgroundColor #f7f7f7
+skinparam classBackgroundColor #fff5e6
+skinparam classBorderColor #a35a00
+
+title PyMotorCAD Architecture (RPC Core + Geometry Tree + Datastore)
+
+package "RPC Session Core" {
+  class MotorCAD
+  class _MotorCADCore
+  class _MotorCADConnection
+  class MotorCADCompatibility
+
+  MotorCAD --|> _MotorCADCore
+  _MotorCADCore --> _MotorCADConnection
+  MotorCADCompatibility --|> _MotorCADCore
+}
+
+package "RPC Method Mixins" {
+  class _RpcMethodsGeometry
+  class _RpcMethodsFEAGeometry
+  class _RpcMethodsVariables
+  class _RpcMethodsCalculations
+  class _RpcMethodsGraphs
+  class _RpcMethodsMaterials
+  class _RpcMethodsAdaptiveGeometry
+  class _RpcMethodsUtility
+
+  _MotorCADCore ..> _RpcMethodsGeometry
+  _MotorCADCore ..> _RpcMethodsFEAGeometry
+  _MotorCADCore ..> _RpcMethodsVariables
+  _MotorCADCore ..> _RpcMethodsCalculations
+  _MotorCADCore ..> _RpcMethodsGraphs
+  _MotorCADCore ..> _RpcMethodsMaterials
+  _MotorCADCore ..> _RpcMethodsAdaptiveGeometry
+  _MotorCADCore ..> _RpcMethodsUtility
+}
+
+package "Geometry Domain" {
+  class GeometryTree
+  class TreeRegion
+  class TreeRegionMagnet
+  class Region
+  class RegionMagnet
+  class Entity
+  class Line
+  class Arc
+  class Coordinate
+  class EntityList
+  class _RegionDrawing
+
+  GeometryTree --> TreeRegion
+  TreeRegion --|> Region
+  TreeRegionMagnet --|> TreeRegion
+  RegionMagnet --|> Region
+  TreeRegion --> EntityList
+  EntityList --> Entity
+  Line --|> Entity
+  Arc --|> Entity
+  Entity --> Coordinate
+  _RegionDrawing ..> TreeRegion
+}
+
+package "Data/Result Domain" {
+  class Datastore
+  class DataStoreRecord
+  class DataStoreRecordArray
+  class DataStoreRecordArray2D
+
+  Datastore --> DataStoreRecord
+  DataStoreRecordArray --|> DataStoreRecord
+  DataStoreRecordArray2D --|> DataStoreRecord
+}
+
+MotorCAD --> GeometryTree
+MotorCAD --> Datastore
+_RpcMethodsGeometry ..> GeometryTree : mutate/query
+_RpcMethodsGraphs ..> Datastore : export plot/data
+_RpcMethodsAdaptiveGeometry ..> TreeRegion : adaptive template
+
+note right of MotorCAD
+Main runtime entry point:
+- connect to Motor-CAD
+- edit geometry/variables
+- run calc and export
+end note
+
+@enduml

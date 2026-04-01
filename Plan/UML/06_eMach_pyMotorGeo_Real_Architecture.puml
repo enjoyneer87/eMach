@@ -1,0 +1,466 @@
+'------------------------------------------------------
+' eMach/pyMotorGeo - DXF Reverse-Engineering Framework
+' Real Architecture UML (32 Modules + Notebook Wrapper)
+' Generated: 2026-04-01 [Using actual d:\KangDH\Emlab_emach structure]
+'------------------------------------------------------
+
+@startuml eMach_Real_Architecture
+!theme plain
+skinparam backgroundColor #f0f0f0
+skinparam classBackgroundColor #fff3e0
+skinparam classBorderColor #e65100
+
+title eMach/pyMotorGeo: DXF Reverse-Engineering & Analysis Framework
+
+package "INPUT SOURCES" {
+  database "DXF Files (CAD)" as dxf_in
+  database "Existing Motors" as motor_in
+  database "SyR-e/Pyleecan Export" as design_in
+}
+
+package "DXF READING & PARSING (pyMotorGeo.reader)" {
+  class EntityInfo {
+    etype: str [LINE/ARC/CIRCLE]
+    points: List[(x,y)]
+    radius: Optional[float]
+    center: Optional[(x,y)]
+    is_closed: bool
+    ---
+    r_min, r_max: float [property]
+    angle_deg: float [property]
+    get_area() → float
+    rotate(), mirror(), transform()
+  }
+
+  class DXFReader {
+    dxf_path: str
+    expand_inserts: bool
+    ---
+    read_entity_list(dxf_path) → List[EntityInfo]
+    explode_insert(block_ref) → List[EntityInfo]
+    transform_point(p, matrix) → (x,y)
+    manual_parse_dxf_entities() → fallback
+  }
+
+  class DXFDocument {
+    " ezdxf wrapper"
+    layers: dict
+    entities: list
+    blocks: dict
+  }
+
+  DXFReader --> DXFDocument
+  DXFReader --> EntityInfo
+}
+
+package "GEOMETRIC ANALYSIS (pyMotorGeo.analysis_*)" {
+  class GeometryAnalyzer {
+    " Find motor reference points"
+    entities: List[EntityInfo]
+    ---
+    find_origin_candidates() → List[Candidate]
+    find_concentric_radii() → List[Radius]
+    find_airgap_radius() → float
+    analyze_periodicity()
+  }
+
+  class OriginFinder {
+    " Detect motor center (stator/rotor intersection)"
+    candidates: List[(x,y)]
+    scores: List[float]
+    ---
+    score_by_symmetry()
+    rank_candidates()
+  }
+
+  class AirgapRadius {
+    " Estimate gap between stator/rotor"
+    Rast_outer: float
+    Rrot_outer: float
+    Rast_inner: float
+    Rrot_outer_actual: float
+    ---
+    estimate_gap_radius() → float
+    validate_consistency()
+  }
+
+  GeometryAnalyzer --> OriginFinder
+  GeometryAnalyzer --> AirgapRadius
+}
+
+package "ROTOR/STATOR SEPARATION (pyMotorGeo.analysis_airgap)" {
+  class AirgapAnalysis {
+    origin: (x,y)
+    airgap_radius: float
+    margin_percent: float
+    ---
+    split_stator_rotor(entities) → (stator_ents, rotor_ents)
+    assign_region_radial()
+  }
+
+  class RotorEntities {
+    entities: List[EntityInfo]
+    min_r: float
+    max_r: float
+    origin: (x,y)
+  }
+
+  class StatorEntities {
+    entities: List[EntityInfo]
+    min_r: float
+    max_r: float
+    origin: (x,y)
+  }
+
+  AirgapAnalysis --> RotorEntities
+  AirgapAnalysis --> StatorEntities
+}
+
+package "POLE & SLOT DETECTION (pyMotorGeo.analysis_*)" {
+  class PoleCounter {
+    rotor_entities: List[EntityInfo]
+    origin: (x,y)
+    radius_min, radius_max: float
+    ---
+    count_poles(angular_threshold) → int
+    find_pole_angles() → List[float]
+    detect_pole_symmetry()
+  }
+
+  class SlotCounter {
+    stator_entities: List[EntityInfo]
+    origin: (x,y)
+    radius_min, radius_max: float
+    ---
+    count_slots(angular_threshold) → int
+    find_slot_positions() → List[Slot]
+    estimate_slot_filling()
+  }
+
+  class CircularArrayDetection {
+    " GenericMultiple pole/slot arrays"
+    n_elements: int
+    base_pattern: Pattern
+    periodic: bool
+    ---
+    detect_circular_repetition() → Pattern
+    extract_period_unit() → Geometry
+  }
+
+  PoleCounter --> CircularArrayDetection
+  SlotCounter --> CircularArrayDetection
+}
+
+package "TOPOLOGY CLASSIFICATION (pyMotorGeo.topology_*)" {
+  class TopologyClassifier {
+    " Base topology detector"
+    motor_type: str [expected]
+    confidence: float
+    ---
+    classify() → TopologyResult
+  }
+
+  class RotorTopologyClassifier {
+    rotor_entities: List[EntityInfo]
+    n_poles: int
+    ---
+    classify_rotor_entities() → RotorTopology
+    detect_poles() → str [SPM/IPM/SynRM/Spoke]
+    detect_magnets() → List[MagnetRegion]
+    detect_barriers() → List[BarrierRegion]
+  }
+
+  class StatorTopologyClassifier {
+    stator_entities: List[EntityInfo]
+    n_slots: int
+    ---
+    classify_stator_entities() → StatorTopology
+    detect_winding_regions()
+    detect_tooth_profile()
+  }
+
+  class RotorTopology {
+    topology_type: str [SPM/IPM/SynRM/Spoke/EESM]
+    n_magnets: int [detected]
+    n_barriers: int [detected]
+    magnet_regions: List[Region]
+    barrier_regions: List[Region]
+    confidence_score: float
+    ---
+    to_dict() → dict
+  }
+
+  class StatorTopology {
+    n_slots: int
+    conductor_regions: List[Region]
+    tooth_regions: List[Region]
+    winding_area: float
+  }
+
+  TopologyClassifier <|-- RotorTopologyClassifier
+  TopologyClassifier <|-- StatorTopologyClassifier
+  RotorTopologyClassifier --> RotorTopology
+  StatorTopologyClassifier --> StatorTopology
+}
+
+package "REGION DETECTION & CLOSING (pyMotorGeo.region_*)" {
+  class RegionDetector {
+    " Find closed loops in geometry"
+    entities: List[EntityInfo]
+    origin: (x,y)
+    ---
+    find_closed_regions() → List[ClosedRegion]
+    detect_region_boundaries()
+  }
+
+  class RegionClosing {
+    " Fill gaps in incomplete geometries"
+    regions: List[ClosedRegion]
+    gap_tolerance: float
+    ---
+    close_open_regions()
+    fill_gaps()
+    verify_closure()
+  }
+
+  class RegionLabeling {
+    " Assign semantic labels"
+    regions: List[ClosedRegion]
+    topology: TopologyClassifier
+    ---
+    label_magnet_region()
+    label_barrier_region()
+    label_conductor_region()
+    label_tooth_region()
+  }
+
+  class ClosedRegion {
+    entity_ids: List[int]
+    boundary: Path
+    area: float
+    centroid: (x,y)
+    semantic_label: str [magnet/barrier/conductor/...]
+    confidence: float
+  }
+
+  RegionDetector --> ClosedRegion
+  RegionClosing --> ClosedRegion
+  RegionLabeling --> ClosedRegion
+}
+
+package "HALF-UNIT EXTRACTION (pyMotorGeo.half_unit)" {
+  class HalfUnitExtractor {
+    entities: List[EntityInfo]
+    n_poles: int
+    periodicity: str [FULL/HALF/QUARTER]
+    ---
+    extract_half_unit() → Geometry
+    extract_quarter_unit() → Geometry
+    identify_symmetry_planes()
+  }
+
+  class HalfUnitRegions {
+    stator_half: Region
+    rotor_half: Region
+    original_periodicity: float [degrees]
+    expanded_periodicity: float [degrees]
+    ---
+    reconstruct_full_motor() → FullGeometry
+  }
+
+  HalfUnitExtractor --> HalfUnitRegions
+}
+
+package "FACE DETECTION (pyMotorGeo.face_detection)" {
+  class FaceDetector {
+    closed_regions: List[ClosedRegion]
+    material_region: Region
+    ---
+    detect_faces() → List[Face]
+    assign_face_normals()
+  }
+
+  class Face {
+    boundary: Curve
+    normal: (x,y,z)
+    area: float
+    material_type: str
+  }
+
+  FaceDetector --> Face
+}
+
+package "EXPORT & BRIDGES" {
+  class DXFExporter {
+    result: AnalysisResult
+    ---
+    export_regions_to_dxf(path)
+    add_layer_per_region()
+    add_metadata_attributes()
+  }
+
+  class MotorCADGlue {
+    " Motor-CAD synchronization"
+    geometry: Geometry
+    half_unit: HalfUnitRegions
+    ---
+    motorcad_bridge() → CADModel
+    sync_dimensions()
+    apply_symmetry()
+  }
+
+  class PyleecanGlue {
+    " Adapt to Pyleecan classes"
+    topology: RotorTopology
+    geometry: Geometry
+    ---
+    to_machine_ipmsm() → Machine[IPMSM]
+    to_machine_syrm() → Machine[SyRM]
+    to_machine_spm() → Machine[SPM]
+    extract_parameters() → dict
+  }
+
+  DXFExporter --> DXFDocument
+  MotorCADGlue --> Face
+  PyleecanGlue --> RotorTopology
+}
+
+package "PIPELINE ORCHESTRATION" {
+  class MotorAnalysisPipeline {
+    dxf_path: str
+    ---
+    run_full_analysis() → AnalysisResult
+    step1_read_dxf()
+    step2_find_origin()
+    step3_detect_airgap()
+    step4_count_poles_slots()
+    step5_split_rotor_stator()
+    step6_classify_topology()
+    step7_detect_regions()
+    step8_close_regions()
+    step9_extract_half_unit()
+    step10_detect_faces()
+    step11_export_result()
+  }
+
+  class AnalysisResult {
+    motor_type: str [auto-detected]
+    geometry: Geometry
+    topology: RotorTopology + StatorTopology
+    regions: List[ClosedRegion]
+    faces: List[Face]
+    half_units: HalfUnitRegions
+    export_paths: dict
+    execution_log: str
+    ---
+    to_dict() → dict
+    to_json() → str
+    save_result()
+  }
+
+  MotorAnalysisPipeline --> AnalysisResult
+  MotorAnalysisPipeline --> DXFReader
+  MotorAnalysisPipeline --> GeometryAnalyzer
+  MotorAnalysisPipeline --> PoleCounter
+  MotorAnalysisPipeline --> SlotCounter
+  MotorAnalysisPipeline --> RotorTopologyClassifier
+  MotorAnalysisPipeline --> RegionDetector
+  MotorAnalysisPipeline --> RegionClosing
+  MotorAnalysisPipeline --> HalfUnitExtractor
+}
+
+package "NOTEBOOK WRAPPER (Jupyter Integration)" {
+  class NotebookCell1 {
+    " Environment Setup"
+    from pyMotorGeo import *
+    _configure_korean_font()
+  }
+
+  class NotebookCell2 {
+    " DXF Load"
+    result = analyze_dxf_v2(dxf_path)
+  }
+
+  class NotebookCell3 {
+    " Reload/Verify"
+    result = manual_parse_dxf_entities()
+  }
+
+  class NotebookCell4_20 {
+    " Stator/Rotor split"
+    " Pole/Slot detection"
+    " Half-unit extraction"
+  }
+
+  class NotebookCell21_27 {
+    " Topology analysis (DEFERRED)"
+    " [Optional, non-blocking in Phase 1]"
+  }
+
+  NotebookCell2 --> MotorAnalysisPipeline
+  NotebookCell3 --> DXFReader
+  NotebookCell4_20 --> PoleCounter
+  NotebookCell4_20 --> SlotCounter
+  NotebookCell21_27 --> RotorTopologyClassifier
+}
+
+' Data Flow
+dxf_in --> DXFReader
+motor_in --> DXFReader
+design_in --> DXFReader
+
+DXFReader --> EntityInfo
+EntityInfo --> GeometryAnalyzer
+GeometryAnalyzer --> AirgapAnalysis
+AirgapAnalysis --> PoleCounter
+AirgapAnalysis --> SlotCounter
+PoleCounter --> RotorTopologyClassifier
+SlotCounter --> StatorTopologyClassifier
+RotorTopologyClassifier --> RegionDetector
+RegionDetector --> RegionClosing
+RegionClosing --> RegionLabeling
+RegionLabeling --> HalfUnitExtractor
+HalfUnitExtractor --> FaceDetector
+FaceDetector --> DXFExporter
+DXFExporter --> GH_OUT
+
+FaceDetector --> MotorCADGlue
+MotorCADGlue --> GH_MOTORCAD
+
+RotorTopology --> PyleecanGlue
+PyleecanGlue --> GH_PYLEECAN
+
+' Output
+database "Labeled Geometry (DXF)" as GH_OUT
+database "Motor-CAD Model" as GH_MOTORCAD
+database "Pyleecan Machine" as GH_PYLEECAN
+
+note right of DXFReader
+  Entry point: read_entity_list()
+  Core workflow: ezdxf API + manual fallback
+  Output: EntityInfo list (2000+/motor)
+end note
+
+note right of RotorTopologyClassifier
+  **IMPORTANT**: Currently returns "Fallback"
+  Reason: Auto-classification not yet fully implemented
+  **Status**: Deferred to Phase 3 (Warp/AI prep)
+  **Impact**: Non-blocking (optional module)
+end note
+
+note bottom of MotorAnalysisPipeline
+  11-step automated pipeline:
+  1. Read DXF
+  2. Find origin (center)
+  3. Estimate airgap radius
+  4. Count poles & slots
+  5. Split rotor/stator
+  6. Classify rotor topol (optional)
+  7. Detect closed regions
+  8. Close/fill regions
+  9. Extract half-unit
+  10. Detect faces
+  11. Export or bridge
+end note
+
+@enduml

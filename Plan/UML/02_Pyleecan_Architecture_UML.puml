@@ -1,0 +1,749 @@
+'------------------------------------------------------
+' Pyleecan - Motor Design & Simulation Framework
+' Real Class Hierarchy UML (271 Classes)
+' Generated: 2026-04-01 [CORRECTED with actual codebase]
+'------------------------------------------------------
+
+@startuml Pyleecan_Real_Architecture
+!theme plain
+skinparam backgroundColor #f0f0f0
+skinparam classBackgroundColor #e1f5ff
+skinparam classBorderColor #01579b
+
+title Pyleecan: Motor Electromagnetic Design (Real Architecture)
+
+package "Core Machine Classes (12 Types)" {
+  abstract class Machine {
+    name: str
+    desc: str
+    type_machine: str
+    stator: Lamination
+    rotor: Lamination
+    shaft: Shaft
+    frame: Frame
+    ---
+    plot()
+    check()
+    get_property()
+  }
+
+  class MachineAsync {
+  }
+  class MachineSCIM {
+    " Squirrel Cage Induction Motor"
+  }
+  class MachineDFIM {
+    " Double-Fed Induction Motor"
+  }
+
+  class MachineSync {
+  }
+  class MachineIPMSM {
+    " Interior Permanent Magnet Sync"
+  }
+  class MachineSIPMSM {
+    " Surface-Interior PMSM"
+  }
+  class MachineSyRM {
+    " Synchronous Reluctance Motor"
+  }
+  class MachineLSRM {
+    " Line-Start Reluctance Motor"
+  }
+  class MachineSRM {
+    " Switched Reluctance Motor"
+  }
+
+  class MachineUD {
+    " User-Defined Custom Machine"
+  }
+
+  Machine <|-- MachineAsync
+  Machine <|-- MachineSync
+  Machine <|-- MachineUD
+  MachineAsync <|-- MachineSCIM
+  MachineAsync <|-- MachineDFIM
+  MachineSync <|-- MachineIPMSM
+  MachineSync <|-- MachineSIPMSM
+  MachineSync <|-- MachineSyRM
+  MachineSync <|-- MachineLSRM
+  MachineSync <|-- MachineSRM
+}
+
+package "Lamination & Slot Structure (50+ Slot Types)" {
+  abstract class Lamination {
+    Rext: float [mm]
+    Rint: float [mm]
+    L_stack: float [mm]
+    material: Material
+    ---
+    build_geometry()
+    plot()
+    comp_surface()
+  }
+
+  class LamSlot {
+    " Lamination with slots"
+    slot: Slot
+    ---
+    build_slots()
+  }
+
+  class LamSlotWind {
+    " Slot + Winding configuration"
+    winding: Winding
+  }
+
+  class LamSlotM {
+    " Slot with magnets (rotor)"
+    holes: list[Hole]
+  }
+
+  class LamHole {
+    " Lamination with holes for PM"
+    holes: list[Hole]
+    ---
+    build_magnet_cavity()
+  }
+
+  class LamSquirrelCage {
+    " Cage rotor for induction"
+    bars: list[RotorBar]
+    end_ring: EndRing
+  }
+
+  Lamination <|-- LamSlot
+  Lamination <|-- LamHole
+  Lamination <|-- LamSquirrelCage
+  LamSlot <|-- LamSlotWind
+  LamSlot <|-- LamSlotM
+  LamHole <|-- LamSlotM
+}
+
+package "Slot Geometry (50+ Types)" {
+  abstract class Slot {
+    Zs: int [# of slots]
+    H_opening: float [mm]
+    H_height: float [mm]
+    ---
+    build_geometry_active() → Surface
+    build_geometry_half_tooth() → Surface
+    comp_surface() → float
+    comp_height() → float
+  }
+
+  class SlotCirc {
+    " Circular slot (motors)"
+  }
+
+  package "W-Series (Induction Motor)" {
+    class SlotW10 { }
+    class SlotW11 { }
+    class SlotW12 { }
+    class SlotW20 { }
+    class SlotW21 { }
+    class SlotW60 { }
+    class SlotW61 { }
+    ' ... SlotW10-W30
+  }
+
+  package "M-Series (PM Rotor Magnets)" {
+    class SlotM10 { }
+    class SlotM14 { }
+    class SlotM16 { }
+    class SlotM50 { }
+    class SlotM51 { }
+    class SlotM52 { }
+    class SlotM53 { }
+    ' ... SlotM10-M63
+  }
+
+  package "Specialized Types" {
+    class SlotUD {\"User-Defined\" }
+    class SlotDC {\"DC Machine\" }
+    class SlotWLSRPM {\"Line-Start Reluctance\" }
+  }
+
+  Slot <|-- SlotCirc
+  Slot <|-- SlotW10
+  Slot <|-- SlotW20
+  Slot <|-- SlotM10
+  Slot <|-- SlotUD
+  Slot <|-- SlotDC
+}
+
+package "Geometry Primitives (Arc, Line, Surface)" {
+  abstract class Geometry {
+    plot()
+    get_length() → float
+  }
+
+  abstract class Arc {
+    center: (x,y)
+    radius: float
+    start_angle: float
+    end_angle: float
+  }
+
+  class Arc1 { "(start, end)" }
+  class Arc2 { "(center, start, end)" }
+  class Arc3 { "(start, end, angle)" }
+
+  class Line {
+    p1: (x,y)
+    p2: (x,y)
+  }
+
+  class Circle {
+    center: (x,y)
+    radius: float
+  }
+
+  abstract class Surface {
+    lines: list[Curve]
+    is_closed: bool
+    ---
+    comp_surface() → float [mm²]
+    comp_mass() → float [kg]
+  }
+
+  class SurfLine { "(from line ensemble)" }
+  class SurfRing { "(annular/ring region)" }
+
+  Geometry <|-- Arc
+  Geometry <|-- Line
+  Geometry <|-- Circle
+  Geometry <|-- Surface
+  Arc <|-- Arc1
+  Arc <|-- Arc2
+  Arc <|-- Arc3
+  Surface <|-- SurfLine
+  Surface <|-- SurfRing
+}
+
+package "Bore Types (Rotor Face Geometry)" {
+  abstract class Bore {
+    plot()
+  }
+
+  class BoreFlower { }
+  class BoreLSRPM { }
+  class BoreSinePole { }
+  class BoreUD { }
+
+  Bore <|-- BoreFlower
+  Bore <|-- BoreLSRPM
+  Bore <|-- BoreSinePole
+  Bore <|-- BoreUD
+}
+
+package "Winding & Electrical" {
+  class Winding {
+    type: str [sinusoidal/concentrated]
+    Qpc: int [slots/pole/coil]
+    Npcpp: int [parallel circuits]
+    Ntcoil: int [turns/coil]
+    ---
+    get_winding_factor() → float
+    get_resistance() → float [Ohm]
+    build_connection_matrix() → ndarray
+  }
+
+  class Conductor {
+    type: CondType11-CondType22
+    Nwpc: int [wires/slot/phase/coil]
+    S_wire: float [mm²]
+    ---
+    comp_resistance() → float
+  }
+
+  class CondType11 { }
+  class CondType12 { }
+  class CondType13 { }
+  class CondType21 { }
+  class CondType22 { }
+
+  Winding --> Conductor
+  Conductor <|-- CondType11
+  Conductor <|-- CondType12
+  Conductor <|-- CondType13
+  Conductor <|-- CondType21
+  Conductor <|-- CondType22
+}
+
+package "Materials & Properties" {
+  class Material {
+    name: str
+    type: str [iron/copper/magnet/...]
+    density: float [kg/m³]
+    resistivity: float [Ohm·m]
+    Bsat: float [T]
+    Hc: float [A/m]
+    ---
+    get_property(key) → value
+    at_temperature(T) → Material_corrected
+  }
+
+  class Magnet {
+    type: str [NdFeB]
+    grade: str [N35/N42/...]
+    Brem: float [T]
+    Hc: float [kA/m]
+  }
+
+  class HystLoss {
+    Kh: float [loss coefficient]
+    f0: float [Hz, reference]
+    ---
+    compute(B, f, T) → float [W/m³]
+  }
+
+  Material --> HystLoss
+  Magnet --> Material
+}
+
+package "Simulation & FEA" {
+  class Simulation {
+    machine: Machine
+    simu_input: SimInput
+    ---
+    run()
+    post_process()
+  }
+
+  class SimInput {
+    type_simulation: str [FEMM/Elmer/...]
+    nb_worker: int
+    ---
+    setup()
+    check()
+  }
+
+  class Output {
+    machine: Machine
+    simu: Simulation
+    mag: ndarray [B-field]
+    force: ndarray [Force]
+    loss: Loss
+    post: Post
+    ---
+    plot_B_field()
+    export_vtk()
+  }
+
+  class Loss {
+    cooper: float [W]
+    iron: float [W]
+    friction: float [W]
+    magnet: float [W]
+    stray: float [W]
+  }
+
+  Simulation --> SimInput
+  Simulation --> Output
+  Output --> Loss
+}
+
+package "Converter (DXF, CAD, Other Formats)" {
+  class Converter {
+    " Base class for format conversion"
+  }
+
+  class Convert {
+    " Main conversion utilities"
+    static dxf_to_pyleecan()
+    static pyleecan_to_dxf()
+    static import_motor_from_library()
+  }
+
+  class DXFImport {
+    " Import DXF geometry files"
+    parse_dxf() → list[Entity]
+    detect_motor_type() → str [IPMSM/SyRM/...]
+  }
+
+  Converter <|-- Convert
+  Converter <|-- DXFImport
+}
+
+' Relationships
+Machine --> Lamination : stator/rotor
+Lamination --> Slot
+Lamination <|-- LamSlotWind
+LamSlotWind --> Winding
+Lamination --> Material
+Simulation --> Machine
+Output --> Machine
+
+note right of Machine
+  12 concrete motor types
+  (SCIM, DFIM, IPMSM, SyRM, etc)
+end note
+
+note right of Slot
+  50+ concrete slot types:
+  - W-series (induction)
+  - M-series (PM rotor)
+  - Specialized (DC, LSRPM)
+end note
+
+note bottom of Simulation
+  Supports multiple FEA solvers:
+  - FEMM (built-in)
+  - Elmer (external)
+  - Mesh generation
+end note
+
+@enduml
+
+package "Geometry Generation" {
+  class GeometryBuilder {
+    motor: Motor
+    dxf: DXFExporter
+    cad: CADBuilder
+    ---
+    draw_stator()
+    draw_rotor()
+    export_dxf()
+    export_step()
+  }
+
+  class DXFExporter {
+    layers: dict
+    blocks: dict
+    ---
+    add_entity()
+    write_file()
+    create_symmetric_geometry()
+  }
+
+  class CADBuilder {
+    cad_software: str [Maxwell/ANSYS/etc]
+    driver: CADDriver
+    ---
+    create_geometry()
+    assign_materials()
+    set_boundary_conditions()
+  }
+
+  GeometryBuilder --> DXFExporter
+  GeometryBuilder --> CADBuilder
+}
+
+package "Material Database" {
+  class MaterialLibrary {
+    materials: dict[Material]
+    ---
+    get_material(name)
+    add_material(material)
+    search_by_property()
+  }
+
+  class Material {
+    name: str
+    type: str [iron/copper/magnet/etc]
+    density: float [kg/m^3]
+    resistivity: float [Ohm·m]
+    Bsat: float [T]
+    losses: HystLoss
+    ---
+    get_property(key)
+    temperature_correction(T)
+  }
+
+  class HystLoss {
+    Kh: float [core loss coeff]
+    f0: float [reference freq]
+    B0: float [reference flux density]
+    ---
+    compute_loss(B, f, T)
+  }
+
+  MaterialLibrary --> Material
+  Material --> HystLoss
+}
+
+package "Electromagnetic Simulation" {
+  class SimulationManager {
+    motor: Motor
+    solver: FEASolver
+    input: SimInput
+    output: SimOutput
+    ---
+    setup_simulation()
+    run_simulation()
+    post_process()
+  }
+
+  class FEASolver {
+    type: str [Maxwell/FEMM/COMSOL/JMAG]
+    config: SolverConfig
+    result: FEAResult
+    ---
+    initialize()
+    run()
+    export_result()
+  }
+
+  class SimInput {
+    geometry: Geometry
+    materials: list[Material]
+    boundary_conditions: dict
+    mesh_settings: MeshConfig
+    solver_settings: SolverConfig
+    ---
+    validate()
+    export_to_solver()
+  }
+
+  class SimOutput {
+    flux_density : ndarray
+    field_energy : float
+    torque : float
+    losses : dict {iron, copper, magnet}
+    efficiency : float
+    efficiency_map : ndarray
+    ---
+    plot_flux()
+    plot_torque_ripple()
+    compute_metrics()
+  }
+
+  class MeshConfig {
+    type: str [structured/unstructured]
+    max_element_size: float
+    refinement_regions: list[Region]
+    ---
+    apply_mesh()
+  }
+
+  class SolverConfig {
+    type: str [linear/nonlinear]
+    max_iterations: int
+    tolerance: float
+    frequency: float [Hz]
+    current: float [A]
+    ---
+    validate()
+  }
+
+  SimulationManager --> FEASolver
+  SimulationManager --> SimInput
+  SimulationManager --> SimOutput
+  SimInput --> MeshConfig
+  SimInput --> SolverConfig
+  SimOutput --> FEAResult
+}
+
+package "Analysis & Post-Processing" {
+  class ResultAnalyzer {
+    results: SimOutput
+    motor: Motor
+    ---
+    compute_efficiency()
+    compute_torque_ripple()
+    compute_losses()
+    compute_harmonic_content()
+  }
+
+  class KPICalculator {
+    power: float [W]
+    torque: float [Nm]
+    efficiency: float [%]
+    copper_loss: float [W]
+    iron_loss: float [W]
+    weight: float [kg]
+    cost: float [$]
+    ---
+    to_dict()
+    plot_kpi_radar()
+  }
+
+  class WaveformAnalyzer {
+    voltage: ndarray
+    current: ndarray
+    flux: ndarray
+    torque: ndarray
+    frequency: float
+    ---
+    compute_THD()
+    compute_ripple()
+    extract_harmonics()
+  }
+
+  ResultAnalyzer --> KPICalculator
+  ResultAnalyzer --> WaveformAnalyzer
+}
+
+package "Optimization" {
+  class Optimizer {
+    motor: Motor
+    problem: OptimizationProblem
+    algorithm: str [NSGA-II/PSO/MOEA/D]
+    population: Population
+    ---
+    setup_problem()
+    run_optimization()
+    get_pareto_front()
+  }
+
+  class OptimizationProblem {
+    variables: list[Variable]
+    objectives: list[Objective]
+    constraints: list[Constraint]
+    bounds: dict
+    ---
+    evaluate(solution)
+    validate_solution()
+  }
+
+  class Variable {
+    name: str
+    type: str [continuous/discrete]
+    min: float
+    max: float
+    unit: str
+  }
+
+  class Objective {
+    name: str [efficiency/torque/cost/weight]
+    direction: str [maximize/minimize]
+    weight: float
+    ---
+    compute(motor)
+  }
+
+  class Constraint {
+    name: str
+    type: str [inequality/equality]
+    ---
+    check(solution)
+  }
+
+  class Population {
+    individuals: list[Solution]
+    generation: int
+    ---
+    select_best()
+    rank_by_fitness()
+  }
+
+  Optimizer --> OptimizationProblem
+  OptimizationProblem --> Variable
+  OptimizationProblem --> Objective
+  OptimizationProblem --> Constraint
+  Optimizer --> Population
+}
+
+package "CAD/FEA Interfaces" {
+  class FEAInterface {
+    solver_type: str
+    config: SolverConfig
+    ---
+    export_geometry()
+    assign_physics()
+    run_external_solver()
+    import_results()
+  }
+
+  class MaxwellInterface {
+    ansys_api: object
+    project: str
+    ---
+    create_design()
+    export_time_varying_field()
+  }
+
+  class FEMMInterface {
+    freq_limit: float
+    ---
+    export_fem_file()
+    run_femm()
+    read_flux_result()
+  }
+
+  class COMSOLInterface {
+    competence_cluster: str
+    ---
+    export_mph_file()
+    run_comsol()
+  }
+
+  class CADExporter {
+    format: str [DXF/STEP/IGES]
+    destination: str [file/CAD software]
+    ---
+    export_geometry()
+    symmetrize_design()
+    add_periodicity()
+  }
+
+  FEAInterface <|-- MaxwellInterface
+  FEAInterface <|-- FEMMInterface
+  FEAInterface <|-- COMSOLInterface
+  GeometryBuilder --> CADExporter
+}
+
+package "Workflow Orchestration" {
+  class DesignPipeline {
+    steps: list[WorkflowStep]
+    data: dict
+    config: PipelineConfig
+    ---
+    add_step()
+    execute()
+    save_checkpoint()
+    load_checkpoint()
+  }
+
+  class WorkflowStep {
+    name: str
+    input: dict
+    output: dict
+    executable: callable
+    ---
+    execute()
+    validate_output()
+  }
+
+  class PipelineConfig {
+    project_name: str
+    working_directory: str
+    save_results: bool
+    visualize: bool
+    ---
+    to_json()
+    from_json()
+  }
+
+  DesignPipeline --> WorkflowStep
+  DesignPipeline --> PipelineConfig
+}
+
+' Relationships
+GeometryBuilder --> Motor
+ResultAnalyzer --> SimOutput
+Optimizer --> Motor
+Optimizer --> ResultAnalyzer
+DesignPipeline --> GeometryBuilder
+DesignPipeline --> SimulationManager
+DesignPipeline --> ResultAnalyzer
+DesignPipeline --> Optimizer
+MaterialLibrary --> Material
+SimulationManager --> MaterialLibrary
+
+' Data flow
+note right of SimulationManager
+  Input: Motor geometry + materials
+  Process: FEA analysis
+  Output: Field distribution, power losses, torque
+end note
+
+note bottom of Optimizer
+  Multi-objective Pareto optimization
+  Variables: geometry parameters
+  Objectives: efficiency, torque, cost, weight, noise
+  Constraints: thermal, mechanical, electromagnetic
+end note
+
+@enduml
