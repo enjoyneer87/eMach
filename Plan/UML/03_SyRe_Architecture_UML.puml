@@ -1,0 +1,465 @@
+'------------------------------------------------------
+' SyR-e (Synchronous Reluctance Motor) MATLAB Framework
+' Architectural UML - Data Flow & Module Organization
+' Generated: 2026-04-01
+'------------------------------------------------------
+
+@startuml SyRe_Architecture
+!theme plain
+skinparam backgroundColor #f0f0f0
+skinparam classBackgroundColor #fff3e0
+skinparam classBorderColor #e65100
+
+title SyR-e: Parametric Motor Design & Multi-Objective Optimization Framework
+
+package "Core Data Structures" {
+  class geo {
+    ' Geometric Parameters
+    p : int [pole pairs]
+    q : int [slots/pole/phase]
+    l : float [stack length mm]
+    Rast : float [stator outer radius]
+    Rint : float [stator inner radius]
+    Rrot : float [rotor outer radius]
+    nbarrays : int [number arrays (rotor)]
+    nlay : int [layers per array]
+    th0 : float [d-axis offset]
+    acs : float [slot angular opening]
+    acs0 : float [slot initial angle]
+    hc : float [slot height]
+    hm : float [magnet height]
+    bm : float [magnet width]
+    ---
+    draw_geometry()
+    get_properties()
+  }
+
+  class mat {
+    ' Material Library
+    iron : struct [density, cost, Bsat, muHc, losses]
+    copper : struct [resistivity, density, cost, temp_coeff]
+    pm : struct [permanent magnet properties]
+    aluminum : struct [rotor cage material]
+    ---
+    get_material(section, property)
+    temperature_correction(T)
+  }
+
+  class win {
+    ' Winding Configuration
+    type : str [sinusoidal/concentrated]
+    Qpc : int [slots/phase/coil]
+    n3phase : int [3-phase branches]
+    distribute : array [slot distribution]
+    ---
+    get_winding_factor()
+    compute_resistance()
+    get_current_path()
+  }
+
+  class path {
+    ' Motor Assembly Path
+    description : str
+    status : str [in_design/validated/obsolete]
+    motor_type : str [SPM/Spoke/SyR/IPM/EESM/PMASR]
+    version : int
+    ---
+    validate()
+    compare_to(other_path)
+  }
+
+  geo : " Geometric design"
+  mat : " Material specs"
+  win : " Winding layout"
+  path : " Assembly metadata"
+}
+
+package "Geometry Generation" {
+  class GeometryEngine {
+    geo : geo
+    mat : mat
+    scale_factor : float
+    drawing_context : DXFWriter
+    ---
+    draw_stator(axsplit, nlay)
+    draw_rotor(axsplit, nlay)
+    draw_winding()
+    export_dxf()
+    export_step()
+  }
+
+  class StatorGeometryGenerator {
+    static draw_stator_teeth()
+    static draw_stator_yoke()
+    static draw_winding_slots()
+    static compute_slot_area()
+    ---
+    generate_profile()
+  }
+
+  class RotorTopology {
+    type : str [SPM/Spoke/SyR/IPM]
+    static SPM() : rotor_profile
+    static SynRM() : rotor_profile
+    static IPMSM() : rotor_profile
+    static Spoke() : rotor_profile
+    static EESM() : rotor_profile
+    ---
+    draw_topology(geo, mat)
+    compute_barrier_shape()
+    distribute_magnets()
+  }
+
+  class DXFWriter {
+    doc : ezdxf.Document
+    layers : dict
+    blocks : dict
+    ---
+    add_line(p0, p1)
+    add_arc(center, radius, start_angle, end_angle)
+    add_circle(center, radius)
+    write_file(filename)
+    add_block_reference()
+  }
+
+  GeometryEngine --> StatorGeometryGenerator
+  GeometryEngine --> RotorTopology
+  GeometryEngine --> DXFWriter
+}
+
+package "FEA Processing Pipeline" {
+  class FEMWriter {
+    geo : geo
+    mat : mat
+    filename : str
+    ---
+    draw_motor_in_FEMM(geo, mat, folder, name)
+    assign_materials()
+    assign_boundary_conditions()
+    create_frequency_sweep()
+  }
+
+  class SolverManager {
+    solver_type : str [FEMM/Maxwell/COMSOL/JMAG/MotorCAD]
+    config : SolverConfig
+    result_parser : ResultParser
+    ---
+    setup_solver()
+    run_simulation()
+    parse_results()
+  }
+
+  class FEMMWrapper {
+    ' FEMM-specific implementation
+    femm_api : object [pyfemm]
+    static run_femm(fem_file)
+    static read_feasolution(problem_file)
+    static get_flux_density_map()
+    static get_torque()
+    static get_losses()
+  }
+
+  class MaxwellWrapper {
+    ' ANSYS Maxwell interface
+    ansys_app : object [COM interface]
+    project_name : str
+    ---
+    create_design()
+    export_geometry()
+    run_transient_solver()
+    read_time_varying_field()
+  }
+
+  class COMSOLWrapper {
+    ' COMSOL Multiphysics interface
+    comsol_api : object
+    model_path : str
+    ---
+    import_geometry()
+    setup_electromagnetics()
+    solve_statics()
+  }
+
+  class JMAGWrapper {
+    ' JMAG Designer interface
+    jmag_studio : object
+    ---
+    create_study()
+    3point_solve()
+    get_saturation_curve()
+  }
+
+  class MotorCADWrapper {
+    ' Motor-CAD bridge
+    motorcad_api : object
+    geometry_sync : GeometrySync
+    ---
+    import_dxf()
+    update_materials()
+    run_thermal_analysis()
+    export_results()
+  }
+
+  FEMWriter --> DXFWriter
+  SolverManager --> FEMMWrapper
+  SolverManager --> MaxwellWrapper
+  SolverManager --> COMSOLWrapper
+  SolverManager --> JMAGWrapper
+  SolverManager --> MotorCADWrapper
+}
+
+package "Analysis & Post-Processing" {
+  class ResultParser {
+    solver_type : str
+    raw_data : dict
+    ---
+    parse_field_solution()
+    extract_torque()
+    compute_core_losses()
+    compute_harmonic_content()
+  }
+
+  class PerformanceEvaluator {
+    geo : geo
+    mat : mat
+    solution : SimOutput
+    ---
+    compute_efficiency()
+    compute_power_factor()
+    compute_copper_losses()
+    compute_iron_losses()
+    compute_noise_vibration()
+    compute_thermal_rise()
+  }
+
+  class KPI {
+    power : float [W]
+    efficiency : float [%]
+    power_factor : float
+    torque : float [Nm]
+    torque_ripple : float [%]
+    copper_loss : float [W]
+    iron_loss : float [W]
+    total_loss : float [W]
+    noise_level : float [dB]
+    weight : float [kg]
+    manufacturing_cost : float [$]
+    ---
+    to_dict()
+    to_json()
+  }
+
+  class Visualizer {
+    solution : SimOutput
+    geo : geo
+    ---
+    plot_flux_density()
+    plot_torque_profile()
+    plot_temperature_distribution()
+    plot_harmonic_spectrum()
+    plot_efficiency_map()
+  }
+
+  ResultParser --> KPICalculator
+  PerformanceEvaluator --> KPICalculator
+  Visualizer --> ResultParser
+}
+
+package "Optimization Engine" {
+  class MODE {
+    ' Multi-Objective Design Environment
+    population_size : int
+    max_generation : int
+    algorithm : str [NSGA-II/PSO/MOEA/D]
+    objectives : list[Objective]
+    variables : list[Variable]
+    constraints : list[Constraint]
+    history : dict
+    ---
+    setup_optimization_problem()
+    initialize_population()
+    run_optimization_loop()
+    compute_pareto_front()
+    save_pareto_to_file()
+  }
+
+  class Objective {
+    name : str [efficiency/torque/cost/weight/noise]
+    direction : str [max/min]
+    weight : float
+    constraint_link : Constraint
+    ---
+    evaluate(solution)
+  }
+
+  class Variable {
+    name : str [geometry parameter name]
+    type : str [continuous/discrete/categorical]
+    min : float
+    max : float
+    unit : str
+    initial_value : float
+    ---
+    mutate(mutation_rate)
+    crossover(other_variable)
+  }
+
+  class Constraint {
+    name : str [thermal/mechanical/electromagnetic]
+    type : str [inequality/equality]
+    threshold : float
+    penalty : float
+    ---
+    check(solution)
+    compute_violation()
+  }
+
+  class ParetoFront {
+    solutions : list[Solution]
+    objectives_achieved : ndarray [N_solutions x N_objectives]
+    dominated_solutions : list[Solution]
+    hypervolume : float
+    ---
+    rank_solutions()
+    compute_hypervolume()
+    find_knee_point()
+    export_to_csv()
+  }
+
+  class Solution {
+    variables : dict [parameter_name → value]
+    objectives : dict [objective_name → value]
+    fitness : float
+    constraint_violations : list[Constraint]
+    generation : int
+    ---
+    is_feasible()
+    dominates(other_solution)
+    mutate()
+  }
+
+  MODE --> Objective
+  MODE --> Variable
+  MODE --> Constraint
+  MODE --> ParetoFront
+  ParetoFront --> Solution
+}
+
+package "Workflow & GUI" {
+  class GUI_SyRe {
+    ' MATLAB/Simulink appdesigner based GUI
+    motor_table : table [loaded motors]
+    geometry_panel : panel [parameter sliders]
+    plot_area : axes [3D/2D visualization]
+    results_panel : panel [KPI display]
+    ---
+    load_motor()
+    draw_motor_preview()
+    run_analysis()
+    run_optimization()
+    export_design()
+  }
+
+  class WorkflowManager {
+    steps : list[WorkflowStep]
+    current_step : WorkflowStep
+    checkpoint_data : dict
+    ---
+    setup_design_phase()
+    setup_analysis_phase()
+    setup_optimization_phase()
+    save_project()
+    load_project()
+  }
+
+  class ProjectManager {
+    project_folder : str
+    motor_files : list[str]
+    results : dict [motor_name → results]
+    metadata : dict [version, author, date]
+    ---
+    create_project()
+    add_motor()
+    save_results()
+    export_report()
+  }
+
+  GUI_SyRe --> WorkflowManager
+  WorkflowManager --> ProjectManager
+}
+
+package "Data Exchange & Export" {
+  class DXFExporter {
+    geo : geo
+    mat : mat
+    format_template : str [Maxwell/COMSOL/JMAG specific]
+    ---
+    export_dxf(filename)
+    export_to_maxwell_native()
+    export_to_comsol_native()
+  }
+
+  class MatFileExporter {
+    ' MATLAB .mat file serialization
+    static save_motor(geo, mat, win, filename)
+    static load_motor(filename)
+    static save_results(results, filename)
+  }
+
+  class StepExporter {
+    ' STEP/IGES CAD format
+    static export_step(geo, filename)
+    static export_iges(geo, filename)
+  }
+
+  class ReportGenerator {
+    motor : Motor
+    results : KPI
+    figures : list[Visualizer output]
+    ---
+    generate_pdf_report()
+    generate_html_report()
+    generate_latex_report()
+  }
+
+  DXFExporter --> DXFWriter
+  ReportGenerator --> Visualizer
+}
+
+' Relationships
+GeometryEngine --> geo
+GeometryEngine --> mat
+FEMWriter --> GeometryEngine
+SolverManager --> FEMWriter
+ResultParser --> PerformanceEvaluator
+PerformanceEvaluator --> KPI
+MODE --> ResultParser
+MODE --> PerformanceEvaluator
+GUI_SyRe --> GeometryEngine
+GUI_SyRe --> FEMWriter
+GUI_SyRe --> MODE
+ProjectManager --> DXFExporter
+ProjectManager --> MatFileExporter
+ProjectManager --> ReportGenerator
+
+' Data Flow Notes
+note right of GeometryEngine
+  Input: geo, mat, win parameters
+  Output: 2D cross-section geometry (DXF/STEP)
+  Used by: FEA solvers (FEMM, Maxwell, COMSOL, JMAG)
+end note
+
+note right of MODE
+  Optimization Variables: geometry parameters (geo)
+  Objectives: efficiency, torque, cost, weight, noise
+  Constraints: thermal limits, mechanical strength, manufacturing
+  Output: Pareto-optimal designs
+end note
+
+note bottom of SolverManager
+  Supports 6+ FEA solvers with pluggable architecture
+  Results parsed to common KPI format
+  Enables comparative analysis across solvers
+end note
+
+@enduml

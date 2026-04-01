@@ -1,0 +1,67 @@
+@startuml pyMotorGeo_CompletionStatus
+!theme plain
+title pyMotorGeo Module Completion Status (code-aligned, v1.5.1)
+
+rectangle "Core [OK]" #90EE90 {
+    box
+        (core.py)
+          EntityInfo, StatorRotorSplit
+        (reader.py)
+          read_entity_list()
+    end box
+}
+
+rectangle "Analysis [OK]" #90EE90 {
+    box
+        (analysis_airgap.py)
+          find_airgap_by_arc_span()
+          split_stator_rotor_by_arc_span()
+        (analysis_rotor.py)
+          RotorCounter + legacy wrappers
+        (analysis_stator.py)
+          StatorCounter + legacy wrappers
+    end box
+}
+
+rectangle "Topology [OK]" #90EE90 {
+    box
+        (topology.py)
+          detect_circular_array_pattern()
+          classify_pole_topology()
+        (topology_rotor.py)
+          RotorTopologyClassifier
+        (topology_stator.py)
+          StatorTopologyClassifier
+    end box
+}
+
+rectangle "Half Unit / Closure [OK]" #90EE90 {
+    box
+        (half_unit.py)
+          extract_half_pole_entities()
+          extract_half_slot_entities()
+          reconstruct_from_half()
+        (region_closing.py)
+          close_one_pole(), close_one_slot()
+          detect_closed_faces(), auto_name_faces()
+    end box
+}
+
+rectangle "UI / Export / Integration [OK]" #90EE90 {
+    box
+        (gui_region.py), (plotting.py)
+        (export.py), (pyleecan_bridge.py)
+        (pipeline.py), (cli.py)
+    end box
+}
+
+note bottom
+    Status source: current code in Class/pyMotorGeo
+
+    Completion:
+    - Phase 1-5 implementation: 100%
+    - Markdown consistency pass: complete
+    - PUML consistency pass: complete
+end note
+
+@enduml

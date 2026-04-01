@@ -1,3 +1,13 @@
 {
-    "recommendations": []
+    "recommendations": [
+        "mathworks.language-matlab",
+        "shinyypig.matlab-in-vscode",
+        "jebbs.plantuml",
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "ms-toolsai.jupyter",
+        "GitHub.copilot",
+        "redhat.vscode-yaml",
+        "ms-vscode.powershell"
+    ]
 }

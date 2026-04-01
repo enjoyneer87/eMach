@@ -1,10 +1,10 @@
 JMAGParentPath='D:\KangDH\Thesis\e10';
-parentPath='F:\KDH\Thesis\JEET'
+parentPath='F:\KDH\Thesis\JEET\e10'
 [motFileList,~]=getResultMotMatList(parentPath)
 
 % Plot AC Loss Map
 % try Final function
-filteredTable           =getMCADLabDataFromMotFile(motFileList{1});
+filteredTable           =getMCADLabDataFromMotFile(motFileList{2});
 originLabLinkTable      = reNameLabTable2LabLink(filteredTable);
 MCADLinkTable           = originLabLinkTable;
 plotMultipleInterpSatuMapSubplots(@plotFitResult, MCADLinkTable);
@@ -35,7 +35,7 @@ end
 TotalACLossTable=MCADLinkTable(:,[1:2])
 TotalACLossTable=addvars(TotalACLossTable,TotalACLoss./1000.*(18000/500).^2.+0.3*(18000/9000).^2,'NewVariableNames','TotalACLoss')
 
-3954/1000+
+
 [MCADFitResult, tempGof, tempSingleDataSet] = createInterpDataSetofStrWithFieldName(TotalACLossTable,'TotalACLoss');
 plot(MCADFitResult)
 hold on

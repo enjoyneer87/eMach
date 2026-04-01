@@ -1,0 +1,118 @@
+@startuml pyMotorGeo_Architecture
+!theme plain
+title pyMotorGeo Architecture (code-aligned, v1.5.1)
+
+package "Core" {
+    class EntityInfo
+    class StatorRotorSplit
+}
+
+package "Abstract Base" {
+    abstract class ComponentCounter {
+        +count(...)
+        +count_by_regions(...)
+        +estimate_robust(...)
+    }
+
+    abstract class ComponentTopologyClassifier {
+        +classify_entities(...)
+        +classify_with_closing_compare(...)
+    }
+}
+
+package "Function Modules" {
+    class reader <<module>> {
+        +read_entity_list(...)
+    }
+
+    class analysis_airgap <<module>> {
+        +find_origin_candidates(...)
+        +find_concentric_radii(...)
+        +find_airgap_by_arc_span(...)
+        +split_stator_rotor_by_arc_span(...)
+        +split_stator_rotor(...)
+    }
+
+    class topology <<module>> {
+        +detect_circular_array_pattern(...)
+        +classify_pole_topology(...)
+        +analyze_rotor_topology(...)
+    }
+
+    class half_unit <<module>> {
+        +extract_half_pole_entities(...)
+        +extract_half_slot_entities(...)
+        +reconstruct_from_half(...)
+    }
+
+    class region_closing <<module>> {
+        +close_one_pole(...)
+        +close_one_slot(...)
+        +detect_closed_faces(...)
+        +auto_name_faces(...)
+        +get_face_summary(...)
+    }
+}
+
+package "OOP Specialization" {
+    class RotorCounter extends ComponentCounter {
+        +count(...)
+        +count_by_regions(...)
+        +estimate_robust(...)
+    }
+
+    class StatorCounter extends ComponentCounter {
+        +count(...)
+        +count_by_regions(...)
+        +estimate_robust(...)
+        +detect_conductors(...)
+    }
+
+    class RotorTopologyClassifier extends ComponentTopologyClassifier {
+        +classify_entities(...)
+        +classify_with_closing_compare(...)
+    }
+
+    class StatorTopologyClassifier extends ComponentTopologyClassifier {
+        +classify_entities(...)
+        +classify_with_closing_compare(...)
+    }
+}
+
+package "UI/Export/Integration" {
+    class gui_region <<module>> {
+        +FaceRegionGUI
+        +FaceRegionGUILite
+    }
+
+    class plotting <<module>>
+    class export <<module>>
+    class pyleecan_bridge <<module>>
+    class pipeline <<module>> {
+        +analyze_dxf_v2(...)
+        +analyze_motor_dxf(...)
+        +quick_analyze(...)
+    }
+    class cli <<module>>
+}
+
+reader ..> EntityInfo
+analysis_airgap ..> EntityInfo
+half_unit ..> EntityInfo
+region_closing ..> EntityInfo
+
+pipeline ..> reader
+pipeline ..> analysis_airgap
+pipeline ..> RotorCounter
+pipeline ..> StatorCounter
+pipeline ..> topology
+pipeline ..> region_closing
+pipeline ..> export
+pipeline ..> pyleecan_bridge
+
+gui_region ..> region_closing
+plotting ..> EntityInfo
+export ..> region_closing
+cli ..> pipeline
+
+@enduml

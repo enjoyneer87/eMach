@@ -1,0 +1,25 @@
+@startuml pyMotorGeo_RotorTopologies
+!theme plain
+title Rotor Topology Classification Flow
+
+object "Input: Faces" as in1
+object "Centroid Analysis" as ana1
+object "Area Analysis" as ana2
+object "Surface vs Interior" as dec1
+object "SPM Detection" as spm
+object "IPM Detection" as ipm
+object "SynRM Detection" as synrm
+object "Result" as out1
+
+in1 --> ana1
+in1 --> ana2
+ana1 --> dec1
+ana2 --> dec1
+dec1 --> spm
+dec1 --> ipm
+dec1 --> synrm
+spm --> out1
+ipm --> out1
+synrm --> out1
+
+@enduml

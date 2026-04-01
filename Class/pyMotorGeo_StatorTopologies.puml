@@ -1,0 +1,24 @@
+@startuml pyMotorGeo_StatorTopologies
+!theme plain
+title Stator Slot Classification Flow
+
+object "Input: Faces" as in1
+object "Extract Properties" as prop
+object "Radial Zone Analysis" as zone
+object "Area Classification" as area
+object "Extent Analysis" as ext
+object "Centroid Check" as cent
+object "Face Labels" as labels
+object "Aggregation" as agg
+object "Result" as out1
+
+in1 --> prop
+prop --> zone
+zone --> area
+area --> ext
+ext --> cent
+cent --> labels
+labels --> agg
+agg --> out1
+
+@enduml

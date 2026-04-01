@@ -7,7 +7,7 @@ Motor-CAD Adaptive Geometry 연동: Region 변환 및 적용.
 import math
 from typing import List, Dict, Optional, Tuple
 
-from .regions import REGION_NAMES
+from regions import REGION_NAMES
 
 
 # ═══════════════════════════════════════════════════════════════

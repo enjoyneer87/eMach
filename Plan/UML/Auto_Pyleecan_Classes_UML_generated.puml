@@ -1,0 +1,81 @@
+@startuml auto_generated
+!theme plain
+skinparam backgroundColor #f0f0f0
+skinparam classBackgroundColor #e3f2fd
+skinparam classBorderColor #1976d2
+
+title Pyleecan: Core Classes (Auto-Generated from AST)
+
+class Lamination {
+  VERSION
+  save
+  get_logger
+  ---
+  __init__(L1, mat_type, Nrvd)()
+  __str__()()
+  __eq__(other)()
+  compare(other, name, ignore_list)()
+  __sizeof__()()
+}
+
+class Machine {
+  VERSION
+  save
+  get_logger
+  ---
+  __init__(frame, shaft, name)()
+  __str__()()
+  __eq__(other)()
+  compare(other, name, ignore_list)()
+  __sizeof__()()
+}
+
+class Output {
+  VERSION
+  save
+  get_logger
+  ---
+  __init__(simu, path_result, geo)()
+  __str__()()
+  __eq__(other)()
+  compare(other, name, ignore_list)()
+  __sizeof__()()
+}
+
+class Simulation {
+  VERSION
+  save
+  get_logger
+  ---
+  __init__(name, desc, machine)()
+  __str__()()
+  __eq__(other)()
+  compare(other, name, ignore_list)()
+  __sizeof__()()
+}
+
+class Slot {
+  VERSION
+  save
+  get_logger
+  ---
+  __init__(Zs, wedge_mat, is_bore)()
+  __str__()()
+  __eq__(other)()
+  compare(other, name, ignore_list)()
+  __sizeof__()()
+}
+
+class Winding {
+  VERSION
+  NAME
+  save
+  ---
+  __init__(is_reverse_wind, Nslot_shift_wind, qs)()
+  __str__()()
+  __eq__(other)()
+  compare(other, name, ignore_list)()
+  __sizeof__()()
+}
+
+@enduml

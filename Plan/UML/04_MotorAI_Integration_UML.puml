@@ -1,0 +1,267 @@
+'------------------------------------------------------
+' eMach (pyMotorGeo) - DXF Reverse-Engineering Framework
+' Real Architecture UML (32 Modules)
+' Generated: 2026-04-01 [CORRECTED with actual codebase]
+'------------------------------------------------------
+
+@startuml MotorAI_Integration_Architecture
+!theme plain
+skinparam backgroundColor #f0f0f0
+skinparam packageBackgroundColor #f5f5f5
+skinparam classBorderColor #424242
+skinparam arrowColor #616161
+
+title MotorAI: Integrated Motor Design & Analysis Platform
+title Multi-Framework Orchestration
+
+' System Boundary
+rectangle "**MotorAI Platform**" as motorai_boundary {
+
+  package "INPUT SOURCES" {
+    database "Real CAD Files (DXF)" as cad_input
+    database "Parametric Design (SyR-e)" as param_input
+    database "Pyleecan Library (Motor DB)" as db_input
+  }
+
+  package "PHASE 1: Design & Geometry" {
+    
+    rectangle "**SyR-e Parametric Design**" as syre_design {
+      object "geo: geometric params" as syre_geo
+      object "mat: material spec" as syre_mat
+      object "win: winding config" as syre_win
+      object "DXF Generator" as syre_export_dxf
+      syre_geo --> syre_export_dxf
+      syre_mat --> syre_export_dxf
+      syre_win --> syre_export_dxf
+    }
+
+    rectangle "**Pyleecan Parametric Design**" as pyleecan_design {
+      object "Motor: core design" as pyl_motor
+      object "Stator + Rotor" as pyl_geometry
+      object "CAD Export (DXF/STEP)" as pyl_export
+      pyl_motor --> pyl_geometry
+      pyl_geometry --> pyl_export
+    }
+
+    rectangle "**eMach/pyMotorGeo Reverse-Engineering**" as emach_re {
+      object "DXF File Reader" as emach_read_dxf
+      object "EntityInfo Entities" as emach_entities
+      object "Topology Classifier" as emach_classifier
+      emach_read_dxf --> emach_entities
+      emach_entities --> emach_classifier
+    }
+  }
+
+  package "PHASE 2: CAD Data Interchange" {
+    
+    rectangle "**CAD Preprocessing**" as cad_preproc {
+      object "Geometry Validator" as geo_validator
+      object "Entity Merger/Simplifier" as entity_merger
+      object "Periodicity Detector" as periodicity
+      object "Half-Unit Extractor" as half_unit
+      geo_validator --> entity_merger
+      entity_merger --> periodicity
+      periodicity --> half_unit
+    }
+
+    rectangle "**Region Classification**" as region_class {
+      object "Magnet Detector" as magnet_det
+      object "Barrier Finder" as barrier_det
+      object "Conductor Identifier" as conductor_det
+      object "Tooth Region Labeler" as tooth_label
+    }
+
+    rectangle "**CAD Interchange Contract**" as cad_contract {
+      object "Geometry Payload {
+        - coordinates
+        - connectivity
+        - material_type
+        - semantic_labels
+      }" as geo_payload
+      
+      object "Metadata Header {
+        - motor_type: 'IPMSM'
+        - n_poles: 4
+        - n_slots: 24
+        - scale_factor: 1.0
+        - periodicity: 1/4
+        - phase: 'half-unit'
+      }" as metadata
+    }
+
+    magnet_det --> geo_payload
+    barrier_det --> geo_payload
+    conductor_det --> geo_payload
+    metadata --> geo_payload
+  }
+
+  package "PHASE 3: FEA & Analysis" {
+    
+    rectangle "**SyR-e Solvers**" as syre_solvers {
+      object "FEMWriter" as syre_femm
+      object "FEMM Simulation" as femm_run
+      object "Maxwell Export" as maxwell_bridge
+      object "COMSOL Simulation" as comsol_run
+      object "JMAG Export" as jmag_run
+      syre_femm --> femm_run
+      syre_femm --> maxwell_bridge
+      syre_femm --> comsol_run
+      syre_femm --> jmag_run
+    }
+
+    rectangle "**Pyleecan Solvers**" as pyl_solvers {
+      object "SimulationManager" as pyl_sim
+      object "Maxwell Integration" as pyl_maxwell
+      object "FEMM Integration" as pyl_femm
+      object "COMSOL Integration" as pyl_comsol
+      pyl_sim --> pyl_maxwell
+      pyl_sim --> pyl_femm
+      pyl_sim --> pyl_comsol
+    }
+
+    rectangle "**Import Pre-Processing**" as fea_preproc {
+      object "Motor-CAD Bridge" as motorcad_bridge
+      object "Mesh Generator" as mesh_gen
+      object "Boundary Condition Mapper" as bc_mapper
+      motorcad_bridge --> mesh_gen
+      mesh_gen --> bc_mapper
+    }
+  }
+
+  package "PHASE 4: Results & Optimization" {
+    
+    rectangle "**Analysis & Post-Processing**" as analysis {
+      object "ResultParser" as result_parser
+      object "PerformanceEvaluator" as perf_eval
+      object "KPI Calculator {
+        - efficiency
+        - torque
+        - copper_loss
+        - iron_loss
+        - noise
+        - cost
+      }" as kpi
+      result_parser --> perf_eval
+      perf_eval --> kpi
+    }
+
+    rectangle "**SyR-e MODE Optimizer**" as syre_opt {
+      object "Pareto Front Calculation" as pareto
+      object "Multi-Objective GA" as genetic_alg
+      genetic_alg --> pareto
+    }
+
+    rectangle "**Pyleecan Optimizer**" as pyl_opt {
+      object "Optimization Problem Definition" as pyl_prob
+      object "Genetic Algorithm Wrapper" as pyl_ga
+      pyl_prob --> pyl_ga
+    }
+
+    rectangle "**Visualization & Reporting**" as viz {
+      object "2D/3D Plots" as plots
+      object "Efficiency Maps" as eff_maps
+      object "Design Report Generator" as report_gen
+      plots --> report_gen
+      eff_maps --> report_gen
+    }
+  }
+
+  package "OUTPUT ARTIFACTS" {
+    database "Optimized Motor Designs" as output_designs
+    database "FEA Simulation Results" as output_fea
+    database "Design Reports (PDF/HTML)" as output_reports
+    database "CAD Files (DXF/STEP/IGES)" as output_cad
+    database "Model Parameters (MAT/JSON)" as output_models
+  }
+
+}
+
+' Data Flow Connections
+cad_input --> emach_read_dxf
+param_input --> syre_geo
+db_input --> pyl_motor
+
+syre_export_dxf --> cad_preproc
+pyl_export --> cad_preproc
+emach_classifier --> region_class
+
+half_unit --> geo_payload
+region_class --> geo_payload
+
+geo_payload --> motorcad_bridge
+geo_payload --> syre_femm
+geo_payload --> pyl_sim
+
+femm_run --> result_parser
+maxwell_bridge --> result_parser
+pyl_maxwell --> result_parser
+
+kpi --> syre_opt
+kpi --> pyl_opt
+perf_eval --> viz
+
+pareto --> output_designs
+result_parser --> output_fea
+report_gen --> output_reports
+geo_payload --> output_cad
+syre_geo --> output_models
+
+' Legend and notes
+note bottom of motorai_boundary
+  **Integration Strategy:**
+  1. SyR-e & Pyleecan \t→ parametric design (forward direction)
+  2. eMach/pyMotorGeo \t→ reverse-engineer existing CAD (backward direction)
+  3. CAD Interchange \t→ DXF-based data exchange format
+  4. Unified Analysis \t→ common KPI pipeline for all sources
+  5. Multi-Solver \t→ SyR-e 6 solvers + Pyleecan 4 solvers
+end note
+
+note top of cad_contract
+  **CAD Interchange Contract v1:**
+  - Defines minimal geometry payload for motor-tools
+  - Optional semantic labels (topology, regions)
+  - Supports half-unit + periodicity metadata
+  - Motors: SPM, IPMSM, SynRM, Spoke, EESM
+end note
+
+note right of syre_opt
+  **SyR-e: Parametric Forward Design**
+  Variables: geometry parameters (geo)
+  Objectives: efficiency, torque, cost, weight, noise
+  Constraints: thermal, mechanical, manufacturing
+  Algorithm: NSGA-II, PSO, MOEA/D
+end note
+
+note left of analysis
+  **Unified Analysis Pipeline**
+  Input: Motor geometry + FEA results
+  Output: Standardized KPIs
+  Enables: Cross-tool comparison & ranking
+end note
+
+' Phase annotations
+note top of syre_design
+  **Design Phase (Weeks 1-4)**
+  Create geometric models
+  from parameters or CAD
+end note
+
+note top of cad_preproc
+  **Interchange Phase (Weeks 5-8)**
+  Convert to uniform format
+  classify regions & topology
+end note
+
+note top of syre_solvers
+  **Analysis Phase (Weeks 9-12)**
+  Run simulations on
+  standardized geometry
+end note
+
+note top of analysis
+  **Optimization Phase (Weeks 13-16)**
+  Post-process results
+  find Pareto front
+end note
+
+@enduml

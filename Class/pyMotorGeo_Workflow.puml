@@ -1,0 +1,52 @@
+@startuml pyMotorGeo_Workflow
+!theme plain
+title pyMotorGeo Data Flow & Analysis Workflow (code-aligned)
+
+actor User
+participant "CLI / pipeline.py" as pipe
+participant "reader.py" as read
+participant "analysis_airgap.py" as air
+participant "analysis_rotor.py\nanalysis_stator.py" as ana
+participant "topology*.py" as topo
+participant "region_closing.py" as close
+participant "gui_region.py" as gui
+participant "export.py / pyleecan_bridge.py" as exp
+database "Outputs"
+
+== 1. Read DXF ==
+User -> pipe: analyze_dxf_v2(motor.dxf)
+pipe -> read: read_entity_list(...)
+read --> pipe: entities
+
+== 2. Split by Airgap ==
+pipe -> air: classify_inner_outer_rotor(...)
+pipe -> air: split_stator_rotor_by_arc_span(...)
+air --> pipe: stator_entities, rotor_entities, airgap
+
+== 3. Count / Topology ==
+pipe -> ana: estimate_poles_robust(...)
+pipe -> ana: estimate_slots_robust(...)
+pipe -> topo: classify_pole_topology(...)
+topo --> pipe: topology summary
+
+== 4. Half Unit / Close Faces ==
+pipe -> close: close_one_pole(...)
+pipe -> close: close_one_slot(...)
+pipe -> close: detect_closed_faces(...)
+pipe -> close: auto_name_faces(...)
+close --> pipe: named faces
+
+== 5. Optional GUI Review ==
+alt manual correction needed
+    pipe -> gui: FaceRegionGUI / FaceRegionGUILite
+    gui --> pipe: updated faces
+end
+
+== 6. Export ==
+pipe -> exp: export_regions_to_dxf(...)
+pipe -> exp: create_pyleecan_machine(...) [optional]
+exp -> Outputs: analyzed DXF / summary / machine data
+
+pipe --> User: analysis completed
+
+@enduml

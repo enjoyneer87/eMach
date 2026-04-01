@@ -1,0 +1,2400 @@
+@startuml pyleecan_allclasses_generated
+!theme plain  
+skinparam backgroundColor #f0f0f0
+skinparam classBackgroundColor #e3f2fd
+skinparam classBorderColor #1976d2
+
+title Pyleecan: All Classes (Auto-Generated)
+note "Auto-generated from 265 Pyleecan classes" as N0
+
+package "Machine Types (12)" {
+class Machine {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class MachineAsync {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class MachineDFIM {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class MachineIPMSM {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class MachineLSPM {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class MachineSCIM {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class MachineSIPMSM {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class MachineSRM {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class MachineSyRM {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class MachineSync {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class MachineUD {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class MachineWRSM {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+}
+
+package "Lamination & Layers" {
+class LamH {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class LamHole {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class LamHoleNS {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class LamSlot {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class LamSlotM {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class LamSlotMag {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class LamSlotMagNS {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class LamSlotMulti {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class LamSlotMultiWind {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class LamSlotWind {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class LamSquirrelCage {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class LamSquirrelCageMag {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class Lamination {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class OutGeoLam {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+}
+
+package "Slot Types (50+)" {
+class LamSlot {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class LamSlotM {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class LamSlotMag {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class LamSlotMagNS {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class LamSlotMulti {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class LamSlotMultiWind {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class LamSlotWind {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class Slot {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class Slot19 {
+  VERSION: type
+  IS_SYMMETRICAL: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class SlotCirc {
+  VERSION: type
+  IS_SYMMETRICAL: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class SlotDC {
+  VERSION: type
+  IS_SYMMETRICAL: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class SlotM10 {
+  VERSION: type
+  IS_SYMMETRICAL: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class SlotM11 {
+  VERSION: type
+  IS_SYMMETRICAL: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class SlotM12 {
+  VERSION: type
+  IS_SYMMETRICAL: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class SlotM13 {
+  VERSION: type
+  IS_SYMMETRICAL: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class SlotM14 {
+  VERSION: type
+  IS_SYMMETRICAL: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class SlotM15 {
+  VERSION: type
+  IS_SYMMETRICAL: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class SlotM16 {
+  VERSION: type
+  IS_SYMMETRICAL: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class SlotM17 {
+  VERSION: type
+  IS_SYMMETRICAL: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class SlotM18 {
+  VERSION: type
+  IS_SYMMETRICAL: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class SlotM18_2 {
+  VERSION: type
+  IS_SYMMETRICAL: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class SlotM19 {
+  VERSION: type
+  IS_SYMMETRICAL: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class SlotUD {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class SlotUD2 {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class SlotW10 {
+  VERSION: type
+  IS_SYMMETRICAL: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class SlotW11 {
+  VERSION: type
+  IS_SYMMETRICAL: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class SlotW11_2 {
+  VERSION: type
+  IS_SYMMETRICAL: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class SlotW12 {
+  VERSION: type
+  IS_SYMMETRICAL: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class SlotW13 {
+  VERSION: type
+  IS_SYMMETRICAL: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class SlotW14 {
+  VERSION: type
+  IS_SYMMETRICAL: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class SlotW15 {
+  VERSION: type
+  IS_SYMMETRICAL: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class SlotW16 {
+  VERSION: type
+  IS_SYMMETRICAL: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class SlotW21 {
+  VERSION: type
+  IS_SYMMETRICAL: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class SlotW22 {
+  VERSION: type
+  IS_SYMMETRICAL: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class SlotW23 {
+  VERSION: type
+  IS_SYMMETRICAL: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class SlotW24 {
+  VERSION: type
+  IS_SYMMETRICAL: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class SlotW25 {
+  VERSION: type
+  IS_SYMMETRICAL: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class SlotW26 {
+  VERSION: type
+  IS_SYMMETRICAL: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class SlotW27 {
+  VERSION: type
+  IS_SYMMETRICAL: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class SlotW28 {
+  VERSION: type
+  IS_SYMMETRICAL: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class SlotW29 {
+  VERSION: type
+  IS_SYMMETRICAL: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class SlotW30 {
+  VERSION: type
+  IS_SYMMETRICAL: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class SlotW60 {
+  VERSION: type
+  IS_SYMMETRICAL: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class SlotW61 {
+  VERSION: type
+  IS_SYMMETRICAL: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class SlotW62 {
+  VERSION: type
+  IS_SYMMETRICAL: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class SlotW63 {
+  VERSION: type
+  IS_SYMMETRICAL: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class SlotWLSRPM {
+  VERSION: type
+  IS_SYMMETRICAL: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+}
+
+package "Bore Geometries" {
+class Bore {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class BoreFlower {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class BoreLSRPM {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class BoreSinePole {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class BoreUD {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+}
+
+package "Geometric Primitives" {
+class Arc {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class Arc1 {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class Arc2 {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class Arc3 {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class Circle {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class Line {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class PolarArc {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class RefLine3 {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class SurfLine {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class Surface {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+}
+
+package "Other Classes" {
+class CondType11 {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class CondType12 {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class CondType13 {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class CondType21 {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class CondType22 {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class Conductor {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class Convert {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class ConvertMC {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class DXFImport {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class DataKeeper {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class Drive {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class DriveWave {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class EEC {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class EEC_LSRPM {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class EEC_PMSM {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class EEC_SCIM {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class ElecLUTdq {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class Electrical {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class ElementMat {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class Elmer {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class ElmerResults {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class ElmerResultsVTU {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class EndWinding {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class EndWindingCirc {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class EndWindingRect {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class FPGNSeg {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class FPGNTri {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class Force {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class ForceMT {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class ForceTensor {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class Frame {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class FrameBar {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class GUIOption {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class GaussPoint {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class Hole {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class HoleM50 {
+  VERSION: type
+  IS_SYMMETRICAL: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class HoleM51 {
+  VERSION: type
+  IS_SYMMETRICAL: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class HoleM52 {
+  VERSION: type
+  IS_SYMMETRICAL: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class HoleM52R {
+  VERSION: type
+  IS_SYMMETRICAL: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class HoleM53 {
+  VERSION: type
+  IS_SYMMETRICAL: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class HoleM54 {
+  VERSION: type
+  IS_SYMMETRICAL: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class HoleM57 {
+  VERSION: type
+  IS_SYMMETRICAL: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class HoleM58 {
+  VERSION: type
+  IS_SYMMETRICAL: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class HoleM60 {
+  VERSION: type
+  IS_SYMMETRICAL: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class HoleM61 {
+  VERSION: type
+  IS_SYMMETRICAL: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class HoleM62 {
+  VERSION: type
+  IS_SYMMETRICAL: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class HoleM63 {
+  VERSION: type
+  IS_SYMMETRICAL: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class HoleMLSRPM {
+  VERSION: type
+  IS_SYMMETRICAL: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class HoleMag {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class HoleUD {
+  VERSION: type
+  IS_SYMMETRICAL: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class Import {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class ImportData {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class ImportGenMatrixSin {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class ImportGenPWM {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class ImportGenToothSaw {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class ImportGenVectLin {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class ImportGenVectSin {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class ImportMatlab {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class ImportMatrix {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class ImportMatrixVal {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class ImportMatrixXls {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class ImportMeshMat {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class ImportMeshUnv {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class ImportVectorField {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class Input {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class InputCurrent {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class InputFlux {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class InputForce {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class InputVoltage {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class LUT {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class LUTdq {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class LUTslip {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class Loss {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class LossFEA {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class LossModel {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class LossModelBertotti {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class LossModelJoule {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class LossModelMagnet {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class LossModelProximity {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class LossModelSteinmetz {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class LossModelWindagePyrhonen {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class LossModelWinding {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class MagElmer {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class MagFEMM {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class Magnet {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class Magnetics {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class MatEconomical {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class MatElectrical {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class MatHT {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class MatMagnetics {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class MatStructural {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class Material {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class Mesh {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class MeshMat {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class MeshSolution {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class MeshVTK {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class Mode {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class ModelBH {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class ModelBH_Langevin {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class ModelBH_arctangent {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class ModelBH_exponential {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class ModelBH_linear_sat {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class NodeMat {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class Notch {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class NotchEvenDist {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class OP {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class OPMatrix {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class OPdq {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class OPdqf {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class OPslip {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class OptiBayesAlg {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class OptiBayesAlgSmoot {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class OptiConstraint {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class OptiDesignVar {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class OptiDesignVarInterval {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class OptiDesignVarSet {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class OptiGenAlg {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class OptiGenAlgNsga2Deap {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class OptiObjective {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class OptiProblem {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class OptiSolver {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class OutElec {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class OutForce {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class OutGeo {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class OutInternal {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class OutLoss {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class OutLossModel {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class OutMag {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class OutMagElmer {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class OutMagFEMM {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class OutPost {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class OutStruct {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class Output {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class ParamExplorer {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class ParamExplorerInterval {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class ParamExplorerSet {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class Post {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class PostFunction {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class PostLUT {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class PostMethod {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class PostPlot {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class RefElement {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class RefQuad4 {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class RefQuad9 {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class RefSegmentP1 {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class RefTriangle3 {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class RefTriangle6 {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class Rule {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class RuleComplex {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class RuleEquation {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class RuleSimple {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class ScalarProduct {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class ScalarProductL2 {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class Section {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class Segment {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class Shaft {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class Simu1 {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class Simulation {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class Skew {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class SliceModel {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class Solution {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class SolutionData {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class SolutionMat {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class SolutionVector {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class SolverInputFile {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class StructElmer {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class Structural {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class SurfRing {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class Trapeze {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class Unit {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class VarLoad {
+  VERSION: type
+  NAME: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class VarLoadCurrent {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class VarLoadVoltage {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class VarOpti {
+  VERSION: type
+  NAME: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class VarParam {
+  VERSION: type
+  NAME: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class VarParamSweep {
+  VERSION: type
+  NAME: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class VarSimu {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class VentilationCirc {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class VentilationPolar {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class VentilationTrap {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class Winding {
+  VERSION: type
+  NAME: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class WindingSC {
+  VERSION: type
+  NAME: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class WindingUD {
+  VERSION: type
+  NAME: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+class XOutput {
+  VERSION: type
+  save: type
+  ---
+  compare()
+  __sizeof__()
+  as_dict()
+}
+}
+
+Arc --|> Line
+Arc1 --|> Arc
+Arc2 --|> Arc
+Arc3 --|> Arc
+BoreFlower --|> Bore
+BoreLSRPM --|> Bore
+BoreSinePole --|> Bore
+BoreUD --|> Bore
+Circle --|> Surface
+CondType11 --|> Conductor
+CondType12 --|> Conductor
+CondType13 --|> Conductor
+CondType21 --|> Conductor
+CondType22 --|> Conductor
+ConvertMC --|> Convert
+DriveWave --|> Drive
+EEC_LSRPM --|> EEC
+EEC_PMSM --|> EEC
+EEC_SCIM --|> EEC
+ElecLUTdq --|> Electrical
+ElmerResults --|> Elmer
+ElmerResultsVTU --|> Elmer
+EndWindingCirc --|> EndWinding
+EndWindingRect --|> EndWinding
+FPGNSeg --|> GaussPoint
+FPGNTri --|> GaussPoint
+ForceMT --|> Force
+ForceTensor --|> Force
+FrameBar --|> Frame
+HoleM50 --|> HoleMag
+HoleM51 --|> HoleMag
+HoleM52 --|> HoleMag
+HoleM52R --|> HoleMag
+HoleM53 --|> HoleMag
+HoleM54 --|> Hole
+HoleM57 --|> HoleMag
+HoleM58 --|> HoleMag
+HoleM60 --|> HoleMag
+HoleM61 --|> HoleMag
+HoleM62 --|> HoleMag
+HoleM63 --|> HoleMag
+HoleMLSRPM --|> HoleMag
+HoleMag --|> Hole
+HoleUD --|> HoleMag
+ImportGenMatrixSin --|> ImportMatrix
+ImportGenPWM --|> ImportMatrix
+ImportGenToothSaw --|> ImportMatrix
+ImportGenVectLin --|> ImportMatrix
+ImportGenVectSin --|> ImportMatrix
+ImportMatlab --|> ImportMatrix
+ImportMatrix --|> Import
+ImportMatrixVal --|> ImportMatrix
+ImportMatrixXls --|> ImportMatrix
+ImportMeshMat --|> Import
+ImportMeshUnv --|> Import
+InputCurrent --|> InputVoltage
+InputFlux --|> InputCurrent
+InputForce --|> Input
+InputVoltage --|> Input
+LUT --|> XOutput
+LUTdq --|> LUT
+LUTslip --|> LUT
+LamH --|> Lamination
+LamHole --|> LamH
+LamHoleNS --|> LamH
+LamSlot --|> Lamination
+LamSlotM --|> LamSlot
+LamSlotMag --|> LamSlotM
+LamSlotMagNS --|> LamSlotM
+LamSlotMulti --|> Lamination
+LamSlotMultiWind --|> LamSlotMulti
+LamSlotWind --|> LamSlot
+LamSquirrelCage --|> LamSlotWind
+LamSquirrelCageMag --|> LamSquirrelCage
+LossFEA --|> Loss
+LossModelBertotti --|> LossModel
+LossModelJoule --|> LossModel
+LossModelMagnet --|> LossModel
+LossModelProximity --|> LossModel
+LossModelSteinmetz --|> LossModel
+LossModelWindagePyrhonen --|> LossModel
+LossModelWinding --|> LossModel
+MachineAsync --|> Machine
+MachineDFIM --|> MachineAsync
+MachineIPMSM --|> MachineSync
+MachineLSPM --|> MachineSync
+MachineSCIM --|> MachineDFIM
+MachineSIPMSM --|> MachineSync
+MachineSRM --|> MachineSync
+MachineSyRM --|> MachineSync
+MachineSync --|> Machine
+MachineUD --|> Machine
+MachineWRSM --|> MachineSync
+MagElmer --|> Magnetics
+MagFEMM --|> Magnetics
+MeshMat --|> Mesh
+MeshVTK --|> Mesh
+Mode --|> SolutionMat
+ModelBH_Langevin --|> ModelBH
+ModelBH_arctangent --|> ModelBH
+ModelBH_linear_sat --|> ModelBH
+NotchEvenDist --|> Notch
+OPdq --|> OP
+OPdqf --|> OPdq
+OPslip --|> OP
+OptiBayesAlg --|> OptiSolver
+OptiBayesAlgSmoot --|> OptiBayesAlg
+OptiConstraint --|> DataKeeper
+OptiDesignVar --|> ParamExplorer
+OptiDesignVarInterval --|> OptiDesignVar
+OptiDesignVarSet --|> OptiDesignVar
+OptiGenAlg --|> OptiSolver
+OptiGenAlgNsga2Deap --|> OptiGenAlg
+OptiObjective --|> DataKeeper
+OutMagElmer --|> OutInternal
+OutMagFEMM --|> OutInternal
+ParamExplorerInterval --|> ParamExplorer
+ParamExplorerSet --|> ParamExplorer
+PolarArc --|> Surface
+PostFunction --|> Post
+PostLUT --|> PostMethod
+PostMethod --|> Post
+PostPlot --|> PostMethod
+RefLine3 --|> RefElement
+RefQuad4 --|> RefElement
+RefQuad9 --|> RefElement
+RefSegmentP1 --|> RefElement
+RefTriangle3 --|> RefElement
+RefTriangle6 --|> RefElement
+RuleComplex --|> Rule
+RuleEquation --|> Rule
+RuleSimple --|> Rule
+ScalarProductL2 --|> ScalarProduct
+Section --|> Elmer
+Segment --|> Line
+Simu1 --|> Simulation
+Slot19 --|> Slot
+SlotCirc --|> Slot
+SlotDC --|> Slot
+SlotM10 --|> Slot
+SlotM11 --|> Slot
+SlotM12 --|> Slot
+SlotM13 --|> Slot
+SlotM14 --|> Slot
+SlotM15 --|> Slot
+SlotM16 --|> Slot
+SlotM17 --|> Slot
+SlotM18 --|> Slot
+SlotM18_2 --|> Slot
+SlotM19 --|> Slot
+SlotUD --|> Slot
+SlotUD2 --|> Slot
+SlotW10 --|> Slot
+SlotW11 --|> Slot
+SlotW11_2 --|> Slot
+SlotW12 --|> Slot
+SlotW13 --|> Slot
+SlotW14 --|> Slot
+SlotW15 --|> Slot
+SlotW16 --|> Slot
+SlotW21 --|> Slot
+SlotW22 --|> Slot
+SlotW23 --|> Slot
+SlotW24 --|> Slot
+SlotW25 --|> Slot
+SlotW26 --|> Slot
+SlotW27 --|> Slot
+SlotW28 --|> Slot
+SlotW29 --|> Slot
+SlotW30 --|> Slot
+SlotW60 --|> Slot
+SlotW61 --|> Slot
+SlotW62 --|> Slot
+SlotW63 --|> Slot
+SlotWLSRPM --|> Slot
+SolutionData --|> Solution
+SolutionMat --|> Solution
+SolutionVector --|> Solution
+SolverInputFile --|> Elmer
+StructElmer --|> Structural
+SurfLine --|> Surface
+SurfRing --|> Surface
+Trapeze --|> Surface
+VarLoad --|> VarSimu
+VarLoadCurrent --|> VarLoad
+VarLoadVoltage --|> VarLoad
+VarOpti --|> VarParam
+VarParam --|> VarSimu
+VarParamSweep --|> VarParam
+VentilationCirc --|> Hole
+VentilationPolar --|> Hole
+VentilationTrap --|> Hole
+WindingSC --|> Winding
+WindingUD --|> Winding
+XOutput --|> Output
+
+@enduml

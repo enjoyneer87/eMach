@@ -1,0 +1,6 @@
+Name,Value,Class
+fullpath,0x0,char
+MatDir,1x36,char
+mcad,1x1,COM.motorcad_appautomation
+McadIndex,1,double
+refModelDir,1x29,char

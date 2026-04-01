@@ -1,0 +1,54 @@
+@startuml FivePackages_Integration
+!theme plain
+skinparam backgroundColor #ffffff
+skinparam packageStyle rectangle
+
+title 5-Package Integration (eMach + Pyleecan + SyR-e + PyMotorCAD + PyAEDT)
+
+package "Design Source" {
+  component "SyR-e\n(parametric geometry)" as SYRE
+  component "Pyleecan\n(OOP machine models)" as PYLEECAN
+}
+
+package "Interchange Hub" {
+  component "eMach / pyMotorGeo\nDXF parser + classifier + contracts" as EMACH
+  component "Geometry/Semantic/Result\nContract v1" as CONTRACT
+}
+
+package "CAE Execution" {
+  component "PyMotorCAD\n(Motor-CAD RPC automation)" as PYMCAD
+  component "PyAEDT\n(Maxwell/TwinBuilder/AEDT automation)" as PYAEDT
+}
+
+package "Validation" {
+  component "Benchmark 10 cases" as BENCH
+  component "Round-trip validator" as VALID
+  component "Compatibility report" as REPORT
+}
+
+SYRE --> EMACH : DXF export / params
+PYLEECAN --> EMACH : geometry import/export
+EMACH --> CONTRACT : normalize + annotate
+CONTRACT --> PYMCAD : Motor-CAD import payload
+CONTRACT --> PYAEDT : AEDT-ready payload
+PYMCAD --> PYAEDT : ROM/TwinBuilder link (optional)
+PYAEDT --> CONTRACT : solver KPI backfeed
+PYMCAD --> CONTRACT : geometry/KPI backfeed
+
+BENCH --> EMACH
+BENCH --> PYMCAD
+BENCH --> PYAEDT
+EMACH --> VALID
+PYMCAD --> VALID
+PYAEDT --> VALID
+VALID --> REPORT
+
+note bottom
+Release-blocking path:
+SyR-e/Pyleecan -> eMach contract -> PyMotorCAD/PyAEDT import -> round-trip validation
+
+Non-blocking path:
+Advanced topology/face refinement (confidence-based fallback)
+end note
+
+@enduml

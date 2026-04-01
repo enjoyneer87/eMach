@@ -1,0 +1,51 @@
+@startuml pyMotorGeo_DataTransform
+!theme plain
+title pyMotorGeo Data Transformation Pipeline (code-aligned)
+
+object DXF_File
+object Entities
+object SplitResult
+object CountSummary
+object HalfUnits
+object ClosedFaces
+object NamedFaces
+object ExportArtifacts
+
+DXF_File : motor.dxf
+
+Entities : list[EntityInfo]
+Entities : etype / points / layer / radii
+
+SplitResult : stator: list[EntityInfo]
+SplitResult : rotor: list[EntityInfo]
+SplitResult : airgap_r_inner / outer / mid
+
+CountSummary : n_poles
+CountSummary : n_slots
+CountSummary : topology hints
+
+HalfUnits : half_pole
+HalfUnits : half_slot
+HalfUnits : reconstructed units
+
+ClosedFaces : detect_closed_faces output
+ClosedFaces : polygons + area + radius stats
+
+NamedFaces : auto_name_faces + classifier results
+NamedFaces : magnet / slot / tooth / yoke / etc
+
+ExportArtifacts : analyzed.dxf
+ExportArtifacts : summary json
+ExportArtifacts : pyleecan machine (optional)
+
+DXF_File --> Entities : reader.read_entity_list(...)
+Entities --> SplitResult : analysis_airgap.split_stator_rotor_by_arc_span(...)
+SplitResult --> CountSummary : analysis_rotor.estimate_poles_robust(...)\nanalysis_stator.estimate_slots_robust(...)
+
+SplitResult --> HalfUnits : half_unit.extract_half_pole_entities(...)\nhalf_unit.extract_half_slot_entities(...)
+HalfUnits --> ClosedFaces : region_closing.close_one_pole/slot(...)\nregion_closing.detect_closed_faces(...)
+ClosedFaces --> NamedFaces : region_closing.auto_name_faces(...)\ntopology_rotor/stator classify(...)
+
+NamedFaces --> ExportArtifacts : export.export_regions_to_dxf(...)\npyleecan_bridge.create_pyleecan_machine(...)
+
+@enduml

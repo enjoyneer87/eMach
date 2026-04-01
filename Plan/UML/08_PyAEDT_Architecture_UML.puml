@@ -1,0 +1,86 @@
+@startuml PyAEDT_Architecture
+!theme plain
+skinparam backgroundColor #f7f7f7
+skinparam classBackgroundColor #e8f5ff
+skinparam classBorderColor #0b5fa5
+
+title PyAEDT Architecture (Core + Solver Apps + Modeling + Post)
+
+package "Session Layer" {
+  class Desktop
+  class AedtObjects
+  class Design
+  class Analysis
+
+  Desktop --> Design : create/open project
+  Design --> Analysis : solver context
+  AedtObjects <|-- Design
+}
+
+package "Solver Apps" {
+  class Hfss
+  class Maxwell3d
+  class Maxwell2d
+  class Icepak
+  class Circuit
+  class Mechanical
+  class Q3d
+  class Q2d
+  class Rmxprt
+  class TwinBuilder
+  class Hfss3dLayout
+
+  Hfss --|> Analysis
+  Maxwell3d --|> Analysis
+  Maxwell2d --|> Analysis
+  Icepak --|> Analysis
+  Circuit --|> Analysis
+  Mechanical --|> Analysis
+  Q3d --|> Analysis
+  Q2d --|> Analysis
+  Rmxprt --|> Analysis
+  TwinBuilder --|> Analysis
+  Hfss3dLayout --|> Analysis
+}
+
+package "Modeling & Setup" {
+  class Modeler3D
+  class Modeler2D
+  class Setup
+  class Mesh
+  class Material
+  class VariableManager
+  class Variable
+  class DesignSolution
+
+  Analysis --> Modeler3D
+  Analysis --> Modeler2D
+  Analysis --> Setup
+  Setup --> Mesh
+  Analysis --> Material
+  Analysis --> VariableManager
+  VariableManager --> Variable
+  Analysis --> DesignSolution
+}
+
+package "Post & Extension" {
+  class PostProcessor
+  class Plot
+  class Report
+  class Extensions
+  class RpcLayer
+
+  Analysis --> PostProcessor
+  PostProcessor --> Plot
+  PostProcessor --> Report
+  Analysis --> Extensions
+  Desktop --> RpcLayer
+}
+
+note right of TwinBuilder
+Co-simulation endpoint
+for external models
+(including MotorCAD ROM)
+end note
+
+@enduml
