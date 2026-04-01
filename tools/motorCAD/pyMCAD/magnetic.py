@@ -2042,6 +2042,8 @@ class MagneticRegions:
         show=True,
         mesh=False,
         mesh_kwargs=None,
+        vmin=None,
+        vmax=None,
     ):
         """Scatter plot magnetic data.
 
@@ -2095,7 +2097,7 @@ class MagneticRegions:
             return ax
 
         if used_xy:
-            sc = ax.scatter(xs, ys, c=cs, s=s, cmap=cmap, marker=".")
+            sc = ax.scatter(xs, ys, c=cs, s=s, cmap=cmap, marker=".", vmin=vmin, vmax=vmax)
             ax.set_xlabel("X [mm]")
             ax.set_ylabel("Y [mm]")
             cb = ax.figure.colorbar(sc, ax=ax)
@@ -2127,6 +2129,8 @@ class MagneticRegions:
         width=0.002,
         mesh=False,
         mesh_kwargs=None,
+        vmin=None,
+        vmax=None,
     ):
         """Quiver plot of the magnetic flux density vector (Bx, By)."""
 

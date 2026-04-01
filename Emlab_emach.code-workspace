@@ -18,6 +18,12 @@
 		}
 	],
 	"settings": {
-		"git.ignoreLimitWarning": true
+		"git.ignoreLimitWarning": true,
+		"chat.tools.terminal.autoApprove": {
+			"/^docker exec motor_compare python -u /workspace/host_data/infer_all_steps_nodes\\.py --data-dir /workspace/host_data/doe_data --case-idx 5 --grid-res 64 --out /workspace/host_data/field_compare_nodes_allsteps\\.npz$/": {
+				"approve": true,
+				"matchCommandLine": true
+			}
+		}
 	}
 }
