@@ -334,20 +334,49 @@ def create_pyleecan_machine(
 
 def dims_to_summary(dims: Dict) -> str:
     """치수 딕셔너리를 사람이 읽기 좋은 요약으로 변환."""
+    def _num(v, default=None):
+        if v is None:
+            return default
+        try:
+            return float(v)
+        except Exception:
+            return default
+
+    n_poles = int(dims.get('n_poles', 0) or 0)
+    n_slots = int(dims.get('n_slots', 0) or 0)
+    p_pairs = dims.get('p')
+    if p_pairs is None and n_poles:
+        p_pairs = n_poles // 2
+
+    rotor_rint = _num(dims.get('rotor_Rint_mm', dims.get('r_shaft_mm')))
+    rotor_rext = _num(dims.get('rotor_Rext_mm', dims.get('r_rotor_outer_mm')))
+    stator_rint = _num(dims.get('stator_Rint_mm', dims.get('r_stator_inner_mm')))
+    stator_rext = _num(dims.get('stator_Rext_mm', dims.get('r_stator_outer_mm')))
+    airgap = _num(dims.get('airgap_mm'))
+    if airgap is None and rotor_rext is not None and stator_rint is not None:
+        airgap = stator_rint - rotor_rext
+
+    pole_pitch = _num(dims.get('pole_pitch_deg'))
+    if pole_pitch is None and n_poles:
+        pole_pitch = 360.0 / n_poles
+    slot_pitch = _num(dims.get('slot_pitch_deg'))
+    if slot_pitch is None and n_slots:
+        slot_pitch = 360.0 / n_slots
+
     lines = [
         f"Motor Dimensions (from DXF)",
         f"{'='*40}",
         f"  Topology    : {dims.get('topology', 'UNKNOWN')}",
-        f"  Poles       : {dims['n_poles']}",
-        f"  Slots       : {dims['n_slots']}",
-        f"  p (pairs)   : {dims['p']}",
-        f"  Rotor  Rint : {dims['rotor_Rint_mm']:.2f} mm",
-        f"  Rotor  Rext : {dims['rotor_Rext_mm']:.2f} mm",
-        f"  Stator Rint : {dims['stator_Rint_mm']:.2f} mm",
-        f"  Stator Rext : {dims['stator_Rext_mm']:.2f} mm",
-        f"  Airgap      : {dims['airgap_mm']:.3f} mm",
-        f"  Pole pitch  : {dims['pole_pitch_deg']:.2f}°",
-        f"  Slot pitch  : {dims['slot_pitch_deg']:.2f}°",
+        f"  Poles       : {n_poles if n_poles else 'N/A'}",
+        f"  Slots       : {n_slots if n_slots else 'N/A'}",
+        f"  p (pairs)   : {p_pairs if p_pairs is not None else 'N/A'}",
+        f"  Rotor  Rint : {rotor_rint:.2f} mm" if rotor_rint is not None else "  Rotor  Rint : N/A",
+        f"  Rotor  Rext : {rotor_rext:.2f} mm" if rotor_rext is not None else "  Rotor  Rext : N/A",
+        f"  Stator Rint : {stator_rint:.2f} mm" if stator_rint is not None else "  Stator Rint : N/A",
+        f"  Stator Rext : {stator_rext:.2f} mm" if stator_rext is not None else "  Stator Rext : N/A",
+        f"  Airgap      : {airgap:.3f} mm" if airgap is not None else "  Airgap      : N/A",
+        f"  Pole pitch  : {pole_pitch:.2f}°" if pole_pitch is not None else "  Pole pitch  : N/A",
+        f"  Slot pitch  : {slot_pitch:.2f}°" if slot_pitch is not None else "  Slot pitch  : N/A",
     ]
     if dims.get('magnet_thickness_mm', 0) > 0:
         lines.append(f"  Mag thick.  : {dims['magnet_thickness_mm']:.2f} mm")
@@ -572,3 +601,87 @@ def build_machine_from_faces(
     except Exception as e:
         print(f"[pyleecan_bridge] build_machine_from_faces 오류: {e}")
         return None
+
+
+def build_machine_and_dims_from_dxf(
+    dxf_path: str,
+    machine_name: str = "DXF_Motor",
+    origin: Tuple[float, float] = (0.0, 0.0),
+    n_poles: Optional[int] = None,
+    n_slots: Optional[int] = None,
+    stack_length_mm: float = 100.0,
+    enable_radius_fallback: bool = True,
+    verbose: bool = False,
+) -> Tuple[object, dict, dict]:
+    """
+    DXF 파일을 분석해 pyleecan Machine 객체와 치수 정보를 함께 생성합니다.
+
+    Returns
+    -------
+    tuple
+        (machine, dims, analysis_result)
+    """
+    from pipeline import analyze_dxf_v2
+
+    analysis_result = analyze_dxf_v2(
+        dxf_path=dxf_path,
+        origin=origin,
+        n_poles=n_poles,
+        n_slots=n_slots,
+        enable_radius_fallback=enable_radius_fallback,
+        verbose=verbose,
+    )
+
+    dims = dict(analysis_result.get("dims", {}))
+    if "p" not in dims and dims.get("n_poles"):
+        dims["p"] = int(dims["n_poles"]) // 2
+
+    # 상위 호환: 다른 경로에서 사용하는 키 별칭을 함께 채움
+    if "rotor_Rint_mm" not in dims and "r_shaft_mm" in dims:
+        dims["rotor_Rint_mm"] = dims["r_shaft_mm"]
+    if "rotor_Rext_mm" not in dims and "r_rotor_outer_mm" in dims:
+        dims["rotor_Rext_mm"] = dims["r_rotor_outer_mm"]
+    if "stator_Rint_mm" not in dims and "r_stator_inner_mm" in dims:
+        dims["stator_Rint_mm"] = dims["r_stator_inner_mm"]
+    if "stator_Rext_mm" not in dims and "r_stator_outer_mm" in dims:
+        dims["stator_Rext_mm"] = dims["r_stator_outer_mm"]
+
+    dims["stack_length_mm"] = float(stack_length_mm)
+
+    machine = build_machine_from_faces(
+        rotor_faces=analysis_result.get("rotor_faces", []),
+        stator_faces=analysis_result.get("stator_faces", []),
+        dims=dims,
+        machine_name=machine_name,
+    )
+    return machine, dims, analysis_result
+
+
+def build_export_bundle_from_analysis(
+    dxf_filename: str,
+    dims: dict,
+    analysis_result: dict,
+    machine: object = None,
+) -> dict:
+    """UI/CLI 다운로드용 직렬화 가능한 Pyleecan 입력 번들을 생성합니다."""
+    rotor_faces = analysis_result.get("rotor_faces", [])
+    stator_faces = analysis_result.get("stator_faces", [])
+
+    return {
+        "bridge_version": "v1",
+        "source": {
+            "filename": dxf_filename,
+            "pipeline": "analyze_dxf_v2",
+        },
+        "dims": dims,
+        "faces": {
+            "rotor_count": len(rotor_faces),
+            "stator_count": len(stator_faces),
+            "rotor_labels": sorted({f.get("name", "unknown") for f in rotor_faces}),
+            "stator_labels": sorted({f.get("name", "unknown") for f in stator_faces}),
+        },
+        "machine": {
+            "pyleecan_available": bool(_HAS_PYLEECAN),
+            "machine_class": type(machine).__name__ if machine is not None else None,
+        },
+    }

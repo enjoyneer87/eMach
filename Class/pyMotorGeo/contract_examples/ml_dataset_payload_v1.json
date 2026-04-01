@@ -1,0 +1,24 @@
+{
+  "contract_version": "v1",
+  "source": {
+    "source_type": "h5",
+    "path": "D:/KangDH/Emlab_emach/_mcad_exports/Mag_case001.h5"
+  },
+  "graph": {
+    "node_features": ["x", "y", "region_code", "A", "J"],
+    "edge_features": ["dx", "dy", "dist"],
+    "target_fields": ["Bx", "By"]
+  },
+  "split": {
+    "train": 0.8,
+    "val": 0.1,
+    "test": 0.1
+  },
+  "normalization": "train_stat",
+  "metadata": {
+    "case_id": "case001",
+    "unit": "mm",
+    "step_key": "time_index",
+    "notes": "Baseline dataset contract example"
+  }
+}
