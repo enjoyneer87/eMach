@@ -15,6 +15,7 @@ ROOT = Path(__file__).resolve().parents[2]
 TMP_BASE = Path(os.environ.get("TEMP", str(Path.home()))) / "emach_overnight_runner"
 STATE_PATH = TMP_BASE / "overnight_nonml_state.json"
 REPORT_DIR = TMP_BASE / "reports"
+DEFAULT_DEV_ENV_DIR = Path.home() / ".ansys_python_venvs" / "pyMotorEnv_310"
 
 ACTION12 = {
     1: "benchmark 10-case ID/location freeze",
@@ -292,6 +293,46 @@ def _run(
         check=False,
         timeout=timeout_sec,
     )
+
+
+def _default_dev_python() -> str:
+    from_env = os.environ.get("EMACH_DEV_PYTHON", "").strip()
+    if from_env:
+        return from_env
+    return str(DEFAULT_DEV_ENV_DIR / "Scripts" / "python.exe")
+
+
+def _ensure_dev_python(bootstrap_enabled: bool = True) -> str:
+    dev_python = Path(_default_dev_python())
+    if dev_python.exists():
+        return str(dev_python)
+
+    if not bootstrap_enabled:
+        return sys.executable
+
+    bootstrap_script = Path(__file__).resolve().parent / "bootstrap_pyMotorEnv_310.py"
+    if not bootstrap_script.exists():
+        return sys.executable
+
+    venv_dir = dev_python.parent.parent
+    req_file = Path(__file__).resolve().parent / "requirements_pyMotorEnv_310.txt"
+
+    proc = _run(
+        [
+            sys.executable,
+            str(bootstrap_script),
+            "--venv-dir",
+            str(venv_dir),
+            "--requirements",
+            str(req_file),
+        ],
+        cwd=ROOT,
+        timeout_sec=900,
+    )
+
+    if proc.returncode == 0 and dev_python.exists():
+        return str(dev_python)
+    return sys.executable
 
 
 def _latest_git_commit() -> tuple[str, str]:
@@ -598,14 +639,14 @@ def _emit_logger(message: str, heading: bool = False) -> None:
         return
 
 
-def run_plan_db_sync(server_id: str) -> ActionState:
+def run_plan_db_sync(server_id: str, python_executable: str) -> ActionState:
     token = os.environ.get("NOTION_TOKEN", "")
     database_id = os.environ.get("NOTION_DATABASE_ID", "")
     if not token or not database_id:
         return ActionState("in_progress", "NOTION_TOKEN/NOTION_DATABASE_ID not set")
 
     cmd = [
-        sys.executable,
+        python_executable,
         str(Path(__file__).resolve().parent / "sync_notion_plan_db.py"),
         "--server-id",
         server_id,
@@ -623,11 +664,11 @@ def run_plan_db_sync(server_id: str) -> ActionState:
     return ActionState("in_progress", err[-1] if err else "sync failed")
 
 
-def run_cycle(server_id: str) -> dict:
+def run_cycle(server_id: str, python_executable: str) -> dict:
     REPORT_DIR.mkdir(parents=True, exist_ok=True)
     started = _now_str()
 
-    sync_state = run_plan_db_sync(server_id)
+    sync_state = run_plan_db_sync(server_id, python_executable=python_executable)
     action_states = evaluate_actions()
     git_hash, git_subject = _latest_git_commit()
     _sync_action_status_to_notion(
@@ -708,6 +749,11 @@ def main() -> int:
     parser.add_argument("--until", default="08:30", help="HH:MM local time")
     parser.add_argument("--once", action="store_true")
     parser.add_argument(
+        "--disable-env-bootstrap",
+        action="store_true",
+        help="Do not create pyMotorEnv_310 automatically when missing",
+    )
+    parser.add_argument(
         "--disable-auto-commit",
         action="store_true",
         help="Skip automatic git commit at shutdown",
@@ -726,6 +772,10 @@ def main() -> int:
     print(f"ML blocked actions: {sorted(list(ML_BLOCKED_ACTIONS))}")
     print(f"Auto commit on shutdown: {not args.disable_auto_commit}")
     print(f"Auto push on shutdown: {not args.disable_auto_push}")
+
+    dev_python = _ensure_dev_python(bootstrap_enabled=(not args.disable_env_bootstrap))
+    os.environ["EMACH_DEV_PYTHON"] = dev_python
+    print(f"Dev python: {dev_python}")
     print("=" * 72)
 
     deadline = _parse_until(args.until)
@@ -734,7 +784,7 @@ def main() -> int:
     try:
         while True:
             prev_state = _load_state()
-            summary = run_cycle(args.server_id)
+            summary = run_cycle(args.server_id, python_executable=dev_python)
             latest_summary = summary
             _log_summary(summary, prev_state)
             _save_state(summary)

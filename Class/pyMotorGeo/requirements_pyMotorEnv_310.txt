@@ -1,0 +1,7 @@
+# Shared environment baseline for pyMotorEnv_310
+# Install from Class/pyMotorGeo directory or pass absolute path.
+-r ui/requirements.txt
+-r requirements_api.txt
+
+# Optional but commonly needed by FastAPI/Pydantic code paths
+pydantic>=2.6.0
