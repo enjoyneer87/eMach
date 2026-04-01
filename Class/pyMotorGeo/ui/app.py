@@ -14,11 +14,9 @@ if str(parent_dir) not in sys.path:
     sys.path.insert(0, str(parent_dir))
 
 from geometry_bridge import GeometryBridge
-from pyleecan_bridge import (
-    build_machine_and_dims_from_dxf,
-    build_export_bundle_from_analysis,
-    check_pyleecan_available,
-    dims_to_summary,
+from pyleecan_subprocess_bridge import (
+    default_pyleecan_python,
+    run_external_pyleecan_bridge,
 )
 
 
@@ -86,8 +84,8 @@ with col1:
         mime="application/json",
     )
 
-    if uploaded_file.name.lower().endswith(".dxf"):
-        st.caption("DXF 입력일 때만 Pyleecan 브릿지를 실행할 수 있습니다.")
+    if uploaded_file.name.lower().endswith(".dxf") or uploaded_file.name.lower().endswith(".json"):
+        st.caption("DXF 또는 Pyleecan Bundle JSON 입력에서 외부 env 브릿지를 실행할 수 있습니다.")
 
         machine_name = st.text_input(
             "Machine Name",
@@ -100,67 +98,71 @@ with col1:
             value=100.0,
             step=1.0,
         )
+        pyleecan_python = st.text_input(
+            "Pyleecan Python Executable",
+            value=default_pyleecan_python(),
+            help="pyleecan이 설치된 별도 가상환경의 python.exe 경로",
+        )
 
         if st.button("Run Pyleecan Bridge"):
-            tmp_dxf_path = None
+            tmp_input_path = None
             try:
-                tmp_dxf_path = _write_uploaded_to_temp(uploaded_file)
-                machine, dims, analysis_result = build_machine_and_dims_from_dxf(
-                    dxf_path=tmp_dxf_path,
+                tmp_input_path = _write_uploaded_to_temp(uploaded_file)
+                input_type = "dxf" if uploaded_file.name.lower().endswith(".dxf") else "json"
+                external_result = run_external_pyleecan_bridge(
+                    input_path=tmp_input_path,
+                    input_type=input_type,
+                    source_name=uploaded_file.name,
                     machine_name=machine_name,
                     stack_length_mm=float(stack_length_mm),
-                    enable_radius_fallback=True,
-                    verbose=False,
+                    pyleecan_python=pyleecan_python,
                 )
+                st.session_state["pyleecan_external_result"] = external_result
 
-                st.session_state["pyleecan_dims"] = dims
-                st.session_state["pyleecan_bundle"] = build_export_bundle_from_analysis(
-                    dxf_filename=uploaded_file.name,
-                    dims=dims,
-                    analysis_result=analysis_result,
-                    machine=machine,
-                )
-                st.session_state["pyleecan_machine_class"] = (
-                    type(machine).__name__ if machine is not None else None
-                )
-                st.success("Pyleecan 브릿지 분석 완료")
+                if external_result.get("ok"):
+                    st.success("Pyleecan 외부 env 브릿지 분석 완료")
+                else:
+                    st.error(
+                        f"Pyleecan 브릿지 실행 실패: {external_result.get('error', 'unknown')}"
+                    )
             except Exception as e:
                 st.error(f"Pyleecan 브릿지 실행 실패: {e}")
             finally:
-                if tmp_dxf_path and os.path.exists(tmp_dxf_path):
-                    os.remove(tmp_dxf_path)
+                if tmp_input_path and os.path.exists(tmp_input_path):
+                    os.remove(tmp_input_path)
 
-        if "pyleecan_dims" in st.session_state and "pyleecan_bundle" in st.session_state:
-            st.text(dims_to_summary(st.session_state["pyleecan_dims"]))
+        if "pyleecan_external_result" in st.session_state:
+            ext = st.session_state["pyleecan_external_result"]
+            st.write(f"- **Runner Python**: `{ext.get('python_executable', 'unknown')}`")
+            st.write(f"- **Return Code**: `{ext.get('returncode', 'N/A')}`")
+            st.write(f"- **Pyleecan Version**: `{ext.get('pyleecan_version', 'unknown')}`")
+            st.write(f"- **Pyleecan Module**: `{ext.get('pyleecan_module_path', 'unknown')}`")
 
-            bundle_json = json.dumps(
-                st.session_state["pyleecan_bundle"],
-                ensure_ascii=False,
-                indent=2,
-            )
-            bundle_name = f"{Path(uploaded_file.name).stem}_pyleecan_bundle.json"
-            st.download_button(
-                "Download Pyleecan Bundle",
-                data=bundle_json,
-                file_name=bundle_name,
-                mime="application/json",
-            )
+            if ext.get("ok"):
+                st.text(ext.get("dims_summary", ""))
 
-            if check_pyleecan_available():
-                if st.session_state.get("pyleecan_machine_class"):
-                    st.info(
-                        f"Pyleecan Machine 생성됨: {st.session_state['pyleecan_machine_class']}"
-                    )
-                else:
-                    st.warning(
-                        "pyleecan은 설치되어 있으나 Machine 객체 생성에 실패했습니다. "
-                        "DXF 품질/토폴로지 라벨을 확인해 주세요."
-                    )
-            else:
-                st.info(
-                    "pyleecan 패키지가 설치되어 있지 않아 Machine 객체는 생성되지 않았습니다. "
-                    "대신 치수/라벨 번들은 정상 다운로드 가능합니다."
+                bundle_json = json.dumps(
+                    ext.get("bundle", {}),
+                    ensure_ascii=False,
+                    indent=2,
                 )
+                bundle_name = f"{Path(uploaded_file.name).stem}_pyleecan_bundle.json"
+                st.download_button(
+                    "Download Pyleecan Bundle",
+                    data=bundle_json,
+                    file_name=bundle_name,
+                    mime="application/json",
+                )
+                st.info(f"Pyleecan Machine 생성됨: {ext.get('machine_class', 'unknown')}")
+            else:
+                st.warning(
+                    "외부 pyleecan env에서 객체 생성이 실패했습니다. "
+                    "오류 로그를 확인해 주세요."
+                )
+
+            with st.expander("Runner Logs"):
+                st.text(ext.get("stdout", ""))
+                st.text(ext.get("stderr", ""))
 
 with col2:
     st.header("🎨 Geometry Visualization")

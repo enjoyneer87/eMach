@@ -1,0 +1,15 @@
+{
+  "recorded_at": "2026-04-01",
+  "strategy": "separate-env-subprocess-bridge",
+  "pyleecan_fork": {
+    "repository": "https://github.com/enjoyneer87/pyleecan.git",
+    "branch": "master",
+    "commit": "bc92688ae",
+    "install_mode": "editable",
+    "local_path": "D:/KangDH/pyleecan_fork"
+  },
+  "runtime": {
+    "ui_env_python": "C:/Users/user/.ansys_python_venvs/pyMotorEnv_310/Scripts/python.exe",
+    "pyleecan_env_python": "C:/Users/user/.ansys_python_venvs/pyMotorEnv_Pyleecan/Scripts/python.exe"
+  }
+}
