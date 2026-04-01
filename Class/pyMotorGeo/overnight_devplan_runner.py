@@ -45,6 +45,8 @@ ROUTINE_STEPS = [
 ]
 
 ENTITY_TASK_L2 = "TASK_L2"
+ENTITY_PLAN_L1 = "PLAN_L1"
+ENTITY_ROLE_QUEUE = "ROLE_QUEUE"
 
 
 @dataclass
@@ -166,6 +168,41 @@ def _query_action_rows() -> List[dict]:
     return rows
 
 
+def _query_rows_by_title_contains(title_contains: str) -> List[dict]:
+    database_id = os.environ.get("NOTION_DATABASE_ID", "")
+    if not database_id or _notion_headers() is None:
+        return []
+
+    rows: List[dict] = []
+    payload = {
+        "filter": {
+            "property": "List",
+            "title": {"contains": title_contains},
+        },
+        "page_size": 100,
+    }
+
+    while True:
+        resp = _notion_request(
+            f"https://api.notion.com/v1/databases/{database_id}/query",
+            "POST",
+            payload,
+        )
+        rows.extend(resp.get("results", []))
+        if not resp.get("has_more"):
+            break
+        payload["start_cursor"] = resp.get("next_cursor")
+    return rows
+
+
+def _query_l1_rows() -> List[dict]:
+    return _query_rows_by_title_contains("PLANDB | L1 |")
+
+
+def _query_role_rows() -> List[dict]:
+    return _query_rows_by_title_contains("ROLE |")
+
+
 def _get_notion_property_types() -> Dict[str, str]:
     database_id = os.environ.get("NOTION_DATABASE_ID", "")
     if not database_id or _notion_headers() is None:
@@ -188,6 +225,211 @@ def _status_for_action(action_state: str, finalizing: bool) -> str:
     return "시작 전"
 
 
+def _set_status_property(
+    properties: Dict[str, dict],
+    prop_types: Dict[str, str],
+    prop_name: str,
+    status_name: str,
+) -> None:
+    ptype = prop_types.get(prop_name)
+    if ptype == "status":
+        properties[prop_name] = {"status": {"name": status_name}}
+    elif ptype == "select":
+        properties[prop_name] = {"select": {"name": status_name}}
+
+
+def _legacy_status_for_plan(plan_status: str) -> str:
+    if plan_status == "초안":
+        return "시작 전"
+    if plan_status == "활성":
+        return "진행 중"
+    if plan_status == "동결":
+        return "홀드"
+    if plan_status == "아카이브":
+        return "완료"
+    return "진행 중"
+
+
+def _legacy_status_for_role(role_status: str) -> str:
+    if role_status in {"진행 중", "리뷰대기"}:
+        return "진행 중"
+    if role_status == "완료":
+        return "완료"
+    if role_status == "홀드":
+        return "홀드"
+    return "시작 전"
+
+
+def _plan_status_from_actions(action_states: Dict[int, ActionState], finalizing: bool) -> str:
+    actionable_ids = [aid for aid in sorted(action_states.keys()) if aid not in ML_BLOCKED_ACTIONS]
+    if not actionable_ids:
+        return "초안"
+
+    done_count = sum(1 for aid in actionable_ids if action_states[aid].status == "done")
+    progress_count = sum(1 for aid in actionable_ids if action_states[aid].status == "in_progress")
+
+    if done_count == 0 and progress_count == 0:
+        return "초안"
+
+    if done_count == len(actionable_ids):
+        return "아카이브" if finalizing else "활성"
+
+    if finalizing and progress_count > 0:
+        return "동결"
+
+    return "활성"
+
+
+def _derive_role_statuses(
+    action_states: Dict[int, ActionState],
+    sync_state_status: str,
+    finalizing: bool,
+    git_synced: bool,
+) -> Dict[str, str]:
+    actionable_ids = [aid for aid in sorted(action_states.keys()) if aid not in ML_BLOCKED_ACTIONS]
+    done_count = sum(1 for aid in actionable_ids if action_states[aid].status == "done")
+    progress_count = sum(1 for aid in actionable_ids if action_states[aid].status == "in_progress")
+    all_done = bool(actionable_ids) and done_count == len(actionable_ids)
+
+    out: Dict[str, str] = {
+        "PM-TRIAGE": "진행 중",
+        "IMPLEMENTER": "대기",
+        "REVIEWER": "대기",
+        "INTEGRATOR": "대기",
+        "DOCS-SYNC": "대기",
+    }
+
+    if finalizing:
+        out["PM-TRIAGE"] = "완료"
+    if progress_count > 0:
+        out["IMPLEMENTER"] = "진행 중"
+    elif done_count > 0:
+        out["IMPLEMENTER"] = "완료" if finalizing else "대기"
+
+    if done_count > 0 and progress_count == 0:
+        out["REVIEWER"] = "완료" if finalizing else "리뷰대기"
+    elif progress_count > 0:
+        out["REVIEWER"] = "대기"
+
+    if all_done and finalizing:
+        out["INTEGRATOR"] = "완료" if git_synced else "진행 중"
+    elif finalizing and progress_count == 0 and done_count > 0:
+        out["INTEGRATOR"] = "진행 중"
+
+    if sync_state_status == "done":
+        out["DOCS-SYNC"] = "완료" if finalizing else "진행 중"
+    else:
+        out["DOCS-SYNC"] = "홀드"
+
+    return out
+
+
+def _sync_plan_and_role_status_to_notion(
+    action_states: Dict[int, ActionState],
+    sync_state_status: str,
+    finalizing: bool = False,
+    server_id: str = "",
+    git_commit_hash: str = "",
+    git_commit_subject: str = "",
+    sync_note: str = "",
+    git_synced: bool = False,
+) -> None:
+    if _notion_headers() is None:
+        return
+
+    prop_types = _get_notion_property_types()
+    plan_status = _plan_status_from_actions(action_states, finalizing=finalizing)
+    role_statuses = _derive_role_statuses(
+        action_states,
+        sync_state_status=sync_state_status,
+        finalizing=finalizing,
+        git_synced=git_synced,
+    )
+
+    def common_properties(note_head: str) -> Dict[str, dict]:
+        properties: Dict[str, dict] = {}
+        if server_id and prop_types.get("서버ID") == "rich_text":
+            properties["서버ID"] = {
+                "rich_text": [{"type": "text", "text": {"content": server_id}}]
+            }
+        if prop_types.get("동기화일") == "date":
+            properties["동기화일"] = {"date": {"start": _now_iso()}}
+        if git_commit_hash and prop_types.get("커밋해시") == "rich_text":
+            properties["커밋해시"] = {
+                "rich_text": [{"type": "text", "text": {"content": git_commit_hash[:8]}}]
+            }
+        if prop_types.get("비고") == "rich_text":
+            phase = "finalize" if finalizing else "running"
+            note = f"routine={phase} ; {note_head}"
+            if git_commit_subject:
+                note += f" ; commit={git_commit_subject[:120]}"
+            if sync_note:
+                note += f" ; {sync_note[:220]}"
+            properties["비고"] = {
+                "rich_text": [{"type": "text", "text": {"content": note}}]
+            }
+        return properties
+
+    for row in _query_l1_rows():
+        page_id = row.get("id")
+        if not page_id:
+            continue
+
+        properties = common_properties(f"plan_status={plan_status}")
+        _set_status_property(properties, prop_types, "상태_계획", plan_status)
+        _set_status_property(properties, prop_types, "상태", _legacy_status_for_plan(plan_status))
+        if prop_types.get("엔티티구분") == "select":
+            properties["엔티티구분"] = {"select": {"name": ENTITY_PLAN_L1}}
+        if prop_types.get("검증완료") == "checkbox":
+            properties["검증완료"] = {"checkbox": (plan_status == "아카이브")}
+
+        if not properties:
+            continue
+        try:
+            _notion_request(
+                f"https://api.notion.com/v1/pages/{page_id}",
+                "PATCH",
+                {"properties": properties},
+            )
+        except Exception:
+            continue
+
+    for row in _query_role_rows():
+        page_id = row.get("id")
+        if not page_id:
+            continue
+
+        title_parts = row.get("properties", {}).get("List", {}).get("title", [])
+        title = "".join(x.get("plain_text", "") for x in title_parts)
+        role_match = re.search(r"ROLE\s*\|\s*([^|]+)\s*\|", title)
+        role_name = role_match.group(1).strip() if role_match else ""
+        if not role_name:
+            role_prop = row.get("properties", {}).get("역할", {}).get("select", {})
+            role_name = role_prop.get("name", "")
+        if role_name not in role_statuses:
+            continue
+
+        role_status = role_statuses[role_name]
+        properties = common_properties(f"role={role_name}:{role_status}")
+        _set_status_property(properties, prop_types, "상태_역할", role_status)
+        _set_status_property(properties, prop_types, "상태", _legacy_status_for_role(role_status))
+        if prop_types.get("엔티티구분") == "select":
+            properties["엔티티구분"] = {"select": {"name": ENTITY_ROLE_QUEUE}}
+        if prop_types.get("검증완료") == "checkbox":
+            properties["검증완료"] = {"checkbox": (role_status == "완료")}
+
+        if not properties:
+            continue
+        try:
+            _notion_request(
+                f"https://api.notion.com/v1/pages/{page_id}",
+                "PATCH",
+                {"properties": properties},
+            )
+        except Exception:
+            continue
+
+
 def _sync_action_status_to_notion(
     action_states: Dict[int, ActionState],
     finalizing: bool = False,
@@ -202,13 +444,6 @@ def _sync_action_status_to_notion(
     _ensure_hold_status_option()
     prop_types = _get_notion_property_types()
     rows = _query_action_rows()
-
-    def set_status_property(properties: Dict[str, dict], prop_name: str, status_name: str) -> None:
-        ptype = prop_types.get(prop_name)
-        if ptype == "status":
-            properties[prop_name] = {"status": {"name": status_name}}
-        elif ptype == "select":
-            properties[prop_name] = {"select": {"name": status_name}}
 
     for row in rows:
         title_parts = row.get("properties", {}).get("List", {}).get("title", [])
@@ -228,8 +463,8 @@ def _sync_action_status_to_notion(
 
         properties: Dict[str, dict] = {}
 
-        set_status_property(properties, "상태_작업", target)
-        set_status_property(properties, "상태", target)
+        _set_status_property(properties, prop_types, "상태_작업", target)
+        _set_status_property(properties, prop_types, "상태", target)
 
         if prop_types.get("엔티티구분") == "select":
             properties["엔티티구분"] = {"select": {"name": ENTITY_TASK_L2}}
@@ -690,6 +925,14 @@ def run_cycle(server_id: str, python_executable: str) -> dict:
         git_commit_hash=git_hash,
         git_commit_subject=git_subject,
     )
+    _sync_plan_and_role_status_to_notion(
+        action_states,
+        sync_state_status=sync_state.status,
+        finalizing=False,
+        server_id=server_id,
+        git_commit_hash=git_hash,
+        git_commit_subject=git_subject,
+    )
 
     done_ids = [aid for aid, st in action_states.items() if st.status == "done"]
     skip_ids = [aid for aid, st in action_states.items() if st.status == "skipped"]
@@ -850,6 +1093,16 @@ def main() -> int:
                 git_commit_hash=git_info.get("latest_hash", ""),
                 git_commit_subject=git_info.get("latest_subject", ""),
                 sync_note=git_info.get("sync_evidence", ""),
+            )
+            _sync_plan_and_role_status_to_notion(
+                action_states,
+                sync_state_status=latest_summary.get("sync", {}).get("status", "in_progress"),
+                finalizing=True,
+                server_id=args.server_id,
+                git_commit_hash=git_info.get("latest_hash", ""),
+                git_commit_subject=git_info.get("latest_subject", ""),
+                sync_note=git_info.get("sync_evidence", ""),
+                git_synced=(git_info.get("sync_status", "") == "done"),
             )
 
     print("Overnight DevPlan runner finished")
