@@ -1,8 +1,9 @@
 import json
+import os
 import urllib.request
 
-TOKEN = "ntn_f1882298252b4Hmvg4m6xIbT4qIv9wAIZiEDhxOoajQglM"
-DB_ID = "33507031-978c-81e5-a8ea-eaf27372f37d"
+TOKEN = os.environ.get("NOTION_TOKEN", "")
+DB_ID = os.environ.get("NOTION_DATABASE_ID", "")
 
 HEADERS = {
     "Authorization": f"Bearer {TOKEN}",
@@ -12,6 +13,16 @@ HEADERS = {
 
 PAYLOAD = {
     "properties": {
+        "엔티티구분": {
+            "select": {
+                "options": [
+                    {"name": "PLAN_L1", "color": "purple"},
+                    {"name": "TASK_L2", "color": "blue"},
+                    {"name": "TASK_L3", "color": "green"},
+                    {"name": "ROLE_QUEUE", "color": "orange"},
+                ]
+            }
+        },
         "역할": {
             "select": {
                 "options": [
@@ -20,6 +31,37 @@ PAYLOAD = {
                     {"name": "REVIEWER", "color": "green"},
                     {"name": "INTEGRATOR", "color": "orange"},
                     {"name": "DOCS-SYNC", "color": "gray"},
+                ]
+            }
+        },
+        "상태_계획": {
+            "select": {
+                "options": [
+                    {"name": "초안", "color": "default"},
+                    {"name": "활성", "color": "blue"},
+                    {"name": "동결", "color": "yellow"},
+                    {"name": "아카이브", "color": "gray"},
+                ]
+            }
+        },
+        "상태_작업": {
+            "select": {
+                "options": [
+                    {"name": "시작 전", "color": "default"},
+                    {"name": "진행 중", "color": "blue"},
+                    {"name": "완료", "color": "green"},
+                    {"name": "홀드", "color": "yellow"},
+                ]
+            }
+        },
+        "상태_역할": {
+            "select": {
+                "options": [
+                    {"name": "대기", "color": "default"},
+                    {"name": "진행 중", "color": "blue"},
+                    {"name": "리뷰대기", "color": "purple"},
+                    {"name": "완료", "color": "green"},
+                    {"name": "홀드", "color": "yellow"},
                 ]
             }
         },
@@ -56,6 +98,9 @@ def call(url: str, method: str, payload=None):
 
 
 def main():
+    if not TOKEN or not DB_ID:
+        raise ValueError("NOTION_TOKEN and NOTION_DATABASE_ID must be set")
+
     call(f"https://api.notion.com/v1/databases/{DB_ID}", "PATCH", PAYLOAD)
     db = call(f"https://api.notion.com/v1/databases/{DB_ID}", "GET")
     print("SCHEMA_PATCH=OK")

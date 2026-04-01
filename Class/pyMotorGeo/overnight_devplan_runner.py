@@ -44,6 +44,8 @@ ROUTINE_STEPS = [
     "finalize_to_done_or_hold",
 ]
 
+ENTITY_TASK_L2 = "TASK_L2"
+
 
 @dataclass
 class ActionState:
@@ -201,6 +203,13 @@ def _sync_action_status_to_notion(
     prop_types = _get_notion_property_types()
     rows = _query_action_rows()
 
+    def set_status_property(properties: Dict[str, dict], prop_name: str, status_name: str) -> None:
+        ptype = prop_types.get(prop_name)
+        if ptype == "status":
+            properties[prop_name] = {"status": {"name": status_name}}
+        elif ptype == "select":
+            properties[prop_name] = {"select": {"name": status_name}}
+
     for row in rows:
         title_parts = row.get("properties", {}).get("List", {}).get("title", [])
         title = "".join(x.get("plain_text", "") for x in title_parts)
@@ -219,8 +228,11 @@ def _sync_action_status_to_notion(
 
         properties: Dict[str, dict] = {}
 
-        if prop_types.get("상태") == "status":
-            properties["상태"] = {"status": {"name": target}}
+        set_status_property(properties, "상태_작업", target)
+        set_status_property(properties, "상태", target)
+
+        if prop_types.get("엔티티구분") == "select":
+            properties["엔티티구분"] = {"select": {"name": ENTITY_TASK_L2}}
 
         if server_id and prop_types.get("서버ID") == "rich_text":
             properties["서버ID"] = {

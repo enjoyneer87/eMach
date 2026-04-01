@@ -12,6 +12,11 @@ from typing import Dict, List, Optional, Tuple
 ROOT = Path(__file__).resolve().parents[2]
 PLAN_DIR = ROOT / "Plan"
 
+ENTITY_PLAN_L1 = "PLAN_L1"
+ENTITY_TASK_L2 = "TASK_L2"
+ENTITY_TASK_L3 = "TASK_L3"
+ENTITY_ROLE_QUEUE = "ROLE_QUEUE"
+
 
 @dataclass
 class MdInfo:
@@ -125,7 +130,7 @@ def list_plan_markdowns() -> List[Path]:
     return [p for p in files if p.is_file()]
 
 
-def status_from_checks(total: int, done: int, rel_path: str = "") -> str:
+def task_status_from_checks(total: int, done: int, rel_path: str = "") -> str:
     file_name = Path(rel_path).name if rel_path else ""
     is_action_doc = file_name.startswith("Action")
 
@@ -142,7 +147,7 @@ def status_from_checks(total: int, done: int, rel_path: str = "") -> str:
         return "시작 전"
     if done < total:
         return "진행 중"
-    return "완료 🙌"
+    return "완료"
 
 
 def notion_now_iso() -> str:
@@ -158,6 +163,7 @@ def plain_text(rich_text_list: List[dict]) -> str:
 def build_properties(
     title: str,
     task_type: str,
+    entity_kind: str,
     status: str,
     rel_project_ids: Optional[List[str]],
     attrs: str,
@@ -183,6 +189,16 @@ def build_properties(
         if value.startswith("완료"):
             return "완료"
         return value
+
+    def set_status_property(prop_name: str, value: str) -> None:
+        if not has_prop(prop_name):
+            return
+        ptype = prop_type(prop_name)
+        if ptype == "status":
+            props[prop_name] = {"status": {"name": value}}
+            return
+        if ptype == "select":
+            props[prop_name] = {"select": {"name": value}}
 
     def normalize_priority_name(value: str) -> str:
         v = (value or "").strip().upper()
@@ -213,12 +229,22 @@ def build_properties(
 
     if has_prop("유형"):
         props["유형"] = {"select": {"name": task_type}}
-    if has_prop("상태"):
-        status_name = normalize_status_name(status)
-        if prop_type("상태") == "status":
-            props["상태"] = {"status": {"name": status_name}}
-        else:
-            props["상태"] = {"select": {"name": status_name}}
+    if has_prop("엔티티구분") and prop_type("엔티티구분") == "select":
+        props["엔티티구분"] = {"select": {"name": entity_kind}}
+
+    status_name = normalize_status_name(status)
+    if entity_kind == ENTITY_PLAN_L1:
+        set_status_property("상태_계획", status_name)
+        legacy_status = "진행 중" if status_name == "활성" else "시작 전"
+        set_status_property("상태", legacy_status)
+    elif entity_kind in {ENTITY_TASK_L2, ENTITY_TASK_L3}:
+        set_status_property("상태_작업", status_name)
+        set_status_property("상태", status_name)
+    elif entity_kind == ENTITY_ROLE_QUEUE:
+        set_status_property("상태_역할", status_name)
+        set_status_property("상태", "진행 중" if status_name == "진행 중" else "시작 전")
+    else:
+        set_status_property("상태", status_name)
     if has_prop("주관"):
         props["주관"] = {"select": {"name": "연구실"}}
     if has_prop("우선순위"):
@@ -331,7 +357,8 @@ def main() -> int:
     master_props = build_properties(
         title=master_title,
         task_type="Project",
-        status="진행 중",
+        entity_kind=ENTITY_PLAN_L1,
+        status="활성",
         rel_project_ids=None,
         attrs=make_attr_for_md(master, args.server_id),
         server_id=args.server_id,
@@ -353,7 +380,8 @@ def main() -> int:
         props = build_properties(
             title=level2_title,
             task_type="작업",
-            status=status_from_checks(md.check_total, md.check_done, md.rel_path),
+            entity_kind=ENTITY_TASK_L2,
+            status=task_status_from_checks(md.check_total, md.check_done, md.rel_path),
             rel_project_ids=[master_id],
             attrs=make_attr_for_md(md, args.server_id),
             server_id=args.server_id,
@@ -372,6 +400,7 @@ def main() -> int:
         sec_props = build_properties(
             title=sec_title,
             task_type="작업",
+            entity_kind=ENTITY_TASK_L3,
             status="시작 전",
             rel_project_ids=[master_id],
             attrs=f"from=03_DevPlan_eMach_Advanced_KO ; section={sec} ; (Modified by Server: {args.server_id})",
