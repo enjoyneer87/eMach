@@ -14,6 +14,10 @@ if str(parent_dir) not in sys.path:
     sys.path.insert(0, str(parent_dir))
 
 from geometry_bridge import GeometryBridge
+from pyleecan_bridge import (
+    build_export_bundle_from_analysis,
+    build_machine_and_dims_from_dxf,
+)
 from pyleecan_subprocess_bridge import (
     default_pyleecan_python,
     run_external_pyleecan_bridge,
@@ -85,7 +89,7 @@ with col1:
     )
 
     if uploaded_file.name.lower().endswith(".dxf") or uploaded_file.name.lower().endswith(".json"):
-        st.caption("DXF 또는 Pyleecan Bundle JSON 입력에서 외부 env 브릿지를 실행할 수 있습니다.")
+        st.caption("외부 pyleecan env는 JSON-only 모드로 실행됩니다. DXF는 UI env에서 먼저 Bundle JSON으로 변환됩니다.")
 
         machine_name = st.text_input(
             "Machine Name",
@@ -106,12 +110,34 @@ with col1:
 
         if st.button("Run Pyleecan Bridge"):
             tmp_input_path = None
+            tmp_bundle_path = None
             try:
                 tmp_input_path = _write_uploaded_to_temp(uploaded_file)
-                input_type = "dxf" if uploaded_file.name.lower().endswith(".dxf") else "json"
+                bridge_input_path = tmp_input_path
+
+                # JSON-only: DXF는 UI env에서 먼저 분석 후 bundle JSON으로 변환한다.
+                if uploaded_file.name.lower().endswith(".dxf"):
+                    machine_from_dxf, dims, analysis_result = build_machine_and_dims_from_dxf(
+                        dxf_path=tmp_input_path,
+                        machine_name=machine_name,
+                        stack_length_mm=float(stack_length_mm),
+                        enable_radius_fallback=True,
+                        verbose=False,
+                    )
+                    bundle = build_export_bundle_from_analysis(
+                        dxf_filename=uploaded_file.name,
+                        dims=dims,
+                        analysis_result=analysis_result,
+                        machine=machine_from_dxf,
+                    )
+                    with tempfile.NamedTemporaryFile(delete=False, suffix=".json") as tmp_bundle_file:
+                        tmp_bundle_file.write(json.dumps(bundle, ensure_ascii=False).encode("utf-8"))
+                        tmp_bundle_path = tmp_bundle_file.name
+                    bridge_input_path = tmp_bundle_path
+
                 external_result = run_external_pyleecan_bridge(
-                    input_path=tmp_input_path,
-                    input_type=input_type,
+                    input_path=bridge_input_path,
+                    input_type="json",
                     source_name=uploaded_file.name,
                     machine_name=machine_name,
                     stack_length_mm=float(stack_length_mm),
@@ -130,6 +156,8 @@ with col1:
             finally:
                 if tmp_input_path and os.path.exists(tmp_input_path):
                     os.remove(tmp_input_path)
+                if tmp_bundle_path and os.path.exists(tmp_bundle_path):
+                    os.remove(tmp_bundle_path)
 
         if "pyleecan_external_result" in st.session_state:
             ext = st.session_state["pyleecan_external_result"]
@@ -224,6 +252,27 @@ with col2:
         ax.legend()
         
     st.pyplot(fig)
+
+    st.subheader("🔍 Compare View (Minimum)")
+    current_snapshot = {
+        "entity_count": len(entities),
+        "layer_counts": layer_counts,
+    }
+    previous_snapshot = st.session_state.get("previous_payload_snapshot")
+
+    if previous_snapshot:
+        prev_count = int(previous_snapshot.get("entity_count", 0))
+        curr_count = int(current_snapshot["entity_count"])
+        delta = curr_count - prev_count
+        st.write(f"- Previous Entities: {prev_count}")
+        st.write(f"- Current Entities: {curr_count}")
+        st.write(f"- Delta: {delta:+d}")
+    else:
+        st.caption("이전 업로드 스냅샷이 없어 비교 기준이 없습니다.")
+
+    if st.button("Set Current As Compare Baseline"):
+        st.session_state["previous_payload_snapshot"] = current_snapshot
+        st.success("현재 payload를 Compare 기준으로 저장했습니다.")
     
 st.markdown("---")
 with st.expander("Show Raw Payload JSON"):

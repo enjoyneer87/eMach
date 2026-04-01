@@ -7,14 +7,14 @@
 			"path": "."
 		},
 		{
-			"path": "../../gitPyleecan"
-		},
-		{
 			"path": "../../NvidiaNemo"
 		},
 		{
 			"name": "multiscale-pde-operators",
 			"path": "../../gitMerantix/multiscale-pde-operators"
+		},
+		{
+			"path": "../pyleecan_fork"
 		}
 	],
 	"settings": {

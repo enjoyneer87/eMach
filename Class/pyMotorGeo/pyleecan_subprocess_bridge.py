@@ -40,12 +40,11 @@ def run_external_pyleecan_bridge(
         output_path,
     ]
 
-    if input_type == "dxf":
-        cmd.extend(["--dxf-path", str(input_path)])
-    elif input_type == "json":
-        cmd.extend(["--bundle-json", str(input_path)])
-    else:
-        raise ValueError(f"Unsupported input_type: {input_type}")
+    if input_type != "json":
+        raise ValueError(
+            "JSON-only mode: input_type must be 'json'. Convert DXF to bundle JSON in UI env first."
+        )
+    cmd.extend(["--bundle-json", str(input_path)])
 
     try:
         proc = subprocess.run(

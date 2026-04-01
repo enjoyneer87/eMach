@@ -4,7 +4,7 @@ import os
 import re
 import urllib.request
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, datetime
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
@@ -125,7 +125,17 @@ def list_plan_markdowns() -> List[Path]:
     return [p for p in files if p.is_file()]
 
 
-def status_from_checks(total: int, done: int) -> str:
+def status_from_checks(total: int, done: int, rel_path: str = "") -> str:
+    file_name = Path(rel_path).name if rel_path else ""
+    is_action_doc = file_name.startswith("Action")
+
+    if is_action_doc:
+        if total == 0:
+            return "완료"
+        if done < total:
+            return "진행 중"
+        return "완료"
+
     if total == 0:
         return "시작 전"
     if done == 0:
@@ -133,6 +143,10 @@ def status_from_checks(total: int, done: int) -> str:
     if done < total:
         return "진행 중"
     return "완료 🙌"
+
+
+def notion_now_iso() -> str:
+    return datetime.now().astimezone().isoformat(timespec="seconds")
 
 
 def plain_text(rich_text_list: List[dict]) -> str:
@@ -152,11 +166,44 @@ def build_properties(
     priority: str,
     program_tags: List[str],
     available_props: Optional[set] = None,
+    available_prop_defs: Optional[dict] = None,
 ) -> dict:
     def has_prop(name: str) -> bool:
         if available_props is None:
             return True
         return name in available_props
+
+    def prop_type(name: str) -> Optional[str]:
+        if not available_prop_defs:
+            return None
+        p = available_prop_defs.get(name, {})
+        return p.get("type")
+
+    def normalize_status_name(value: str) -> str:
+        if value.startswith("완료"):
+            return "완료"
+        return value
+
+    def normalize_priority_name(value: str) -> str:
+        v = (value or "").strip().upper()
+        if v in {"P0", "P1", "P2", "P3"}:
+            return v
+        if "1" in v:
+            return "P1"
+        if "2" in v:
+            return "P2"
+        if "3" in v:
+            return "P3"
+        if "0" in v:
+            return "P0"
+        return "P2"
+
+    def select_options(name: str) -> List[str]:
+        if not available_prop_defs:
+            return []
+        p = available_prop_defs.get(name, {})
+        opts = p.get("select", {}).get("options", [])
+        return [o.get("name", "") for o in opts if o.get("name")]
 
     props: Dict = {
         "List": {
@@ -167,11 +214,19 @@ def build_properties(
     if has_prop("유형"):
         props["유형"] = {"select": {"name": task_type}}
     if has_prop("상태"):
-        props["상태"] = {"select": {"name": status}}
+        status_name = normalize_status_name(status)
+        if prop_type("상태") == "status":
+            props["상태"] = {"status": {"name": status_name}}
+        else:
+            props["상태"] = {"select": {"name": status_name}}
     if has_prop("주관"):
         props["주관"] = {"select": {"name": "연구실"}}
     if has_prop("우선순위"):
-        props["우선순위"] = {"select": {"name": priority}}
+        pr_name = normalize_priority_name(priority)
+        options = select_options("우선순위")
+        if options and pr_name not in options:
+            pr_name = options[0]
+        props["우선순위"] = {"select": {"name": pr_name}}
     if has_prop("Program"):
         props["Program"] = {"multi_select": [{"name": t} for t in program_tags]}
     if has_prop("부서"):
@@ -190,6 +245,8 @@ def build_properties(
         props["스프린트"] = {"multi_select": [{"name": sprint}]}
     if has_prop("착수일"):
         props["착수일"] = {"date": {"start": str(date.today())}}
+    if has_prop("동기화일") and prop_type("동기화일") == "date":
+        props["동기화일"] = {"date": {"start": notion_now_iso()}}
 
     if rel_project_ids and has_prop("Project(작업페이지에서 선택)"):
         props["Project(작업페이지에서 선택)"] = {
@@ -242,7 +299,8 @@ def main() -> int:
 
     client = NotionDBClient(args.token, args.database_id)
     db_meta = client.get_database()
-    available_props = set(db_meta.get("properties", {}).keys())
+    available_prop_defs = db_meta.get("properties", {})
+    available_props = set(available_prop_defs.keys())
     if "List" not in available_props:
         raise RuntimeError("Target database must include title property named 'List'")
 
@@ -281,6 +339,7 @@ def main() -> int:
         priority="우선수위1 🔥",
         program_tags=["Python", "VSCODE", "Github"],
         available_props=available_props,
+        available_prop_defs=available_prop_defs,
     )
     master_id = upsert_by_title(client, index_by_title, master_props)
 
@@ -294,7 +353,7 @@ def main() -> int:
         props = build_properties(
             title=level2_title,
             task_type="작업",
-            status=status_from_checks(md.check_total, md.check_done),
+            status=status_from_checks(md.check_total, md.check_done, md.rel_path),
             rel_project_ids=[master_id],
             attrs=make_attr_for_md(md, args.server_id),
             server_id=args.server_id,
@@ -302,6 +361,7 @@ def main() -> int:
             priority="우선순위2",
             program_tags=["Python", "VSCODE", "Github"],
             available_props=available_props,
+            available_prop_defs=available_prop_defs,
         )
         file_page_id = upsert_by_title(client, index_by_title, props)
         created_or_updated += 1
@@ -320,6 +380,7 @@ def main() -> int:
             priority="우선순위2",
             program_tags=["Python", "VSCODE"],
             available_props=available_props,
+            available_prop_defs=available_prop_defs,
         )
         upsert_by_title(client, index_by_title, sec_props)
         created_or_updated += 1
