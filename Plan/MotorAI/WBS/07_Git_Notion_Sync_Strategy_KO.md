@@ -1,4 +1,5 @@
 # eMach Git 커밋 - Notion 실시간 동기화 및 플랜 수정 전략 (SSOT)
+> Migrated: Active policy/workflow split is in [eMach/.github/instructions/git-notion-sync.instructions.md](eMach/.github/instructions/git-notion-sync.instructions.md) and [eMach/.github/skills/git-notion-sync/SKILL.md](eMach/.github/skills/git-notion-sync/SKILL.md).
 
 본 문서는 통합 개발 환경(여러 대의 서버 및 에이전트)에서 **Plan 문서의 변경 이력을 투명하게 관리**하고, 에이전트 채팅 문맥상의 추정(Context)뿐만 아니라 **실제 코드 커밋(Git)을 기준으로 노션 대시보드를 갱신**하기 위한 파이프라인 전략을 정의합니다.
 

@@ -1,4 +1,5 @@
 # Action 12 RC Readiness Checklist
+> Migrated: Active workflow source is [eMach/.github/skills/rc-readiness-check/SKILL.md](eMach/.github/skills/rc-readiness-check/SKILL.md).
 
 작성일: 2026-04-01
 목적: RC 준비 상태를 체크리스트로 고정한다.

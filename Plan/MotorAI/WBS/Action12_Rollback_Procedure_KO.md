@@ -1,4 +1,5 @@
 # Action 12 Rollback Procedure
+> Migrated: Active workflow source is [eMach/.github/skills/rollback-procedure/SKILL.md](eMach/.github/skills/rollback-procedure/SKILL.md).
 
 작성일: 2026-04-01
 
