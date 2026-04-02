@@ -7,11 +7,13 @@
 
 ## Nightly Development Routine
 1. Read current Dev Plan items and pick the next actionable coding task.
-2. Set task state to `진행 중` when work starts.
-3. Implement code changes in this repository.
-4. Run minimal validation (lint/smoke/syntax/tests relevant to touched files).
-5. Record evidence (file paths, test result summary, and if available commit hash).
-6. On task end:
+2. Before any code edit, review recent repository commits from other servers/contributors and summarize implications.
+3. Cross-check commit findings with current Notion plan rows and create a short execution plan for this cycle.
+4. Set task state to `진행 중` when work starts.
+5. Implement code changes in this repository.
+6. Run minimal validation (lint/smoke/syntax/tests relevant to touched files).
+7. Record evidence (file paths, test result summary, and if available commit hash).
+8. On task end:
 - `완료` when acceptance conditions are met.
 - `홀드` when interrupted, blocked, or unfinished.
 
