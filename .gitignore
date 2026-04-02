@@ -151,3 +151,20 @@ mlxperPJT/JEET/From38100/MPtools/MSConductorModel_case30.csv
 mlxperPJT/JEET/From38100/MPtools/SCL_e10_WTPM_PatternD_MS_case28.csv
 .gitignore
 mlxperPJT/KETI/pyMCAD_c67KETI.ipynb
+Class/pyMotorGeo/_tmp_real_mes/standard_mesh_sample_clip.vtu
+Class/pyMotorGeo/_tmp_real_mes/standard_mesh_sample.h5
+Class/pyMotorGeo/_tmp_real_mes/standard_mesh_sample.vtu
+Class/pyMotorGeo/_tmp_case2_onloadtorque/standard_mesh_sample_clip.vtu
+Class/pyMotorGeo/_tmp_case2_onloadtorque/standard_mesh_sample.h5
+Class/pyMotorGeo/_tmp_case2_onloadtorque/standard_mesh_sample.vtu
+Class/pyMotorGeo/_tmp_real_mes/Mag_OnLoadTorque_result_1_1.h5
+Class/pyMotorGeo/_tmp_real_mes/Mag_OnLoadTorque_result_1_1.txt
+Class/pyMotorGeo/_tmp_real_mes/Mag_OnLoadTorque_result_1.h5
+Class/pyMotorGeo/_tmp_real_mes/Mag_OnLoadTorque_result_1.txt
+
+# pyMotorGeo conversion outputs (keep large artifacts out of repo)
+Class/pyMotorGeo/_tmp_case1_onloadloss/
+Class/pyMotorGeo/_tmp_case2_onloadtorque/
+Class/pyMotorGeo/_tmp_real_mes/
+**/converted_mesh/
+**/converted_mesh/**

@@ -109,6 +109,10 @@ from topology_stator import (
 # ── pyleecan 브릿지 ──
 from pyleecan_bridge import (
     check_pyleecan_available,
+    is_geometry_payload_json,
+    is_pyleecan_machine_json,
+    extract_dims_from_pyleecan_machine_json,
+    build_export_bundle_from_machine_json,
     extract_dimensions_from_dxf,
     create_pyleecan_machine,
     dims_to_summary,
@@ -151,6 +155,20 @@ from face_detection import (
     entities_to_polygons,
     check_polygon_feasibility,
 )
+
+# ── v1.7: Motor-CAD H5 -> PyVista adapter (optional dependency) ──
+try:
+    from motorcad_h5_adapter import (
+        MotorH5Adapter,
+        build_adapter_mesh_h5_from_pymcad_h5,
+        build_grid_from_h5,
+        inspect_h5_layout,
+    )
+except Exception:  # pragma: no cover
+    MotorH5Adapter = None
+    build_adapter_mesh_h5_from_pymcad_h5 = None
+    build_grid_from_h5 = None
+    inspect_h5_layout = None
 
 __all__ = [
     # Version
@@ -224,6 +242,10 @@ __all__ = [
     "STATOR_REGION_COLORS",
     # pyleecan bridge
     "check_pyleecan_available",
+    "is_geometry_payload_json",
+    "is_pyleecan_machine_json",
+    "extract_dims_from_pyleecan_machine_json",
+    "build_export_bundle_from_machine_json",
     "extract_dimensions_from_dxf",
     "create_pyleecan_machine",
     "dims_to_summary",
@@ -254,4 +276,9 @@ __all__ = [
     "HalfUnitPlotter",
     "HalfPoleView",
     "OnePoleView",
+    # v1.7: optional H5 adapter
+    "MotorH5Adapter",
+    "build_adapter_mesh_h5_from_pymcad_h5",
+    "build_grid_from_h5",
+    "inspect_h5_layout",
 ]
