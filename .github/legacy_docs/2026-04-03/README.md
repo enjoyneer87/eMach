@@ -14,3 +14,11 @@ Archived to reduce documentation collisions and context inefficiency with top-le
 ## Policy
 - Keep compatibility by leaving stub files at original paths.
 - Keep active source-of-truth in `README.md`, `MIGRATION_GUIDE.md`, and `Plan/MotorAI/WBS/00_WBS_Master.md`.
+
+## Archived Plan/UML analyses (added)
+- `Plan/UML/05_UML_Comprehensive_Analysis_EN.md`
+- `Plan/UML/05_UML_Comprehensive_Analysis_KO.md`
+- `Plan/UML/07_Real_Codebase_Analysis_Summary_KO.md`
+- `Plan/UML/CODEBASE_ARCHITECTURE_ANALYSIS.md`
+- `Plan/UML/COMPLETE_CLASS_REFERENCE.md`
+- `Plan/UML/METHOD_SIGNATURES_AND_DATAFLOW.md`
