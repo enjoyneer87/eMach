@@ -2363,58 +2363,63 @@ def _parse_first_block_magnetic_file(filename) -> MagneticRegions:
             raise ValueError(f"ElementsTable not found in file: {filename}")
 
         number_of_elements = int(elements_header.strip().split()[1])
-        _skip_header_lines(in_file, 4)
+        elem_ci = _read_col_indices(in_file, _ELEM_COL_KEYS)
+        ti_i  = elem_ci.get("TriIndex", 0)
+        n1_i  = elem_ci.get("Node1",    1)
+        n2_i  = elem_ci.get("Node2",    2)
+        n3_i  = elem_ci.get("Node3",    3)
+        rc_i  = elem_ci.get("RegCode",  4)
+        bx_i  = elem_ci.get("Bx",  5)
+        by_i  = elem_ci.get("By",  6)
+        a_i   = elem_ci.get("A",   7)
+        j_i   = elem_ci.get("J",   8)
+        # "B" column present in old format (single combined B value)
+        b_i   = elem_ci.get("B")
 
         for _ in range(number_of_elements):
             row = in_file.readline().split(sep=",")
-            # New format: RegCode,Bx,By,A,J -> total len >= 9
-            # Old format: RegCode,B,A,J -> total len >= 8
-            if len(row) >= 9:
-                try:
-                    reg_code = int(row[4])
-                except ValueError:
-                    continue
-                mag_regions.ensure_region(reg_code)
+            try:
+                reg_code = int(row[rc_i])
+            except (ValueError, IndexError):
+                continue
+            mag_regions.ensure_region(reg_code)
+            if b_i is None:
                 mag_regions[reg_code - 1].add_element(
-                    tri_index=row[0],
-                    node_1=row[1],
-                    node_2=row[2],
-                    node_3=row[3],
-                    reg_code=row[4],
-                    bx=row[5],
-                    by=row[6],
-                    a=row[7],
-                    j=row[8],
-                )
-            elif len(row) >= 8:
-                try:
-                    reg_code = int(row[4])
-                except ValueError:
-                    continue
-                mag_regions.ensure_region(reg_code)
-                mag_regions[reg_code - 1].add_element(
-                    tri_index=row[0],
-                    node_1=row[1],
-                    node_2=row[2],
-                    node_3=row[3],
-                    reg_code=row[4],
-                    b=row[5],
-                    a=row[6],
-                    j=row[7],
+                    tri_index=row[ti_i],
+                    node_1=row[n1_i],
+                    node_2=row[n2_i],
+                    node_3=row[n3_i],
+                    reg_code=row[rc_i],
+                    bx=row[bx_i],
+                    by=row[by_i],
+                    a=row[a_i],
+                    j=row[j_i],
                 )
             else:
-                continue
+                mag_regions[reg_code - 1].add_element(
+                    tri_index=row[ti_i],
+                    node_1=row[n1_i],
+                    node_2=row[n2_i],
+                    node_3=row[n3_i],
+                    reg_code=row[rc_i],
+                    b=row[b_i],
+                    a=row[a_i],
+                    j=row[j_i],
+                )
 
         nodes_header = _scan_to_table(in_file, "NodesTable")
         if nodes_header is not None:
             number_of_nodes = int(nodes_header.strip().split()[1])
-            _skip_header_lines(in_file, 4)
+            node_ci = _read_col_indices(in_file, _NODE_COL_KEYS)
+            ni_i = node_ci.get("NodeIndex", 0)
+            x_i  = node_ci.get("X", 1)
+            y_i  = node_ci.get("Y", 2)
             for _ in range(number_of_nodes):
                 row = in_file.readline().split(sep=",")
                 try:
-                    node_idx = int(row[0])
-                    x_mm = float(row[1])
-                    y_mm = float(row[2])
+                    node_idx = int(row[ni_i])
+                    x_mm = float(row[x_i])
+                    y_mm = float(row[y_i])
                     node_xy[node_idx] = (x_mm, y_mm)
                 except (ValueError, IndexError):
                     pass
@@ -2422,16 +2427,21 @@ def _parse_first_block_magnetic_file(filename) -> MagneticRegions:
         regions_header = _scan_to_table(in_file, "RegionsTable")
         if regions_header is not None:
             number_of_regions = int(regions_header.strip().split()[1])
-            _skip_header_lines(in_file, 4)
+            region_ci = _read_col_indices(in_file, _REGION_COL_KEYS)
+            rc2_i = region_ci.get("RegionCode", 0)
+            rn_i  = region_ci.get("RegionName")
             for _ in range(number_of_regions):
                 row = in_file.readline().split(sep=",")
                 try:
-                    reg_code = int(row[0])
+                    reg_code = int(row[rc2_i])
                 except (ValueError, IndexError):
                     continue
                 if reg_code <= len(mag_regions):
                     mag_regions[reg_code - 1].reg_code = reg_code
-                    mag_regions[reg_code - 1].region_name = row[-1].strip()
+                    mag_regions[reg_code - 1].region_name = (
+                        row[rn_i].strip() if rn_i is not None and rn_i < len(row)
+                        else row[-1].strip()
+                    )
 
     mag_regions.set_node_xy(node_xy)
     return mag_regions
@@ -2578,6 +2588,28 @@ def _skip_header_lines(in_file, n=4):
         in_file.readline()
 
 
+_ELEM_COL_KEYS = frozenset({"TriIndex", "Node1", "Node2", "Node3", "RegCode", "Bx", "By", "A", "J"})
+_NODE_COL_KEYS = frozenset({"NodeIndex", "X", "Y"})
+_REGION_COL_KEYS = frozenset({"RegionCode", "RegionName"})
+
+
+def _read_col_indices(in_file, expected_keys: frozenset) -> dict:
+    """Read 4-line preamble and return {column_name: index} for expected_keys.
+
+    MotorCAD TXT preamble after a table section header:
+        line 1: blank
+        line 2: column names  <- parsed here (previously skipped by _skip_header_lines)
+        line 3: units
+        line 4: separator (----)
+    """
+    in_file.readline()            # blank
+    col_line = in_file.readline() # column names
+    in_file.readline()            # units
+    in_file.readline()            # separator
+    tokens = [t.strip() for t in col_line.split(",")]
+    return {t: i for i, t in enumerate(tokens) if t in expected_keys}
+
+
 def get_magnetic_timeseries_from_file(
     filename,
     key="time_index",
@@ -2637,58 +2669,64 @@ def get_magnetic_timeseries_from_file(
                 continue
 
             n_elements = int(elements_header.strip().split()[1])
-            _skip_header_lines(in_file, 4)
+            elem_ci = _read_col_indices(in_file, _ELEM_COL_KEYS)
+            ti_i  = elem_ci.get("TriIndex", 0)
+            n1_i  = elem_ci.get("Node1",    1)
+            n2_i  = elem_ci.get("Node2",    2)
+            n3_i  = elem_ci.get("Node3",    3)
+            rc_i  = elem_ci.get("RegCode",  4)
+            bx_i  = elem_ci.get("Bx",  5)
+            by_i  = elem_ci.get("By",  6)
+            a_i   = elem_ci.get("A",   7)
+            j_i   = elem_ci.get("J",   8)
+            b_i   = elem_ci.get("B")
 
             mag_regions = MagneticRegions()
             for _ in range(n_elements):
                 row = in_file.readline().split(sep=",")
-                if len(row) >= 9:
-                    try:
-                        reg_code = int(row[4])
-                    except ValueError:
-                        continue
-                    mag_regions.ensure_region(reg_code)
+                try:
+                    reg_code = int(row[rc_i])
+                except (ValueError, IndexError):
+                    continue
+                mag_regions.ensure_region(reg_code)
+                if b_i is None:
                     mag_regions[reg_code - 1].add_element(
-                        tri_index=row[0],
-                        node_1=row[1],
-                        node_2=row[2],
-                        node_3=row[3],
-                        reg_code=row[4],
-                        bx=row[5],
-                        by=row[6],
-                        a=row[7],
-                        j=row[8],
-                    )
-                elif len(row) >= 8:
-                    try:
-                        reg_code = int(row[4])
-                    except ValueError:
-                        continue
-                    mag_regions.ensure_region(reg_code)
-                    mag_regions[reg_code - 1].add_element(
-                        tri_index=row[0],
-                        node_1=row[1],
-                        node_2=row[2],
-                        node_3=row[3],
-                        reg_code=row[4],
-                        b=row[5],
-                        a=row[6],
-                        j=row[7],
+                        tri_index=row[ti_i],
+                        node_1=row[n1_i],
+                        node_2=row[n2_i],
+                        node_3=row[n3_i],
+                        reg_code=row[rc_i],
+                        bx=row[bx_i],
+                        by=row[by_i],
+                        a=row[a_i],
+                        j=row[j_i],
                     )
                 else:
-                    continue
+                    mag_regions[reg_code - 1].add_element(
+                        tri_index=row[ti_i],
+                        node_1=row[n1_i],
+                        node_2=row[n2_i],
+                        node_3=row[n3_i],
+                        reg_code=row[rc_i],
+                        b=row[b_i],
+                        a=row[a_i],
+                        j=row[j_i],
+                    )
 
             node_xy = {}
             nodes_header = _read_until_table_header(in_file, "NodesTable")
             if nodes_header is not None:
                 n_nodes = int(nodes_header.strip().split()[1])
-                _skip_header_lines(in_file, 4)
+                node_ci = _read_col_indices(in_file, _NODE_COL_KEYS)
+                ni_i = node_ci.get("NodeIndex", 0)
+                x_i  = node_ci.get("X", 1)
+                y_i  = node_ci.get("Y", 2)
                 for _ in range(n_nodes):
                     row = in_file.readline().split(sep=",")
                     try:
-                        node_idx = int(row[0])
-                        x_mm = float(row[1])
-                        y_mm = float(row[2])
+                        node_idx = int(row[ni_i])
+                        x_mm = float(row[x_i])
+                        y_mm = float(row[y_i])
                         node_xy[node_idx] = (x_mm, y_mm)
                     except (ValueError, IndexError):
                         pass
@@ -2697,16 +2735,21 @@ def get_magnetic_timeseries_from_file(
             regions_header = _read_until_table_header(in_file, "RegionsTable")
             if regions_header is not None:
                 n_regions = int(regions_header.strip().split()[1])
-                _skip_header_lines(in_file, 4)
+                region_ci = _read_col_indices(in_file, _REGION_COL_KEYS)
+                rc2_i = region_ci.get("RegionCode", 0)
+                rn_i  = region_ci.get("RegionName")
                 for _ in range(n_regions):
                     row = in_file.readline().split(sep=",")
                     try:
-                        reg_code = int(row[0])
+                        reg_code = int(row[rc2_i])
                     except (ValueError, IndexError):
                         continue
                     if reg_code <= len(mag_regions):
                         mag_regions[reg_code - 1].reg_code = reg_code
-                        mag_regions[reg_code - 1].region_name = row[-1].strip()
+                        mag_regions[reg_code - 1].region_name = (
+                            row[rn_i].strip() if rn_i is not None and rn_i < len(row)
+                            else row[-1].strip()
+                        )
 
             ts.by_step[step_key] = mag_regions
             ts.meta[step_key] = meta
