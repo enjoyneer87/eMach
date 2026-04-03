@@ -25,6 +25,7 @@
 - [[01_ExecutionPlan_CADInterchange_and_UML_KO]] - CAD 교환 우선 + UML 기반 실행계획
 - [[02_DevPlan_eMach_Compatibility_KO]] - eMach 중심 패키지 호환 개발 플랜 (Pyleecan/SyR-e + PhysicsNeMo MGN)
 - [[03_DevPlan_eMach_Advanced_KO]] - eMach 전체 개발플랜 고도화안 (Program/Workstream/Gate 기반)
+- [[03_DevPlan_eMach_Advanced_KO]] - 멀티포맷 인터롭 확장 검토(Pyleecan/SyR-e/PyAEDT/Maxwell/Elmer/MFEM) 반영
 
 ### Phase 2: 고성능 시각화 (Jul ~ Sep 2026)
 - [[Phase2_Month4_FastAPI]] - FastAPI 바이너리 스트리밍
