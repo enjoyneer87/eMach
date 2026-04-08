@@ -46,21 +46,28 @@ def _export_txt_h5_from_mot_mes(
 ) -> Path:
     import ansys.motorcad.core as pymotorcad
 
-    from tools.motorCAD.pyMCAD.fea_workflow import process_fea_result_from_mes
+    from tools.motorCAD.pyMCAD.fea_workflow import (
+        orchestrate_fea_export,
+        prepare_fea_export_session,
+    )
 
     mc = pymotorcad.MotorCAD(open_new_instance=True)
     mc.set_variable("MessageDisplayState", 2)
     mc.load_from_file(str(mot_path))
 
-    result = process_fea_result_from_mes(
+    session = prepare_fea_export_session(
         mc,
         mes_path=str(mes_path),
-        plot_mode="none",
         out_dir=str(out_dir),
+        include_magnetic_export=True,
+    )
+    result = orchestrate_fea_export(
+        mc,
+        session=session,
+        plot_mode="none",
         first_step=1,
         final_step=45,
         export_magnetic_h5=True,
-        include_magnetic_export=True,
         mag_h5_mesh_coords="static",
     )
 
@@ -180,21 +187,26 @@ def run_pipeline(
         import ansys.motorcad.core as pymotorcad
 
         from tools.motorCAD.pyMCAD.fea_workflow import (
-            process_fea_result_from_mes,
+            orchestrate_fea_export,
+            prepare_fea_export_session,
         )
 
         mc = pymotorcad.MotorCAD(open_new_instance=True)
         mc.set_variable("MessageDisplayState", 2)
         mc.load_from_file(str(mot_path))
-        fea_result = process_fea_result_from_mes(
+        session = prepare_fea_export_session(
             mc,
             mes_path=str(mes_path),
-            plot_mode="none",
             out_dir=str(out_dir),
+            include_magnetic_export=True,
+        )
+        fea_result = orchestrate_fea_export(
+            mc,
+            session=session,
+            plot_mode="none",
             first_step=1,
             final_step=45,
             export_magnetic_h5=True,
-            include_magnetic_export=True,
             mag_h5_mesh_coords="static",
         )
         if fea_result.mag_h5_path:

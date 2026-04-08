@@ -2,14 +2,19 @@ from __future__ import annotations
 
 import pathlib
 import re
-import tempfile
 from dataclasses import dataclass, field
 from typing import Dict, Iterable, Optional, Sequence, Tuple
 
 import matplotlib
 import matplotlib.pyplot as plt
 
-from .magnetic import MagneticRegions, mcad_make_temp_txt_path
+from ._export import (
+    mcad_make_temp_txt_path,
+    safe_stem as _safe_stem,
+    save_fea_text_export,
+    unique_path as _unique_path,
+)
+from .magnetic import MagneticRegions
 
 
 try:
@@ -81,27 +86,6 @@ class ElementMesh:
         if reg_code is None:
             return iter(self.elements)
         return (el for el in self.elements if int(el.reg_code) == int(reg_code))
-
-
-def _safe_stem(s: str, *, max_len: int = 80) -> str:
-    s = re.sub(r"[^A-Za-z0-9._-]+", "_", str(s).strip())
-    s = re.sub(r"_+", "_", s).strip("_")
-    return s[: int(max_len)] if len(s) > int(max_len) else s
-
-
-def _unique_path(path: pathlib.Path) -> pathlib.Path:
-    path = pathlib.Path(path)
-    if not path.exists():
-        return path
-
-    base = path.with_suffix("")
-    suffix = path.suffix
-    for i in range(1, 1000):
-        candidate = pathlib.Path(f"{base}_{i}{suffix}")
-        if not candidate.exists():
-            return candidate
-
-    return pathlib.Path(tempfile.gettempdir()) / f"{_safe_stem(path.stem)}{suffix}"
 
 
 def _robust_percentile_clim(values: Iterable[float], *, p_lo: float = 1.0, p_hi: float = 99.0):
@@ -516,7 +500,14 @@ def get_element_loss_fields(
         is_temp = False
 
     col_spec = "RegCode," + ",".join(columns)
-    mc.save_fea_data(str(export_path), int(first_step), int(final_step), col_spec, "", sep)
+    save_fea_text_export(
+        mc,
+        filename=export_path,
+        first_step=int(first_step),
+        final_step=int(final_step),
+        columns=col_spec,
+        sep=sep,
+    )
 
     fields = _parse_first_block_loss_file(export_path, sep=sep, unit=unit)
 
@@ -542,14 +533,15 @@ def export_element_loss_txt(
     Use :func:`get_element_loss_fields_from_file` later when you actually need to parse/plot.
     """
 
-    export_path = pathlib.Path(filename)
-    export_path.parent.mkdir(parents=True, exist_ok=True)
-    if export_path.suffix.lower() != ".txt":
-        export_path = export_path.with_suffix(".txt")
-
     col_spec = "RegCode," + ",".join(tuple(columns))
-    mc.save_fea_data(str(export_path), int(step), int(step), col_spec, "", str(sep))
-    return export_path
+    return save_fea_text_export(
+        mc,
+        filename=filename,
+        first_step=int(step),
+        final_step=int(step),
+        columns=col_spec,
+        sep=str(sep),
+    )
 
 
 def get_element_loss_fields_from_file(

@@ -3,7 +3,6 @@ from __future__ import annotations
 import pathlib
 import re
 import tempfile
-import uuid
 from contextlib import contextmanager
 import io
 from typing import Dict, Iterable, Sequence
@@ -11,6 +10,14 @@ from typing import Dict, Iterable, Sequence
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
+
+from ._export import (
+    mcad_default_export_dir,
+    mcad_make_temp_txt_path,
+    save_fea_text_export,
+    safe_stem as _safe_stem,
+    unique_path as _unique_path,
+)
 
 
 @contextmanager
@@ -47,26 +54,6 @@ def _open_mcad_text(path: str | pathlib.Path):
                 wrapper.detach()
             except Exception:
                 pass
-
-
-def _safe_stem(s: str, *, max_len: int = 80) -> str:
-    s = re.sub(r"[^A-Za-z0-9._-]+", "_", str(s).strip())
-    s = re.sub(r"_+", "_", s).strip("_")
-    return s[: int(max_len)] if len(s) > int(max_len) else s
-
-
-def _unique_path(path: pathlib.Path) -> pathlib.Path:
-    path = pathlib.Path(path)
-    if not path.exists():
-        return path
-
-    base = path.with_suffix("")
-    suffix = path.suffix
-    for i in range(1, 1000):
-        candidate = pathlib.Path(f"{base}_{i}{suffix}")
-        if not candidate.exists():
-            return candidate
-    return pathlib.Path(tempfile.gettempdir()) / f"{_safe_stem(path.stem)}{suffix}"
 
 
 def export_magnetic_timeseries_gif(
@@ -179,7 +166,7 @@ def export_magnetic_timeseries_h5(
         - /mesh/moving_node_indices: int32 [n_moving_nodes] (indices into node_id)
         - /mesh/node_x_mm_by_step_moving, /mesh/node_y_mm_by_step_moving: float32 [n_steps, n_moving_nodes]
     - /mesh/tri_index, /mesh/node_1, /mesh/node_2, /mesh/node_3, /mesh/reg_code
-    - /fields/bx, /fields/by, /fields/b, /fields/a, /fields/j : [n_steps, n_elements]
+    - /fields/bx, /fields/by, /fields/b, /fields/a, /fields/j, /fields/je : [n_steps, n_elements]
 
         Notes
         -----
@@ -236,6 +223,7 @@ def export_magnetic_timeseries_h5(
     b_mat = _empty()
     a_mat = _empty()
     j_mat = _empty()
+    je_mat = _empty()
 
     for si, step in enumerate(steps):
         mr = getattr(nts, "by_step")[int(step)]
@@ -258,13 +246,17 @@ def export_magnetic_timeseries_h5(
                 b_mat[si, idx] = float(getattr(e, "b"))
             except Exception:
                 pass
-            # A, J are expected in our default export spec
+            # A, J, Je are expected in our default export spec
             try:
                 a_mat[si, idx] = float(getattr(e, "a", 0.0) or 0.0)
             except Exception:
                 pass
             try:
                 j_mat[si, idx] = float(getattr(e, "j", 0.0) or 0.0)
+            except Exception:
+                pass
+            try:
+                je_mat[si, idx] = float(getattr(e, "je", 0.0) or 0.0)
             except Exception:
                 pass
 
@@ -659,6 +651,7 @@ def export_magnetic_timeseries_h5(
         _ds("b", b_mat)
         _ds("a", a_mat)
         _ds("j", j_mat)
+        _ds("je", je_mat)
 
     return h5_path
 
@@ -863,7 +856,7 @@ def export_magnetic_snapshot_h5(
     - /step: int32 scalar (defaults to 1 if unknown)
     - /mesh/node_id, /mesh/node_x_mm, /mesh/node_y_mm
     - /mesh/tri_index, /mesh/node_1, /mesh/node_2, /mesh/node_3, /mesh/reg_code
-    - /fields/bx, /fields/by, /fields/b, /fields/a, /fields/j : [n_elements]
+    - /fields/bx, /fields/by, /fields/b, /fields/a, /fields/j, /fields/je : [n_elements]
     """
 
     try:
@@ -910,6 +903,7 @@ def export_magnetic_snapshot_h5(
     b_vec = _vec(lambda e: getattr(e, "b", None))
     a_vec = _vec(lambda e: getattr(e, "a", None))
     j_vec = _vec(lambda e: getattr(e, "j", None))
+    je_vec = _vec(lambda e: getattr(e, "je", None))
 
     # Node coordinates (optional)
     node_xy = dict(getattr(mr, "node_xy", {}) or {})
@@ -957,6 +951,7 @@ def export_magnetic_snapshot_h5(
         _ds("b", b_vec)
         _ds("a", a_vec)
         _ds("j", j_vec)
+        _ds("je", je_vec)
 
     return h5_path
 
@@ -1002,7 +997,7 @@ def inspect_magnetic_timeseries_h5(
 def load_magnetic_timeseries_h5_arrays(
     h5_path: str | pathlib.Path,
     *,
-    fields: Sequence[str] = ("b", "a", "j", "bx", "by"),
+    fields: Sequence[str] = ("b", "a", "j", "je", "bx", "by"),
     astype: str | None = None,
 ) -> dict:
     """Load arrays from a `Mag_*.h5` file written by `export_magnetic_timeseries_h5`.
@@ -1081,7 +1076,7 @@ def load_magnetic_timeseries_h5_arrays(
 def load_magnetic_timeseries_h5_datasets(
     h5_path: str | pathlib.Path,
     *,
-    fields: Sequence[str] = ("b", "a", "j", "bx", "by"),
+    fields: Sequence[str] = ("b", "a", "j", "je", "bx", "by"),
     astype: str | None = None,
 ) -> dict:
     """Alias of `load_magnetic_timeseries_h5_arrays` with a more explicit name.
@@ -1096,7 +1091,7 @@ def load_magnetic_timeseries_h5_datasets(
 def load_magnetic_snapshot_h5_arrays(
     h5_path: str | pathlib.Path,
     *,
-    fields: Sequence[str] = ("b", "a", "j", "bx", "by"),
+    fields: Sequence[str] = ("b", "a", "j", "je", "bx", "by"),
     astype: str | None = None,
 ) -> dict:
     """Load arrays from a snapshot `Mag_*.h5` written by `export_magnetic_snapshot_h5`.
@@ -1200,7 +1195,7 @@ def _node_xy_from_mesh_arrays(data: dict) -> dict[int, tuple[float, float]]:
 
 
 def _magnetic_regions_from_snapshot_h5(h5_path: str | pathlib.Path) -> MagneticRegions:
-    data = load_magnetic_snapshot_h5_arrays(h5_path, fields=("b", "a", "j", "bx", "by"), astype=None)
+    data = load_magnetic_snapshot_h5_arrays(h5_path, fields=("b", "a", "j", "je", "bx", "by"), astype=None)
 
     tri_index = data.get("mesh_tri_index")
     node_1 = data.get("mesh_node_1")
@@ -1213,6 +1208,7 @@ def _magnetic_regions_from_snapshot_h5(h5_path: str | pathlib.Path) -> MagneticR
     b = data.get("field_b")
     a = data.get("field_a")
     j = data.get("field_j")
+    je = data.get("field_je")
     bx = data.get("field_bx")
     by = data.get("field_by")
 
@@ -1241,6 +1237,7 @@ def _magnetic_regions_from_snapshot_h5(h5_path: str | pathlib.Path) -> MagneticR
             by=by_i,
             a=_nan_to_none(a[i]) if a is not None else None,
             j=_nan_to_none(j[i]) if j is not None else None,
+            je=_nan_to_none(je[i]) if je is not None else None,
             b=b_i,
         )
 
@@ -1424,6 +1421,7 @@ class MagneticRegionsTimeSeriesH5:
             b_arr = _read_field("b")
             a_arr = _read_field("a")
             j_arr = _read_field("j")
+            je_arr = _read_field("je")
             bx_arr = _read_field("bx")
             by_arr = _read_field("by")
 
@@ -1505,6 +1503,7 @@ class MagneticRegionsTimeSeriesH5:
                 by=by_i,
                 a=_nan_to_none(a_arr[i]) if a_arr is not None else None,
                 j=_nan_to_none(j_arr[i]) if j_arr is not None else None,
+                je=_nan_to_none(je_arr[i]) if je_arr is not None else None,
                 b=b_i,
             )
 
@@ -1516,13 +1515,14 @@ class MagElement:
     """Motor-CAD electromagnetic element data.
 
     Columns (ElementsTable)
-    - TriIndex, Node1, Node2, Node3, RegCode, Bx, By, A, J
+    - TriIndex, Node1, Node2, Node3, RegCode, Bx, By, A, J, Je
 
     Units
     - Bx, By: [T]
     - B (magnitude): [T] computed as sqrt(Bx^2 + By^2)
     - A: [Wb/m]
     - J: [A/mm^2]
+    - Je: [A/mm^2]
     """
 
     def __init__(
@@ -1536,6 +1536,7 @@ class MagElement:
         by=None,
         a=None,
         j=None,
+        je=None,
         b=None,
     ):
         self.tri_index = int(tri_index)
@@ -1558,6 +1559,7 @@ class MagElement:
 
         self.a = float(a) if a is not None else 0.0
         self.j = float(j) if j is not None else 0.0
+        self.je = float(je) if je is not None else 0.0
 
     @property
     def b(self) -> float:
@@ -1567,8 +1569,22 @@ class MagElement:
     @classmethod
     def from_csv_row(cls, row):
         # Accept both formats:
+        # - Newest: ... RegCode,Bx,By,A,J,Je (len>=10)
         # - New: ... RegCode,Bx,By,A,J (len>=9)
         # - Old: ... RegCode,B,A,J (len>=8)
+        if len(row) >= 10:
+            return cls(
+                tri_index=row[0],
+                node_1=row[1],
+                node_2=row[2],
+                node_3=row[3],
+                reg_code=row[4],
+                bx=row[5],
+                by=row[6],
+                a=row[7],
+                j=row[8],
+                je=row[9],
+            )
         if len(row) >= 9:
             return cls(
                 tri_index=row[0],
@@ -1949,6 +1965,7 @@ class MagneticRegion:
         by=None,
         a=None,
         j=None,
+        je=None,
         b=None,
     ):
         self.elements.append(
@@ -1962,6 +1979,7 @@ class MagneticRegion:
                 by=by,
                 a=a,
                 j=j,
+                je=je,
                 b=b,
             )
         )
@@ -2312,31 +2330,6 @@ class MagneticRegionsTimeSeries:
         return self.by_step[step].plot_mesh(**kwargs)
 
 
-def mcad_default_export_dir(mc) -> pathlib.Path:
-    """Best-effort directory for temporary exports.
-
-    Prefer the folder containing the active .mot file (CurrentMotFilePath_MotorLAB).
-    Falls back to the OS temp directory if unavailable.
-    """
-
-    try:
-        mot_path = mc.get_variable("CurrentMotFilePath_MotorLAB")
-    except Exception:
-        mot_path = ""
-
-    if mot_path:
-        try:
-            return pathlib.Path(mot_path).parent
-        except Exception:
-            pass
-
-    return pathlib.Path(tempfile.gettempdir())
-
-
-def mcad_make_temp_txt_path(mc) -> pathlib.Path:
-    return mcad_default_export_dir(mc) / pathlib.Path(f"{uuid.uuid4()}.txt")
-
-
 # Backward-compatible aliases (notebook code used underscore names)
 _mcad_default_export_dir = mcad_default_export_dir
 _mcad_make_temp_txt_path = mcad_make_temp_txt_path
@@ -2373,6 +2366,7 @@ def _parse_first_block_magnetic_file(filename) -> MagneticRegions:
         by_i  = elem_ci.get("By",  6)
         a_i   = elem_ci.get("A",   7)
         j_i   = elem_ci.get("J",   8)
+        je_i  = elem_ci.get("Je")
         # "B" column present in old format (single combined B value)
         b_i   = elem_ci.get("B")
 
@@ -2394,6 +2388,7 @@ def _parse_first_block_magnetic_file(filename) -> MagneticRegions:
                     by=row[by_i],
                     a=row[a_i],
                     j=row[j_i],
+                    je=row[je_i] if je_i is not None else None,
                 )
             else:
                 mag_regions[reg_code - 1].add_element(
@@ -2476,7 +2471,7 @@ def get_magnetic_data(
         first_step=int(first_step),
         final_step=int(final_step),
         filename=export_path,
-        columns="RegCode,Bx,By,A,J",
+        columns="RegCode,Bx,By,A,J,Je",
         sep=",",
     )
 
@@ -2499,18 +2494,18 @@ def export_magnetic_txt(
     first_step: int = 1,
     final_step: int = 1,
     filename: str | pathlib.Path,
-    columns: str = "RegCode,Bx,By,A,J",
+    columns: str = "RegCode,Bx,By,A,J,Je",
     sep: str = ",",
 ) -> pathlib.Path:
     """Export magnetic FEA data to a txt file (no parsing)."""
-
-    export_path = pathlib.Path(filename)
-    export_path.parent.mkdir(parents=True, exist_ok=True)
-    if export_path.suffix.lower() != ".txt":
-        export_path = export_path.with_suffix(".txt")
-
-    mc.save_fea_data(str(export_path), int(first_step), int(final_step), str(columns), "", str(sep))
-    return export_path
+    return save_fea_text_export(
+        mc,
+        filename=filename,
+        first_step=int(first_step),
+        final_step=int(final_step),
+        columns=str(columns),
+        sep=str(sep),
+    )
 
 
 def get_magnetic_data_from_file(filename, clean_up=False, *, step: int | None = None) -> MagneticRegions:
@@ -2588,7 +2583,7 @@ def _skip_header_lines(in_file, n=4):
         in_file.readline()
 
 
-_ELEM_COL_KEYS = frozenset({"TriIndex", "Node1", "Node2", "Node3", "RegCode", "Bx", "By", "A", "J"})
+_ELEM_COL_KEYS = frozenset({"TriIndex", "Node1", "Node2", "Node3", "RegCode", "Bx", "By", "A", "J", "Je"})
 _NODE_COL_KEYS = frozenset({"NodeIndex", "X", "Y"})
 _REGION_COL_KEYS = frozenset({"RegionCode", "RegionName"})
 
@@ -2679,6 +2674,7 @@ def get_magnetic_timeseries_from_file(
             by_i  = elem_ci.get("By",  6)
             a_i   = elem_ci.get("A",   7)
             j_i   = elem_ci.get("J",   8)
+            je_i  = elem_ci.get("Je")
             b_i   = elem_ci.get("B")
 
             mag_regions = MagneticRegions()
@@ -2700,6 +2696,7 @@ def get_magnetic_timeseries_from_file(
                         by=row[by_i],
                         a=row[a_i],
                         j=row[j_i],
+                        je=row[je_i] if je_i is not None else None,
                     )
                 else:
                     mag_regions[reg_code - 1].add_element(

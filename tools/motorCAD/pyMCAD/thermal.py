@@ -1,33 +1,17 @@
 from __future__ import annotations
 
 import pathlib
-import re
-import tempfile
 from dataclasses import dataclass
 from typing import Dict, Optional, Sequence
 
 import numpy as np
 
-from .stress import mcad_make_temp_txt_path
-
-
-def _safe_stem(s: str, *, max_len: int = 80) -> str:
-	s = re.sub(r"[^A-Za-z0-9._-]+", "_", str(s).strip())
-	s = re.sub(r"_+", "_", s).strip("_")
-	return s[: int(max_len)] if len(s) > int(max_len) else s
-
-
-def _unique_path(path: pathlib.Path) -> pathlib.Path:
-	path = pathlib.Path(path)
-	if not path.exists():
-		return path
-	base = path.with_suffix("")
-	suffix = path.suffix
-	for i in range(1, 1000):
-		candidate = pathlib.Path(f"{base}_{i}{suffix}")
-		if not candidate.exists():
-			return candidate
-	return pathlib.Path(tempfile.gettempdir()) / f"{_safe_stem(path.stem)}{suffix}"
+from ._export import (
+	mcad_make_temp_txt_path,
+	safe_stem as _safe_stem,
+	save_fea_text_export,
+	unique_path as _unique_path,
+)
 
 
 def export_thermal_svgs(
@@ -322,7 +306,14 @@ def get_thermal_data(
 	else:
 		temp_filename = pathlib.Path(filename)
 
-	mc.save_fea_data(str(temp_filename), int(step), int(step), variables, "", ",")
+	save_fea_text_export(
+		mc,
+		filename=temp_filename,
+		first_step=int(step),
+		final_step=int(step),
+		columns=str(variables),
+		sep=",",
+	)
 	regions = _parse_first_block_thermal_file(pathlib.Path(temp_filename))
 
 	if clean_up and filename is None:
@@ -348,12 +339,14 @@ def export_thermal_txt(
 	"""
 
 	export_path = pathlib.Path(filename)
-	export_path.parent.mkdir(parents=True, exist_ok=True)
-	if export_path.suffix.lower() != ".txt":
-		export_path = export_path.with_suffix(".txt")
-
-	mc.save_fea_data(str(export_path), int(step), int(step), str(variables), "", str(sep))
-	return export_path
+	return save_fea_text_export(
+		mc,
+		filename=export_path,
+		first_step=int(step),
+		final_step=int(step),
+		columns=str(variables),
+		sep=str(sep),
+	)
 
 
 def get_thermal_data_from_file(filename: str | pathlib.Path, *, clean_up: bool = False) -> ThermalRegions:
