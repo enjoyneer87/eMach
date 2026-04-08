@@ -42,6 +42,11 @@ from .loss import (  # noqa: F401
 	interactive_loss_fields_plot,
 )
 
+from ._export import (  # noqa: F401
+	mcad_default_export_dir,
+	mcad_make_temp_txt_path,
+)
+
 from .stress import (  # noqa: F401
 	StressElement,
 	StressRegion,
@@ -53,8 +58,6 @@ from .stress import (  # noqa: F401
 	get_stress_data,
 	get_stress_data_from_file,
 	interactive_mesh_stress_fields_plot,
-	mcad_default_export_dir,
-	mcad_make_temp_txt_path,
 	plot_mesh_stress_fields,
 	temperature_adjusted_curve,
 )
@@ -123,8 +126,30 @@ from .results import (  # noqa: F401
 )
 
 from .fea_workflow import (  # noqa: F401
+	FEAExportSession,
 	FEAProcessResult,
+	orchestrate_fea_export,
+	prepare_fea_export_session,
 	process_fea_result_from_mes,
+)
+
+from .doe_batch import (  # noqa: F401
+	DOESolveResult,
+	DOEExportResult,
+	doe_solve_single,
+	doe_export_txt,
+	doe_export_txt_from_saved,
+	doe_export_h5_from_txt,
+	doe_export_h5,
+	doe_batch_run,
+	doe_h5_batch_from_txt,
+	doe_export_from_saved,
+	doe_scan_status,
+	doe_repair_missing_txt,
+)
+
+from .winding_auto import (  # noqa: F401
+	auto_resize_copper_after_geometry_update,
 )
 
 __all__ = [
@@ -222,6 +247,22 @@ __all__ = [
 	"find_latest_mes",
 	"list_mes_files",
 	"find_latest_mes_by_kind",
+	"FEAExportSession",
 	"FEAProcessResult",
+	"prepare_fea_export_session",
+	"orchestrate_fea_export",
 	"process_fea_result_from_mes",
+	"DOESolveResult",
+	"DOEExportResult",
+	"doe_solve_single",
+	"doe_export_txt",
+	"doe_export_txt_from_saved",
+	"doe_export_h5_from_txt",
+	"doe_export_h5",
+	"doe_batch_run",
+	"doe_h5_batch_from_txt",
+	"doe_export_from_saved",
+	"auto_resize_copper_after_geometry_update",
+	"doe_scan_status",
+	"doe_repair_missing_txt",
 ]

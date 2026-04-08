@@ -186,6 +186,19 @@ def df_to_mcad_variables(
     return out
 
 
+def _unwrap_mcad_return(raw):
+    """Unwrap Motor-CAD API (success_code, value) tuples.
+
+    When Motor-CAD is created with ``enable_success_variable=True`` (the
+    default in Ansys Motor-CAD 2024+), every ``get_variable`` call returns
+    ``(int_success_code, value)`` instead of the bare value.  This helper
+    extracts the value so callers can work with either API style.
+    """
+    if isinstance(raw, tuple) and len(raw) == 2 and isinstance(raw[0], int):
+        return raw[1]
+    return raw
+
+
 def get_mcad_variables(mc, variable_names, *, strict: bool = False, verbose: bool = True):
     """Read multiple Motor-CAD variables into a dict."""
 
@@ -193,7 +206,8 @@ def get_mcad_variables(mc, variable_names, *, strict: bool = False, verbose: boo
     for var in variable_names:
         name = str(var)
         try:
-            values[name] = mc.get_variable(name)
+            raw = mc.get_variable(name)
+            values[name] = _unwrap_mcad_return(raw)
             if verbose:
                 print(f"[get] {name} = {values[name]}")
         except Exception as e:
