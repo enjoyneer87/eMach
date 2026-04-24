@@ -1,6 +1,6 @@
 # Python Script, API Version = V23
 # Discovery Python script
-# Created by Motor-CAD v2025.2.2 at 04/12/2025 ¿ÀÈÄ 11:10:06
+# Created by Motor-CAD v2025.2.2 at 04/12/2025 ì˜¤í›„ 11:10:06
 # Motor-CAD file: E:\KDH\KJS\251114_C67_test_Moa.mot
 
 class PartType:
