@@ -2440,10 +2440,11 @@ def _parse_first_block_magnetic_file(filename) -> MagneticRegions:
 def get_magnetic_data(
     mc,
     first_step=1,
-    final_step=1,
+    final_step: int | None = 1,
     *,
     filename: str | pathlib.Path | None = None,
     clean_up: bool = True,
+    auto_final_step: bool = True,
 ) -> MagneticRegions:
     """Export Motor-CAD electromagnetic element data and return MagneticRegions (first block).
 
@@ -2464,10 +2465,11 @@ def get_magnetic_data(
     export_path = export_magnetic_txt(
         mc,
         first_step=int(first_step),
-        final_step=int(final_step),
+        final_step=(None if final_step is None else int(final_step)),
         filename=export_path,
         columns="RegCode,Bx,By,A,J",
         sep=",",
+        auto_final_step=bool(auto_final_step),
     )
 
     mag_regions = get_magnetic_data_from_file(export_path, clean_up=False)
@@ -2483,23 +2485,81 @@ def get_magnetic_data(
     return mag_regions
 
 
+def _mcad_value_to_int(raw) -> int | None:
+    """Best-effort cast for Motor-CAD API return values to int."""
+
+    val = raw
+    if isinstance(val, tuple) and len(val) >= 1:
+        # COM wrappers often return (ok, value) or (value, unit).
+        val = val[-1]
+    if isinstance(val, list) and len(val) >= 1:
+        val = val[-1]
+
+    try:
+        out = int(float(val))
+    except Exception:
+        return None
+    return out if out >= 0 else None
+
+
+def infer_magnetic_final_step(mc, *, default_step: int = 1) -> int:
+    """Infer a reasonable magnetic final step from Motor-CAD variables.
+
+    The exact variable name can differ by Motor-CAD version/setup, so this
+    checks several known candidates and falls back to `default_step`.
+    """
+
+    candidates = (
+        "MagneticTransient_NumberOfTimeSteps",
+        "MagneticTransientNumberOfTimeSteps",
+        "NumberOfTimeSteps",
+        "NumberofTimeSteps",
+        "CyclePoints",
+        "TorquePointsPerCycle",
+        "MagneticTimeStepNumber",
+    )
+
+    for name in candidates:
+        try:
+            raw = mc.get_variable(name)
+        except Exception:
+            continue
+        step = _mcad_value_to_int(raw)
+        if step is not None and step > 0:
+            return step
+
+    return max(1, int(default_step))
+
+
 def export_magnetic_txt(
     mc,
     *,
     first_step: int = 1,
-    final_step: int = 1,
+    final_step: int | None = 1,
     filename: str | pathlib.Path,
     columns: str = "RegCode,Bx,By,A,J",
     sep: str = ",",
+    auto_final_step: bool = True,
 ) -> pathlib.Path:
-    """Export magnetic FEA data to a txt file (no parsing)."""
+    """Export magnetic FEA data to a txt file (no parsing).
+
+    If `auto_final_step=True` and `final_step` is None/invalid, this function
+    tries to infer the magnetic end step from Motor-CAD variables.
+    """
 
     export_path = pathlib.Path(filename)
     export_path.parent.mkdir(parents=True, exist_ok=True)
     if export_path.suffix.lower() != ".txt":
         export_path = export_path.with_suffix(".txt")
 
-    mc.save_fea_data(str(export_path), int(first_step), int(final_step), str(columns), "", str(sep))
+    step0 = int(first_step)
+    step1 = int(final_step) if final_step is not None else int(step0)
+    if bool(auto_final_step) and step1 <= 0:
+        step1 = infer_magnetic_final_step(mc, default_step=step0)
+    if step1 < step0:
+        step1 = step0
+
+    mc.save_fea_data(str(export_path), int(step0), int(step1), str(columns), "", str(sep))
     return export_path
 
 
