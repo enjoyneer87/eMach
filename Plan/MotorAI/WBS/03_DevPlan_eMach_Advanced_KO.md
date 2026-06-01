@@ -347,3 +347,39 @@ Week 10:
 10. 버전 매트릭스 초안(Python/torch/physicsnemo/solver) 작성
 11. 주간 Gate 점검 템플릿 도입
 12. RC 준비 체크리스트 생성
+
+---
+
+## 12. 멀티포맷 상위플랜 정합성 평가 및 반영 (Modified by Server: DESKTOP-513NQ4P)
+
+### 12.1 상위 개발플랜 내 배치 위치
+
+- 본 작업은 WS-A(Interoperability Core) 1순위 범위에 해당한다. (Modified by Server: DESKTOP-513NQ4P)
+- 시각화 전달 규격은 WS-E(Visualization Productization)와 직접 연계된다. (Modified by Server: DESKTOP-513NQ4P)
+- 일정상 Q1 M1-M3(Contract/DataAdapter/Babylon.js 검증) 구간의 release-blocking 항목으로 취급한다. (Modified by Server: DESKTOP-513NQ4P)
+
+### 12.2 포맷/패키지 호환성 검토 결과
+
+| 대상 | 주요 포맷/입출력 | 현재 계획 정합성 | 갭/리스크 | 반영 위치 |
+|---|---|---|---|---|
+| Pyleecan | JSON/CSV/Python object + FEMM/Elmer 연계 산출 | 높음 | winding/region semantic 매핑 세부 규칙 필요 | WS-A + Contract v1 |
+| SyR-e (MATLAB) | `.mat`, `.m`, DXF, CSV 계열 | 중간 | MATLAB 구조체 -> 계약 스키마 변환 어댑터 필요 | WS-A Phase 1 확장 |
+| PyAEDT | `.aedt`, 결과 테이블/필드 export | 높음 | 프로젝트/세션 관리와 버전 편차 대응 필요 | WS-B 자동화 + WS-A |
+| Ansys Maxwell 포맷 | Maxwell field/result export(테이블/필드) | 중간~높음 | 결과 export 규격(필드 축/단위) 표준화 필요 | WS-B + Result Contract |
+| Elmer | mesh/result(`.vtu`/관련 산출) | 중간 | mesh entity/region code 정합 규칙 필요 | WS-A + WS-C 데이터셋 |
+| MFEM | `.mesh`, field/gridfunction, VTK 계열 변환 | 중간 | 고차 요소/basis/field projection 규칙 필요 | WS-A 중기 트랙 |
+
+### 12.3 결정 사항: Interop Contract 확장
+
+1. `MeshFrame` 중심 canonical contract를 포맷 중립 계층으로 채택한다. (Modified by Server: DESKTOP-513NQ4P)
+2. Adapter는 `source -> MeshFrame`, Exporter는 `MeshFrame -> target` 단방향 책임으로 분리한다. (Modified by Server: DESKTOP-513NQ4P)
+3. Q1 종료 전 최소 지원 세트는 `h5/txt -> MeshFrame -> babylon json/vtu(poc)`로 고정한다. (Modified by Server: DESKTOP-513NQ4P)
+4. Elmer/MFEM은 Q2-Q3의 확장 트랙으로 등록하고, 계약 호환 테스트를 선행한다. (Modified by Server: DESKTOP-513NQ4P)
+
+### 12.4 상위 플랜에 추가된 실행 항목
+
+- Action-13: Pyleecan/SyR-e/PyAEDT/Maxwell/Elmer/MFEM 매핑 표준(키, 단위, 좌표축) 문서화
+- Action-14: `MeshFrame` 기반 adapter conformance test(샘플 2케이스/포맷)
+- Action-15: Babylon.js 전달 스키마와 VTU exporter의 공통 필드 규약 동결
+- Action-16: Solver별 region semantics(airgap/band/magnet/winding) 표준 코드셋 확정
+
