@@ -9,8 +9,11 @@ function out = loadMESAllStepsViaPythonForMATLAB(mesPath, varargin)
 %   bx_step10 = Dall.ByStep(k).Bx;
 %
 % Name-Value options:
-%   PythonExe, MotPath, FirstStep, FinalStep, UseCache, CacheDir, RepoRoot, KeepJson
+%   PythonExe, MotPath, FirstStep, FinalStep, UseCache, CacheDir, RepoRoot, KeepJson, PreferPostprocTxt
 %   StepList : explicit step list to fetch (default: [] -> use available steps in range)
+% Note:
+%   This function uses one Python bridge call (ReturnAllSteps=true) and
+%   filters requested steps in MATLAB to avoid per-step bridge overhead.
 
     p = inputParser;
     addRequired(p, 'mesPath', @(x) ischar(x) || isstring(x));
@@ -22,6 +25,7 @@ function out = loadMESAllStepsViaPythonForMATLAB(mesPath, varargin)
     addParameter(p, 'CacheDir', localDefaultCacheDirWrap(), @(x) ischar(x) || isstring(x));
     addParameter(p, 'RepoRoot', localRepoRootWrap(), @(x) ischar(x) || isstring(x));
     addParameter(p, 'KeepJson', false, @(x) islogical(x) || isnumeric(x));
+    addParameter(p, 'PreferPostprocTxt', true, @(x) islogical(x) || isnumeric(x));
     addParameter(p, 'StepList', [], @(x) isempty(x) || isnumeric(x));
     parse(p, mesPath, varargin{:});
 
@@ -36,10 +40,11 @@ function out = loadMESAllStepsViaPythonForMATLAB(mesPath, varargin)
         'UseCache', p.Results.UseCache, ...
         'CacheDir', p.Results.CacheDir, ...
         'RepoRoot', p.Results.RepoRoot, ...
+        'PreferPostprocTxt', p.Results.PreferPostprocTxt, ...
         'KeepJson', p.Results.KeepJson ...
     };
 
-    base = loadMESviaPythonForMATLAB(mesPath, commonArgs{:}, 'StepKey', []);
+    base = loadMESviaPythonForMATLAB(mesPath, commonArgs{:}, 'StepKey', [], 'ReturnAllSteps', true);
     available = reshape(double(base.StepKeys), 1, []);
 
     if isempty(p.Results.StepList)
@@ -52,19 +57,11 @@ function out = loadMESAllStepsViaPythonForMATLAB(mesPath, varargin)
         targetSteps = requested(ismember(requested, available));
     end
 
-    n = numel(targetSteps);
-    byStep = repmat(struct('Step', NaN, 'Elements', table(), 'Bx', [], 'By', [], 'B', [], 'A', [], 'J', []), n, 1);
-
-    for k = 1:n
-        s = targetSteps(k);
-        d = loadMESviaPythonForMATLAB(mesPath, commonArgs{:}, 'StepKey', s);
-        byStep(k).Step = s;
-        byStep(k).Elements = d.Elements;
-        byStep(k).Bx = d.Bx;
-        byStep(k).By = d.By;
-        byStep(k).B = d.B;
-        byStep(k).A = d.A;
-        byStep(k).J = d.J;
+    byStep = base.ByStep;
+    if ~isempty(byStep)
+        allBySteps = reshape(double([byStep.Step]), 1, []);
+        keepMask = ismember(allBySteps, targetSteps);
+        byStep = byStep(keepMask);
     end
 
     out = base;

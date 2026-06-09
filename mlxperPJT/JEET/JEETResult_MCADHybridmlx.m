@@ -7,13 +7,19 @@ mcad=callMCAD(1)
 %%
 %[text] %[text:anchor:H_22D5070F] ## 1. \[WIP\] Single Point AC Hybrid Method Verification -2ea
 % refPath='Z:\Simulation\JEETACLossValid_e10_v24\refModel\e10_UserRemesh.mot';
-refPath='F:\KDH\Thesis\JEET\e10\refModel\e10_UserRemesh.mot'
-mcad.LoadFromFile(refPath)
+% refPath='F:\KDH\Thesis\JEET\e10\refModel\e10_UserRemesh.mot'
+refPath="D:\KangDH\Thesis\e4a\e4a_EMobility_IPM_User.mot"
+meshLoadTorquePath="D:\KangDH\Thesis\e4a\e4a_EMobility_IPM_User\FEResultsData\OnLoadTorque_result_1.mes"
+txtFEAPath=strcat(fileparts(meshLoadTorquePath),"\Mag_OnLoadTorque_result_1.txt")
 
+mcad.LoadFromFile(refPath)
+mcad.LoadFEAResult(meshLoadTorquePath,1)
+[~,TorquePointsPerCycle]=mcad.GetVariable('TorquePointsPerCycle')
+mcad.SaveFEAData(txtFEAPath,1,TorquePointsPerCycle, 'RegCode,Bx,By,A,J,Je','',',')
 %%
 %[text] %[text:anchor:H_3046DD18] ## 
-%[text] %[text:anchor:H_3607F1B4] ### 2.\[Done4MCAD\]Improved Method vs Original Method
-%[text]  
+%[text] %[text:anchor:H_3607F1B4] ### 2.\[NC\]Improved Method vs Original Method - Homonized된 Slot내 B값으로 계산
+%[text]  \[NC\]B값 추출 위치 확인필요
 %[text] %[text:anchor:H_DDBC9780] - originally VeriCalcHybridACLossModelwithSlotB.mlx mcad Part \
 %[text] Hybrid AC Loss Method
 %[text] Hairpin AC loss location Method
@@ -34,39 +40,52 @@ end
 %     end
 % end
 toc
-%[text] %[text:anchor:H_51348E37] ### \[WIP\] rev1 Computation with Hybrid Method From MCAD 데이터, Single Point B Plot Graph
-%[text] calcHybridACConductorLoss
-%[text] calcHybridStrandProx1D
-%[text] calcHybridStrandProx1DMCAD
-%[text] 
+%[text] %[text:anchor:H_51348E37] ### \[WIP\] Mes로부터 B추출하여 Ac Los Calc
+%[text] #### Mes추출
 mcad(1).DoMagneticCalculation;
-mesPath = "F:\KDH\Thesis\JEET\e10\refModel\e10_UserRemesh\FEResultsData\OnLoadTorque_result_1.mes";
-motPath = "F:\KDH\Thesis\JEET\e10\refModel\e10_UserRemesh.mot";
+% mesPath = "F:\KDH\Thesis\JEET\e10\refModel\e10_UserRemesh\FEResultsData\OnLoadTorque_result_1.mes";
+% motPath = "F:\KDH\Thesis\JEET\e10\refModel\e10_UserRemesh.mot";
 
 % 최초 1회: 캐시 생성
 D = loadMESviaPythonForMATLAB(mesPath, ...
     'MotPath', motPath, ...
     'UseCache', false, ...
-    'FirstStep', 1, 'FinalStep', 45);
+    'FirstStep', 1, 'FinalStep', 180);
 
-% 이후: 캐시 재사용 (MotPath 없이도 가능)
+% % 이후: 캐시 재사용 (MotPath 없이도 가능)
 % D = loadMESviaPythonForMATLAB(mesPath, 'UseCache', true);
-
+D=loadMESAllStepsViaPythonForMATLAB(mesPath,    'MotPath', motPath, ...
+    'UseCache', false, ...
+    'FirstStep', 1, 'FinalStep', TorquePointsPerCycle)
 disp(D.UsedCache)
 disp(D.CacheTxtPath)
 
+n = numel(Dall.ByStep);
+s10idx = find([Dall.ByStep.Step] == 10, 1);
+bx10 = Dall.ByStep(s10idx).Bx;
+by10 = Dall.ByStep(s10idx).By;
+elem10 = Dall.ByStep(s10idx).Elements;
+%[text] #### 계산 B값 선정
+%[text] #### Ac Loss 계산
+%[text] calcHybridACConductorLoss
+%[text] calcHybridStrandProx1D
+%[text] calcHybridStrandProx1DMCAD
+%[text] 
+
+
 h = plotMESFieldsFromD(D, 'Mode', 'meshB')
 
-
-mesPath = "F:\KDH\Thesis\JEET\e10\refModel\e10_UserRemesh\FEResultsData\OnLoadTorque_result_1.mes";
-motPath = "F:\KDH\Thesis\JEET\e10\refModel\e10_UserRemesh.mot";
+mesPath=meshLoadTorquePath;
+motPath=refPath;
+% mesPath = "F:\KDH\Thesis\JEET\e10\refModel\e10_UserRemesh\FEResultsData\OnLoadTorque_result_1.mes";
+% motPath = "F:\KDH\Thesis\JEET\e10\refModel\e10_UserRemesh.mot";
 
 interactiveMESFieldSlider( ...
     mesPath, ...
     'MotPath', motPath, ...
     'UseCache', true, ...
     'FirstStep', 1, ...
-    'FinalStep', 45, ...
+    'FinalStep', TorquePointsPerCycle, ...
     'InitialField', '|B|', ...
     'InitialMode', 'mesh');
 

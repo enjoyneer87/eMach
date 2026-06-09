@@ -1,5 +1,7 @@
 function NewMotFilePath= mkMCADFileFromRefPath(refModelPath,AddName,additionalOption)
  
+    refModelPath = char(refModelPath);
+    AddName      = char(AddName);
     [refModelDir,refModelMotFileName,FileExt]=fileparts(refModelPath);    
     %%
     if strcmp(AddName,'normal')
@@ -23,7 +25,9 @@ function NewMotFilePath= mkMCADFileFromRefPath(refModelPath,AddName,additionalOp
     PathStr=strsplit(refModelDir,'\');
     Str2Change=PathStr(contains(PathStr,'DOE'));
         if ~isempty(Str2Change)
-        SLLAWMotFileDIR=strrep(refModelDir,Str2Change{:},AddName);
+        NewMotFileDIR  = strrep(refModelDir,Str2Change{:},AddName);
+        refModelMotFileName=strrep(refModelMotFileName,Str2Change{:},'');
+        NewMotFileName = [refModelMotFileName,AddName];
         else
         SLLAWMotFileDIR=strrep(refModelDir,PathStr{end},'SLLAW');
         SLFEAMotFileDIR=strrep(SLLAWMotFileDIR,'SLLAW',AddName);
@@ -53,8 +57,8 @@ function NewMotFilePath= mkMCADFileFromRefPath(refModelPath,AddName,additionalOp
     % checkFileNMove(NewMotFilePath)    
     % end
     %% 
-    if ~exist(NewMotFilePath,'file')&&exist(NewMotFileDIR,"dir")
-        copyfile(refModelPath,NewMotFilePath); 
-        disp(['파일을 복사했습니다.',NewMotFilePath]);
+    if ~exist(char(NewMotFilePath),'file') && exist(char(NewMotFileDIR),'dir')
+        copyfile(char(refModelPath),char(NewMotFilePath)); 
+        disp(['파일을 복사했습니다.',char(NewMotFilePath)]);
     end
 end

@@ -1,7 +1,9 @@
 
 
 %% load V24
-load('MatBy_e10_MCAD_refACLoss_v24_Irms460ang43.mat')
+v24McadPath='D:\KangDH\EveryMotor\data\emach data\MatBy_e10_MCAD_refACLoss_v24_Irms460ang43.mat'
+load(v24McadPath)
+
 SpeedList=[1000:2000:15000];
 
 plot(SpeedList,[Hybrid.DCConductorLoss_Armature_A{:}],"DisplayName",'DCLoss_{ActivePart}')
@@ -14,7 +16,7 @@ plot(SpeedList,[OPLAB.LabOpPoint_StatorCopperLoss_AC{:}],'DisplayName','OPLab')
 legend
 
 %%
-load('MatBy_e10_MCAD_refACLoss_Irms460ang43.mat')
+load('D:\KangDH\EveryMotor\data\emach data\MatBy_e10_MCAD_refACLoss_Irms460ang43.mat')
 SpeedList=[1000:1000:15000];
 
 plot(SpeedList,[Hybrid.DCConductorLoss_Armature_A{:}],"DisplayName",'DCLoss_{ActivePart}')

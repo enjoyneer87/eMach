@@ -1,6 +1,6 @@
 %[text] Define ActiveXParameter
 %[text] filter
-%[text:tableOfContents]{"heading":"**목차**"} %[text:anchor:M_AC6A05D3]
+%[text:tableOfContents]{"heading":"목차"} %[text:anchor:M_AC6A05D3]
 %[text] 
 function hybridACLossModelStr=devCalcMCADHybridACLoss(mcad)
 %[text] %[text:anchor:H_27881829] ## get LAB ActiveXStr Variable
@@ -71,8 +71,8 @@ OutputDatabyMcad.ArrayBRight      = ArrayBRight;
 [~, elec.alpha ]          = mcad.GetVariable('WindingAlpha_MotorLAB');
 alpha=elec.alpha;
 % Temperature
-T0 = 20
-T  = 20
+T0 = 20;
+T  = 20;
 % Slot Number
 [~, slotNumber]          = mcad.GetVariable('Slot_Number');
 slotNumber=double(slotNumber);

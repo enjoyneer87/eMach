@@ -55,6 +55,18 @@ def _serialize_magnetic_region(mr: Any) -> tuple[list[dict[str, Any]], list[dict
     return elements, nodes
 
 
+def _serialize_step_payload(ts: Any, step: int) -> dict[str, Any]:
+    mr = ts.by_step[int(step)]
+    meta = ts.meta.get(int(step), {}) if hasattr(ts, "meta") else {}
+    elements, nodes = _serialize_magnetic_region(mr)
+    return {
+        "step": int(step),
+        "meta": meta,
+        "elements": elements,
+        "nodes": nodes,
+    }
+
+
 def _pick_step(steps: list[int], step_arg: str) -> tuple[int | None, str | None]:
     if not steps:
         return None, "E-DATA-EMPTY-STEPS"
@@ -67,7 +79,7 @@ def _pick_step(steps: list[int], step_arg: str) -> tuple[int | None, str | None]
     return use_step, None
 
 
-def _load_magnetic_from_file(path: pathlib.Path, step_arg: str) -> BridgeResult:
+def _load_magnetic_from_file(path: pathlib.Path, step_arg: str, all_steps: bool = False) -> BridgeResult:
     from tools.motorCAD.pyMCAD import get_magnetic_data_from_file, get_magnetic_timeseries_from_file
 
     ts = None
@@ -80,23 +92,47 @@ def _load_magnetic_from_file(path: pathlib.Path, step_arg: str) -> BridgeResult:
         steps = []
 
     if steps:
+        if bool(all_steps):
+            by_steps = [_serialize_step_payload(ts, s) for s in steps]
+            first_payload = by_steps[0]
+            payload = {
+                "steps": steps,
+                "used_step": int(first_payload["step"]),
+                "meta": first_payload.get("meta", {}),
+                "source_mode": "direct_file_parse",
+                "bridge_notes": "all_steps",
+                "elements": first_payload["elements"],
+                "nodes": first_payload["nodes"],
+                "by_steps": by_steps,
+            }
+            return BridgeResult(ok=True, payload=payload)
+
         used_step, err = _pick_step(steps, step_arg)
         if err is not None or used_step is None:
             return BridgeResult(ok=False, payload={}, error_code=err, error_message="Invalid step request")
 
-        mr = ts.by_step[used_step]
-        meta = ts.meta.get(used_step, {}) if hasattr(ts, "meta") else {}
-        elements, nodes = _serialize_magnetic_region(mr)
+        step_payload = _serialize_step_payload(ts, int(used_step))
         payload = {
             "steps": steps,
-            "used_step": used_step,
-            "meta": meta,
+            "used_step": int(step_payload["step"]),
+            "meta": step_payload["meta"],
             "source_mode": "direct_file_parse",
             "bridge_notes": "",
-            "elements": elements,
-            "nodes": nodes,
+            "elements": step_payload["elements"],
+            "nodes": step_payload["nodes"],
         }
         return BridgeResult(ok=True, payload=payload)
+
+    # timeseries parse failed — try single-snapshot
+    # When all_steps=True, we must NOT accept a snapshot as success: the Motor-CAD
+    # fallback must be triggered so that all time steps are exported properly.
+    if bool(all_steps):
+        return BridgeResult(
+            ok=False,
+            payload={},
+            error_code="E-PARSE-NO-TIMESERIES",
+            error_message="Timeseries parse yielded no steps; Motor-CAD fallback required for all_steps mode.",
+        )
 
     try:
         mr = get_magnetic_data_from_file(path, clean_up=False)
@@ -137,8 +173,9 @@ def _magnetic_from_file_with_fallback(
     step_arg: str,
     first_step: int,
     final_step: int,
+    all_steps: bool,
 ) -> BridgeResult:
-    direct = _load_magnetic_from_file(input_path, step_arg)
+    direct = _load_magnetic_from_file(input_path, step_arg, all_steps=bool(all_steps))
     if direct.ok:
         return direct
 
@@ -172,23 +209,26 @@ def _magnetic_from_file_with_fallback(
         mc.load_from_file(str(mot_path))
         mc.load_fea_result(str(input_path), 1)
         try:
-            mc.save_fea_data(
-                str(export_txt),
-                int(first_step),
-                int(final_step),
-                "RegCode,Bx,By,A,J",
-                "",
-                ",",
-            )
+            solver_method = int(mc.get_variable("MagneticSolverMethod"))
         except Exception:
-            mc.save_fea_data(
-                str(export_txt),
-                1,
-                1,
-                "RegCode,Bx,By,A,J",
-                "",
-                ",",
-            )
+            solver_method = -1
+        mag_columns = "RegCode,Bx,By,A,J,Je" if solver_method == 0 else "RegCode,Bx,By,A,J"
+        save_ok = False
+        for fs, fe in [(int(first_step), int(final_step)), (1, int(final_step)), (1, 1)]:
+            try:
+                mc.save_fea_data(
+                    str(export_txt),
+                    fs,
+                    fe,
+                    mag_columns,
+                    "",
+                    ",",
+                )
+                if export_txt.exists():
+                    save_ok = True
+                    break
+            except Exception:
+                continue
 
         if not export_txt.exists():
             return BridgeResult(
@@ -198,7 +238,7 @@ def _magnetic_from_file_with_fallback(
                 error_message="Fallback export failed: save_fea_data did not create txt",
             )
 
-        loaded = _load_magnetic_from_file(export_txt, step_arg)
+        loaded = _load_magnetic_from_file(export_txt, step_arg, all_steps=bool(all_steps))
         if not loaded.ok:
             return loaded
 
@@ -207,6 +247,8 @@ def _magnetic_from_file_with_fallback(
         meta = dict(payload.get("meta", {}) or {})
         meta["fallback_mot_path"] = str(mot_path)
         meta["fallback_export_txt"] = str(export_txt)
+        meta["fallback_mag_columns"] = mag_columns
+        meta["fallback_solver_method"] = solver_method
         payload["meta"] = meta
         payload["bridge_notes"] = f"direct_parse_failed_then_motorcad_export: {direct_error}"
         return BridgeResult(ok=True, payload=payload)
@@ -245,6 +287,7 @@ def main() -> int:
     p_mag.add_argument("--step", default="None")
     p_mag.add_argument("--first-step", type=int, default=1)
     p_mag.add_argument("--final-step", type=int, default=45)
+    p_mag.add_argument("--all-steps", type=int, default=0)
 
     args = parser.parse_args()
 
@@ -262,6 +305,7 @@ def main() -> int:
             step_arg=str(args.step),
             first_step=int(args.first_step),
             final_step=int(args.final_step),
+            all_steps=bool(int(args.all_steps)),
         )
         return _write_result(pathlib.Path(args.out_json).resolve(), result)
 

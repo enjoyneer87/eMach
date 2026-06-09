@@ -4,6 +4,8 @@
 This is the preferred location for notebook-facing utilities.
 """
 
+from importlib.util import find_spec
+
 from .magnetic import (  # noqa: F401
 	MagElement,
 	MagneticRegion,
@@ -133,20 +135,22 @@ from .fea_workflow import (  # noqa: F401
 	process_fea_result_from_mes,
 )
 
-from .doe_batch import (  # noqa: F401
-	DOESolveResult,
-	DOEExportResult,
-	doe_solve_single,
-	doe_export_txt,
-	doe_export_txt_from_saved,
-	doe_export_h5_from_txt,
-	doe_export_h5,
-	doe_batch_run,
-	doe_h5_batch_from_txt,
-	doe_export_from_saved,
-	doe_scan_status,
-	doe_repair_missing_txt,
-)
+_HAS_DOE_BATCH = find_spec(__name__ + ".doe_batch") is not None
+if _HAS_DOE_BATCH:
+	from .doe_batch import (  # noqa: F401
+		DOESolveResult,
+		DOEExportResult,
+		doe_solve_single,
+		doe_export_txt,
+		doe_export_txt_from_saved,
+		doe_export_h5_from_txt,
+		doe_export_h5,
+		doe_batch_run,
+		doe_h5_batch_from_txt,
+		doe_export_from_saved,
+		doe_scan_status,
+		doe_repair_missing_txt,
+	)
 
 from .winding_auto import (  # noqa: F401
 	auto_resize_copper_after_geometry_update,
@@ -252,17 +256,23 @@ __all__ = [
 	"prepare_fea_export_session",
 	"orchestrate_fea_export",
 	"process_fea_result_from_mes",
-	"DOESolveResult",
-	"DOEExportResult",
-	"doe_solve_single",
-	"doe_export_txt",
-	"doe_export_txt_from_saved",
-	"doe_export_h5_from_txt",
-	"doe_export_h5",
-	"doe_batch_run",
-	"doe_h5_batch_from_txt",
-	"doe_export_from_saved",
 	"auto_resize_copper_after_geometry_update",
-	"doe_scan_status",
-	"doe_repair_missing_txt",
 ]
+
+if _HAS_DOE_BATCH:
+	__all__.extend(
+		[
+			"DOESolveResult",
+			"DOEExportResult",
+			"doe_solve_single",
+			"doe_export_txt",
+			"doe_export_txt_from_saved",
+			"doe_export_h5_from_txt",
+			"doe_export_h5",
+			"doe_batch_run",
+			"doe_h5_batch_from_txt",
+			"doe_export_from_saved",
+			"doe_scan_status",
+			"doe_repair_missing_txt",
+		]
+	)
