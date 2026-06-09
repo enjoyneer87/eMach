@@ -156,6 +156,20 @@ from .winding_auto import (  # noqa: F401
 	auto_resize_copper_after_geometry_update,
 )
 
+from .scaling import (  # noqa: F401
+	ScalingFactor,
+	MotorCADGeo,
+	ScaledMachineData,
+	scale_resistance_by_temp,
+	calc_current_density,
+	parse_mcad_colon_str,
+	def_scaling_factor,
+	get_mcad_machine_data,
+	get_mcad_building_data,
+	sl_scale_machine,
+	apply_scaled_data_to_mcad,
+)
+
 __all__ = [
 	"MagElement",
 	"MagneticRegion",
@@ -257,6 +271,18 @@ __all__ = [
 	"orchestrate_fea_export",
 	"process_fea_result_from_mes",
 	"auto_resize_copper_after_geometry_update",
+	# scaling
+	"ScalingFactor",
+	"MotorCADGeo",
+	"ScaledMachineData",
+	"scale_resistance_by_temp",
+	"calc_current_density",
+	"parse_mcad_colon_str",
+	"def_scaling_factor",
+	"get_mcad_machine_data",
+	"get_mcad_building_data",
+	"sl_scale_machine",
+	"apply_scaled_data_to_mcad",
 ]
 
 if _HAS_DOE_BATCH:

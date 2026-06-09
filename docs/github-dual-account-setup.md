@@ -80,9 +80,9 @@ git config --list --show-origin
 
 ## 체크리스트
 
-- [ ] `git config --global user.name` 설정
-- [ ] `git config --global user.email` 설정
-- [ ] `git config --global credential.helper store` 설정
+- [x] `git config --global user.name` 설정 → `enjoyneer87`
+- [x] `git config --global user.email` 설정 → `enjoyneer87@naver.com`
+- [x] `git config --global credential.helper store` 설정
 - [ ] GitHub PAT 토큰 생성 (repo 권한)
 - [ ] 최초 `git push` 로 토큰 등록
 - [ ] VS Code → 계정 아이콘 → Copilot 계정으로 GitHub 로그인
