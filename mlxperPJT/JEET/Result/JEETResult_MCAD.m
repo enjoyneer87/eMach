@@ -32,11 +32,18 @@ mcad(McadIndex).LoadFromFile(refModelPath)
 [~,CurrentMotFilePath_MotorLAB]=mcad.GetVariable('CurrentMotFilePath_MotorLAB')
 if CurrentMotFilePath_MotorLAB==refModelPath
     [refLABBuildData]=getMCADBuildingData(mcad(1));
+    [BuildingData,filteredLabTable4Scaling]=getMCADData4ScalingFromMotFile(refModelPath)
 end
+refLABBuildData=BuildingData
 refLABBuildData.MotorCADGeo.WindingLayers
 refLABBuildData.MotorCADGeo.Ratio_Bore
+refLABBuildData.MotorCADGeo.AirGap
+k_radial=1.5
+k_axial=1
+defineType=2
 
-scalingFactorStruct=defScalingFactor(2,1,2,6,2,6,2);
+
+scalingFactorStruct=defScalingFactor(k_radial,k_axial,defineType,6,2,6,2);
 k_Axial   =scalingFactorStruct.k_Axial   ;
 k_Radial  =scalingFactorStruct.k_Radial  ;
 k_Winding =scalingFactorStruct.k_Winding ;    
@@ -45,17 +52,43 @@ ScaledMachineData = SLScaleMachine(scalingFactorStruct,refLABBuildData.MotorCADG
 
 %[text] %[text:anchor:M_44a9] Scaling 
 % mk File
-
+McadIndex=1
 ScaledBuildMotFilePath= mkMCADFileFromRefPath(refModelPath,'SLFEA');
 dir(fileparts(ScaledBuildMotFilePath)) 
 % ScaledBuildMotFilePath="D:\KangDH\Thesis\e10\SLFEA\e10Turn6V261SLFEA.mot"
-mcad(McadIndex).LoadFromFile(ScaledBuildMotFilePath)
-% mcad.SetVariable('GeometryParameterisation',1)
-% mcad.SetVariable('MessageDisplayState',0)
-% setMcadVariable(ScaledMachineData,mcad(McadIndex));
-% [validGeo]=mcad(McadIndex).CheckIfGeometryIsValid(1);
+ScaledBuildMotFilePath="D:\KangDH\Thesis\e10\SLFEA_Half\e10Turn6V261SLFEA_Half.mot"
+mcad(1).LoadFromFile(ScaledBuildMotFilePath)
+mcad.SetVariable('GeometryParameterisation',1)
+mcad.SetVariable('MessageDisplayState',2)
+setMcadVariable(ScaledMachineData,mcad(McadIndex));
+[validGeo]=mcad(McadIndex).CheckIfGeometryIsValid(1);
 % 
+[ScaledBuildMotFileDir,SCModelMotFileName,FileExt]=fileparts(ScaledBuildMotFilePath);
+mcad.SaveScreenToFile("Radial",fullfile(ScaledBuildMotFileDir,'Radial.png'))
+% mcad.save_motorcad_screen_to_file("Geometry;Radial",fullfile(ScaledBuildMotFileDir,'Radial.png'))
+[~,BPMRotor]=mcad.GetVariable('BPMRotor')
+if BPMRotor=='11'
 
+    % Interior V (Web)
+    [~,VSimpleMagnetPost_Array      ]=  mcad.GetVariable('VSimpleMagnetPost_Array')
+    [~,VShapeMagnetPost_Array       ]=  mcad.GetVariable('VShapeMagnetPost_Array')
+    [~,VShape_Magnet_ClearanceInner ]=  mcad.GetVariable('VShape_Magnet_ClearanceInner')
+    
+end
+[~,Airgap                         ]   = mcad.GetVariable('Airgap')      
+[~,CornerRoundingRadius_Rotor     ]   = mcad.GetVariable('CornerRoundingRadius_Rotor')                 
+[~,CornerRoundingRadius_Magnets   ]   = mcad.GetVariable('CornerRoundingRadius_Magnets')   
+
+
+mcad.GetVariable('VSimpleMagnetPost_Array')
+mcad.GetVariable('VShapeMagnetPost_Array')
+mcad.GetVariable('VShape_Magnet_ClearanceInner')
+
+
+mcad.GetVariable('Airgap')      
+mcad.GetVariable('CornerRoundingRadius_Rotor')   
+mcad.GetVariable('CornerRoundingRadius_Magnets')
+                
 % 
 % % Scale
 % mcad(McadIndex).SaveToFile(ScaledBuildMotFilePath)

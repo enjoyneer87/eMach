@@ -785,6 +785,34 @@ class MagneticRegionsTimeSeries:
     def plot_mesh(self, step, **kwargs):
         return self.by_step[step].plot_mesh(**kwargs)
 
+    # ------------------------------------------------------------------
+    # Interactive widget methods (delegate to magnetic_plot module)
+    # ------------------------------------------------------------------
+
+    def interactive_plot(self, **kwargs):
+        """Interactive step-toggle scatter plot (ipywidgets slider)."""
+        try:
+            from .magnetic_plot import interactive_magnetic_plot
+        except ImportError:
+            from tools.motorCAD.pyMCAD.magnetic_plot import interactive_magnetic_plot
+        return interactive_magnetic_plot(self, **kwargs)
+
+    def interactive_quiver(self, **kwargs):
+        """Interactive step-toggle quiver plot (ipywidgets slider)."""
+        try:
+            from .magnetic_plot import interactive_magnetic_quiver
+        except ImportError:
+            from tools.motorCAD.pyMCAD.magnetic_plot import interactive_magnetic_quiver
+        return interactive_magnetic_quiver(self, **kwargs)
+
+    def export_gif(self, gif_path, **kwargs):
+        """Export time-series frames as animated GIF."""
+        try:
+            from .magnetic_plot import export_magnetic_timeseries_gif
+        except ImportError:
+            from tools.motorCAD.pyMCAD.magnetic_plot import export_magnetic_timeseries_gif
+        return export_magnetic_timeseries_gif(self, gif_path, **kwargs)
+
 
 def mcad_default_export_dir(mc) -> pathlib.Path:
     """Best-effort directory for temporary exports.

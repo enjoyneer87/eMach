@@ -1,5 +1,6 @@
 function modifiedDataStruct = getMcadActiveXTableFromMotFile(MotFilePath)
     load("mcadActiveXparameterList.mat");
+    % MotFilePath=refModelPath
     modifiedData = getDataFromMotFiles(MotFilePath);
     % modifiedDataStruct 구조체 초기화
     modifiedDataStruct = struct();

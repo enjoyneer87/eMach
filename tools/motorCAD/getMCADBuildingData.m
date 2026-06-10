@@ -2,7 +2,12 @@ function BuildingData=getMCADBuildingData(mcad)
 
 
 %% MotorCADGeo Get Lab Model Data
-BuildingData.MotorCADGeo=devDefMCADMachineData4Scaling(mcad);
+BuildingData.MotorCADGeo=defMCADMachineData4Scaling(mcad);
+[~,AirgapDefinition]                    =mcad.GetVariable('AirgapDefinition' );
+if AirgapDefinition==0
+    disp('AirGap dimension Input')
+end
+BuildingData.AirgapDefinition           =AirgapDefinition;
 
 [~,referenceSpeed   ]                   =mcad.GetVariable('FEALossMap_RefSpeed_Lab' );
 [~,SpeedMax_MotorLAB]                   =mcad.GetVariable('SpeedMax_MotorLAB');
