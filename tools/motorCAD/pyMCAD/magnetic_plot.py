@@ -106,13 +106,145 @@ except Exception:
     display = None
 
 
+def _build_hover_data(mr, reg_code, quantity):
+    """Collect element positions, field values, and indices for hover lookup."""
+    import numpy as np
+
+    quantity = str(quantity).lower()
+    if reg_code is None:
+        regions = [r for r in mr._regions if r.elements]
+    elif isinstance(reg_code, (list, tuple, set)):
+        regions = [
+            mr._regions[int(rc) - 1]
+            for rc in reg_code
+            if 0 < int(rc) <= len(mr._regions)
+        ]
+    else:
+        if 0 < int(reg_code) <= len(mr._regions):
+            regions = [mr._regions[int(reg_code) - 1]]
+        else:
+            regions = []
+
+    xs, ys, vals, elem_ids, node_ids_list = [], [], [], [], []
+    for region in regions:
+        for el in region.elements:
+            v = getattr(el, quantity, None)
+            if v is None:
+                continue
+            c_xy = mr._element_centroid_xy(el)
+            if c_xy is None:
+                continue
+            xs.append(c_xy[0])
+            ys.append(c_xy[1])
+            vals.append(v)
+            elem_ids.append(getattr(el, "tri_index", -1))
+            node_ids_list.append((el.node_1, el.node_2, el.node_3))
+
+    if not xs:
+        return None
+
+    coords = np.column_stack([xs, ys])
+    try:
+        from scipy.spatial import cKDTree
+        tree = cKDTree(coords)
+    except ImportError:
+        tree = None
+
+    return {
+        "coords": coords,
+        "vals": np.asarray(vals),
+        "elem_ids": elem_ids,
+        "node_ids": node_ids_list,
+        "tree": tree,
+    }
+
+
+def _attach_hover(fig, ax, hover_data, quantity):
+    """Attach a motion_notify_event handler that shows hover annotation."""
+    import numpy as np
+
+    annot = ax.annotate(
+        "", xy=(0, 0), xytext=(12, 12),
+        textcoords="offset points",
+        bbox=dict(boxstyle="round,pad=0.3", fc="lightyellow", alpha=0.9),
+        fontsize=7,
+        arrowprops=dict(arrowstyle="->", color="gray"),
+        annotation_clip=True,
+    )
+    annot.set_visible(False)
+
+    def _on_move(event):
+        if event.inaxes != ax:
+            if annot.get_visible():
+                annot.set_visible(False)
+                fig.canvas.draw_idle()
+            return
+
+        mx, my = event.xdata, event.ydata
+        if mx is None or my is None:
+            return
+
+        tree = hover_data["tree"]
+        coords = hover_data["coords"]
+        if tree is not None:
+            dist, idx = tree.query([mx, my])
+        else:
+            dists = np.sum((coords - np.array([mx, my])) ** 2, axis=1)
+            idx = int(np.argmin(dists))
+            dist = float(np.sqrt(dists[idx]))
+
+        # Only show if cursor is reasonably close (within 2% of axis range)
+        x_range = ax.get_xlim()
+        threshold = (x_range[1] - x_range[0]) * 0.02
+        if dist > threshold:
+            if annot.get_visible():
+                annot.set_visible(False)
+                fig.canvas.draw_idle()
+            return
+
+        x_pt, y_pt = coords[idx]
+        val = hover_data["vals"][idx]
+        elem_id = hover_data["elem_ids"][idx]
+        n1, n2, n3 = hover_data["node_ids"][idx]
+
+        text = (
+            f"x={x_pt:.3f}, y={y_pt:.3f} mm\n"
+            f"{quantity}={val:.4g}\n"
+            f"elem={elem_id}, nodes=({n1},{n2},{n3})"
+        )
+        annot.xy = (x_pt, y_pt)
+        annot.set_text(text)
+        annot.set_visible(True)
+        fig.canvas.draw_idle()
+
+    fig.canvas.mpl_connect("motion_notify_event", _on_move)
+
+
 def interactive_magnetic_plot(ts: MagneticRegionsTimeSeries, initial_step=None, quantity="b", reg_code=None, s=2, cmap="jet"):
     """Interactive step toggle plot for MagneticRegionsTimeSeries."""
+
+    def _enable_widget_backend():
+        try:
+            from IPython import get_ipython
+        except Exception:
+            return False
+
+        ip = get_ipython()
+        if ip is None:
+            return False
+
+        try:
+            ip.run_line_magic("matplotlib", "widget")
+            return True
+        except Exception:
+            return False
 
     if widgets is None or display is None:
         raise RuntimeError("ipywidgets is required for interactive plotting")
     if len(ts) == 0:
         raise ValueError("Empty time series.")
+
+    _zoom_enabled = _enable_widget_backend()
 
     steps = ts.steps
     if initial_step is None:
@@ -126,7 +258,8 @@ def interactive_magnetic_plot(ts: MagneticRegionsTimeSeries, initial_step=None, 
         layout=widgets.Layout(width="650px"),
     )
     qty_dd = widgets.Dropdown(
-        options=[("B", "b"), ("A", "a"), ("J", "j")],
+        options=[("B", "b"), ("Bx", "bx"), ("By", "by"), ("A", "a"), ("J", "j"), ("Je", "je"),
+                 ("H", "h"), ("Hx", "hx"), ("Hy", "hy"), ("μr", "mur")],
         value=str(quantity).lower(),
         description="qty",
     )
@@ -145,13 +278,17 @@ def interactive_magnetic_plot(ts: MagneticRegionsTimeSeries, initial_step=None, 
             options.append((label, int(code)))
         return options
 
-    reg_dd = widgets.Dropdown(
+    reg_sel = widgets.SelectMultiple(
         options=_region_options_for_step(step_slider.value),
-        value=(None if reg_code is None else int(reg_code)),
+        value=(None,) if reg_code is None else (int(reg_code),),
         description="reg_code",
+        rows=min(8, len(_region_options_for_step(step_slider.value))),
+        layout=widgets.Layout(width="250px"),
     )
-    if reg_dd.value not in [v for (_, v) in reg_dd.options]:
-        reg_dd.value = None
+    # ensure initial value valid
+    _valid = [v for (_, v) in reg_sel.options]
+    if not all(v in _valid for v in reg_sel.value):
+        reg_sel.value = (None,)
 
     size_slider = widgets.FloatSlider(
         value=float(s),
@@ -168,11 +305,12 @@ def interactive_magnetic_plot(ts: MagneticRegionsTimeSeries, initial_step=None, 
     _last_fig = {"fig": None}
 
     def _sync_reg_options(*_):
-        current = reg_dd.value
+        current = reg_sel.value
         new_options = _region_options_for_step(step_slider.value)
-        reg_dd.options = new_options
+        reg_sel.options = new_options
         values = [v for (_, v) in new_options]
-        reg_dd.value = current if current in values else None
+        kept = tuple(v for v in current if v in values)
+        reg_sel.value = kept if kept else (None,)
 
     def _draw(*_):
         with out:
@@ -182,11 +320,16 @@ def interactive_magnetic_plot(ts: MagneticRegionsTimeSeries, initial_step=None, 
                     plt.close(_last_fig["fig"])
             except Exception:
                 pass
-            fig, ax = plt.subplots(layout="constrained")
+            fig, ax = plt.subplots()
             _last_fig["fig"] = fig
             step = int(step_slider.value)
             qty = str(qty_dd.value).lower()
-            rc = reg_dd.value
+            # Multi-select: None means all, single value as int, multiple as list
+            selected = reg_sel.value
+            if len(selected) == 1:
+                rc = selected[0]  # None or single int
+            else:
+                rc = [v for v in selected if v is not None] or None
             ax = ts.by_step[step].plot(
                 reg_code=rc,
                 quantity=qty,
@@ -199,6 +342,21 @@ def interactive_magnetic_plot(ts: MagneticRegionsTimeSeries, initial_step=None, 
             header = ts.meta.get(step, {}).get("raw_header")
             if header:
                 ax.set_title(f"{ax.get_title()}\n{header}")
+            if not _zoom_enabled:
+                ax.set_title(
+                    ax.get_title()
+                    + "\n(팁: `%matplotlib widget` 또는 ipympl이 있어야 드래그 줌 가능)"
+                )
+
+            fig.tight_layout()
+            # Freeze layout so hover annotation won't trigger resize
+            fig.set_layout_engine('none')
+
+            # --- Hover annotation (nearest element info) ---
+            _hover_data = _build_hover_data(ts.by_step[step], rc, qty)
+            if _hover_data is not None:
+                _attach_hover(fig, ax, _hover_data, qty)
+
             plt.show()
             # In widget backends, keep the figure open (it's the displayed canvas).
             # For non-interactive inline/agg backends, close to avoid duplicated static images.
@@ -211,10 +369,10 @@ def interactive_magnetic_plot(ts: MagneticRegionsTimeSeries, initial_step=None, 
     step_slider.observe(_draw, names="value")
     qty_dd.observe(_draw, names="value")
     mesh_chk.observe(_draw, names="value")
-    reg_dd.observe(_draw, names="value")
+    reg_sel.observe(_draw, names="value")
     size_slider.observe(_draw, names="value")
 
-    display(widgets.VBox([widgets.HBox([step_slider, qty_dd, mesh_chk]), widgets.HBox([reg_dd, size_slider]), out]))
+    display(widgets.VBox([widgets.HBox([step_slider, qty_dd, mesh_chk]), widgets.HBox([reg_sel, size_slider]), out]))
     _draw()
 
 

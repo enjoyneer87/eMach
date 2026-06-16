@@ -81,7 +81,7 @@ def _skip_header_lines(in_file, n=4):
         in_file.readline()
 
 
-_ELEM_COL_KEYS = frozenset({"TriIndex", "Node1", "Node2", "Node3", "RegCode", "Bx", "By", "A", "J", "Je"})
+_ELEM_COL_KEYS = frozenset({"TriIndex", "Node1", "Node2", "Node3", "RegCode", "Bx", "By", "A", "J", "Je", "Hx", "Hy", "Mur"})
 _NODE_COL_KEYS = frozenset({"NodeIndex", "X", "Y"})
 _REGION_COL_KEYS = frozenset({"RegionCode", "RegionName"})
 
@@ -136,6 +136,9 @@ def _parse_first_block_magnetic_file(filename) -> MagneticRegions:
         j_i   = elem_ci.get("J",   8)
         je_i  = elem_ci.get("Je")
         b_i   = elem_ci.get("B")
+        hx_i  = elem_ci.get("Hx")
+        hy_i  = elem_ci.get("Hy")
+        mur_i = elem_ci.get("Mur")
 
         for _ in range(number_of_elements):
             row = in_file.readline().split(sep=",")
@@ -156,6 +159,9 @@ def _parse_first_block_magnetic_file(filename) -> MagneticRegions:
                     a=row[a_i],
                     j=row[j_i],
                     je=row[je_i] if je_i is not None else None,
+                    hx=row[hx_i] if hx_i is not None else None,
+                    hy=row[hy_i] if hy_i is not None else None,
+                    mur=row[mur_i] if mur_i is not None else None,
                 )
             else:
                 mag_regions[reg_code - 1].add_element(
@@ -267,6 +273,9 @@ def _parse_magnetic_timeseries_txt(
             j_i   = elem_ci.get("J",   8)
             je_i  = elem_ci.get("Je")
             b_i   = elem_ci.get("B")
+            hx_i  = elem_ci.get("Hx")
+            hy_i  = elem_ci.get("Hy")
+            mur_i = elem_ci.get("Mur")
 
             mag_regions = MagneticRegions()
             for _ in range(n_elements):
@@ -288,6 +297,9 @@ def _parse_magnetic_timeseries_txt(
                         a=row[a_i],
                         j=row[j_i],
                         je=row[je_i] if je_i is not None else None,
+                        hx=row[hx_i] if hx_i is not None else None,
+                        hy=row[hy_i] if hy_i is not None else None,
+                        mur=row[mur_i] if mur_i is not None else None,
                     )
                 else:
                     mag_regions[reg_code - 1].add_element(

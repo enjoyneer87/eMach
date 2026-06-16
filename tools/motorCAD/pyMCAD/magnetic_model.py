@@ -12,7 +12,7 @@ class MagElement:
     """Motor-CAD electromagnetic element data.
 
     Columns (ElementsTable)
-    - TriIndex, Node1, Node2, Node3, RegCode, Bx, By, A, J, Je
+    - TriIndex, Node1, Node2, Node3, RegCode, Bx, By, A, J, Je, Hx, Hy, Mur
 
     Units
     - Bx, By: [T]
@@ -20,6 +20,9 @@ class MagElement:
     - A: [Wb/m]
     - J: [A/mm^2]
     - Je: [A/mm^2]
+    - Hx, Hy: [A/m]
+    - H (magnitude): [A/m] computed as sqrt(Hx^2 + Hy^2)
+    - Mur: [dimensionless] relative permeability
     """
 
     def __init__(
@@ -35,6 +38,9 @@ class MagElement:
         j=None,
         je=None,
         b=None,
+        hx=None,
+        hy=None,
+        mur=None,
     ):
         self.tri_index = int(tri_index)
         self.node_1 = int(node_1)
@@ -58,17 +64,50 @@ class MagElement:
         self.j = float(j) if j is not None else 0.0
         self.je = float(je) if je is not None else 0.0
 
+        # H-field and relative permeability (optional)
+        if hx is not None and hy is not None:
+            self.hx = float(hx)
+            self.hy = float(hy)
+            self._h = float((self.hx**2 + self.hy**2) ** 0.5)
+        else:
+            self.hx = None
+            self.hy = None
+            self._h = None
+        self.mur = float(mur) if mur is not None else None
+
     @property
     def b(self) -> float:
         """Magnetic flux density magnitude [T]."""
         return self._b
 
+    @property
+    def h(self) -> float | None:
+        """Magnetic field intensity magnitude [A/m]."""
+        return self._h
+
     @classmethod
     def from_csv_row(cls, row):
-        # Accept both formats:
-        # - Newest: ... RegCode,Bx,By,A,J,Je (len>=10)
-        # - New: ... RegCode,Bx,By,A,J (len>=9)
-        # - Old: ... RegCode,B,A,J (len>=8)
+        # Accept formats by column count:
+        # - 13+: ... RegCode,Bx,By,A,J,Je,Hx,Hy,Mur
+        # - 10+: ... RegCode,Bx,By,A,J,Je
+        # - 9+:  ... RegCode,Bx,By,A,J
+        # - 8+:  ... RegCode,B,A,J
+        if len(row) >= 13:
+            return cls(
+                tri_index=row[0],
+                node_1=row[1],
+                node_2=row[2],
+                node_3=row[3],
+                reg_code=row[4],
+                bx=row[5],
+                by=row[6],
+                a=row[7],
+                j=row[8],
+                je=row[9],
+                hx=row[10],
+                hy=row[11],
+                mur=row[12],
+            )
         if len(row) >= 10:
             return cls(
                 tri_index=row[0],
@@ -432,6 +471,9 @@ class MagneticRegion:
         j=None,
         je=None,
         b=None,
+        hx=None,
+        hy=None,
+        mur=None,
     ):
         self.elements.append(
             MagElement(
@@ -446,6 +488,9 @@ class MagneticRegion:
                 j=j,
                 je=je,
                 b=b,
+                hx=hx,
+                hy=hy,
+                mur=mur,
             )
         )
 
@@ -468,6 +513,22 @@ class MagneticRegion:
     def get_j(self):
         """Return current density J list [A/mm^2]."""
         return [el.j for el in self.elements]
+
+    def get_hx(self):
+        """Return Hx list [A/m] (may contain None)."""
+        return [el.hx for el in self.elements]
+
+    def get_hy(self):
+        """Return Hy list [A/m] (may contain None)."""
+        return [el.hy for el in self.elements]
+
+    def get_h(self):
+        """Return H magnitude list [A/m] (may contain None)."""
+        return [el.h for el in self.elements]
+
+    def get_mur(self):
+        """Return relative permeability list (may contain None)."""
+        return [el.mur for el in self.elements]
 
     def get_tri_index(self):
         return [el.tri_index for el in self.elements]
@@ -531,8 +592,8 @@ class MagneticRegions:
         """Scatter plot magnetic data."""
 
         quantity = str(quantity).lower()
-        if quantity not in {"b", "a", "j"}:
-            raise ValueError("quantity must be one of: 'b', 'a', 'j'")
+        if quantity not in {"b", "bx", "by", "a", "j", "je", "h", "hx", "hy", "mur"}:
+            raise ValueError("quantity must be one of: 'b', 'bx', 'by', 'a', 'j', 'je', 'h', 'hx', 'hy', 'mur'")
 
         if ax is None:
             _, ax = plt.subplots(layout="constrained")
@@ -547,6 +608,12 @@ class MagneticRegions:
 
         if reg_code is None:
             regions_to_iterate = [r for r in self._regions if r.elements]
+        elif isinstance(reg_code, (list, tuple, set)):
+            regions_to_iterate = [
+                self._regions[int(rc) - 1]
+                for rc in reg_code
+                if 0 < int(rc) <= len(self._regions)
+            ]
         else:
             if reg_code <= 0:
                 raise ValueError("reg_code must be >= 1")
@@ -555,9 +622,18 @@ class MagneticRegions:
             else:
                 regions_to_iterate = []
 
+        _QTY_LABEL = {
+            "b": "|B| [T]", "bx": "Bx [T]", "by": "By [T]",
+            "a": "A [Wb/m]", "j": "J [A/mm²]", "je": "Je [A/mm²]",
+            "h": "|H| [A/m]", "hx": "Hx [A/m]", "hy": "Hy [A/m]",
+            "mur": "μr [-]",
+        }
+
         for region in regions_to_iterate:
             for el in region.elements:
                 v = getattr(el, quantity)
+                if v is None:
+                    continue
                 c_xy = self._element_centroid_xy(el)
                 if c_xy is not None:
                     xs.append(c_xy[0])
@@ -580,14 +656,14 @@ class MagneticRegions:
             ax.set_xlabel("X [mm]")
             ax.set_ylabel("Y [mm]")
             cb = ax.figure.colorbar(sc, ax=ax)
-            cb.set_label({"b": "|B| [T]", "a": "A [Wb/m]", "j": "J [A/mm^2]"}[quantity])
+            cb.set_label(_QTY_LABEL.get(quantity, quantity))
             title_region = f"reg_code={reg_code}" if reg_code is not None else "all regions"
             ax.set_title(f"Magnetic scatter ({title_region})")
             ax.set_aspect("equal")
         else:
             ax.scatter(xs, ys, s=s, marker=".")
             ax.set_xlabel("TriIndex")
-            ax.set_ylabel({"b": "|B| [T]", "a": "A [Wb/m]", "j": "J [A/mm^2]"}[quantity])
+            ax.set_ylabel(_QTY_LABEL.get(quantity, quantity))
             title_region = f"reg_code={reg_code}" if reg_code is not None else "all regions"
             ax.set_title(f"Magnetic scatter (fallback: {title_region})")
             ax.grid(True)
@@ -633,6 +709,12 @@ class MagneticRegions:
 
         if reg_code is None:
             regions_to_iterate = [r for r in self._regions if r.elements]
+        elif isinstance(reg_code, (list, tuple, set)):
+            regions_to_iterate = [
+                self._regions[int(rc) - 1]
+                for rc in reg_code
+                if 0 < int(rc) <= len(self._regions)
+            ]
         else:
             if reg_code <= 0:
                 raise ValueError("reg_code must be >= 1")
@@ -710,6 +792,12 @@ class MagneticRegions:
 
         if reg_code is None:
             regions_to_iterate = [r for r in self._regions if r.elements]
+        elif isinstance(reg_code, (list, tuple, set)):
+            regions_to_iterate = [
+                self._regions[int(rc) - 1]
+                for rc in reg_code
+                if 0 < int(rc) <= len(self._regions)
+            ]
         else:
             if reg_code <= 0:
                 raise ValueError("reg_code must be >= 1")
