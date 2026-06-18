@@ -106,6 +106,96 @@ except Exception:
     display = None
 
 
+def _extract_element_timeseries(ts, elem_id, quantity):
+    """Extract field value of a specific element (by tri_index) across all steps."""
+    import numpy as np
+
+    quantity = str(quantity).lower()
+    steps = sorted(ts.by_step.keys())
+    values = []
+    for step in steps:
+        mr = ts.by_step[step]
+        found = False
+        for region in mr._regions:
+            for el in region.elements:
+                if getattr(el, "tri_index", -1) == elem_id:
+                    v = getattr(el, quantity, None)
+                    values.append(float(v) if v is not None else 0.0)
+                    found = True
+                    break
+            if found:
+                break
+        if not found:
+            values.append(0.0)
+    return np.array(steps, dtype=float), np.array(values, dtype=float)
+
+
+def _attach_dblclick(fig, ax, hover_data, ts, out_right):
+    """Attach double-click handler to show waveform + FFT in out_right widget."""
+    import numpy as np
+
+    def _on_dblclick(event):
+        if event.inaxes != ax or not event.dblclick:
+            return
+        mx, my = event.xdata, event.ydata
+        if mx is None or my is None:
+            return
+
+        tree = hover_data["tree"]
+        coords = hover_data["coords"]
+        if tree is not None:
+            dist, idx = tree.query([mx, my])
+        else:
+            dists = np.sum((coords - np.array([mx, my])) ** 2, axis=1)
+            idx = int(np.argmin(dists))
+            dist = float(np.sqrt(dists[idx]))
+
+        x_range = ax.get_xlim()
+        threshold = (x_range[1] - x_range[0]) * 0.03
+        if dist > threshold:
+            return
+
+        elem_id = hover_data["elem_ids"][idx]
+        x_pt, y_pt = coords[idx]
+        qty = ax._hover_qty if hasattr(ax, "_hover_qty") else "b"
+
+        steps_arr, vals_arr = _extract_element_timeseries(ts, elem_id, qty)
+
+        with out_right:
+            out_right.clear_output(wait=True)
+            fig_r, (ax_wave, ax_fft) = plt.subplots(2, 1, figsize=(4, 5))
+
+            # Waveform
+            ax_wave.plot(steps_arr, vals_arr, "b.-", markersize=3, linewidth=0.8)
+            ax_wave.set_xlabel("Step")
+            ax_wave.set_ylabel(qty.upper())
+            ax_wave.set_title(
+                f"elem={elem_id} ({x_pt:.2f},{y_pt:.2f})mm",
+                fontsize=8,
+            )
+            ax_wave.grid(True, alpha=0.3)
+
+            # FFT
+            n = len(vals_arr)
+            if n > 1:
+                fft_vals = np.abs(np.fft.rfft(vals_arr - vals_arr.mean()))
+                freqs = np.fft.rfftfreq(n, d=1.0)  # normalized freq (per step)
+                ax_fft.stem(
+                    freqs[1:], fft_vals[1:],
+                    linefmt="r-", markerfmt="ro", basefmt="k-",
+                )
+                ax_fft.set_xlabel("Freq [1/step]")
+                ax_fft.set_ylabel(f"|FFT({qty.upper()})|")
+                ax_fft.set_title("FFT (DC removed)", fontsize=8)
+                ax_fft.grid(True, alpha=0.3)
+
+            fig_r.tight_layout()
+            plt.show()
+            plt.close(fig_r)
+
+    fig.canvas.mpl_connect("button_press_event", _on_dblclick)
+
+
 def _build_hover_data(mr, reg_code, quantity):
     """Collect element positions, field values, and indices for hover lookup."""
     import numpy as np
@@ -159,8 +249,10 @@ def _build_hover_data(mr, reg_code, quantity):
     }
 
 
-def _attach_hover(fig, ax, hover_data, quantity):
-    """Attach a motion_notify_event handler that shows hover annotation."""
+def _attach_hover(fig, ax, hover_data, quantity, state):
+    """Attach a motion_notify_event handler that shows hover annotation.
+    Updates state['last_idx'] with the nearest element index on hover.
+    """
     import numpy as np
 
     annot = ax.annotate(
@@ -202,6 +294,9 @@ def _attach_hover(fig, ax, hover_data, quantity):
                 fig.canvas.draw_idle()
             return
 
+        # Track last hovered element
+        state["last_idx"] = int(idx)
+
         x_pt, y_pt = coords[idx]
         val = hover_data["vals"][idx]
         elem_id = hover_data["elem_ids"][idx]
@@ -220,8 +315,20 @@ def _attach_hover(fig, ax, hover_data, quantity):
     fig.canvas.mpl_connect("motion_notify_event", _on_move)
 
 
-def interactive_magnetic_plot(ts: MagneticRegionsTimeSeries, initial_step=None, quantity="b", reg_code=None, s=2, cmap="jet"):
-    """Interactive step toggle plot for MagneticRegionsTimeSeries."""
+def interactive_magnetic_plot(ts: MagneticRegionsTimeSeries, initial_step=None, quantity="b", reg_code=None, s=2, cmap="jet", n_fund=None):
+    """Interactive step toggle plot for MagneticRegionsTimeSeries.
+
+    Parameters
+    ----------
+    n_fund : int or None
+        Steps per fundamental electrical cycle.
+        If None (default), auto-detects from total number of steps in the time series.
+        Used to convert FFT x-axis to harmonic order.
+    """
+
+    # Auto-detect: total steps = one electrical cycle
+    if n_fund is None:
+        n_fund = len(ts.steps) if len(ts.steps) > 0 else 128
 
     def _enable_widget_backend():
         try:
@@ -300,6 +407,141 @@ def interactive_magnetic_plot(ts: MagneticRegionsTimeSeries, initial_step=None, 
         readout_format=".1f",
     )
     out = widgets.Output()
+    out_right = widgets.Output(layout=widgets.Layout(width="350px", overflow_y="auto"))
+
+    # Shared state for hover → button workflow
+    _state = {
+        "last_idx": None, "hover_data": None, "qty": str(quantity).lower(),
+        "multi_traces": [],  # list of (elem_id, x, y, steps, vals) for multi mode
+        "n_fund": int(n_fund),  # steps per fundamental cycle
+    }
+
+    wave_mode = widgets.ToggleButtons(
+        options=["Single", "Multi"],
+        value="Single",
+        description="",
+        tooltips=["매번 새로 그림", "여러 element 파형을 겹쳐 그림"],
+        layout=widgets.Layout(width="160px"),
+    )
+
+    wave_btn = widgets.Button(
+        description="📊 Waveform",
+        tooltip="호버 중인 element의 시간파형+FFT를 우측에 표시 (Space로도 가능)",
+        layout=widgets.Layout(width="120px"),
+    )
+
+    clear_btn = widgets.Button(
+        description="🗑 Clear",
+        tooltip="Multi 모드에서 쌓인 파형 초기화",
+        layout=widgets.Layout(width="80px"),
+    )
+
+    def _render_waveform():
+        import numpy as np
+        import io
+        from IPython.display import display as ipy_display, Image as IPyImage
+
+        idx = _state.get("last_idx")
+        hd = _state.get("hover_data")
+        qty = _state.get("qty", "b")
+        if idx is None or hd is None:
+            with out_right:
+                out_right.clear_output(wait=True)
+                print("⚠️ element 위에 마우스를 먼저 올려주세요")
+            return
+
+        elem_id = hd["elem_ids"][idx]
+        x_pt, y_pt = hd["coords"][idx]
+        steps_arr, vals_arr = _extract_element_timeseries(ts, elem_id, qty)
+
+        is_multi = (wave_mode.value == "Multi")
+
+        if is_multi:
+            # Avoid duplicates
+            existing_ids = [t[0] for t in _state["multi_traces"]]
+            if elem_id not in existing_ids:
+                _state["multi_traces"].append((elem_id, x_pt, y_pt, steps_arr, vals_arr))
+        else:
+            _state["multi_traces"] = [(elem_id, x_pt, y_pt, steps_arr, vals_arr)]
+
+        traces = _state["multi_traces"]
+
+        # Render
+        fig_r, (ax_wave, ax_fft) = plt.subplots(2, 1, figsize=(4, 5))
+        colors = plt.cm.tab10(np.linspace(0, 1, max(len(traces), 1)))
+
+        # Fundamental period in steps (default 120 for one electrical cycle)
+        n_fund = _state.get("n_fund", 120)
+
+        for i, (eid, xp, yp, s_arr, v_arr) in enumerate(traces):
+            c = colors[i % len(colors)]
+            label = f"e{eid}({xp:.1f},{yp:.1f})"
+            ax_wave.plot(s_arr, v_arr, ".-", markersize=2, linewidth=0.8, color=c, label=label)
+
+            # FFT — bar chart at integer harmonic orders, skip negligible
+            n = len(v_arr)
+            if n > 1:
+                fft_v = np.abs(np.fft.rfft(v_arr - v_arr.mean()))
+                freqs = np.fft.rfftfreq(n, d=1.0)  # in [1/step]
+                orders = freqs * n_fund  # convert to order (1 = 1/n_fund)
+
+                # Only keep values at (near-)integer orders above threshold
+                fft_max = fft_v[1:].max() if len(fft_v) > 1 else 1.0
+                threshold = fft_max * 0.01  # 1% of peak
+                int_ord = []
+                int_val = []
+                for k in range(1, len(orders)):
+                    o = orders[k]
+                    # Only integer or near-integer orders
+                    if abs(o - round(o)) < 0.05 and fft_v[k] > threshold:
+                        int_ord.append(round(o))
+                        int_val.append(fft_v[k])
+
+                n_traces = len(traces)
+                bar_width = 0.8 / max(n_traces, 1)
+                offset = (i - (n_traces - 1) / 2) * bar_width
+                ax_fft.bar(
+                    np.array(int_ord) + offset, int_val,
+                    width=bar_width, color=c, alpha=0.7, label=label,
+                )
+
+        ax_wave.set_xlabel("Step")
+        ax_wave.set_ylabel(qty.upper())
+        title = f"{len(traces)} elem(s)" if is_multi else f"elem={traces[0][0]}"
+        ax_wave.set_title(title, fontsize=8)
+        ax_wave.grid(True, alpha=0.3)
+        if len(traces) <= 8:
+            ax_wave.legend(fontsize=6, loc="upper right")
+
+        ax_fft.set_xlabel("Order (1=fundamental)")
+        ax_fft.set_ylabel(f"|FFT({qty.upper()})|")
+        ax_fft.set_title(f"FFT (DC removed, fund={n_fund} steps)", fontsize=8)
+        ax_fft.grid(True, alpha=0.3, axis="y")
+        if len(traces) <= 8:
+            ax_fft.legend(fontsize=6, loc="upper right")
+
+        fig_r.tight_layout()
+
+        buf = io.BytesIO()
+        fig_r.savefig(buf, format="png", dpi=120, bbox_inches="tight")
+        plt.close(fig_r)
+        buf.seek(0)
+
+        with out_right:
+            out_right.clear_output(wait=True)
+            ipy_display(IPyImage(data=buf.getvalue()))
+
+    def _on_wave_btn_click(_btn):
+        _render_waveform()
+
+    def _on_clear_btn_click(_btn):
+        _state["multi_traces"] = []
+        with out_right:
+            out_right.clear_output(wait=True)
+            print("🗑 파형 초기화됨")
+
+    wave_btn.on_click(_on_wave_btn_click)
+    clear_btn.on_click(_on_clear_btn_click)
 
     # Keep track of the last figure so ipympl/widget backends don't leave stale canvases.
     _last_fig = {"fig": None}
@@ -324,6 +566,7 @@ def interactive_magnetic_plot(ts: MagneticRegionsTimeSeries, initial_step=None, 
             _last_fig["fig"] = fig
             step = int(step_slider.value)
             qty = str(qty_dd.value).lower()
+            _state["qty"] = qty
             # Multi-select: None means all, single value as int, multiple as list
             selected = reg_sel.value
             if len(selected) == 1:
@@ -354,8 +597,18 @@ def interactive_magnetic_plot(ts: MagneticRegionsTimeSeries, initial_step=None, 
 
             # --- Hover annotation (nearest element info) ---
             _hover_data = _build_hover_data(ts.by_step[step], rc, qty)
+            _state["hover_data"] = _hover_data
+            _state["last_idx"] = None
             if _hover_data is not None:
-                _attach_hover(fig, ax, _hover_data, qty)
+                _attach_hover(fig, ax, _hover_data, qty, _state)
+
+            # --- Space key: waveform + FFT for hovered element ---
+            def _on_key(event, _s=_state):
+                if event.key != ' ':
+                    return
+                _render_waveform()
+
+            fig.canvas.mpl_connect("key_press_event", _on_key)
 
             plt.show()
             # In widget backends, keep the figure open (it's the displayed canvas).
@@ -372,7 +625,11 @@ def interactive_magnetic_plot(ts: MagneticRegionsTimeSeries, initial_step=None, 
     reg_sel.observe(_draw, names="value")
     size_slider.observe(_draw, names="value")
 
-    display(widgets.VBox([widgets.HBox([step_slider, qty_dd, mesh_chk]), widgets.HBox([reg_sel, size_slider]), out]))
+    display(widgets.VBox([
+        widgets.HBox([step_slider, qty_dd, mesh_chk]),
+        widgets.HBox([reg_sel, size_slider, wave_mode, wave_btn, clear_btn]),
+        widgets.HBox([out, out_right]),
+    ]))
     _draw()
 
 
