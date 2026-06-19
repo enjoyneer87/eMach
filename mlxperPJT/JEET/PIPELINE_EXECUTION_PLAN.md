@@ -3,9 +3,18 @@
 > Last updated: 2026-06-19  
 > Companion notebook: `pyMorisco_Hybrid_clean.ipynb` (exploratory, 77 cells)  
 > This streamlined notebook: **21 cells** (5 markdown + 16 code)
+> Thesis refs: `morisco_Thesis_6p3.pdf`, `morisco_Thesis_E1.pdf`
 
 ## 1. Goal
-Run FFT-based PEEC with **Method 3+4** (tooth-tip source + region weighting) to reproduce FEA's C1/C6 eddy current gradient.
+Establish a **Pure Morisco PEEC baseline** before interpreting any Method 3+4 result.
+
+The execution order is now:
+
+1. Reproduce the Morisco baseline with Dirichlet circular Green's functions, slot-wall source only, and uniform weight.
+2. Verify `i_mag`, `L_mutual`, harmonic spectrum, and `k_ih` scale.
+3. Only after the baseline is physically reasonable, run **Method 3+4** (tooth-tip source + region weighting) as an experimental extension to improve the FEA C1/C6 eddy current gradient.
+
+Method 3+4 is not an acceptance target by itself. It is a refinement path after the Morisco baseline gate passes.
 
 ## 2. Data Source Contract
 
@@ -53,10 +62,14 @@ flowchart TD
         C2["Cell 14 [C2]<br/>Step Select + Je Extract<br/>(_tri_to_idx, je_slot)"]
     end
 
-    subgraph D["Phase D: FFT-PEEC + Method 3+4"]
-        D1["Cell 16 [D1]<br/>L_mutual (Dirichlet circular)<br/>+ I_mag FFT + i_fil baseline"]
-        D2["Cell 17 [D2]<br/>L_ext (Rect Image Green's)<br/>+ tooth-tip extension<br/>+ region weight (w_ag/w_yk)"]
-        D3["Cell 18 [D3]<br/>V_mag = jω·L_ext·I_mag_fft<br/>→ PEEC solve → k_ih"]
+    subgraph D0["Phase D0: Pure Morisco Baseline Gate"]
+        D0A["Cell 16 [D0]<br/>L_mutual (Dirichlet circular)<br/>+ slot-wall I_mag FFT"]
+        D0B["Cell 16 [D0]<br/>Baseline PEEC solve<br/>→ k_ih_fft + spectrum checks"]
+    end
+
+    subgraph D1["Phase D1: Method 3+4 Extension"]
+        D1A["Cell 17 [D1]<br/>L_ext (Rect Image Green's)<br/>+ tooth-tip extension<br/>+ region weight (w_ag/w_yk)"]
+        D1B["Cell 18 [D1]<br/>V_mag = jω·L_ext·I_mag_fft<br/>→ PEEC solve → k_ih"]
         D4["Cell 19 [D4]<br/>Static Plot (step-selectable)<br/>(FEA vs PEEC tripcolor/contourf)"]
         D5["Cell 20 [D5] ★<br/>Interactive Widget<br/>(ipywidgets slider, signed Je)"]
     end
@@ -69,11 +82,12 @@ flowchart TD
     A3 --> C1; A4 --> C1
     C1 --> C2
 
-    B1 --> D1; B3 --> D1; A5 --> D1; B2 --> D1
-    D1 --> D2; B2 --> D2; B3 --> D2
-    B1 --> D3; D2 --> D3; C2 --> D3
-    D3 --> D4; C2 --> D4
-    D3 --> D5; C2 --> D5
+    B1 --> D0A; B3 --> D0A; A5 --> D0A; B2 --> D0A
+    D0A --> D0B
+    D0B --> D1A; B2 --> D1A; B3 --> D1A
+    B1 --> D1B; D1A --> D1B; C2 --> D1B
+    D1B --> D4; C2 --> D4
+    D1B --> D5; C2 --> D5
 ```
 
 ---
@@ -105,17 +119,22 @@ flowchart TD
 | 9 | 13 | C1 | FullFEA TXT + mesh | ts_fullfea (128 steps), triangles_ff (21272 elem) |
 | 10 | 14 | C2 | Step select + Je extract | **_tri_to_idx** (node-matched), target_step_idx, je_slot |
 
-### Phase D: FFT-PEEC + Method 3+4 (Cells 16–20)
+### Phase D0: Pure Morisco Baseline Gate (Cell 16)
 
 | Step | Cell | ID | Role | Key Outputs |
 |------|------|----|------|-------------|
-| 11 | 16 | D1 | L_mutual (**Dirichlet circular** G.F.) + I_mag FFT | L_mutual_mat (n_fil×80), I_mag_phasor, i_fil_baseline |
-| 12 | 17 | D2 | L_ext (**Rectangular image** G.F.) + tooth-tip ext. | L_ext (n_fil×143), mask_airgap/tooth/yoke, **대체** L_mutual |
-| 13 | 18 | D3 | V_mag = jω·L_weighted·I_mag_fft → PEEC solve | results_g (4 weight cases), k_ih |
+| 11 | 16 | D0 | `L_mutual` (**Dirichlet circular** G.F.) + slot-wall `I_mag` FFT + baseline PEEC solve | L_mutual_mat (n_fil×80), I_mag_phasor, mag_spectrum, **k_ih_fft** |
+
+### Phase D1: Method 3+4 Extension (Cells 17–20)
+
+| Step | Cell | ID | Role | Key Outputs |
+|------|------|----|------|-------------|
+| 12 | 17 | D1 | `L_ext` (**Rectangular image** G.F.) + tooth-tip ext. | L_ext (n_fil×143), mask_airgap/tooth/yoke, **replacement** for L_mutual |
+| 13 | 18 | D1 | V_mag = jω·L_weighted·I_mag_fft → PEEC solve | results_g (4 weight cases), k_ih |
 | 14 | 19 | D4 | Static comparison plot | FEA vs PEEC tripcolor/contourf (개별 vmax) |
 | 15 | 20 | D5 | **Interactive widget** | ipywidgets slider, signed Je (RdBu_r) |
 
-> ⚠️ **D1→D2 관계**: L_ext는 L_mutual을 concat/extend하는 것이 아님. **완전히 다른 Green's function**으로 재계산한 대체 행렬. D1의 L_mutual은 디버깅/비교용이며, 실제 PEEC solve(D3)에서는 D2의 L_ext만 사용됨.
+> ⚠️ **D0→D1 관계**: `L_ext`는 `L_mutual`을 concat/extend하는 것이 아님. **완전히 다른 Green's function**으로 재계산한 대체 행렬이다. Cell 16의 `L_mutual`은 더 이상 단순 debug가 아니라 **Pure Morisco baseline gate**이다. 이 gate에서 `i_mag`, spectrum, `k_ih_fft`가 비현실적이면 Cell 17-18의 Method 3+4 결과는 절대값 기준으로 해석하지 않는다.
 
 ---
 
@@ -126,6 +145,19 @@ Cell 3 → 4 → 5 → 6 → 7 → 9 → 10 → 11 → 13 → 14 → 16 → 17 �
 ```
 
 **Total: 15 cells** (모든 코드 셀 = 순차 실행, 스킵 없음)
+
+### 6.1 Baseline Gate Checkpoint
+
+After **Cell 16**, stop and inspect the Pure Morisco baseline before running Method 3+4:
+
+| Check | Expected Decision / Concrete Benchmarks |
+|-------|-------------------|
+| `k_ih_fft` | Must enter a physically plausible range before Method 3+4 is trusted.<br/>- **Simple Slot (BP1: 162.5 A, 300 Hz)**: expected $k_{ih} \approx 1.19 - 1.20$.<br/>- **Simple Slot (BP2: 126 A, 1066 Hz)**: expected $k_{ih} \approx 3.48 - 3.52$.<br/>- **Simple Stator (10 kHz, 25 A)**: expected $k_{ih} \approx 1.31$.<br/>- **Traction Motor Active Part (BP1)**: expected $k_{ih} \approx 1.51 - 1.58$.<br/>- **Traction Motor Active Part (BP2)**: expected $k_{ih} \approx 3.45 - 3.62$. |
+| `i_mag` fundamental / RMS | Must not be orders of magnitude larger than Morisco thesis §6.3/E.1 benchmarks imply.<br/>- **BP1 stator $i_{mag}$ fundamental peak**: ~400 A (stator surface max), ~10 A (stator core max) (Fig. 6.12).<br/>- **BP1 rotor $i_{mag}$ fundamental peak**: ~4000 A (rotor surface max), ~100 A (rotor core max) (Fig. 6.17). |
+| Harmonic spectrum | Significant harmonics should be explainable by the quasi-static sequence:<br/>- **Stator magnetization**: only fundamental and 3rd harmonic are > 5% of fundamental.<br/>- **Rotor magnetization**: DC component in rotor coordinate system converts into significant harmonics (fundamental, 3rd, 5th, 7th, 9th, 11th) in stator target grid system. |
+| `L_mutual_mat` scale | Verify Dirichlet circular equation, axial length factor, and `R_boundary` normalization before changing weights. |
+
+Only continue to **Cell 17-18** when this checkpoint is acceptable. If it fails, debug `i_mag`, `L_mutual`, `Z`, and units first.
 
 ---
 
@@ -177,7 +209,7 @@ ax.set_xlim(_xlim); ax.set_ylim(_ylim)
 
 ## 8. Known Issues
 
-### 8.1 PEEC 크기 과대 (~10x)
+### 8.1 PEEC 크기 과대: baseline gate 미통과
 
 | Method | FEA C1 | PEEC C1 | PEEC/FEA |
 |--------|--------|---------|----------|
@@ -185,8 +217,10 @@ ax.set_xlim(_xlim); ax.set_ylim(_ylim)
 | w_ag=3, w_yk=0.3 | 313 | 2444 | **7.8x** |
 
 - 데이터 소스 분리는 정상 (hybrid→PEEC, fullfea→비교)
-- 기본 i_mag 기본파 944A, 14개 유의미 고조파 → 커플링이 과대
-- `L_mutual` (Dirichlet/Rect Green's function) 스케일 검토 필요
+- Cell 16 Pure Morisco baseline도 `k_ih_fft`가 과대 → Method 3+4 이전 문제가 존재
+- 기본 i_mag 기본파 944A, 14개 유의미 고조파 → source current 또는 커플링 스케일이 과대
+- `L_mutual` Dirichlet circular 식, `Z = R + jωL`, `R_boundary`, axial length factor 검토 필요
+- `L_ext` / region weight 튜닝으로 절대값을 맞추면 안 됨
 - k_ih = 615~4761 (물리적으로 비현실적, 기대값 ~10-50)
 
 ### 8.2 Hybrid_clean과 동일 증상
@@ -196,7 +230,7 @@ Hybrid_clean 노트북도 PEEC uniform C1=1317 vs FEA C1=929 (1.4x), C6에서는
 
 ---
 
-## 9. Expected Output (Cell 18 D3)
+## 9. Current Diagnostic Output (Cell 18 D1 Extension)
 
 ```
 w_ag=1 (uniform):   k_ih=615,  C1/C6=1.10x  (symmetric, no gradient)
@@ -206,6 +240,11 @@ w_ag=5, w_yk=0.1:   k_ih=4761, C1/C6=16.6x  (over-weighted)
 ```
 
 FEA target: C1/C6 ≈ 2.1× (step 65 기준). Ratio 매칭은 w_ag=2~3이 가장 가깝지만 절대값은 ~3-8x 과대.
+
+Interpretation:
+- These are **diagnostic outputs**, not accepted results.
+- Method 3+4 may improve the C1/C6 shape, but it must not be used to hide a failed Pure Morisco baseline.
+- The next accepted milestone is Cell 16/EXP-1 entering a plausible `k_ih` range with traceable `i_mag` and `L_mutual` scale.
 
 ---
 
@@ -238,18 +277,18 @@ graph LR
         nlocal["node_x/y_local_mm<br/>(Cell 14)"]
     end
 
-    subgraph "FFT-PEEC (D1: Dirichlet)"
+    subgraph "Pure Morisco Gate (D0: Dirichlet)"
         mag["mag_ref + I_mag_phasor<br/>(Cell 16)"]
-        lm["L_mutual_mat<br/>Dirichlet circular G.F.<br/>(Cell 16, debug용)"]
+        lm["L_mutual_mat<br/>Dirichlet circular G.F.<br/>(Cell 16, required baseline)"]
     end
 
-    subgraph "Method 3+4 (D2: Rect Image)"
-        lext["L_ext (143 sources)<br/>Rectangular Image G.F.<br/>(Cell 17, 실제 사용)"]
+    subgraph "Method 3+4 Extension (D1: Rect Image)"
+        lext["L_ext (143 sources)<br/>Rectangular Image G.F.<br/>(Cell 17, experimental replacement)"]
         wvec["w_vec (region weight)<br/>mask_airgap/tooth/yoke"]
     end
 
-    subgraph "PEEC Solve (D3)"
-        vmag["V_mag = jω·L_weighted·I_mag_fft"]
+    subgraph "PEEC Solve"
+        vmag["V_mag = jω·L·I_mag_fft<br/>(baseline: L_mutual, extension: L_ext)"]
         res["i_fil → J_eddy → k_ih<br/>(Cell 18)"]
     end
 
@@ -273,7 +312,7 @@ graph LR
     nlocal --> D4D5
 ```
 
-> **Note**: `L_mutual_mat`(D1)과 `L_ext`(D2)는 **병렬 경로**임. L_mutual은 Morisco 기본 방법(Dirichlet circular)의 검증용이고, L_ext는 Method 3+4(Rectangular image + tooth-tip)의 실제 계산용. PEEC solve(D3)는 **L_ext만** 사용.
+> **Note**: `L_mutual_mat`(D0)과 `L_ext`(D1)는 **대체 경로**임. `L_mutual_mat`은 Morisco 기본 방법(Dirichlet circular)의 필수 baseline이고, `L_ext`는 Method 3+4(Rectangular image + tooth-tip)의 실험적 확장이다. Baseline이 실패하면 `L_ext` 결과는 shape diagnostic으로만 본다.
 
 ---
 
@@ -293,8 +332,8 @@ $$Z_\Lambda = R_\Lambda + j\omega L_\Lambda \quad \text{(eq 4.5, 4.35)}$$
 
 | 방법 | Green's Function | 경계 조건 | Morisco 참조 | 본 구현 위치 |
 |------|-----------------|-----------|-------------|-------------|
-| **Standard Morisco** | Dirichlet Circular | 원형 경계 $R_\Omega$ | eq 4.36-4.37 | Cell 9 (Z), Cell 16 (L_mutual) |
-| **Method 3+4** | Rectangular Image | 직사각형 슬롯 벽 + tooth-tip | Ahagon/Dowell 확장 | Cell 17 (L_ext) |
+| **Pure Morisco baseline** | Dirichlet Circular | 원형 경계 $R_\Omega$ | eq 4.36-4.37 | Cell 9 (Z), Cell 16 (`L_mutual`, required gate) |
+| **Method 3+4 extension** | Rectangular Image | 직사각형 슬롯 벽 + tooth-tip | Ahagon/Dowell 확장 | Cell 17 (`L_ext`, experimental replacement) |
 
 ### 11.3 핵심 수식 → 코드 매핑
 
@@ -302,37 +341,42 @@ $$Z_\Lambda = R_\Lambda + j\omega L_\Lambda \quad \text{(eq 4.5, 4.35)}$$
 |:-----------:|-------|-----------|:----:|------|
 | 4.36 | $L_{vv} = -\frac{\mu_0 l}{2\pi}\left[\ln\rho_\Omega - \frac{1}{2}\ln\left((1-|\xi|^2)^2 + (\xi/\rho_\Omega)^2\right)\right]$ | `L_matrix` (대각) | B1 (9) | Self-inductance (Dirichlet circular) |
 | 4.37 | $L_{vw} = -\frac{\mu_0 l}{2\pi}\left[-\ln|\xi_v-\xi_w| - \frac{1}{2}\ln(...)\right]$ | `L_matrix` (off-diag) | B1 (9) | Mutual (filament↔filament) |
-| 4.37 | 동일 Dirichlet, $\xi = (x+jy)/R_\Omega$ | `L_mutual_mat` | D1 (16) | Filament↔boundary edge (circular) |
-| *(Method 3+4)* | 직사각형 Image Green's function | `L_ext` | D2 (17) | Filament↔boundary+tooth-tip (rectangular) |
-| 4.5 | $Z_\Lambda = R + j\omega L$ | `Z_n = R_matrix + 1j*omega_n*L_matrix` | D3 (18) | Frequency-dependent impedance |
+| 4.37 | 동일 Dirichlet, $\xi = (x+jy)/R_\Omega$ | `L_mutual_mat` | D0 (16) | Filament↔boundary edge (circular), baseline gate |
+| *(Method 3+4)* | 직사각형 Image Green's function | `L_ext` | D1 (17) | Filament↔boundary+tooth-tip (rectangular), extension |
+| 4.5 | $Z_\Lambda = R + j\omega L$ | `Z_n = R_matrix + 1j*omega_n*L_matrix` | D0/D1 (16/18) | Frequency-dependent impedance |
 | 4.44-4.51 | $M = B/\mu_0 - H$ | `mag_ref[step]` | B3 (11) | Magnetization from FEA B, H |
 | 4.52 | $k_{mag} = \frac{1}{\mu_0}(M_\nu - M_\xi)\times \hat{n}_\theta$ | `boundary_cache` | B3 (11) | Surface magnetization current density |
-| 4.53 | $i_{mag} = k_{mag} \cdot |w_\theta|$ | `I_mag_phasor` (FFT후) | D1 (16) | Equivalent mag. source current |
-| 4.18 | $i = Z^{-1} C (C^T Z^{-1} C)^{-1} I$ | `i_raw + i_corr` | D3 (18) | Constraint-projected PEEC solve |
-| 4.27 | $k_{ih} = P_{total} / P_{DC}$ | `k_ih` | D3 (18) | AC loss factor |
+| 4.53 | $i_{mag} = k_{mag} \cdot |w_\theta|$ | `I_mag_phasor` (FFT후) | D0 (16) | Equivalent mag. source current |
+| 4.18 | $i = Z^{-1} C (C^T Z^{-1} C)^{-1} I$ | `i_raw + i_corr` | D0/D1 (16/18) | Constraint-projected PEEC solve |
+| 4.27 | $k_{ih} = P_{total} / P_{DC}$ | `k_ih`, `k_ih_fft` | D0/D1 (16/18) | AC loss factor |
 
-### 11.4 D1 vs D2: 두 Green's Function의 관계
+### 11.4 D0 vs D1: 두 Green's Function의 관계
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│ Cell 16 (D1): L_mutual_mat — Dirichlet Circular             │
+│ Cell 16 (D0): L_mutual_mat — Dirichlet Circular             │
 │  • Morisco 원래 방법 (eq 4.37 그대로)                          │
 │  • ξ = (x+jy) / R_boundary (=128.2mm)                       │
 │  • 소스: slot-wall boundary edges only (~80개)                │
-│  • 용도: baseline 검증, Morisco 원논문 대비 정합성 확인          │
-│  • PEEC solve에서 사용하지 않음                                │
+│  • 용도: 필수 baseline gate, Morisco thesis 대비 정합성 확인     │
+│  • k_ih/i_mag/L scale이 실패하면 D1 결과를 절대값으로 해석 금지   │
 └─────────────────────────────────────────────────────────────┘
-         ↓ (물리 개선, 대체)
+         ↓ (baseline 통과 후 실험적 대체)
 ┌─────────────────────────────────────────────────────────────┐
-│ Cell 17 (D2): L_ext — Rectangular Image Method               │
+│ Cell 17 (D1): L_ext — Rectangular Image Method               │
 │  • Method 3: tooth-tip 엣지를 추가 자화원으로 포함 (80→143)     │
 │  • Method 4: 영역별 가중치 (w_ag > 1, w_tw = 1, w_yk < 1)    │
 │  • Green's function: 직사각형 슬롯 경계의 Image 전개            │
-│  • PEEC solve(D3)에서 실제 사용되는 유일한 L 행렬               │
+│  • Morisco 원식이 아니라 gradient 개선용 실험 확장              │
 └─────────────────────────────────────────────────────────────┘
 ```
 
-### 11.5 PEEC Solve 알고리즘 (Cell 18/D3)
+### 11.5 PEEC Solve 알고리즘 (Cell 16 baseline, Cell 18 extension)
+
+두 가지 모드를 명확히 분리한다.
+
+- **Baseline mode (D0/Cell 16):** `L = L_mutual_mat`, source = slot-wall `I_mag_phasor`, weight = uniform.
+- **Extension mode (D1/Cells 17-18):** `L = L_ext`, source = extended `I_mag_fft_ext`, optional region weight.
 
 ```python
 for n_h in harmonic_indices:               # 14개 유의미 고조파
@@ -340,8 +384,9 @@ for n_h in harmonic_indices:               # 14개 유의미 고조파
     Z_n = R_matrix + 1j * omega_n * L_matrix  # eq 4.5: Z_Λ(ω)
     
     # V_mag: 자화 소스로부터의 유기 전압
-    L_weighted = L_ext * w_vec[np.newaxis, :]  # Method 4 region weight
-    V_n = 1j * omega_n * (L_weighted @ I_mag_fft_ext[n_h])
+    # Baseline: L_weighted = L_mutual_mat
+    # Extension: L_weighted = L_ext * w_vec[np.newaxis, :]
+    V_n = 1j * omega_n * (L_weighted @ I_mag_fft_selected[n_h])
     
     # 제약조건 없는 기본 응답
     i_raw = np.linalg.solve(Z_n, V_n)
@@ -370,6 +415,11 @@ Morisco 원논문에서는 Z와 L_ΓV 모두 **동일한** Dirichlet circular bo
 1. Rectangular image가 실제 슬롯 형상을 더 잘 근사 → 의도적 개선
 2. Z matrix의 filament↔filament 커플링은 슬롯 경계와 무관하게 circular로 충분
 3. 과대추정(k_ih=615~4761)의 원인 중 하나일 가능성 → 추가 검증 필요
+
+**검증 원칙:**
+- 먼저 `Z_n`과 `L_mutual_mat`을 모두 Dirichlet circular로 둔 Pure Morisco baseline을 통과시킨다.
+- 그 다음 `L_ext`로 바꿨을 때의 변화량을 비교한다.
+- `L_ext`와 region weight는 C1/C6 shape 개선용이며, baseline 스케일 오류를 보정하는 knob로 쓰지 않는다.
 
 ---
 
@@ -407,6 +457,10 @@ Morisco는 이를 해결하기 위해 **각 로터 위치에서 독립 정적 FE
 2. L 행렬(filament↔자화소스 상호인덕턴스)은 **위치에 의존**하면 매 스텝 재계산 필요
 3. 따라서 **정적 target mesh**(Z)를 생성하고, 회전하는 source mesh(S)의 자화를 Z로 변환
 4. 결과: L 행렬은 정적 target mesh 기준으로 **1회만** 계산하면 됨
+
+#### 회전자 자화의 고주파 고조파 생성 원리
+회전자의 영구자석 및 회전자 포화에 의한 자화 $M$은 회전자 자체의 회전 좌표계에서는 시간에 무관한 DC 성분이지만, 이를 정적 타겟 고착 격자(고정자 타겟 프레임)로 변환할 때, 공간적 회전에 의해 고정자 프레임 상에서 시변 고조파 성분들로 변환됩니다 (§4.8).
+이 변환을 통해 회전자 자화 전류 $i_{mag,rotor}$에 회전 주파수의 홀수배 고조파(1, 3, 5, 7, 9, 11차 등)가 생성되게 되며, 특히 11차 고조파까지 전체 기본파 크기의 5%를 초과하는 상당한 비중을 가지게 됩니다.
 
 #### 현재 구현에서의 §4.8 필요성 평가
 
