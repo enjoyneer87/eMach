@@ -135,6 +135,14 @@ from .fea_workflow import (  # noqa: F401
 	process_fea_result_from_mes,
 )
 
+from .mes_backup import (  # noqa: F401
+	EXPORT_COLUMNS,
+	export_mes_to_txt,
+	find_all_backup_mes_files,
+	find_backup_mes_files,
+	find_backup_roots,
+)
+
 _HAS_DOE_BATCH = find_spec(__name__ + ".doe_batch") is not None
 if _HAS_DOE_BATCH:
 	from .doe_batch import (  # noqa: F401
@@ -270,6 +278,12 @@ __all__ = [
 	"prepare_fea_export_session",
 	"orchestrate_fea_export",
 	"process_fea_result_from_mes",
+	# mes_backup
+	"EXPORT_COLUMNS",
+	"export_mes_to_txt",
+	"find_all_backup_mes_files",
+	"find_backup_mes_files",
+	"find_backup_roots",
 	"auto_resize_copper_after_geometry_update",
 	# scaling
 	"ScalingFactor",

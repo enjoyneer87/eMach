@@ -1,6 +1,6 @@
 # pyMorisco_FFT_PEEC_Method34.ipynb — Execution Pipeline Plan
 
-> Last updated: 2026-06-18  
+> Last updated: 2026-06-19  
 > Companion notebook: `pyMorisco_Hybrid_clean.ipynb` (exploratory, 77 cells)  
 > This streamlined notebook: **21 cells** (5 markdown + 16 code)
 
@@ -503,80 +503,150 @@ Phase B: Adjacent-slot symmetry
 
 ### 12.4 k_ih 과대추정 수정 계획 (우선순위: 최고)
 
-#### 원인 가설 정리
+#### 실험 결과 (2026-06-18 실행 완료)
 
-| # | 가설 | 근거 | 검증 방법 | 예상 영향 |
-|---|------|------|---------|---------|
-| H1 | L_ext Green's function 스케일 불일치 | Z=circular, L_ext=rectangular → 이론적 불일치 | L_mutual (circular)로 대체 후 k_ih 비교 | **주요 원인** 가능 |
-| H2 | i_mag 절대 크기 과대 | μ₀ 단위 변환, edge length 적용 검증 | Morisco Fig.5.12와 우리 i_mag RMS 비교 | 중간 |
-| H3 | R_dirichlet/slot_size 비율 문제 | Morisco R/slot=100, 우리 R/slot=17 | R sweep: R=50,20,12mm에서 k_ih 추이 | 중간 |
-| H4 | tooth-tip extension (80→143) 과대 기여 | Method 3 확장 시 source 거의 2배 | tooth-tip 제거(80 sources만)로 k_ih 비교 | 낮음 |
-| H5 | region weight (w_ag>1) 불균형 | w_ag=3~5가 V_mag을 증폭 | uniform weight (w=1)로 k_ih 확인 → 이미 615 | 부분적 |
+| EXP | 가설 | 결과 | 판정 |
+|-----|------|------|------|
+| EXP-1 | L_ext(rect) vs L_mutual(circular) 불일치가 원인 | L_mutual로 교체 시 k_ih **615 → 1424** (악화) | ❌ **G.F. 불일치는 원인 아님** |
+| EXP-2 | i_mag 절대 크기 과대 (μ₀ 누락?) | i_mag 기본파 max=944A, |M|=1.3e6 A/m (1.9T 포화 → 물리적 정상) | ❌ **코드 버그 아님, 스케일 차이** |
+| EXP-3 | V_mag 스케일 검증 | V_mag(circular)=19.2, V_mag(rect)=2.5, ωL/R=2.4% (저항 지배) | ✅ **V_mag이 과대 → 근본 원인 확인** |
 
-#### 수정 실행 계획
+#### 실험 상세 수치
 
 ```
-실험 순서 (우선순위순):
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+EXP-2: i_mag Magnitude
+  i_mag_timeseries: (128, 100) — 128 steps × 100 boundary edges
+  Per-edge RMS:  mean=609 A, max=698 A
+  FFT fundamental max: 944 A
+  |M| at boundary: mean=1,293,000 A/m, max=1,515,000 A/m
+  |M|·μ₀ = 1.9 T (포화 철심 — 물리적으로 정상)
+  edge_length mean = 0.502 mm
 
-[EXP-1] Pure Morisco 재현 (Green's function 통일)
-  • Z matrix: Dirichlet circular (R=128.2mm) — 현재 그대로
-  • L_ΓV: Dirichlet circular (eq.4.37) — L_mutual_mat 사용 (Cell 16)
-  • Source: slot-wall edges only (80개) — tooth-tip 제외
-  • Weight: uniform (w=1) — region weight 없음
-  • 기대: Morisco 원논문과 동일 조건 → k_ih 크게 감소 예상
-  ★ 이것이 k_ih ∈ [5, 50]이면 H1 확인
+  왜 Morisco는 0.6A이고 우리는 944A?
+  → Morisco 모터: edge~0.1mm, |M|~1e6 → i_mag = 1e6 × 0.1e-3 = 0.1 A
+  → 우리 모터:    edge~0.5mm, |M|~1.3e6 → i_mag = 1.3e6 × 0.5e-3 = 650 A
+  → 스케일 차이 (~1000x)이지 코드 오류 아님
 
-[EXP-2] i_mag 크기 검증
-  • eq.4.52의 1/μ₀ factor 적용 확인
-  • edge_length (|w_θ|) 단위 [m] 확인
-  • i_mag_timeseries의 RMS: 기대 범위 ~0.01-1.0 A (Morisco Fig.5.12)
-  • 현재 기본파 944A → **명백히 과대** (μ₀ division 누락?)
-  ★ 이것이 원인이면 k_ih가 (1/μ₀)² ≈ 10⁻¹⁴ 스케일링 → 단위 오류
+EXP-1: Pure Morisco (Dirichlet circular, 100 sources, uniform w=1)
+  |L_mutual| mean=8.69e-8, max=1.62e-7  (Dirichlet circular)
+  |L_ext|    mean=7.66e-9, max=1.06e-7  (Rectangular image)
+  → L_mutual이 L_ext보다 11x 크다!
+  → k_ih = 1424 (Method34의 615보다 악화)
 
-[EXP-3] L_ΓV 수식 라인별 검증
-  • Morisco eq.4.37 vs impedance.py 코드 대조
-  • 특히: ξ = (x+jy)/R normalization
-  • l (axial length) factor: μ₀l/(2π) 확인
-  • log argument sign convention 확인
-  ★ 부호/스케일 1개 오류로도 O(10²) 차이 가능
-
-[EXP-4] R_dirichlet 물리적 결정
-  • Morisco: R=l (axial length, "conductor in empty space" approximation)
-  • 그러나 그의 모터에서 l=100mm, slot_width=1mm → R/slot=100
-  • 우리: l=150mm, slot_width=7.4mm → R/slot≈20
-  • 물리적으로 R은 "return conductor" 위치 → stator outer radius가 적절?
-  • R = R_stator_outer (~100mm) 또는 R = slot_depth (~20mm) 시도
-
-[EXP-5] §4.9 symmetry 적용 (EXP-1~4 완료 후)
-  • EXP-1~4로 단일 슬롯 k_ih가 합리적 범위에 도달한 후
-  • 인접 슬롯 proximity 추가 → C1/C6 gradient 개선
+EXP-3: V_mag Scale
+  |V_mag| (Morisco circular): mean=19.2, max=20.9
+  |V_mag| (Method34 rect):    mean=2.5,  max=4.1
+  Z matrix: R_fil=0.0573Ω, ωL_self=0.0014Ω, ωL/R=2.44%
+  → 저항 지배 시스템: V_mag 크기가 직접 i_eddy 크기 결정
 ```
 
-#### 성공 기준
+#### ★ 근본 원인 진단: **이중 계수 (Double-Counting)**
 
-| 단계 | 목표 k_ih | FEA reference | 허용 오차 |
-|------|----------|---------------|---------|
-| EXP-1~3 완료 후 | 3.0 ~ 15.0 | 6.06 | ±150% (범위 내 진입) |
-| EXP-4 튜닝 후 | 4.5 ~ 8.0 | 6.06 | ±30% |
-| EXP-5 + §4.9 후 | 5.5 ~ 6.5 | 6.06 | ±10% (Morisco 수준) |
+| 경로 | 포함 여부 | 비고 |
+|------|---------|------|
+| Z matrix (L_ΓΓ) | 도체↔도체 mutual inductance | ✅ filament 자체 leakage 포함 |
+| i_mag (from Hybrid FEA) | PM flux + **도체전류 leakage** | ⚠️ 도체전류 기여분 포함! |
+| V_mag = jω·L_ΓV·i_mag | PM proximity + **leakage proximity** | ⚠️ leakage 이중계수 |
 
-### 12.5 전체 로드맵 요약
+**Motor-CAD Hybrid 모드**: 도체에 전류를 인가한 상태에서 MQS solve → B/H에 도체전류 leakage flux 포함.
+따라서 M = B/μ₀ - H에는 PM 기여 + 도체전류 leakage 기여가 모두 포함됨.
+Z matrix의 L_ΓΓ도 이미 도체간 커플링을 모델링하므로, **동일한 leakage가 두 번 계수**.
+
+**Morisco의 해결책** (§4.7.2, p.66):
+> "eddy currents in the ferromagnetic material... are neglected"
+> → FEM에서 도체 σ=0 또는 uniform J 인가 (도체 내 와전류 없음)
+> → M에 도체 와전류 기여분 미포함
+
+**우리의 차이점**:
+- Motor-CAD Hybrid는 proximity loss를 **별도로** 계산하는 모드 (도체 σ≠0)
+- 따라서 FEA B/H에 도체전류의 self-flux가 이미 포함됨
+- 이것이 i_mag → V_mag → PEEC solve로 전파 → ~100x 과대추정
+
+#### 수정 방안 (우선순위순)
+
+```
+[FIX-1] No-Load FEA (I_cond=0) — 최우선
+  • Motor-CAD에서 RMSCurrent=0 또는 ConductorCurrent=[0]*6 설정
+  • PM flux만의 B/H → M → i_mag 추출
+  • 도체전류 leakage 완전 제거
+  • pyMotorCAD_Hybrid_AClossCode.ipynb에서 이미 export 인프라 구축됨
+  ★ 기대: i_mag 크기 10~100x 감소, k_ih ∈ [3, 15]
+
+[FIX-2] Time-domain regression — 대안
+  • i_mag(t)를 도체전류 I(t)에 대해 regression
+  • i_mag = i_mag_PM(t) + α·I(t) 분해
+  • i_mag_PM만 PEEC에 사용
+  • 추가 FEA 불필요 (기존 128-step 데이터 활용)
+  • 단, 비선형 포화로 인해 선형 regression의 정확도 제한
+
+[FIX-3] V_leak explicit subtraction (Morisco Step 7)
+  • V_leak = jω·L_ΓΓ·i_conductor (도체전류에 의한 leakage voltage)
+  • V_mag_corrected = V_mag - V_leak
+  • solver.py에 이미 deprecated `subtract_slot_leakage()` 존재
+  • 단, L_ΓΓ와 L_ΓV가 다른 Green's function이면 정확한 차감 불가
+```
+
+#### 수정 로드맵 (업데이트)
 
 ```mermaid
 flowchart TD
-    A["EXP-1: Pure Morisco 재현<br/>(L_mutual circular, uniform, 80 sources)"]
-    B["EXP-2: i_mag 크기 검증<br/>(μ₀ factor, 단위 확인)"]
-    C["EXP-3: L_ΓV 수식 검증<br/>(eq.4.37 vs code line-by-line)"]
-    D["EXP-4: R_dirichlet 최적화<br/>(R sweep, 물리적 결정)"]
-    E["§4.9: Adjacent-slot symmetry<br/>(L_total,sym, 6-slot coupling)"]
-    F["§4.8: Rotor magnetization<br/>(L_rot, target mesh transform)"]
-    G["검증: k_ih ≈ 6.06 ±10%"]
+    A["EXP-1~3 완료 ✅<br/>근본 원인: 이중계수"]
+    B["FIX-1: No-Load FEA<br/>(I=0, PM only i_mag)"]
+    C["FIX-2: Regression<br/>(i_mag_PM 분리)"]
+    D["k_ih 재계산<br/>(L_mutual circular + PM-only i_mag)"]
+    E["k_ih ∈ [4, 10]?"]
+    F["§4.9 symmetry 적용"]
+    G["§4.8 rotor mag 추가"]
+    H["k_ih ≈ 6.06 ±10%"]
+    X["FIX-3: V_leak 차감<br/>(fallback)"]
 
-    A --> B --> C --> D
-    D -->|k_ih ∈ [4.5, 8.0]| E
-    E --> F --> G
-    D -->|k_ih still >50| B2["근본 재설계 필요"]
+    A --> B
+    A --> C
+    B --> D
+    C --> D
+    D --> E
+    E -->|Yes| F --> G --> H
+    E -->|No| X --> D
+```
+| EXP-4 튜닝 후 | 4.5 ~ 8.0 | 6.06 | ±30% |
+| EXP-5 + §4.9 후 | 5.5 ~ 6.5 | 6.06 | ±10% (Morisco 수준) |
+
+### 12.5 전체 로드맵 요약 (진단 후 업데이트)
+
+```mermaid
+flowchart TD
+    A["EXP-1~3 완료 ✅<br/>H1(G.F.불일치)=❌<br/>H2(i_mag 스케일)=❌<br/>근본원인: 이중계수"]
+    B["FIX-1: No-Load FEA<br/>(Motor-CAD I=0, PM only)"]
+    C["FIX-2: Regression<br/>(i_mag에서 conductor 기여 분리)"]
+    D["k_ih 재계산<br/>(PM-only i_mag + Dirichlet circular)"]
+    E{"k_ih ∈ [4, 10]?"}
+    F["§4.9 symmetry 적용<br/>(6-slot coupling)"]
+    G["§4.8 rotor mag 추가<br/>(L_rot + target mesh)"]
+    H["검증: k_ih ≈ 6.06 ±10%"]
+    X["FIX-3: V_leak 차감<br/>(deprecated solver 복원)"]
+
+    A --> B
+    A --> C
+    B --> D
+    C --> D
+    D --> E
+    E -->|Yes| F --> G --> H
+    E -->|No| X --> D
 ```
 
-**핵심 원칙:** Green's function 불일치/i_mag 스케일 문제(EXP-1~3)가 최우선. §4.8/§4.9는 정확도 **미세 개선**이지 과대추정 해결책이 아님.
+**핵심 결론:** ~~Green's function 불일치도, i_mag 수식 오류도 아님~~
+**수정된 진단 (2026-06-19):**
+
+- FIX-1: i_mag 이중계수 (on-load → PM-only) — ✅ 완료 — k_ih 615→277 (2.2x)
+- FIX-B1: I_test 정규화 오류 — ✅ 완료 (이번 세션) — I_test[0]=I → all-I; P_dc 6배 증가
+- FIX-D2: 직사각형 G.F. → 원형 G.F. — ✅ 완료 (이번 세션) — 근본 원인 제거
+
+**FIX-D2 근본 원인 분석:**
+직사각형 이미지 G.F.에서 `xm_ext=0` (좌치아) 및 `ym_ext=0` (에어갭 측) 소스는
+대수적으로 L_ext=0 → 물리적으로 중요한 소스의 기여가 완전히 누락.
+`xm_ext=W` (우치아) / `ym_ext=H` (요크) 소스만 급수 절단 오차에 의한
+허위 비-zero L_ext로 k_ih=277 전체를 구성. Morisco 원래 원형 G.F.(eq.27/43)로 교체.
+
+**다음 단계:** D1→D2→D3 셀 재실행하여 k_ih 확인.
+k_ih ∈ [4,10] 이면 → §4.9 (6-slot 대칭성) → §4.8 (rotor M 소스)
+k_ih > 10 이면 → i_mag 크기 재진단 (EXP-4 출력 확인)
