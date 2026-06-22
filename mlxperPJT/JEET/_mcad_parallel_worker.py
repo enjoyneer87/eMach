@@ -12,8 +12,6 @@ import sys
 from multiprocessing import current_process
 from pathlib import Path
 
-import numpy as np
-
 mcApp = None  # one per subprocess; set by initialise_mcad()
 
 
@@ -59,9 +57,6 @@ def run_sweep_point(args: dict) -> dict | None:
     backup_root = Path(args["backup_root"])
     first_step  = args["first_step"]
     export_cols = args["export_columns"]
-    n_turns     = args["n_turns"]
-    n_parallel  = args["n_parallel"]
-    R_active    = args["R_active"]
     idx         = args["idx"]
     total_pts   = args["total_pts"]
 
@@ -108,34 +103,47 @@ def run_sweep_point(args: dict) -> dict | None:
         }
 
         if prox_model == 1:
-            point_data["hybrid_total_kW"] = float(mcApp.get_variable("ACLoss_Hybrid_Total"))
-            point_data["hybrid_prox_kW"]  = float(mcApp.get_variable("ACLoss_Hybrid_Prox_Total"))
-            point_data["hybrid_skin_kW"]  = float(mcApp.get_variable("ACLoss_Hybrid_SkinEffect_Total"))
+            point_data["hybrid_total_kW"] = float(mcApp.get_variable("ACLoss_Hybrid_Total")) / 1000.0
+            point_data["hybrid_prox_kW"]  = float(mcApp.get_variable("ACLoss_Hybrid_Prox_Total")) / 1000.0
+            point_data["hybrid_skin_kW"]  = float(mcApp.get_variable("ACLoss_Hybrid_SkinEffect_Total")) / 1000.0
         else:
-            raw_pt_str = mcApp.get_variable("ACLoss_FEA_OnLoad_PerTurn")
-            point_data["fea_per_turn_raw"] = raw_pt_str
-            point_data["fea_total_ac_kW"]  = float(mcApp.get_variable("ACLoss_FEA_OnLoad_Total")) / 1000.0
+            # FullFEA — per-turn losses + DC subtraction (Map notebook approach)
+            try:
+                per_turn_str = mcApp.get_variable("ACLoss_FEA_OnLoad_PerTurn")
+                if isinstance(per_turn_str, str):
+                    per_turn_w = [float(x) for x in per_turn_str.split(":")]
+                else:
+                    per_turn_w = list(per_turn_str)
+                per_turn_sum_kw = sum(per_turn_w) / 1000.0
+                total_kw = float(mcApp.get_variable("ACLoss_FEA_OnLoad_Total")) / 1000.0
+            except Exception as _e:
+                per_turn_str = ""
+                per_turn_w = []
+                per_turn_sum_kw, total_kw = 0.0, 0.0
+                print(f"  [WARN] TS loss read failed: {_e}", flush=True)
 
             try:
-                losses_raw    = [float(x) for x in raw_pt_str.split(",") if x.strip()]
-                loss_per_turn = np.array(losses_raw)
+                mcApp.set_motorlab_context()
+                _R_total  = float(mcApp.get_variable("Resistance_MotorLAB"))
+                _R_end    = float(mcApp.get_variable("EndWindingResistance_Lab"))
+                _R_active = _R_total - _R_end
+                mcApp.show_magnetic_context()
             except Exception:
-                loss_per_turn = np.zeros(n_turns * n_parallel)
+                _R_active, _R_end = 0.0, 0.0
 
-            R_dc_per_turn = R_active / float(n_turns)
-            dc_loss_act   = calc_dc_loss_kw(R_dc_per_turn, current)
+            dc_active_kw      = calc_dc_loss_kw(_R_active, current)
+            dc_end_kw         = calc_dc_loss_kw(_R_end, current)
+            ac_active_only_kw = per_turn_sum_kw - dc_active_kw
 
-            loss_active_only = loss_per_turn.copy()
-            for _t in range(n_turns):
-                for _p in range(n_parallel):
-                    t_idx = _t * n_parallel + _p
-                    if loss_active_only[t_idx] > dc_loss_act:
-                        loss_active_only[t_idx] -= dc_loss_act
-                    else:
-                        loss_active_only[t_idx] = 0.0
-
-            point_data["ts_ac_active_only_kW"] = float(np.sum(loss_active_only))
-            point_data["ts_dc_active_only_kW"] = float(dc_loss_act * n_turns * n_parallel)
+            point_data["fea_per_turn_raw"]     = per_turn_str
+            point_data["fea_per_turn_sum_kW"]  = per_turn_sum_kw
+            point_data["fea_total_ac_kW"]      = total_kw
+            point_data["ts_dc_active_kW"]      = dc_active_kw
+            point_data["ts_dc_end_kW"]         = dc_end_kw
+            point_data["ts_ac_active_only_kW"] = ac_active_only_kw
+            print(f"  → TS: PerTurnSum={per_turn_sum_kw:.3f} kW, "
+                  f"AC Active Only={ac_active_only_kw:.3f} kW, "
+                  f"Total={total_kw:.3f} kW", flush=True)
 
         print(f"  ok {tag} {point_folder}", flush=True)
         return point_data
