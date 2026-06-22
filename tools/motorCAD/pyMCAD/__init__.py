@@ -164,6 +164,17 @@ from .winding_auto import (  # noqa: F401
 	auto_resize_copper_after_geometry_update,
 )
 
+from .mqs_runner import (  # noqa: F401
+	parse_colon_str,
+	calc_dc_loss_kw,
+	get_fea_src_dir,
+	backup_fea_result,
+	run_hybrid_single,
+	run_hybrid_dual,
+	run_ts_single,
+	run_ts_dual,
+)
+
 from .scaling import (  # noqa: F401
 	ScalingFactor,
 	MotorCADGeo,
@@ -285,6 +296,15 @@ __all__ = [
 	"find_backup_mes_files",
 	"find_backup_roots",
 	"auto_resize_copper_after_geometry_update",
+	# mqs_runner
+	"parse_colon_str",
+	"calc_dc_loss_kw",
+	"get_fea_src_dir",
+	"backup_fea_result",
+	"run_hybrid_single",
+	"run_hybrid_dual",
+	"run_ts_single",
+	"run_ts_dual",
 	# scaling
 	"ScalingFactor",
 	"MotorCADGeo",
