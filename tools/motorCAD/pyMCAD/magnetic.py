@@ -150,6 +150,7 @@ def export_magnetic_timeseries_h5(
     moving_region_name_prefixes: Sequence[str] | None = None,
     moving_reg_codes: Sequence[int] | None = None,
     moving_node_motion_tol_mm: float = 1e-4,
+    slideband_reg_codes: Sequence[int] | None = None,
 ) -> pathlib.Path:
     """Export an already-parsed magnetic time series (`MagneticRegionsTimeSeries`) to HDF5.
 
@@ -167,6 +168,10 @@ def export_magnetic_timeseries_h5(
         - /mesh/node_x_mm_by_step_moving, /mesh/node_y_mm_by_step_moving: float32 [n_steps, n_moving_nodes]
     - /mesh/tri_index, /mesh/node_1, /mesh/node_2, /mesh/node_3, /mesh/reg_code
     - /fields/bx, /fields/by, /fields/b, /fields/a, /fields/j, /fields/je : [n_steps, n_elements]
+    - /slideband/reg_codes: int32 [n_sb_codes]  (when slideband per-step data stored)
+    - /slideband/offsets: int64 [n_steps + 1]   (CSR offsets into flat arrays)
+    - /slideband/tri_index, node_1, node_2, node_3, reg_code: int32 [total_sb_elements]
+    - /slideband/bx, by, a, j, je: float32 [total_sb_elements]
 
         Notes
         -----
@@ -260,6 +265,103 @@ def export_magnetic_timeseries_h5(
             except Exception:
                 pass
 
+    # ---- Per-step node-level A from NodesTable (raw FEM solution) ----
+    # node_id is built later; we collect per-step node_a dicts first,
+    # then align to the ref-step node_id array before writing.
+    _node_a_by_step: list[dict[int, float]] = []
+    for si, step in enumerate(steps):
+        mr = getattr(nts, "by_step")[int(step)]
+        _node_a_by_step.append(dict(getattr(mr, "node_a", {}) or {}))
+
+    # ---- Per-step sliding band node coordinates (CSR format) ----
+    # Each step may introduce virtual nodes not in the ref-step mesh.
+    # We collect (node_id, x_mm, y_mm) for SB-only extra nodes per step.
+    _sb_node_offsets: list[int] = [0]
+    _sb_node_ids: list[int] = []
+    _sb_node_x: list[float] = []
+    _sb_node_y: list[float] = []
+    _sb_node_a_vals: list[float] = []
+
+    # ---- Per-step sliding band connectivity (CSR format) ----
+    # Sliding band elements are re-meshed each step by the FEM solver.
+    # The main mesh/fields arrays above store only ref_step connectivity,
+    # so SB elements with new TriIndex values in later steps are silently
+    # dropped.  This block collects the full per-step SB connectivity +
+    # field values in a CSR-like flat layout so downstream readers can
+    # reconstruct the correct air-gap mesh at any step.
+    _SLIDEBAND_NAME_PREFIXES = ("a1", "a2", "a3", "a4")
+
+    def _detect_slideband_codes(mr_ref_arg: MagneticRegions) -> frozenset[int]:
+        """Auto-detect sliding band region codes by name (a1-a4)."""
+        codes: set[int] = set()
+        for region in getattr(mr_ref_arg, "_regions", []) or []:
+            name = str(getattr(region, "region_name", "") or "").strip().lower()
+            els = getattr(region, "elements", []) or []
+            if not name or not els:
+                continue
+            if name in _SLIDEBAND_NAME_PREFIXES:
+                rc = int(getattr(region, "reg_code", 0) or 0)
+                if rc <= 0:
+                    try:
+                        rc = int(getattr(els[0], "reg_code"))
+                    except Exception:
+                        continue
+                codes.add(rc)
+        return frozenset(codes)
+
+    if slideband_reg_codes is not None:
+        _sb_codes = frozenset(int(c) for c in slideband_reg_codes)
+    else:
+        _sb_codes = _detect_slideband_codes(mr_ref)
+    _sb_offsets: list[int] = [0]
+    _sb_tri: list[int] = []
+    _sb_n1: list[int] = []
+    _sb_n2: list[int] = []
+    _sb_n3: list[int] = []
+    _sb_rc: list[int] = []
+    _sb_bx: list[float] = []
+    _sb_by: list[float] = []
+    _sb_b: list[float] = []
+    _sb_a: list[float] = []
+    _sb_j: list[float] = []
+    _sb_je: list[float] = []
+
+    for si, step in enumerate(steps):
+        mr = getattr(nts, "by_step")[int(step)]
+        for region in getattr(mr, "_regions", []) or []:
+            for e in getattr(region, "elements", []) or []:
+                rc = int(getattr(e, "reg_code"))
+                if rc not in _sb_codes:
+                    continue
+                _sb_tri.append(int(getattr(e, "tri_index")))
+                _sb_n1.append(int(getattr(e, "node_1")))
+                _sb_n2.append(int(getattr(e, "node_2")))
+                _sb_n3.append(int(getattr(e, "node_3")))
+                _sb_rc.append(rc)
+                bx_v = getattr(e, "bx", None)
+                by_v = getattr(e, "by", None)
+                _sb_bx.append(float(bx_v) if bx_v is not None else float("nan"))
+                _sb_by.append(float(by_v) if by_v is not None else float("nan"))
+                try:
+                    _sb_b.append(float(getattr(e, "b")))
+                except Exception:
+                    _sb_b.append(float("nan"))
+                try:
+                    _sb_a.append(float(getattr(e, "a", 0.0) or 0.0))
+                except Exception:
+                    _sb_a.append(0.0)
+                try:
+                    _sb_j.append(float(getattr(e, "j", 0.0) or 0.0))
+                except Exception:
+                    _sb_j.append(0.0)
+                try:
+                    _sb_je.append(float(getattr(e, "je", 0.0) or 0.0))
+                except Exception:
+                    _sb_je.append(0.0)
+        _sb_offsets.append(len(_sb_tri))
+
+    _has_sb = len(_sb_tri) > 0
+
     def _infer_moving_reg_codes(mr: MagneticRegions) -> list[int]:
         # Best-effort: pick regions that likely rotate with rotor.
         # Default includes any region name containing "rotor" and name prefixes a2/a3/a4.
@@ -321,6 +423,37 @@ def export_magnetic_timeseries_h5(
         node_id = np.asarray([], dtype=np.int32)
         node_x_mm = np.asarray([], dtype=np.float32)
         node_y_mm = np.asarray([], dtype=np.float32)
+
+    # ---- Per-step node-level A: align to ref-step node_id ----
+    n_nodes_ref = int(node_id.size)
+    a_node_mat = None
+    if n_nodes_ref > 0 and _node_a_by_step:
+        node_id_list = node_id.tolist()
+        a_node_mat = np.full((n_steps, n_nodes_ref), np.nan, dtype=np.float32)
+        for si in range(n_steps):
+            na = _node_a_by_step[si]
+            if not na:
+                continue
+            for j, nid in enumerate(node_id_list):
+                val = na.get(int(nid))
+                if val is not None:
+                    a_node_mat[si, j] = float(val)
+
+    # ---- Per-step sliding band extra node coordinates (CSR) ----
+    # Collect nodes that exist in this step's NodesTable but NOT in ref-step.
+    ref_node_set = set(node_id.tolist()) if n_nodes_ref > 0 else set()
+    for si, step in enumerate(steps):
+        mr = getattr(nts, "by_step")[int(step)]
+        step_node_xy = dict(getattr(mr, "node_xy", {}) or {})
+        step_node_a = dict(getattr(mr, "node_a", {}) or {})
+        for nid in sorted(step_node_xy.keys()):
+            if int(nid) not in ref_node_set:
+                xy = step_node_xy[nid]
+                _sb_node_ids.append(int(nid))
+                _sb_node_x.append(float(xy[0]))
+                _sb_node_y.append(float(xy[1]))
+                _sb_node_a_vals.append(float(step_node_a.get(int(nid), 0.0)))
+        _sb_node_offsets.append(len(_sb_node_ids))
 
     # Optional per-step mesh coordinates
     # - Full moving mesh: aligned to node_id [n_steps, n_nodes]
@@ -652,6 +785,45 @@ def export_magnetic_timeseries_h5(
         _ds("a", a_mat)
         _ds("j", j_mat)
         _ds("je", je_mat)
+
+        # Node-level A from NodesTable (raw FEM primary solution)
+        if a_node_mat is not None and not np.all(np.isnan(a_node_mat)):
+            n_nd = a_node_mat.shape[1]
+            chunk_nd = int(max(1, min(int(chunk_elements), n_nd)))
+            a_node_kwargs = {
+                "compression": compression,
+                "compression_opts": compression_opts,
+                "shuffle": True,
+                "chunks": (1, chunk_nd),
+            }
+            fields_g.create_dataset(
+                "a_node", data=a_node_mat.astype(dtype, copy=False), **a_node_kwargs,
+            )
+
+        # Per-step sliding band mesh (CSR layout)
+        if _has_sb:
+            sb_g = f.create_group("slideband")
+            sb_g.create_dataset("reg_codes", data=np.asarray(sorted(_sb_codes), dtype=np.int32))
+            sb_g.create_dataset("offsets", data=np.asarray(_sb_offsets, dtype=np.int64))
+            sb_g.create_dataset("tri_index", data=np.asarray(_sb_tri, dtype=np.int32))
+            sb_g.create_dataset("node_1", data=np.asarray(_sb_n1, dtype=np.int32))
+            sb_g.create_dataset("node_2", data=np.asarray(_sb_n2, dtype=np.int32))
+            sb_g.create_dataset("node_3", data=np.asarray(_sb_n3, dtype=np.int32))
+            sb_g.create_dataset("reg_code", data=np.asarray(_sb_rc, dtype=np.int32))
+            sb_g.create_dataset("bx", data=np.asarray(_sb_bx, dtype=np.float32))
+            sb_g.create_dataset("by", data=np.asarray(_sb_by, dtype=np.float32))
+            sb_g.create_dataset("b", data=np.asarray(_sb_b, dtype=np.float32))
+            sb_g.create_dataset("a", data=np.asarray(_sb_a, dtype=np.float32))
+            sb_g.create_dataset("j", data=np.asarray(_sb_j, dtype=np.float32))
+            sb_g.create_dataset("je", data=np.asarray(_sb_je, dtype=np.float32))
+            # Per-step extra node coordinates (virtual nodes not in ref-step mesh)
+            if len(_sb_node_ids) > 0:
+                sb_g.create_dataset("node_offsets", data=np.asarray(_sb_node_offsets, dtype=np.int64))
+                sb_g.create_dataset("node_id", data=np.asarray(_sb_node_ids, dtype=np.int32))
+                sb_g.create_dataset("node_x_mm", data=np.asarray(_sb_node_x, dtype=np.float32))
+                sb_g.create_dataset("node_y_mm", data=np.asarray(_sb_node_y, dtype=np.float32))
+                sb_g.create_dataset("node_a", data=np.asarray(_sb_node_a_vals, dtype=np.float32))
+            f.attrs["has_slideband_per_step"] = True
 
     return h5_path
 
@@ -2018,6 +2190,8 @@ class MagneticRegions:
         self._regions = []
         # NodeIndex -> (x_mm, y_mm) from NodesTable
         self.node_xy = {}
+        # NodeIndex -> float (node-level A from NodesTable, the raw FEM solution)
+        self.node_a = {}
 
     def __len__(self):
         return len(self._regions)
@@ -2038,6 +2212,10 @@ class MagneticRegions:
     def set_node_xy(self, node_xy):
         """Attach node coordinate map (NodeIndex -> (x_mm, y_mm))."""
         self.node_xy = dict(node_xy)
+
+    def set_node_a(self, node_a):
+        """Attach node-level A map (NodeIndex -> float) from NodesTable."""
+        self.node_a = dict(node_a)
 
     def _element_centroid_xy(self, element: MagElement):
         """Return (x,y) centroid for a MagElement based on node coordinates."""
@@ -2340,6 +2518,7 @@ def _parse_first_block_magnetic_file(filename) -> MagneticRegions:
 
     mag_regions = MagneticRegions()
     node_xy = {}
+    node_a = {}
     filename = pathlib.Path(filename)
 
     def _scan_to_table(in_file, table_name):
@@ -2409,6 +2588,7 @@ def _parse_first_block_magnetic_file(filename) -> MagneticRegions:
             ni_i = node_ci.get("NodeIndex", 0)
             x_i  = node_ci.get("X", 1)
             y_i  = node_ci.get("Y", 2)
+            a_node_i = node_ci.get("A")
             for _ in range(number_of_nodes):
                 row = in_file.readline().split(sep=",")
                 try:
@@ -2416,6 +2596,8 @@ def _parse_first_block_magnetic_file(filename) -> MagneticRegions:
                     x_mm = float(row[x_i])
                     y_mm = float(row[y_i])
                     node_xy[node_idx] = (x_mm, y_mm)
+                    if a_node_i is not None:
+                        node_a[node_idx] = float(row[a_node_i])
                 except (ValueError, IndexError):
                     pass
 
@@ -2439,6 +2621,7 @@ def _parse_first_block_magnetic_file(filename) -> MagneticRegions:
                     )
 
     mag_regions.set_node_xy(node_xy)
+    mag_regions.set_node_a(node_a)
     return mag_regions
 
 
@@ -2584,7 +2767,7 @@ def _skip_header_lines(in_file, n=4):
 
 
 _ELEM_COL_KEYS = frozenset({"TriIndex", "Node1", "Node2", "Node3", "RegCode", "Bx", "By", "A", "J", "Je"})
-_NODE_COL_KEYS = frozenset({"NodeIndex", "X", "Y"})
+_NODE_COL_KEYS = frozenset({"NodeIndex", "X", "Y", "A"})
 _REGION_COL_KEYS = frozenset({"RegionCode", "RegionName"})
 
 
@@ -2711,6 +2894,7 @@ def get_magnetic_timeseries_from_file(
                     )
 
             node_xy = {}
+            node_a = {}
             nodes_header = _read_until_table_header(in_file, "NodesTable")
             if nodes_header is not None:
                 n_nodes = int(nodes_header.strip().split()[1])
@@ -2718,6 +2902,7 @@ def get_magnetic_timeseries_from_file(
                 ni_i = node_ci.get("NodeIndex", 0)
                 x_i  = node_ci.get("X", 1)
                 y_i  = node_ci.get("Y", 2)
+                a_node_i = node_ci.get("A")
                 for _ in range(n_nodes):
                     row = in_file.readline().split(sep=",")
                     try:
@@ -2725,9 +2910,12 @@ def get_magnetic_timeseries_from_file(
                         x_mm = float(row[x_i])
                         y_mm = float(row[y_i])
                         node_xy[node_idx] = (x_mm, y_mm)
+                        if a_node_i is not None:
+                            node_a[node_idx] = float(row[a_node_i])
                     except (ValueError, IndexError):
                         pass
             mag_regions.set_node_xy(node_xy)
+            mag_regions.set_node_a(node_a)
 
             regions_header = _read_until_table_header(in_file, "RegionsTable")
             if regions_header is not None:
