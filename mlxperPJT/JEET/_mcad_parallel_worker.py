@@ -30,13 +30,18 @@ def initialise_mcad(base_mot_path: str, extra_sys_paths: list[str]) -> None:
         if p not in sys.path:
             sys.path.insert(0, p)
 
+    import shutil
     p = current_process()
-    mcApp = pymotorcad.MotorCAD(enable_success_variable=False)
-    mcApp.load_from_file(base_mot_path)
-
     base = Path(base_mot_path)
     unique_path = base.parent / f"{base.stem}_{p.name}{base.suffix}"
-    mcApp.save_to_file(str(unique_path))
+    shutil.copy2(base_mot_path, str(unique_path))
+
+    mcApp = pymotorcad.MotorCAD(enable_success_variable=False)
+    try:
+        mcApp.set_variable("MessageDisplayState", 2)  # suppress all GUI popups (headless batch)
+    except Exception:
+        pass
+    mcApp.load_from_file(str(unique_path))
     print(f"[{p.name}] Ready -> {unique_path.name}", flush=True)
 
 
