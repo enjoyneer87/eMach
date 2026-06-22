@@ -64,6 +64,7 @@ tools/**/*.exe
 
 *backup*
 *Backup*
+!tools/motorCAD/pyMCAD/mes_backup.py
 /tools/jmag/jplotReader/*.mat 
 *case*.html
 *xpdf-tools*
