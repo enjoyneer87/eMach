@@ -4,6 +4,8 @@
 This is the preferred location for notebook-facing utilities.
 """
 
+from importlib.util import find_spec
+
 from .magnetic import (  # noqa: F401
 	MagElement,
 	MagneticRegion,
@@ -133,23 +135,58 @@ from .fea_workflow import (  # noqa: F401
 	process_fea_result_from_mes,
 )
 
-from .doe_batch import (  # noqa: F401
-	DOESolveResult,
-	DOEExportResult,
-	doe_solve_single,
-	doe_export_txt,
-	doe_export_txt_from_saved,
-	doe_export_h5_from_txt,
-	doe_export_h5,
-	doe_batch_run,
-	doe_h5_batch_from_txt,
-	doe_export_from_saved,
-	doe_scan_status,
-	doe_repair_missing_txt,
+from .mes_backup import (  # noqa: F401
+	EXPORT_COLUMNS,
+	export_mes_to_txt,
+	find_all_backup_mes_files,
+	find_backup_mes_files,
+	find_backup_roots,
 )
+
+_HAS_DOE_BATCH = find_spec(__name__ + ".doe_batch") is not None
+if _HAS_DOE_BATCH:
+	from .doe_batch import (  # noqa: F401
+		DOESolveResult,
+		DOEExportResult,
+		doe_solve_single,
+		doe_export_txt,
+		doe_export_txt_from_saved,
+		doe_export_h5_from_txt,
+		doe_export_h5,
+		doe_batch_run,
+		doe_h5_batch_from_txt,
+		doe_export_from_saved,
+		doe_scan_status,
+		doe_repair_missing_txt,
+	)
 
 from .winding_auto import (  # noqa: F401
 	auto_resize_copper_after_geometry_update,
+)
+
+from .mqs_runner import (  # noqa: F401
+	parse_colon_str,
+	calc_dc_loss_kw,
+	get_fea_src_dir,
+	backup_fea_result,
+	run_hybrid_single,
+	run_hybrid_dual,
+	run_ts_single,
+	run_ts_dual,
+)
+
+from .scaling import (  # noqa: F401
+	ScalingFactor,
+	MotorCADGeo,
+	ScaledMachineData,
+	scale_resistance_by_temp,
+	calc_current_density,
+	parse_mcad_colon_str,
+	def_scaling_factor,
+	get_mcad_machine_data,
+	get_mcad_building_data,
+	sl_scale_machine,
+	apply_scaled_data_to_mcad,
 )
 
 __all__ = [
@@ -252,17 +289,50 @@ __all__ = [
 	"prepare_fea_export_session",
 	"orchestrate_fea_export",
 	"process_fea_result_from_mes",
-	"DOESolveResult",
-	"DOEExportResult",
-	"doe_solve_single",
-	"doe_export_txt",
-	"doe_export_txt_from_saved",
-	"doe_export_h5_from_txt",
-	"doe_export_h5",
-	"doe_batch_run",
-	"doe_h5_batch_from_txt",
-	"doe_export_from_saved",
+	# mes_backup
+	"EXPORT_COLUMNS",
+	"export_mes_to_txt",
+	"find_all_backup_mes_files",
+	"find_backup_mes_files",
+	"find_backup_roots",
 	"auto_resize_copper_after_geometry_update",
-	"doe_scan_status",
-	"doe_repair_missing_txt",
+	# mqs_runner
+	"parse_colon_str",
+	"calc_dc_loss_kw",
+	"get_fea_src_dir",
+	"backup_fea_result",
+	"run_hybrid_single",
+	"run_hybrid_dual",
+	"run_ts_single",
+	"run_ts_dual",
+	# scaling
+	"ScalingFactor",
+	"MotorCADGeo",
+	"ScaledMachineData",
+	"scale_resistance_by_temp",
+	"calc_current_density",
+	"parse_mcad_colon_str",
+	"def_scaling_factor",
+	"get_mcad_machine_data",
+	"get_mcad_building_data",
+	"sl_scale_machine",
+	"apply_scaled_data_to_mcad",
 ]
+
+if _HAS_DOE_BATCH:
+	__all__.extend(
+		[
+			"DOESolveResult",
+			"DOEExportResult",
+			"doe_solve_single",
+			"doe_export_txt",
+			"doe_export_txt_from_saved",
+			"doe_export_h5_from_txt",
+			"doe_export_h5",
+			"doe_batch_run",
+			"doe_h5_batch_from_txt",
+			"doe_export_from_saved",
+			"doe_scan_status",
+			"doe_repair_missing_txt",
+		]
+	)

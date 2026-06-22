@@ -1,4 +1,5 @@
 function [filteredTable, MatchedcategoryName] = findAutomationNameFromAllCategory(ActiveXParametersStruct, filterCriteria)
+% filterCriteria=MCADVarName
     categoryNameList = fieldnames(ActiveXParametersStruct);
     filteredTable = table();
     MatchedcategoryName = {};

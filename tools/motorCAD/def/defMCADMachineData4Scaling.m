@@ -61,7 +61,10 @@ function MachineData=defMCADMachineData4Scaling(mcad)
 %% 상세 치수 (Rotor)
 
     RefRotorVariable = McadRotorVariable('');
-    RefRotorVariable=getMcadVariable(RefRotorVariable,mcad);    
+    RefRotorVariable=getMcadVariable(RefRotorVariable,mcad);  
+    if RefRotorVariable.BPMRotor==11
+        disp(['Interior V (Web) with Layer' int2str(RefRotorVariable.Magnet_Layers)])
+    end
     MachineData=mergeStructs(MachineData,RefRotorVariable);  % 기존에꺼 중복되면 앞에껄로 합칠껄
 %% 상세 치수 (Stator)
 
@@ -73,7 +76,9 @@ function MachineData=defMCADMachineData4Scaling(mcad)
     [~,MachineData.Insulation_Thickness      ]                  =mcad.GetVariable('Insulation_Thickness');
     [~,MachineData.Liner_Thickness           ]                  =mcad.GetVariable('Liner_Thickness');
     [~,MachineData.ConductorSeparation           ]              =mcad.GetVariable('ConductorSeparation');
-
+    [~,MachineData.Copper_Corner_Radius            ]         =       mcad.GetVariable('Copper_Corner_Radius')      ;
+    [~,MachineData.Copper_Corner_Radius_2           ]       =mcad.GetVariable('Copper_Corner_Radius_2')   ;    
+    [~,MachineData.Copper_Corner_Radius_3           ]       =mcad.GetVariable('Copper_Corner_Radius_3')   ;    
      
 %% Winding Loss
 % Loss Model

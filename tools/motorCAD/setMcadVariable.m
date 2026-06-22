@@ -1,18 +1,22 @@
 function mcad=setMcadVariable(variable,mcad)
     % mcad = actxserver('MotorCAD.AppAutomation');
     % mcad.LoadFromFile(variable.motFile);
-
+    % variable=ScaledMachineData
+    % fieldName='VShape_Magnet_ClearanceInner'
+%     fieldName='Liner_Thickness'
+%     filedName='Insulation_Thickness'
+% ConductorSeparation
     % GetCurrent Data
     variableFieldsName = fieldnames(variable);
-
-
+ % mcad.SetVariable(fieldName,0.4)
+ % [~,value]=mcad.GetVariable(fieldName)
     % fieldIndex 1은 motFile Pat
     for fieldIndex = 1:length(fieldnames(variable))
         fieldName = variableFieldsName{fieldIndex};
         originalFieldName = fieldName; % Store the original field name
         if ~isstruct(variable.(fieldName)) && ~istable(variable.(fieldName))
             % Magnet Layer 2 이상사용할려면 아래 수정할것
-            if contains(fieldName, 'Array')
+            if contains(fieldName, 'Array')||length(variable.(fieldName))>1
                 if isscalar(variable.(fieldName))
                     mcad.SetArrayVariable(fieldName, 0,variable.(fieldName)(1));
                 elseif length(variable.(fieldName))==2

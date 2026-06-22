@@ -17,7 +17,7 @@ function ScaledMachineData = SLScaleMachine(scalingFactorStruct,MotorCADGeo,Buil
     % Twdg_MotorLAB                 - Lab (만들어질때 Emag기준)
     % LabTable=originTable;
 %% 형상 K_Winding 정의하는거 추가 (n_c_ref있는지 확인해서)
-
+    
     l_stk_ref = MotorCADGeo.Stator_Lam_Length; % l_stk,ref의 값
     D_out_ref = MotorCADGeo.Stator_Lam_Dia; % D_out,ref의 값
 
@@ -38,8 +38,9 @@ function ScaledMachineData = SLScaleMachine(scalingFactorStruct,MotorCADGeo,Buil
     ScaledMachineData.Insulation_Thickness =k_Radial*MotorCADGeo.Insulation_Thickness ;
     ScaledMachineData.Liner_Thickness      =k_Radial*MotorCADGeo.Liner_Thickness      ;
     ScaledMachineData.ConductorSeparation  =k_Radial*MotorCADGeo.ConductorSeparation  ;
-
-
+     ScaledMachineData.Copper_Corner_Radius     = k_Radial*MotorCADGeo.Copper_Corner_Radius  ;
+     ScaledMachineData.Copper_Corner_Radius_2   = k_Radial*MotorCADGeo.Copper_Corner_Radius_2;
+     ScaledMachineData.Copper_Corner_Radius_3   = k_Radial*MotorCADGeo.Copper_Corner_Radius_3;
 %% Stator
 
     ScaledMachineData.Stator_Lam_Length        = k_Axial * l_stk_ref;
@@ -59,10 +60,23 @@ function ScaledMachineData = SLScaleMachine(scalingFactorStruct,MotorCADGeo,Buil
     ScaledMachineData.Housing_Dia            =ScaledMachineData.Stator_Lam_Dia   +NonActivePartDia;
 %% Detaild Geometric
 
-    MotorCADGeo.MagnetSeparation_Array;
-    % ScaledMachineData.MagnetThickness_Array=MachineData.MagnetThickness_Array;
-    ScaledMachineData.MagnetSeparation_Array=k_Radial*MotorCADGeo.MagnetSeparation_Array;
-    ScaledMachineData.MagnetThickness_Array =k_Radial*MotorCADGeo.MagnetThickness_Array;
+    ScaledMachineData.MagnetSeparation_Array     =k_Radial*MotorCADGeo.MagnetSeparation_Array;
+    ScaledMachineData.MagnetThickness_Array      =k_Radial*MotorCADGeo.MagnetThickness_Array;
+    ScaledMachineData.BridgeThickness_Array      =k_Radial*MotorCADGeo.BridgeThickness_Array ; 
+    ScaledMachineData.PoleVAngle_Array           =MotorCADGeo.PoleVAngle_Array      ;
+
+    % Rotor
+    if MotorCADGeo.BPMRotor==11
+     ScaledMachineData.VSimpleMagnetPost_Array              =k_Radial*MotorCADGeo.VSimpleMagnetPost_Array     ;
+     ScaledMachineData.VShapeMagnetPost_Array               =k_Radial*MotorCADGeo.VShapeMagnetPost_Array      ;
+     ScaledMachineData.VShape_Magnet_ClearanceInner         =k_Radial*MotorCADGeo.VShape_Magnet_ClearanceInner;
+    end
+ % RoundingRadius
+ ScaledMachineData.CornerRoundingRadius_Rotor                  =k_Radial*MotorCADGeo.CornerRoundingRadius_Rotor           ;                 
+ ScaledMachineData.CornerRoundingRadius_Magnets                =k_Radial*MotorCADGeo.CornerRoundingRadius_Magnets         ;                 
+ % AirGap
+ ScaledMachineData.AirGap                                      =k_Radial*MotorCADGeo.AirGap                        ;
+
 %% [TB]Winding
 % n_c  turn per Coil
 % n_c_per_ap % turn per Coil per ParallelPaths
@@ -113,6 +127,7 @@ function ScaledMachineData = SLScaleMachine(scalingFactorStruct,MotorCADGeo,Buil
     MotorCADGeo.R_Cuco_ref20=R_Cuco_ref20;
     MotorCADGeo.R_Cuew_ref20=R_Cuew_ref20;
     ScaledMachineData.refMachineData=MotorCADGeo;
+
 
     ScaledMachineData.scalingFactor =scalingFactorStruct;
     % 20도 기준으로 변경

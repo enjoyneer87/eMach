@@ -113,7 +113,8 @@ __pycache__/
 *.pyo
 
 # Large data files (over 100MB)
-*.mat
+# *.mat
+mlxperPJT/JEET/**/*.mat
 *.fig
 mlxperPJT/JEET/From38100/*.csv
 ScaledFileListwithTxtExport.mat
@@ -168,3 +169,7 @@ Class/pyMotorGeo/_tmp_case2_onloadtorque/
 Class/pyMotorGeo/_tmp_real_mes/
 **/converted_mesh/
 **/converted_mesh/**
+
+
+*.csv
+*.json

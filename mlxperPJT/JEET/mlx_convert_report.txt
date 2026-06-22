@@ -1,0 +1,10 @@
+converted=0
+failed=8
+FAIL:D:\KangDH\EveryMotor\eMach\mlxperPJT\JEET\InterpolateMagneticFluxDensityIn2DMagnetostaticAnalysisExample.mlx
+FAIL:D:\KangDH\EveryMotor\eMach\mlxperPJT\JEET\JEETResult_MCADHybridmlx.mlx
+FAIL:D:\KangDH\EveryMotor\eMach\mlxperPJT\JEET\JEETResult_rev1.mlx
+FAIL:D:\KangDH\EveryMotor\eMach\mlxperPJT\JEET\JEETResult_rev1_v1.mlx
+FAIL:D:\KangDH\EveryMotor\eMach\mlxperPJT\JEET\JEETResult_summary.mlx
+FAIL:D:\KangDH\EveryMotor\eMach\mlxperPJT\JEET\JEETResult_summary_rev1.mlx
+FAIL:D:\KangDH\EveryMotor\eMach\mlxperPJT\JEET\noteveriFatami_eq3NTahaexpressionXi.mlx
+FAIL:D:\KangDH\EveryMotor\eMach\mlxperPJT\JEET\rpACLossdqSurf.mlx

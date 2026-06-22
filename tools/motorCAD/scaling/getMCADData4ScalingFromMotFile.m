@@ -1,7 +1,7 @@
 function [BuildingData,filteredLabTable4Scaling]=getMCADData4ScalingFromMotFile(MotFilePath)
 %% 데이터 가져오기
+% MotFilePath=refModelPath
 ActiveXParametersStruct = getMcadActiveXTableFromMotFile(MotFilePath);
-
 % motcelldata=data;
 % splitMotDataStruct = splitDataByMCADcategory(motcelldata);
 % mcad=callMCAD

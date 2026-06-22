@@ -12,15 +12,21 @@ function variable = McadRotorVariable(fileName)
     variable.BPMRotor                             = [];
     variable.Pole_Number                          = [];
     variable.PoleNotchDepth                       = [];    
-    variable.VMagnet_Layers                       = [];            
     variable.MagnetThickness_Array                = [];    
     variable.BridgeThickness_Array                = [];    
     variable.PoleVAngle_Array                     = [];
-    variable.VShapeMagnetPost_Array               = [];       
     variable.MagnetSeparation_Array               = [];
     variable.AirGap                               = [];
     variable.Banding_Thickness                     =[];                      % [mm]
-    % Ratio (Interior V(Web) BPMRotor =11
+    % Ratio (Interior V(Web)   % BPMRotor =11
+    variable.VMagnet_Layers                       = [];            
+    variable.VSimpleMagnetPost_Array              =[];
+    variable.VShapeMagnetPost_Array               =[];
+    variable.VShape_Magnet_ClearanceInner         =[];
+  
+    % RoundingRadius
+    variable.CornerRoundingRadius_Rotor   =[];
+    variable.CornerRoundingRadius_Magnets =[];
     % Banding Thickness
     % Shaft             
     variable.Shaft_Dia_Front           =[];

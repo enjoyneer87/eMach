@@ -11,8 +11,7 @@ function MachineData = getMcadMachineDataFromMotFile(ActiveXParametersStruct)
     categories.Winding = {'Armature_CoilStyle','Copper_Diameter','GrossSlotFillFactor','RMSCurrent','NumberStrandsHand','ArmatureConductorLengthPh', 'ArmatureMLT', 'ArmatureEWdgMLT_Calculated', 'Area_Slot', 'Area_Slot_NoWedge', 'Area_Winding_With_Liner', 'ParallelPaths', 'MagThrow', 'WindingLayers', 'HairpinWindingPatternMethod', 'Copper_Width', 'Copper_Height', 'ArmatureConductorCSA', 'MagTurnsConductor', 'ArmatureTurnCSA','RMSCurrentDensity'};
 
     % Winding Definition 카테고리
-    categories.WindingDefinition = {'Insulation_Thickness', 'Liner_Thickness', 'ConductorSeparation'};
-    
+    % categories.Winding_Design = {'Insulation_Thickness', 'Liner_Thickness', 'ConductorSeparation'};  
     % Loss Model and Temperature 카테고리
     categories.LossModelTemperature = {'Resistance_MotorLAB', 'EndWindingResistance_Lab', 'EndWindingInductance_Lab', 'ArmatureConductor_Temperature', 'Twdg_MotorLAB', 'ACConductorLossProportion_Lab', 'NumberOfCuboids_LossModel_Lab'};
 
@@ -41,19 +40,32 @@ function MachineData = getMcadMachineDataFromMotFile(ActiveXParametersStruct)
     for i = 1:length(StatorVariableListCell)
         paramName = StatorVariableListCell{i};
         MCADVarName=replaceMLABvar2MCADvar(paramName);
-        [filteredTable, ~] = findAutomationNameFromAllCategory(ActiveXParametersStruct, MCADVarName);
+        [filteredTable, MatchedcategoryName] = findAutomationNameFromAllCategory(ActiveXParametersStruct, MCADVarName);
         % storeData(paramName, filteredTable,'StatorVariable');
         MachineData=storeStrWithSubStrData(MachineData,'StatorVariable',paramName, filteredTable);
     end
-
+    % Winding 치수 
+    RefWindingVariable = McadWindingVariable('');
+    WindingVariableListCell = fieldnames(RefWindingVariable);
+    for i = 1:length(WindingVariableListCell)
+        paramName = WindingVariableListCell{i};
+        MCADVarName=replaceMLABvar2MCADvar(paramName);
+        [filteredTable, MatchedcategoryName] = findAutomationNameFromAllCategory(ActiveXParametersStruct, MCADVarName);
+        if ~isempty(MatchedcategoryName)==1 && ~isempty(filteredTable)
+            filteredTable=filterMCADTableWithAnyInfo(filteredTable,'Winding_Design','Category');
+        end
+        % storeData(paramName, filteredTable,'StatorVariable');
+        MachineData=storeStrWithSubStrData(MachineData,'WindingVariable',paramName, filteredTable);
+    end
     % 상세 치수 (Rotor)
     RefRotorVariable = McadRotorVariable('');
     rotorVariableListCell = fieldnames(RefRotorVariable);
     for i = 1:length(rotorVariableListCell)
         paramName = rotorVariableListCell{i};
         MCADVarName=replaceMLABvar2MCADvar(paramName);
-        [filteredTable, ~] = findAutomationNameFromAllCategory(ActiveXParametersStruct, MCADVarName);
+        [filteredTable, MatchedcategoryName] = findAutomationNameFromAllCategory(ActiveXParametersStruct, MCADVarName);
         % storeData(paramName, filteredTable,'RotorVariable');
+
         MachineData=storeStrWithSubStrData(MachineData,'RotorVariable',paramName, filteredTable);
     end
     
