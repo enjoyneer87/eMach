@@ -1,5 +1,5 @@
 {
-  "model_type": "RBF_Comparison",
+  "model_type": "RBF_HalfSC",
   "3D_model": {
     "model": "3D_TPS_RBF",
     "n_centers": 106,
