@@ -41,7 +41,6 @@ classdef MotorcadData <emlab_MachineData
     RotorWindingTemp_Ref_Lab
     tempOrigin
     tempOriginFile
-
     elec_torque
     shaft_torque
 %% emag
@@ -61,6 +60,10 @@ classdef MotorcadData <emlab_MachineData
 %% Lab
     ModelParameters_MotorLAB
     LossParameters_MotorLAB
+    ModelBuildPoints_Current_Lab
+    ModelBuildPoints_Gamma_Lab
+    SatModel_Gamma_Lab
+    SatModel_Is_Lab
 %% OPTIMIZATION VARIABLE RANGE
     OPTIMIZATION= struct()
 

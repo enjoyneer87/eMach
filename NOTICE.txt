@@ -1,0 +1,9 @@
+Dispatch 채팅에 렌더링 버그가 발생해서 메시지가 표시되지 않고 있습니다.
+
+오늘 완료된 작업:
+1. verify_phase_angle.py 작성
+2. EfficiencyMap.phase_deg 프로퍼티 추가
+3. test_mcad_to_syre.m 버그 수정
+
+새 대화를 시작하거나 데스크탑 앱을 재시작해보세요.
+- Claude Dispatch (2026-06-29)

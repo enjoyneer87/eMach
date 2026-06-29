@@ -48,9 +48,14 @@ end
 %% 
 mcad.LoadFromFile(proj);
 
-NcurrentVec=6;
-NphaseVec=5;
+[~,ModelBuildPoints_Current_Lab]=mcad.GetVariable('ModelBuildPoints_Current_Lab');
+[~,ModelBuildPoints_Gamma_Lab]=mcad.GetVariable('ModelBuildPoints_Gamma_Lab');
+
+NcurrentVec=ModelBuildPoints_Current_Lab;
+NphaseVec=ModelBuildPoints_Gamma_Lab;
 inputobj.ModelParameters_MotorLAB.PsiDModel_Lab=[];
+inputobj.ModelBuildPoints_Current_Lab=ModelBuildPoints_Current_Lab;
+inputobj.ModelBuildPoints_Gamma_Lab=ModelBuildPoints_Gamma_Lab;
 inputobj.ModelParameters_MotorLAB.PsiQModel_Lab=[];
 motorLABFieldsNames=fieldnames(inputobj.ModelParameters_MotorLAB);
 %% Lab Calc Temperature Import
@@ -64,6 +69,22 @@ motorLABFieldsNames=fieldnames(inputobj.ModelParameters_MotorLAB);
 
 
 %% get Lab Psi모델 
+
+[success,charSatModel_Is_Lab]=invoke(mcad,'GetVariable','SatModel_Is_Lab');
+newStr = split(charSatModel_Is_Lab,':');
+xy=cell2mat(newStr');
+[A,n] = sscanf(xy,'%f');
+SatModel_Is_Lab = reshape(A,[NphaseVec,NcurrentVec]);
+SatModel_Is_Lab=SatModel_Is_Lab';
+size(SatModel_Is_Lab)
+
+[success,charSatModel_Gamma_Lab]=invoke(mcad,'GetVariable','SatModel_Gamma_Lab');
+newStr = split(charSatModel_Gamma_Lab,':');
+xy=cell2mat(newStr');
+[A,n] = sscanf(xy,'%f');
+SatModel_Gamma_Lab = reshape(A,[NphaseVec,NcurrentVec]);
+SatModel_Gamma_Lab=SatModel_Gamma_Lab';
+size(SatModel_Gamma_Lab)
 
 % 1:length(motorLABFieldsNames)
 [success,charPsiDModel_Lab]=invoke(mcad,'GetVariable',motorLABFieldsNames{1});
@@ -80,6 +101,9 @@ xy=cell2mat(newStr');
 PsiQModel_Lab = reshape(A,[NphaseVec,NcurrentVec]);
 PsiQModel_Lab=PsiQModel_Lab';
 size(PsiQModel_Lab)
+%% to 
+inputobj.ModelParameters_MotorLAB.SatModel_Is_Lab            =SatModel_Is_Lab   ;
+inputobj.ModelParameters_MotorLAB.SatModel_Gamma_Lab         =SatModel_Gamma_Lab;
 inputobj.ModelParameters_MotorLAB.PsiDModel_Lab=PsiDModel_Lab;
 inputobj.ModelParameters_MotorLAB.PsiQModel_Lab=PsiQModel_Lab;
 

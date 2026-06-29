@@ -1,14 +1,38 @@
-function centerAllFigures()
-    % 모든 떠 있는 figure를 얻어옵니다.
+function centerAllFigures(monitorIdx)
+    % monitorIdx: 피규어를 모으고 싶은 모니터 번호 (생략 시 1번 모니터)
+    if nargin < 1
+        monitorIdx = 1; 
+    end
+
     openFigures = findall(0, 'type', 'figure');
+    if isempty(openFigures)
+        return;
+    end
 
-    % 현재 사용 중인 MATLAB 버전에 맞는 디스플레이 크기를 얻어옵니다.
-    screen_size = get(groot, 'ScreenSize');
+    % 연결된 모든 모니터의 개별 위치 정보 [left, bottom, width, height]를 가져옵니다.
+    monitors = get(groot, 'MonitorPositions');
+    
+    % 모니터 인덱스 범위를 초과하지 않도록 보정
+    if monitorIdx > size(monitors, 1)
+        monitorIdx = 1;
+    end
+    
+    target_monitor = monitors(monitorIdx, :);
+    
+    m_left   = target_monitor(1);
+    m_bottom = target_monitor(2);
+    m_width  = target_monitor(3);
+    m_height = target_monitor(4);
 
-    % 각각의 figure를 화면 중앙으로 이동합니다.
     for i = 1:numel(openFigures)
-        figure_x = screen_size(3)/2 - openFigures(i).Position(3)/2;
-        figure_y = screen_size(4)/2 - openFigures(i).Position(4)/2;
-        set(openFigures(i), 'Position', [figure_x, figure_y, openFigures(i).Position(3), openFigures(i).Position(4)]);
+        fig = openFigures(i);
+        fig_w = fig.Position(3);
+        fig_h = fig.Position(4);
+        
+        % 선택한 모니터 영역의 정중앙 좌표 계산
+        figure_x = m_left   + (m_width/2  - fig_w/2);
+        figure_y = m_bottom + (m_height/2 - fig_h/2);
+        
+        set(fig, 'Position', [figure_x, figure_y, fig_w, fig_h]);
     end
 end

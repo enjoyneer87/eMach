@@ -1,27 +1,42 @@
 %%
 
-HDEV_motorcad=MotorcadData(12);
+HDEV_motorcad.motorcadMotPath="D:\KangDH\Thesis\e10\refModel"
+[motFileList,~]=getResultMotMatList(parentPath);
+
+% Plot AC Loss Map
+% try Final function
+motFilePath='D:\KangDH\Thesis\e10\refModel\e10Turn6V261.mot'
+filteredTable           =getMCADLabDataFromMotFile(motFilePath);
+originLabLinkTable      = reNameLabTable2LabLink(filteredTable);
+MCADLinkTable           = originLabLinkTable;
+FitResultStr=plotMultipleInterpSatuMapSubplots(@plotFitResult, MCADLinkTable,'bilinear');
+
+
+HDEV_motorcad=MotorcadData(8);
 HDEVdata=DataPkBetaMap(HDEV_motorcad.p);
 
 PmsmFem.NumPolePairs = HDEVdata.p/2;
 
 % object make
-HDEV_motorcad.motorcadMotPath='Z:\Thesis\Optislang_Motorcad\Validation'
-HDEV_motorcad.motocadLabPath=strcat('Z:\01_Codes_Projects\git_Motor_System_Model\Mathworks_ref\HDEV_fluxmodel\HDEV_Model2','\Lab\');
+% HDEV_motorcad.motorcadMotPath='Z:\Thesis\Optislang_Motorcad\Validation'
+HDEV_motorcad.motorcadMotPath="D:\KangDH\Thesis\e10\refModel"
+% HDEV_motorcad.motocadLabPath=strcat('Z:\01_Codes_Projects\git_Motor_System_Model\Mathworks_ref\HDEV_fluxmodel\HDEV_Model2','\Lab\');
+HDEV_motorcad.motocadLabPath=strcat("D:\KangDH\Thesis\e10\refModel\e10Turn6V261","\Lab\")
 HDEV_motorcad.proj_path=HDEV_motorcad.motorcadMotPath;
 HDEV_motorcad.file_path=HDEV_motorcad.proj_path;
 
 HDEV_motorcad.matfileFindList=what(HDEV_motorcad.motocadLabPath);
-HDEV_motorcad.file_name='HDEV_Model2Temp115';
+% HDEV_motorcad.file_name='HDEV_Model2Temp115';
+HDEV_motorcad.file_name="e10Turn6V261"
 inputobj=HDEV_motorcad;
 %% should do manually
 inputobj=inputobj.rawPsiDataPost() 
 %%currentVec
-NcurrentVec=5
-currentMax=1000;
-currentVec=[0:currentMax/(NcurrentVec-1):currentMax]
-phaseMax=90;
-NphaseVec=6
+NcurrentVec=double(inputobj.ModelBuildPoints_Current_Lab)
+currentMax=max(max(inputobj.ModelParameters_MotorLAB.SatModel_Is_Lab));
+currentVec=[0:currentMax/(NcurrentVec-1):currentMax];
+phaseMax=max(max(inputobj.ModelParameters_MotorLAB.SatModel_Gamma_Lab));
+NphaseVec=double(inputobj.ModelBuildPoints_Gamma_Lab)
 phaseVec=[0:phaseMax/(NphaseVec-1):phaseMax];
 
 HDEVdata.phaseVec=phaseVec;
@@ -33,7 +48,7 @@ HDEV_motorcad=inputobj;
 surf(phaseVec,currentVec,HDEV_motorcad.ModelParameters_MotorLAB.PsiQModel_Lab)
 hold on
 
-surf(inputobj.ModelParameters_MotorLAB.PsiDModel_Lab)
+% surf(inputobj.ModelParameters_MotorLAB.PsiDModel_Lab)
 
 %%
 

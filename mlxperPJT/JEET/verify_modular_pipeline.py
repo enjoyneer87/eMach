@@ -4,12 +4,13 @@ import json
 from pathlib import Path
 import numpy as np
 
-# Add local path to sys.path to enable importing local modules
+# Add eMach root to path to enable importing from tools
 current_dir = Path(__file__).parent.resolve()
-if str(current_dir) not in sys.path:
-    sys.path.insert(0, str(current_dir))
+emach_root = current_dir.parent.parent.resolve()
+if str(emach_root) not in sys.path:
+    sys.path.insert(0, str(emach_root))
 
-from jeet_acloss_rbf import (
+from tools.jeet_acloss_rbf import (
     AcLossPoint,
     AcLossDataset,
     RbfModel3D,
@@ -22,7 +23,7 @@ from jeet_acloss_rbf import (
 
 # Configuration matching the notebook
 MODEL_SCALE = 'SC'
-json_summary_path = current_dir / "map_exports" / MODEL_SCALE / f"JEET_ACLoss_{MODEL_SCALE}_Map_Summary.json"
+json_summary_path = current_dir / "map_exports" / "e10" / MODEL_SCALE / f"JEET_ACLoss_{MODEL_SCALE}_Map_Summary.json"
 
 print(f"Loading data from: {json_summary_path}")
 
