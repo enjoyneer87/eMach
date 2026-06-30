@@ -1,0 +1,36 @@
+# ──────────────────────────────────────────────────────────────────────────────
+# requirements_kturn.txt
+# JEET Kturn 통합 파이프라인 (run_kturn_pipeline.py) 실행 환경
+#
+# 기준 venv: pyMotorEnv_310  (Python 3.10)
+#   예) C:\Users\<user>\.ansys_python_venvs\pyMotorEnv_310
+#
+# 설치:
+#   py -3.10 -m venv pyMotorEnv_310
+#   pyMotorEnv_310\Scripts\activate
+#   pip install -r requirements_kturn.txt
+#
+# 전제(별도 설치):
+#   - Ansys Motor-CAD (v2026 R1 / v261 변수셋)  ※ pip 아님, 정식 설치 필요
+#   - Windows (pywin32 COM, multiprocessing 'spawn')
+# ──────────────────────────────────────────────────────────────────────────────
+
+# Motor-CAD 자동화 (RPC/COM 래퍼) — Stage1 .mot 생성 + Stage2 sweep 모두 사용
+ansys-motorcad>=0.4
+
+# Windows COM (gen_e10_hairpin_turns.py 의 win32com.client; calc_conductor_size import 시 필요)
+pywin32>=306
+
+# 수치 연산 / 격자 생성 / .mat 저장
+numpy>=1.24
+scipy>=1.10
+
+# 시각화 (파이프라인 자체는 불필요하나 노트북/후처리와 동일 환경 유지용)
+matplotlib>=3.7
+
+# ── 검증에 사용된 고정 버전(pyMotorEnv_310, 2026-06 기준) ─────────────────────
+#   ansys-motorcad  (설치본)
+#   pywin32==311
+#   numpy==2.2.6
+#   scipy==1.15.3
+#   matplotlib==3.10.8

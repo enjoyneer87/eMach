@@ -4,6 +4,15 @@
 % SyRE MMM(calcTnPoint / calcOptCtrl) 엔진으로 최적 전류위상각을 탐색하고
 % 효율맵을 계산하여 플로팅하는 매틀랩 검증 스크립트.
 % -------------------------------------------------------------------------
+%
+% [사전 확인] MAT 파일 내 AC 손실 필드 유무 점검 (MATLAB 커맨드창에서 실행):
+%   whos -file 'D:\KangDH\Thesis\e10\refModel\e10Turn6V261_SyreMMM_B.mat'
+%   load('D:\KangDH\Thesis\e10\refModel\e10Turn6V261_SyreMMM_B.mat','FluxMap_dq')
+%   isfield(FluxMap_dq, {'Pac_total_kW','speed_vec'})   % [1 1] 이어야 함
+%   ※ FluxMap_dq 구조체 안에 Pac_total_kW 와 speed_vec 필드가 있어야
+%     buildMotorModelForSyre 가 acLossFactor(kAC LUT)를 자동 빌드하고
+%     TnSetup.SkinEffectFlag='Yes' 로 설정합니다. 없으면 AC손실 없이 진행됩니다.
+% -------------------------------------------------------------------------
 
 clc; clear; close all;
 
@@ -11,14 +20,18 @@ clc; clear; close all;
 current_dir = fileparts(mfilename('fullpath'));
 emach_root  = fileparts(fileparts(current_dir));
 
-addpath(genpath(emach_root));
-addpath(genpath('D:\KangDH\gitSyREpub\syre_public'));
+% [중요] addpath 는 기본적으로 경로 '맨 앞'에 추가(prepend)하므로, 나중에
+%        추가한 폴더가 우선순위가 높습니다(같은 이름 함수는 맨 앞이 이김).
+%        따라서 eMach 오버라이드(tools/syre/)가 syre_public 을 이기려면
+%        syre_public 을 '먼저', eMach 를 '나중에' 추가해야 합니다.
+addpath(genpath('D:\KangDH\gitSyREpub\syre_public'));  % 먼저 (낮은 우선순위)
+addpath(genpath(emach_root));                          % 나중에 (높은 우선순위 → 오버라이드 우선)
 
 %% 2. 타겟 모델 목록 설정 (Ref, HalfSC, SC)
 % 파이썬에서 빌드하여 내보낸 각 모델의 MAT 파일 경로
 motPath = 'D:\KangDH\Thesis\e10\refModel\e10Turn6V261.mot';
-filteredTable = getMCADLabDataFromMotFile(motPath);
-MCADLinkTable  = reNameLabTable2LabLink(filteredTable);
+% filteredTable = getMCADLabDataFromMotFile(motPath);
+% MCADLinkTable  = reNameLabTable2LabLink(filteredTable);
 
 matFiles = {
     'D:\KangDH\Thesis\e10\refModel\e10Turn6V261_FluxMap_Py.mat'  % Ref/SC/HalfSC 통합 또는 개별 파일
@@ -36,7 +49,10 @@ if ~exist(targetMat, 'file')
 end
 
 %% 3. motorModel 구조체 빌드
-motorModel = buildMotorModelForSyre(targetMat);
+% MOT 파일 경로를 함께 넘기면 Motor-CAD ActiveX에서 파라미터 자동 추출:
+%   Pole_Number, Resistance_MotorLAB, Stator_Lam_Length, DCBusVoltage,
+%   MaxModelCurrent_RMS_MotorLAB, SpeedMax_MotorLAB, Twdg_MotorLAB 등
+motorModel = buildMotorModelForSyre(targetMat, motPath);
 
 %% 4. 최적 제어 궤적(MTPA, MTPV) 사전 연산
 fprintf('\nEvaluating Control Trajectories (MTPA / MTPV) via SyRE AOA...\n');
@@ -240,10 +256,4 @@ end
 %     motorModel.FluxMapInv_dqt      = [];
 %     motorModel.SyreDrive           = [];
 %     motorModel.WaveformSetup       = [];
-%     motorModel.dataSet.pShape.rotor  = [];
-%     motorModel.dataSet.pShape.stator = [];
-%     motorModel.dataSet.pShape.magnet = [];
-%     motorModel.dataSet.pShape.slot   = [];
-%     motorModel.dataSet.pShape.flag   = 0;
-%     motorModel.dataSet.custom        = 0;
-% end
+%     motorModel.dataSet.p

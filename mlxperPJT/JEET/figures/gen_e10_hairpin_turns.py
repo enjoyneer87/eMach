@@ -3,35 +3,42 @@ gen_e10_hairpin_turns.py
 ========================
 Ref(6턴, e10Turn6V261.mot) 기반으로 4턴/8턴 헤어핀 .mot 파일 생성
 
-설계 조건:
-  1. 점적율 유지: 도체 단면적 × 슬롯당 도체수 = const
-     → 도체 높이(H)를 턴수에 반비례하게 스케일링 (너비는 슬롯폭 제약으로 고정)
-     → H_new = H_old × (N_old / N_new)
+※ 헤어핀 권선에서 '턴수 = 슬롯당 도체(바) 수 = WindingLayers' 로 정의된다.
+  (각 바 = 1턴 → MagTurnsConductor 는 1로 고정, 변경 대상 아님)
+  도체 geometry는 wire-size 모드(Armature_Winding_Definition_Hairpin=0)로
+  Copper_Width / Copper_Height 로 정의된다 (ratio_array 아님).
 
-  2. 슬롯 내 코일 시작점 위치 유지:
-     슬롯 내 도체 배열 구조 (슬롯오프닝 → 슬롯바닥):
-       [슬롯오프닝] ─ [웨지/라이너] ─ [슬롯절연] ─ [도체1, 도체2, ...] ─ [하부절연] ─ [슬롯바닥]
+도체 사이징 로직 (점적율 보존):
+  ※ 기존 검증 코드 SkkuEMLabProject\\calcConductorSize.m 의 알고리즘을 그대로 이식.
+  ※ Motor-CAD 가 계산한 실제 슬롯 면적을 GetVariable 로 읽어 사이징 (MCAD-native).
 
-     첫 도체 시작점 = SlotOpening + WedgeThickness + SlotLinerThickness + SlotInsulation
-     → 이 값은 라이너/절연물을 그대로 두면 턴수와 무관하게 고정됨 ✓
-     → 슬롯오프닝 가까운 도체가 회전자 자속의 영향을 동일하게 받음
+    effective_FF  = Area_Slot * FF_copper(%) / Area_Winding_With_Liner
+    eff_slot_area = Area_Winding_With_Liner * effective_FF/100
+    turn_area     = eff_slot_area / WindingLayers          # 도체 1개당 copper 면적
+    Copper_Width  = Slot_Width - 2*Liner - 2*Insul - 2*Sep # 슬롯폭에 맞춤(고정)
+    Copper_Height = turn_area / Copper_Width               # 면적/너비
+    # Winding_Depth 기반 높이 상한 클램프 (도체수 N 으로 일반화)
+    max_H = (Winding_Depth - Liner - 2*N*Insul - (N+1)*Sep) / N
 
-  3. 도체 너비는 슬롯 폭 방향 제약으로 변경 안 함
-     (슬롯 양쪽 절연물 사이 공간에 꼭 맞게 이미 설계됨)
+  목표 점적율(FF_copper)은 기준(6턴) 모델의 GrossSlotFillFactor 를 그대로 사용
+  → 턴수만 바꾸고 copper 점적율은 동일하게 유지.
+
+  변수명은 Motor-CAD ActiveXParameters v261
+  (eMach\\ActiveXParametersMotorCADv261.txt) 기준.
 
 사용법:
   python gen_e10_hairpin_turns.py
   ※ Motor-CAD가 설치되어 있어야 함 (COM 인터페이스 사용)
+  ※ win32com(pywin32)이 있는 인터프리터 필요 (pyMotorEnv_310 venv)
 
 출력:
   D:\\KangDH\\Thesis\\e10\\refModel\\e10Turn4V261.mot
   D:\\KangDH\\Thesis\\e10\\refModel\\e10Turn8V261.mot
 """
 
-import win32com.client
+from ansys.motorcad.core import MotorCAD
 import os
 import sys
-from pathlib import Path
 
 # ============================================================
 # 설정
@@ -39,55 +46,50 @@ from pathlib import Path
 MOT_BASE = r'D:\KangDH\Thesis\e10\refModel\e10Turn6V261.mot'
 OUT_DIR  = r'D:\KangDH\Thesis\e10\refModel'
 BASE_TURNS   = 6
-TARGET_TURNS = [4, 8]
-
-# Motor-CAD 버전에 따른 도체 치수 변수명 후보 (우선순위 순)
-COND_H_CANDIDATES = [
-    'ConductorHeight',       # v14+
-    'HalfPinHeight',         # 일부 버전
-    'WireHeight',
-    'BarHeight',
-    'Hairpin_Cond_Height',
-]
-COND_W_CANDIDATES = [
-    'ConductorWidth',
-    'HalfPinWidth',
-    'WireWidth',
-    'BarWidth',
-    'Hairpin_Cond_Width',
-]
+TARGET_TURNS = [4, 8]   # 새 WindingLayers (슬롯당 도체수) 목록
 
 
 # ============================================================
-# 유틸리티
+# COM 유틸리티
 # ============================================================
 
 def get_var(mcad, name, default=None):
-    """변수 읽기 (없으면 default 반환)"""
+    """변수 읽기 (없으면 default 반환). ansys.motorcad.core 는 값을 직접 반환."""
     try:
-        val = mcad.GetVariable(name)
+        val = mcad.get_variable(name)
+        if isinstance(val, (list, tuple)):
+            val = val[-1]
         return val
     except Exception:
         return default
 
 
-def set_var(mcad, name, value):
-    """변수 쓰기 (반환값 확인)"""
+def get_num(mcad, name, default=None):
+    """숫자 변수 읽기 (float)."""
+    v = get_var(mcad, name, None)
+    if v is None:
+        return default
     try:
-        ret = mcad.SetVariable(name, value)
-        if ret != 0:
-            print(f"  [경고] SetVariable({name}={value}) → ret={ret}")
+        return float(v)
+    except (TypeError, ValueError):
+        return default
+
+
+def set_var(mcad, name, value):
+    """변수 쓰기 (ansys.motorcad.core: 예외만 처리)."""
+    try:
+        mcad.set_variable(name, value)
     except Exception as e:
-        print(f"  [오류] SetVariable({name}={value}): {e}")
+        print(f"  [오류] set_variable({name}={value}): {e}")
 
 
-def find_var(mcad, candidates):
-    """후보 변수명 목록 중 실제 존재하는 첫 번째 변수 반환"""
-    for name in candidates:
-        val = get_var(mcad, name)
-        if val is not None:
-            return name, float(val)
-    return None, None
+def recompute_geometry(mcad):
+    """형상 재계산/검증 (슬롯 면적 등 o/p 갱신). edit_geometry=1: 유효화 시도."""
+    try:
+        return mcad.check_if_geometry_is_valid(1)
+    except Exception as e:
+        print(f"  [경고] check_if_geometry_is_valid 실패: {e}")
+        return None
 
 
 # ============================================================
@@ -95,123 +97,106 @@ def find_var(mcad, candidates):
 # ============================================================
 
 def read_params(mcad):
-    """헤어핀 권선 및 슬롯 관련 파라미터 읽기"""
+    """헤어핀 권선 및 슬롯 관련 파라미터 읽기 (v261 변수명)."""
     p = {}
 
-    # 기본 권선
-    p['Turns']  = int(get_var(mcad, 'Winding_Turns', 0))
-    p['Layers'] = int(get_var(mcad, 'Winding_Layers', 2))
-    p['Phases'] = int(get_var(mcad, 'Winding_Phases', 3))
-    p['Slots']  = int(get_var(mcad, 'Stator_Slots', 0))
-    p['Poles']  = int(get_var(mcad, 'Pole_Number', 0))
+    # 권선 정의 (헤어핀: 턴수 = WindingLayers)
+    p['Ncond']        = int(get_num(mcad, 'WindingLayers', 0))      # 슬롯당 도체수=턴수 (변경 대상)
+    p['TurnsPerCoil'] = int(get_num(mcad, 'MagTurnsConductor', 1))  # 코일당 턴수 (헤어핀=1, 참고)
+    p['Parallel']     = int(get_num(mcad, 'ParallelPaths_Hairpin', 1))
+    p['Slots']        = int(get_num(mcad, 'Slot_Number', 0))
+    p['Poles']        = int(get_num(mcad, 'Pole_Number', 0))
 
-    # 도체 치수
-    p['H_var'], p['H'] = find_var(mcad, COND_H_CANDIDATES)
-    p['W_var'], p['W'] = find_var(mcad, COND_W_CANDIDATES)
+    # 도체(구리 바) 치수 — wire-size 모드
+    p['Copper_W'] = get_num(mcad, 'Copper_Width', None)
+    p['Copper_H'] = get_num(mcad, 'Copper_Height', None)
 
-    # 도체 간 절연 (각 도체 주변 에나멜 등)
-    p['CondInsul'] = get_var(mcad, 'ConductorInsulationThickness', 0.0) or 0.0
+    # 슬롯/절연 치수 (사이징 입력)
+    p['Slot_Width']   = get_num(mcad, 'Slot_Width', None)
+    p['Liner']        = get_num(mcad, 'Liner_Thickness', 0.0) or 0.0
+    p['Insul']        = get_num(mcad, 'Insulation_Thickness', 0.0) or 0.0
+    p['Separation']   = get_num(mcad, 'ConductorSeparation', 0.0) or 0.0
 
-    # 슬롯 내 절연/라이너 (슬롯벽 ~ 도체 사이)
-    # ※ 이 값들이 코일 시작점을 결정 → 변경하지 않음
-    p['SlotInsul']  = get_var(mcad, 'Slot_Insulation_Thickness', 0.0) or 0.0
-    p['WedgeThick'] = get_var(mcad, 'WedgeThickness', 0.0) or 0.0
-    p['SlotLiner']  = get_var(mcad, 'SlotLinerThickness', 0.0) or 0.0
+    # 슬롯 면적/깊이 (o/p — 형상 재계산 후 유효)
+    p['Area_Slot']      = get_num(mcad, 'Area_Slot', None)
+    p['Area_Wdg_Liner'] = get_num(mcad, 'Area_Winding_With_Liner', None)
+    p['Winding_Depth']  = get_num(mcad, 'Winding_Depth', None)
 
-    # 슬롯 오프닝
-    p['SlotOpening'] = get_var(mcad, 'Stator_Slot_Opening', None)
-
-    # 점적율 (참고)
-    p['FillFactor'] = get_var(mcad, 'Slot_Fill_Factor', None)
+    # 점적율 (copper/slot, o/p) — 목표 점적율의 기준
+    p['GrossFill'] = get_num(mcad, 'GrossSlotFillFactor', None)
 
     return p
 
 
 def print_params(p):
-    """파라미터 출력"""
+    """기준 모델 파라미터 출력."""
     print("\n  [현재 기준 모델 파라미터]")
-    print(f"    Turns / Layers     : {p['Turns']} / {p['Layers']}")
-    print(f"    Slots / Poles      : {p['Slots']} / {p['Poles']}")
-    print(f"    Slots/pole/phase   : {p['Slots'] / p['Poles'] / p['Phases']:.1f}")
-    print(f"    ConductorHeight    : {p['H']:.4f} mm  [변수: {p['H_var']}]")
-    print(f"    ConductorWidth     : {p['W']:.4f} mm  [변수: {p['W_var']}]")
-    print(f"    도체 단면적        : {p['H'] * p['W']:.4f} mm²")
-    print(f"    슬롯당 총 도체수   : {p['Turns'] * p['Layers']}")
-    print(f"    CondInsulation     : {p['CondInsul']:.4f} mm (도체 에나멜)")
-    print(f"    SlotInsulation     : {p['SlotInsul']:.4f} mm")
-    print(f"    WedgeThickness     : {p['WedgeThick']:.4f} mm")
-    print(f"    SlotLiner          : {p['SlotLiner']:.4f} mm")
-    if p['SlotOpening'] is not None:
-        print(f"    Slot Opening       : {p['SlotOpening']:.4f} mm")
-    print(f"    FillFactor (현재)  : {p['FillFactor']}")
-
-    # 코일 시작점 추정 (슬롯오프닝 기준)
-    coil_start = (p['WedgeThick'] + p['SlotLiner'] + p['SlotInsul'])
-    print(f"\n  [코일 시작점] 슬롯오프닝 끝에서 {coil_start:.3f} mm 이후 첫 도체 시작")
-    print(f"    (웨지={p['WedgeThick']}mm + 라이너={p['SlotLiner']}mm + 슬롯절연={p['SlotInsul']}mm)")
-    print(f"    ※ 이 값은 턴수 변경과 무관하게 동일 유지됨")
+    print(f"    WindingLayers(도체수/턴수): {p['Ncond']}   [변경 대상]")
+    print(f"    MagTurnsConductor         : {p['TurnsPerCoil']}   (코일당 턴수, 헤어핀=1, 고정)")
+    print(f"    ParallelPaths_Hairpin     : {p['Parallel']}")
+    print(f"    Slots / Poles             : {p['Slots']} / {p['Poles']}")
+    print(f"    Copper_Width  / Height    : {p['Copper_W']:.4f} / {p['Copper_H']:.4f} mm")
+    print(f"    도체 단면적(W×H)          : {p['Copper_W'] * p['Copper_H']:.4f} mm²")
+    print(f"    슬롯당 총 copper 면적     : {p['Copper_W'] * p['Copper_H'] * p['Ncond']:.4f} mm²")
+    print(f"    Slot_Width                : {p['Slot_Width']:.4f} mm")
+    print(f"    Liner / Insul / Separation: {p['Liner']:.3f} / {p['Insul']:.3f} / {p['Separation']:.3f} mm")
+    print(f"    Area_Slot                 : {p['Area_Slot']}")
+    print(f"    Area_Winding_With_Liner   : {p['Area_Wdg_Liner']}")
+    print(f"    Winding_Depth             : {p['Winding_Depth']}")
+    print(f"    GrossSlotFillFactor (목표): {p['GrossFill']}")
 
 
 # ============================================================
-# 치수 계산
+# 도체 사이징 (calcConductorSize.m 이식)
 # ============================================================
 
-def calc_new_conductor(p, new_turns):
+def calc_conductor_size(geom, new_N, target_ff_pct):
     """
-    새 턴수에 맞는 도체 높이 계산
+    점적율 보존 copper 치수 계산 (SkkuEMLabProject\\calcConductorSize.m 이식).
 
-    조건: 슬롯 내 총 도체 단면적 = const
-    → H_new × N_cond_new = H_old × N_cond_old
-    → H_new = H_old × (N_cond_old / N_cond_new)
-       (N_cond = Turns × Layers, W_cond 고정 가정)
+    geom         : 형상 재계산 후 읽은 슬롯/절연 파라미터 dict
+                   (Area_Slot, Area_Wdg_Liner, Slot_Width, Winding_Depth,
+                    Liner, Insul, Separation, Copper_W)
+    new_N        : 새 도체수 (WindingLayers)
+    target_ff_pct: 목표 copper 점적율 [%]  (기준 모델 GrossSlotFillFactor×100)
     """
-    n_old = p['Turns']  * p['Layers']
-    n_new = new_turns   * p['Layers']
-    ratio = n_old / n_new
+    Area_Slot  = geom['Area_Slot']
+    Area_WdgL  = geom['Area_Wdg_Liner']
+    Slot_Width = geom['Slot_Width']
+    Wdg_Depth  = geom['Winding_Depth']
+    Liner      = geom['Liner']
+    Insul      = geom['Insul']
+    Sep        = geom['Separation']
 
-    H_new = p['H'] * ratio
-    W_new = p['W']   # 너비 고정
+    # 점적율 환산 (slot-area 기준 → winding-area 기준)
+    effective_ff = Area_Slot * target_ff_pct / Area_WdgL        # [%]
+    eff_slot_area = Area_WdgL * (effective_ff / 100.0)
+    turn_area     = eff_slot_area / new_N                       # 도체 1개당 copper 면적
 
-    # 순수 도체 면적 합 (CondInsul 제외)
-    area_old = p['W'] * p['H']   * n_old
-    area_new = W_new  * H_new    * n_new
-    fill_ratio = area_new / area_old
+    # 너비: 슬롯폭 - 양측 라이너/절연/도체간격
+    Copper_W = Slot_Width - 2 * Liner - 2 * Insul - 2 * Sep
+    # 높이: 면적 / 너비
+    Copper_H = turn_area / Copper_W
 
-    # 도체 + 절연 포함 스택 높이
-    stack_old = (p['H'] + 2*p['CondInsul']) * p['Turns']   # 한 레이어 기준
-    stack_new = (H_new  + 2*p['CondInsul']) * new_turns
+    # 높이 상한 (Winding_Depth 안에 N개 적층 가능한 최대 copper 높이)
+    # 공식 Ansys 문서(Logic of Coil Sizing... p11) 기준:
+    #   가용 copper 적층 공간 = Dw - 2·I·N - S(N+1)
+    #   ※ Dw(Winding_Depth)는 이미 라이너 제외값(Dw = Ds - L)이므로 Liner를 또 빼지 않는다.
+    #     (calcConductorSize.m 원본은 Liner를 이중 차감 + 도체수 10 하드코딩 → 여기서 교정)
+    max_H = (Wdg_Depth - 2 * new_N * Insul - (new_N + 1) * Sep) / new_N
+    clamped = False
+    if Copper_H > max_H:
+        Copper_H = max_H
+        clamped = True
 
     return {
-        'H': H_new,
-        'W': W_new,
-        'H_ratio': ratio,
-        'fill_ratio': fill_ratio,
-        'stack_old_mm': stack_old,
-        'stack_new_mm': stack_new,
+        'Copper_W': Copper_W,
+        'Copper_H': Copper_H,
+        'turn_area': turn_area,
+        'effective_ff': effective_ff,
+        'max_H': max_H,
+        'clamped': clamped,
     }
-
-
-def check_feasibility(p, new_turns, result):
-    """물리적 실현 가능성 체크"""
-    issues = []
-
-    # 도체 너비 최소 체크 (보통 0.5mm 미만은 헤어핀 불가)
-    if result['H'] < 0.5:
-        issues.append(f"도체 높이 {result['H']:.3f} mm < 0.5 mm (헤어핀 제작 한계)")
-
-    # 너비 > 높이 비율 체크 (헤어핀 최적 비율)
-    aspect = result['W'] / result['H']
-    if aspect > 5:
-        issues.append(f"도체 종횡비 W/H={aspect:.2f} > 5 (헤어핀 구조적 취약)")
-
-    # 스택 높이 증가 경고 (4턴 → 더 큰 도체)
-    if result['stack_new_mm'] > result['stack_old_mm'] * 1.1:
-        issues.append(
-            f"슬롯 내 도체 스택 높이 {result['stack_new_mm']:.3f} mm "
-            f"(기준 {result['stack_old_mm']:.3f} mm +{result['stack_new_mm']/result['stack_old_mm']-1:.1%})"
-        )
-
-    return issues
 
 
 # ============================================================
@@ -220,78 +205,97 @@ def check_feasibility(p, new_turns, result):
 
 def main():
     print("=" * 65)
-    print("  헤어핀 턴수 변환 Motor-CAD .mot 생성기")
+    print("  헤어핀 턴수(WindingLayers) 변환 Motor-CAD .mot 생성기")
     print(f"  기준: {MOT_BASE}")
-    print(f"  대상 턴수: {TARGET_TURNS}")
+    print(f"  대상 도체수: {TARGET_TURNS} (기준 {BASE_TURNS})")
+    print("  사이징: 점적율 보존 (calcConductorSize.m 로직)")
     print("=" * 65)
 
     # Motor-CAD 연결
     print("\nMotor-CAD COM 인터페이스 연결 중...")
     try:
-        mcad = win32com.client.Dispatch('MotorCAD.AppAutomation')
+        mcad = MotorCAD()
     except Exception as e:
-        print(f"[오류] Motor-CAD COM 연결 실패: {e}")
+        print(f"[오류] Motor-CAD 연결 실패: {e}")
         print("  → Motor-CAD가 설치되어 있는지 확인하세요.")
         sys.exit(1)
 
-    mcad.Visible = True
+    # GUI 표시 (실패해도 무시)
+    try:
+        mcad.set_visible(True)
+    except Exception:
+        pass
 
-    # 기준 파일 열기
+    # 기준 파일 열기 + 형상 재계산
     print(f"기준 파일 열기: {MOT_BASE}")
-    mcad.OpenFile(MOT_BASE)
+    mcad.load_from_file(MOT_BASE)
+    recompute_geometry(mcad)
 
-    # 현재 파라미터 읽기
+    # 현재(기준) 파라미터 읽기
     p = read_params(mcad)
     print_params(p)
 
-    if p['H_var'] is None or p['W_var'] is None:
-        print("\n[오류] 도체 치수 변수를 찾지 못했습니다.")
-        print("  → Motor-CAD 버전에 맞는 변수명을 COND_H_CANDIDATES에 추가하세요.")
-        print("  → Motor-CAD GUI에서 Winding > Conductor Dimensions 탭의 변수명을 확인하세요.")
-        mcad.Quit()
+    # 필수값 확인
+    required = ['Copper_W', 'Copper_H', 'Slot_Width', 'Area_Slot',
+                'Area_Wdg_Liner', 'Winding_Depth', 'GrossFill', 'Ncond']
+    missing = [k for k in required if p.get(k) in (None, 0)]
+    if missing:
+        print(f"\n[오류] 기준 모델에서 필수 변수를 읽지 못했습니다: {missing}")
+        print("  → 변수명/형상 유효성(CheckIfGeometryIsValid)을 확인하세요.")
+        mcad.quit()
         sys.exit(1)
 
-    # 각 턴수에 대해 .mot 생성
+    # 목표 점적율 = 기준 모델 GrossSlotFillFactor (copper/slot)
+    target_ff_pct = p['GrossFill'] * 100.0 if p['GrossFill'] <= 1.0 else p['GrossFill']
+    print(f"\n  ▶ 목표 copper 점적율(고정): {target_ff_pct:.3f} %  (기준 모델값)")
+
+    # 각 도체수에 대해 .mot 생성
     generated = []
-    for new_turns in TARGET_TURNS:
+    for new_N in TARGET_TURNS:
         print(f"\n{'─'*55}")
-        print(f"  ▶  {new_turns}턴 변환 (기준 {BASE_TURNS}턴)")
-
-        result = calc_new_conductor(p, new_turns)
-
-        print(f"    도체 높이  : {p['H']:.4f} → {result['H']:.4f} mm  (×{result['H_ratio']:.4f})")
-        print(f"    도체 너비  : {result['W']:.4f} mm  (고정)")
-        print(f"    이론 점적율: {result['fill_ratio']:.4f}  (1.0 = 완전 유지)")
-        print(f"    도체 스택  : {result['stack_old_mm']:.3f} mm → {result['stack_new_mm']:.3f} mm (1레이어)")
-
-        # 실현 가능성 체크
-        issues = check_feasibility(p, new_turns, result)
-        if issues:
-            print("    [주의]")
-            for iss in issues:
-                print(f"      ⚠  {iss}")
-        else:
-            print("    ✓ 치수 적합")
+        print(f"  ▶  도체수(WindingLayers) {new_N} 변환 (기준 {BASE_TURNS})")
 
         # 기준 파일 재로드 (이전 변경 초기화)
-        mcad.OpenFile(MOT_BASE)
+        mcad.load_from_file(MOT_BASE)
 
-        # 파라미터 적용
-        set_var(mcad, 'Winding_Turns', new_turns)
-        set_var(mcad, p['H_var'], result['H'])
-        # 너비는 변경 없음 (이미 기준값 그대로)
+        # 1) 턴수(도체수) 적용 후 형상 재계산
+        set_var(mcad, 'WindingLayers', new_N)
+        recompute_geometry(mcad)
 
-        # Motor-CAD 내부 재계산 대기
-        # (필요 시 mcad.DoWeightCalculation() 등 추가)
+        applied = get_num(mcad, 'WindingLayers')
+        if applied is None or int(applied) != new_N:
+            print(f"    [오류] 도체수 적용 실패: WindingLayers={applied} (기대 {new_N}) — 건너뜀")
+            continue
 
-        # 적용 후 점적율 확인
-        new_fill = get_var(mcad, 'Slot_Fill_Factor')
-        print(f"    실제 점적율: {new_fill}  (Motor-CAD 계산값)")
+        # 2) 현재 슬롯 형상 재독 (도체수 변경 반영된 Area/Depth)
+        g = read_params(mcad)
 
-        # 저장
-        out_name = f'e10Turn{new_turns}V261.mot'
+        # 3) 점적율 보존 copper 사이징
+        r = calc_conductor_size(g, new_N, target_ff_pct)
+
+        print(f"    Copper_Width  : {g['Copper_W']:.4f} → {r['Copper_W']:.4f} mm")
+        print(f"    Copper_Height : {g['Copper_H']:.4f} → {r['Copper_H']:.4f} mm")
+        print(f"    도체 1개 면적 : {r['turn_area']:.4f} mm²  (목표)")
+        print(f"    effective_FF  : {r['effective_ff']:.3f} %")
+        if r['clamped']:
+            print(f"    [주의] 높이가 Winding_Depth 상한({r['max_H']:.4f} mm)으로 클램프됨 "
+                  f"→ 목표 점적율 미달 가능")
+
+        # 4) copper 치수 적용 후 형상 재계산
+        set_var(mcad, 'Copper_Width',  r['Copper_W'])
+        set_var(mcad, 'Copper_Height', r['Copper_H'])
+        recompute_geometry(mcad)
+
+        # 5) 형상 유효성 + 실제 점적율 확인
+        valid = recompute_geometry(mcad)
+        new_fill = get_num(mcad, 'GrossSlotFillFactor')
+        print(f"    형상 유효성   : {valid}")
+        print(f"    실제 점적율   : {new_fill}  (목표 {target_ff_pct/100:.4f})")
+
+        # 6) 저장
+        out_name = f'e10Turn{new_N}V261.mot'
         out_path = os.path.join(OUT_DIR, out_name)
-        mcad.SaveToFile(out_path)
+        mcad.save_to_file(out_path)
 
         if os.path.exists(out_path):
             size_kb = os.path.getsize(out_path) / 1024
@@ -309,9 +313,10 @@ def main():
     print("""
   다음 단계:
     1. Motor-CAD에서 각 .mot 파일 열어 슬롯 geometry 육안 확인
-    2. gen_e10_satumap_from_mot.m 을 4/8턴 파일에 적용하여 SatuMap 생성
+       (Copper_Width/Height, 점적율이 의도대로인지)
+    2. gen_e10_satumap_from_mot.m 을 각 파일에 적용하여 SatuMap 생성
        예: motPath = 'D:\\KangDH\\Thesis\\e10\\refModel\\e10Turn4V261.mot';
-    3. AC 손실 LAB 시뮬레이션 실행 → RBF 학습용 데이터 확보
+    3. AC 손실 LAB 시뮬레이션 실행 → RBF 학습용 Kturn 데이터 확보
     """)
 
     print("Motor-CAD를 종료하지 않음 (자동 실행 모드: 직접 종료하세요)")
