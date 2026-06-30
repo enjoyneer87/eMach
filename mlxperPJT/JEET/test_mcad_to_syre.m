@@ -34,9 +34,9 @@ outMat_B = 'D:\KangDH\Thesis\e10\refModel\e10Turn6V261_SyreMMM_B.mat';
 
 filteredTable = getMCADLabDataFromMotFile(motPath);
 MCADLinkTable = reNameLabTable2LabLink(filteredTable);
-FitResultStr  = plotMultipleInterpSatuMapSubplots(@plotFitResult, MCADLinkTable, 'bilinear');
+FitResultStr  = plotMultipleInterpSatuMapSubplots(@plotFitResult, MCADLinkTable, 'bilinear'); % emach기존 Fitting Function
 
-out_B = mcad.fromFitResult(FitResultStr, p, jsonPath, n0_rpm);
+out_B = mcad.fromFitResult(FitResultStr, p, jsonPath, n0_rpm); % +mcad 함수를 통한 syre 데이터포맷 연동
 mcad.saveSyreFluxMap(out_B, outMat_B);
 
 motorModel_B = buildMotorModel(out_B, outMat_B);
@@ -46,6 +46,11 @@ if isfield(motorModel_B, 'IronPMLossMap_dq')
 end
 
 fprintf('\n완료. B: %s\n', outMat_B);
+
+% ── MTPA 검증 (Is,Gamma 보간 후 kink 해소 확인) ──────────────────────────────
+fprintf('\n── MTPA 계산 (LUT) ──\n');
+motorModel_B.controlTrajectories = MMM_eval_AOA(motorModel_B, 'LUT');
+MMM_plot_MTPA(motorModel_B);
 
 
 % ── 공통 메타데이터 ───────────────────────────────────────────────────────────
@@ -61,6 +66,5 @@ function motorModel = buildMotorModel(out, outMat)
     motorModel.data.tempPM    = 80;
     motorModel.data.n0        = 4419;
     motorModel.data.nmax      = 18000;
-    motorModel.data.p         = 4;
-    motorModel.dataSet.TypeOfRotor = 'PM';
+    motorModel.data.axisType  = 'dq';   % SyRE PM 모터 기본 축 규약
 end

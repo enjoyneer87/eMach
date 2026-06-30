@@ -49,7 +49,7 @@ SPEED_RPM  = np.linspace(0.0, 16000.0, N_SPEED)
 TORQUE_NM  = np.linspace(0.0, T_MAX_NM,  N_TORQUE)
 
 # ── 파일 경로 ─────────────────────────────────────────────────────────────
-SAT_MAP_PATH = emach_root / "tools" / "SystemSimulationModel" / "SatuMap.mat"
+SAT_MAP_PATH = emach_root / "tools" / "SystemSimulationModel" / "e10_SatuMap.mat"
 MAP_EXPORT   = current_dir / "map_exports" / "e10"
 OUTPUT_PATH  = current_dir / "efficiency_map_results.mat"
 

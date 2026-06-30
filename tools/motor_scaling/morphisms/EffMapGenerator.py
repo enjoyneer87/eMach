@@ -34,7 +34,7 @@ def generate_efficiency_map(
     loss_cu_dc_grid = np.zeros((n_torque, n_speed))
     loss_cu_ac_grid = np.zeros((n_torque, n_speed))
     loss_fe_grid = np.zeros((n_torque, n_speed))
-    efficiency_grid = np.zeros((n_torque, n_speed))
+    efficiency_grid = np.full((n_torque, n_speed), np.nan)
     success_grid = np.zeros((n_torque, n_speed), dtype=bool)
     
     speed_grid, torque_grid = np.meshgrid(speeds_rpm, torques_ref)
@@ -61,28 +61,22 @@ def generate_efficiency_map(
             loss_cu_ac_grid[t_idx, s_idx] = sol['loss_cu_ac']
             loss_fe_grid[t_idx, s_idx] = sol['loss_fe']
             success_grid[t_idx, s_idx] = sol['success']
-            
-            # 4. Calculate Efficiency
-            # Mechanical power: P_mech = Torque * omega_mech [kW]
+
+            # 4. Calculate Efficiency (infeasible points → NaN)
+            if not sol['success']:
+                continue
+
             omega_mech = speed * 2 * np.pi / 60.0
             p_mech = torque * omega_mech / 1000.0
             p_loss = sol['loss_total']
-            
+
             if torque >= 0:  # Motoring
                 p_in = p_mech + p_loss
-                if p_in > 0:
-                    eff = (p_mech / p_in) * 100.0
-                else:
-                    eff = 0.0
+                eff = (p_mech / p_in) * 100.0 if p_in > 0 else 0.0
             else:  # Generating
-                p_out = p_mech + p_loss  # Note: p_mech is negative, p_loss is positive, p_out is negative
-                if p_mech < 0:
-                    # Capture efficiency: output power / input mechanical power
-                    # Since both are negative, we take absolute or p_out / p_mech
-                    eff = (p_out / p_mech) * 100.0
-                else:
-                    eff = 0.0
-                    
+                p_out = p_mech + p_loss
+                eff = (p_out / p_mech) * 100.0 if p_mech < 0 else 0.0
+
             efficiency_grid[t_idx, s_idx] = np.clip(eff, 0.0, 100.0)
             
     return EfficiencyMap(

@@ -42,7 +42,7 @@ K_R, K_A   = 1.0, 1.0
 SPEED_RPM  = np.linspace(0.0, 16000.0, 17)   # (17,)
 TORQUE_NM  = np.linspace(0.0, 500.0,  21)    # (21,)
 
-SAT_MAP_PATH = emach_root / "tools" / "SystemSimulationModel" / "SatuMap.mat"
+SAT_MAP_PATH = emach_root / "tools" / "SystemSimulationModel" / "e10_SatuMap.mat"
 RBF_PATH     = current_dir / "map_exports" / "e10" / MODEL / f"AF_RBF_model_{MODEL}.json"
 OUTPUT_PATH  = current_dir / "eff_map_single_ref.mat"
 
@@ -108,7 +108,7 @@ eta_pct       = eff_map.efficiency.copy()      # (21, 17)
 beta_deg      = eff_map.phase_deg              # (21, 17)
 i_amp         = eff_map.i_amp                  # (21, 17)
 loss_cu_dc_kW = eff_map.loss_cu_dc             # (21, 17)
-loss_cu_ac_kW = eff_map.loss_cu_ac             # (21, 17)  Ref → 0
+loss_cu_ac_kW = eff_map.loss_cu_ac             # (21, 17)  Ref → 0         
 loss_fe_kW    = eff_map.loss_fe                # (21, 17)
 
 # 0 RPM 열 → 효율 0으로 강제 설정

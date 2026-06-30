@@ -251,7 +251,9 @@ def plot_loss_decomposition(d: dict) -> None:
     ranges = []
     for arr in loss_arrays:
         vmin = 0.0
-        vmax = np.nanpercentile(arr, 99)
+        vmax = float(np.nanpercentile(arr, 99))
+        if vmax <= vmin:
+            vmax = vmin + 1.0  # Ensure vmax is strictly greater than vmin
         ranges.append((vmin, vmax))
 
     fig, axes = plt.subplots(3, 3, figsize=(13, 11), sharey="row")
@@ -310,7 +312,7 @@ def plot_loss_decomposition(d: dict) -> None:
 # Fig 4 — Calibration 효과 Δη = SC − Ref
 # ────────────────────────────────────────────────────────────────────────────
 def plot_delta_eta(d: dict) -> None:
-    print("[Fig 4] Calibration 효과 Δη = SC − Ref …")
+    print("[Fig 4] Calibration 효과 Δη = SC - Ref ...")
     X = d["speed_k"]
     Y = d["torque_nm"]
 
@@ -412,7 +414,7 @@ def main() -> None:
     plot_delta_eta(d)
 
     print("\n" + "=" * 60)
-    print("DONE — 4개 PNG 저장 완료")
+    print("DONE - 4개 PNG 저장 완료")
     print("=" * 60)
 
 

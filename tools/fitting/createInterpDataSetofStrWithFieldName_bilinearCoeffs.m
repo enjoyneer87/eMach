@@ -9,7 +9,7 @@ function [fitresult, gof, DataSet,coeffsTable] = createInterpDataSetofStrWithFie
         error('올바른 데이터를 입력하세요'); 
     end
 
-    % dq 변환
+    % dq 변환 (XGrid/YGrid 범위 산출용 — ZGrid 생성엔 사용 안 함)
     if ~isvarofTable(inputTable, 'Id_Peak')
         [inputTable.Id_Peak, inputTable.Iq_Peak] = pkgamma2dq(inputTable.Is, inputTable.("Current Angle"));
     end
@@ -20,18 +20,53 @@ function [fitresult, gof, DataSet,coeffsTable] = createInterpDataSetofStrWithFie
         return;
     end
 
-    % === 데이터 준비 ===
+    % === 데이터 준비 (평가용 xData/yData/zData — RMSE 계산에 사용) ===
     [xData, yData, zData] = prepareSurfaceData(inputTable.Id_Peak, inputTable.Iq_Peak, inputTable.(varName));
-    
+
     % grid 설정
-    nx = 100; ny = 100;  % 해상도 설정
+    nx = 255; ny = 255;  % 해상도 설정 (SyRE THOR.mat 기준 255×255)
     xlin = linspace(min(xData), max(xData), nx);
     ylin = linspace(min(yData), max(yData), ny);
     [XGrid, YGrid] = meshgrid(xlin, ylin);
 
-    % 보간 표면 생성 (외삽 포함)
-    F = scatteredInterpolant(xData, yData, zData, 'linear', 'linear');
-    ZGrid = F(XGrid, YGrid);
+    % === ZGrid 생성: (Is, Gamma) 직사각형 공간에서 보간 → 외삽 없음 ===
+    %
+    %  Motor-CAD LAB 원본 데이터는 (Is, Gamma) 직사각형 격자
+    %  → (Id, Iq)로 변환하면 부채꼴 scattered → 모서리 외삽 발생 (기존 문제)
+    %  → (Is, Gamma) 공간에서 interp2 후 각 (Id, Iq) 격자점을 역변환해서 평가
+    %    Is  = sqrt(Id² + Iq²)
+    %    Gam = atan2d(-Id, Iq)   (Motor-CAD pkgamma2dq 역변환)
+    %  → 전류 제한원(Is > Is_max) 바깥 모서리만 NaN → fillmissing으로 처리
+    %
+    Is_raw  = inputTable.Is;
+    Gam_raw = inputTable.("Current Angle");
+    Z_raw   = inputTable.(varName);
+
+    [Is_u,  ~, Is_idx]  = unique(Is_raw);
+    [Gam_u, ~, Gam_idx] = unique(Gam_raw);
+
+    nIs = numel(Is_u);  nGam = numel(Gam_u);
+
+    if nIs * nGam == numel(Z_raw)
+        % (Is, Gamma) 직사각형 격자 확인 → 행렬로 조립
+        Z_mat = zeros(nGam, nIs);
+        for k = 1:numel(Z_raw)
+            Z_mat(Gam_idx(k), Is_idx(k)) = Z_raw(k);
+        end
+
+        % 각 (Id, Iq) 격자점을 (Is, Gamma)로 역변환 후 interp2 평가
+        Is_q  = sqrt(XGrid.^2 + YGrid.^2);   % Peak 전류 크기
+        Gam_q = atan2d(-XGrid, YGrid);         % Motor-CAD gamma 규약 역변환
+
+        ZGrid = interp2(Is_u, Gam_u, Z_mat, Is_q, Gam_q, 'linear', NaN);
+        ZGrid = fillmissing(ZGrid, 'nearest'); % 전류 제한원 바깥 NaN 처리
+    else
+        % 비정형 데이터 → 기존 scatteredInterpolant fallback
+        warning('createInterp:notRectGrid', ...
+            '[%s] (Is,Gamma) 격자가 직사각형이 아님 → scatteredInterpolant 사용', varName);
+        F = scatteredInterpolant(xData, yData, zData, 'linear', 'linear');
+        ZGrid = F(XGrid, YGrid);
+    end
 
     % === bilinear 계수 추출 ===
     coeffList = nan((nx - 1)*(ny - 1), 5);  % 미리 공간 할당

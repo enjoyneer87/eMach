@@ -241,6 +241,8 @@ class MtpaFwSolver:
             p_fe_opt, p_ac_opt, map_data.r_dc, omega_e,
         )
 
+        v_ok = v_sq_opt <= v_max**2 * (1.0 + 1e-4)
+
         return {
             'id_opt':     float(id_opt),
             'iq_opt':     float(iq_opt),
@@ -250,5 +252,5 @@ class MtpaFwSolver:
             'loss_cu_dc': float(p_dc_opt),
             'loss_cu_ac': float(p_ac_opt),
             'loss_fe':    float(p_fe_opt),
-            'success':    bool(res.success),
+            'success':    bool(res.success) and v_ok,
         }
