@@ -3001,6 +3001,20 @@
       "ts_dc_active_kW": 31.41203536150226,
       "ts_dc_end_kW": 32.674714522511685,
       "ts_ac_active_only_kW": 316.5618356205068
+    },
+    {
+      "proximity_model": 3,
+      "mode": "FullFEA",
+      "speed": 16000,
+      "current": 460.05,
+      "phase": 90.0,
+      "backup_dir": "D:\\KDH\\simVary\\e10_6TSweep\\SLFEA\\ACLossCalcExport_SC\\FullFEA_Speed_16000RPM_460.1A_90.0deg",
+      "fea_per_turn_raw": "43530.2581262142 : 23004.5606738419 : 14383.5148671313 : 7993.5254974003 : 3734.26244336469 : 1604.08234508652",
+      "fea_per_turn_sum_kW": 94.2502039530389,
+      "fea_total_ac_kW": 86.3954878440473,
+      "ts_dc_active_kW": 7.854716108991725,
+      "ts_dc_end_kW": 8.170454526841086,
+      "ts_ac_active_only_kW": 86.39548784404718
     }
   ]
 }
