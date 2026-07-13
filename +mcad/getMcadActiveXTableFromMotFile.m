@@ -1,5 +1,13 @@
 function modifiedDataStruct = getMcadActiveXTableFromMotFile(MotFilePath)
-    load("mcadActiveXparameterList.mat");
+    % [FIX] 기존: load("mcadActiveXparameterList.mat") — path 상 동명 .mat 2개
+    %       (tools\, SkkuEMLabProject\) 중 무엇이 잡힐지 모호 + 구버전(v21.2) 고정.
+    %       버전 인식 로더로 교체 → v261 txt 기준 카탈로그를 결정적으로 로드/캐시.
+    [ActiveXParametersStruct, catalogVersion] = mcad.loadActiveXCatalog();
+
+    % [버전검사] .mot 의 Program_Version 과 카탈로그 버전이 같은 Motor-CAD 버전인지
+    %            대조 → 다르면 경고 (파라미터 누락/오매칭 사전 경보).
+    mcad.checkMotCatalogVersion(MotFilePath, catalogVersion);
+
     % MotFilePath=refModelPath
     modifiedData = mcad.getDataFromMotFiles(MotFilePath);
     % modifiedDataStruct 구조체 초기화

@@ -33,6 +33,9 @@ octave-workspace
 tests/LineCurrent.csv
 Class/LineCurrent.csv
 LineCurrent.csv
+
+# ActiveX 카탈로그 빌드 캐시 (버전별 txt에서 mcad.loadActiveXCatalog가 자동 재생성)
+tools/mcadActiveXparameterList_v*.mat
 *.png
 
 *.gif
@@ -95,6 +98,11 @@ fcnExportGraphicGif.m
 *.vscode**
 mlxperPJT/JEET/SCL_AC_HYBTSR1.fig
 mlxperPJT/JEET/SCL_ACvANAHYBTSFQ.fig
+
+# JEET Kturn 파이프라인 런타임 산출물 (Phase 3)
+mlxperPJT/JEET/kturn_results/
+mlxperPJT/JEET/**/e10Turn*.mot
+mlxperPJT/JEET/**/ACLossCalcExport_*/
 cat >> .gitignore << EOF
 # Large files
 *.pth
