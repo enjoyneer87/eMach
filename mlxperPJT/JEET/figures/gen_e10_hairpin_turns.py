@@ -40,6 +40,13 @@ from ansys.motorcad.core import MotorCAD
 import os
 import sys
 
+# Windows 콘솔(cp949)에서 ✓/─ 등 유니코드 출력 시 UnicodeEncodeError 방지
+try:
+    sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+    sys.stderr.reconfigure(encoding='utf-8', errors='replace')
+except Exception:
+    pass
+
 # ============================================================
 # 설정
 # ============================================================

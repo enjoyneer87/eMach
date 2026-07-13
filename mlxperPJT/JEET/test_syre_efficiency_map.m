@@ -82,12 +82,18 @@ fprintf('Max Efficiency (SyRE): %.2f%%\n', max(TwMap.eff(:)) * 100);
 fprintf('==================================================\n');
 
 
-% plot 
-
-MMM_plot_fdfq(motorModel)  
-MMM_plot_ironLoss(motorModel)
-MMM_plot_skinEffect(motorModel);
-MMM_plot_MTPA(motorModel);
+% plot
+% [주의] SyRE MMM_plot_* 함수들은 내부에서 questdlg('Save figures?')를 호출하므로
+%        -batch/헤드리스 실행에서는 대화상자 생성이 차단되어 에러가 발생합니다.
+%        진단용 플롯이므로 try/catch로 감싸 실패해도 이후 필수 PNG 저장이 진행되게 합니다.
+diagPlots = {@MMM_plot_fdfq, @MMM_plot_ironLoss, @MMM_plot_skinEffect, @MMM_plot_MTPA};
+for k = 1:numel(diagPlots)
+    try
+        diagPlots{k}(motorModel);
+    catch ME
+        fprintf('  [건너뜀] %s 진단 플롯 실패(헤드리스): %s\n', func2str(diagPlots{k}), ME.message);
+    end
+end
 
 
 %% 7. Python 계산 결과와 SyRE 계산 결과 통합 비교 플롯

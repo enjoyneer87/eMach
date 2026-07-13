@@ -36,7 +36,7 @@ Motor-CAD Custom Loss = Stator_Copper_Loss_AC * (AF(Speed/1000) - 1)
 |------|------|--------|------|------|
 | `map_exports/e10/JEET_ACLoss_180Map_Summary_20260620_055628.json` | SC | 180 (Hybrid90+FEA90) | 2k/4k/16k RPM | 메인 데이터 |
 | `map_exports/e10/JEET_ACLoss_4Speed_Map_Summary_20260620_204151.json` | SC | 추가 | 8k RPM 보완 | |
-| `map_exports/e10/Ref/JEET_ACLoss_Ref_Map_Summary_e4.json` | Ref | — | — | |
+| `map_exports/e4/Ref/JEET_ACLoss_Ref_Map_Summary_e4.json` | Ref (e4a 4턴 모터 — e10 아님, 모델별 폴더 분리) | — | — | |
 | `map_exports/e10/HalfSC/JEET_ACLoss_HalfSC_Map_Summary.json` | HalfSC | — | — | |
 | `map_exports/e10/SC/JEET_ACLoss_SC_Map_Summary.json` | SC | — | — | |
 | `map_exports/e10/SC/AF_infill_schedule_SC.json` | SC | 10점 | 16kRPM 보강 | Phase2 보강 대기 |

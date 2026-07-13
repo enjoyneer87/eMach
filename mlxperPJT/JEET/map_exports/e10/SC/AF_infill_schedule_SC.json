@@ -1,0 +1,66 @@
+{
+  "scale": "SC",
+  "source": "D:\\KangDH\\EveryMotor\\eMach\\mlxperPJT\\JEET\\map_exports\\e10\\SC\\JEET_ACLoss_SC_Map_Summary.json",
+  "points": [
+    {
+      "speed": 16000,
+      "current": 460.05,
+      "phase": 90.0,
+      "reason": "grid_hole"
+    },
+    {
+      "speed": 16000,
+      "current": 920.0,
+      "phase": 90.0,
+      "reason": "rerun_outlier"
+    },
+    {
+      "speed": 16000,
+      "current": 690.0,
+      "phase": 90.0,
+      "reason": "rerun_outlier"
+    },
+    {
+      "speed": 16000,
+      "current": 230.0,
+      "phase": 90.0,
+      "reason": "rerun_outlier"
+    },
+    {
+      "speed": 16000,
+      "current": 345.0,
+      "phase": 72,
+      "reason": "densify_loo11pct"
+    },
+    {
+      "speed": 16000,
+      "current": 575.0,
+      "phase": 72,
+      "reason": "densify_loo11pct"
+    },
+    {
+      "speed": 16000,
+      "current": 805.0,
+      "phase": 72,
+      "reason": "densify_loo11pct"
+    },
+    {
+      "speed": 16000,
+      "current": 345.0,
+      "phase": 90,
+      "reason": "densify_loo61pct"
+    },
+    {
+      "speed": 16000,
+      "current": 575.0,
+      "phase": 90,
+      "reason": "densify_loo61pct"
+    },
+    {
+      "speed": 16000,
+      "current": 805.0,
+      "phase": 90,
+      "reason": "densify_loo61pct"
+    }
+  ]
+}

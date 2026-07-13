@@ -416,6 +416,13 @@ end
 
 % [PATCH] fTmp 단조성 보장: sort → unique → interp1
 if ~isempty(fTmp)
+    % [PATCH] interp1 샘플 점은 유한해야 함 → FluxMap NaN 노드에서 온
+    %         non-finite 쌍 제거 (Fd/Fq 그리드 경계의 미정의 노드 방어)
+    gd = isfinite(fTmp) & isfinite(iTmp);
+    fTmp = fTmp(gd);
+    iTmp = iTmp(gd);
+end
+if ~isempty(fTmp)
     [fTmp, si] = sort(fTmp);
     iTmp = iTmp(si);
     [fTmp, ui] = unique(fTmp);
