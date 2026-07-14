@@ -64,10 +64,26 @@ JMAG **JAC279** *"Thermal Analysis Accounting for Cooling of the IPM Motor"* 의
 - **4장**: 열등가회로 노드 (하우징 세그먼트·샤프트·공극·냉각 고정온도) — `NET_NODES`/`NET_EDGES`/`NET_CAPS` 로 구조화 (10장 시각화 재사용)
 - **5장**: `SURF152` 로 FEM 경계면 ↔ 회로 노드 연결 (스테이터 외경 상/하 90° 비대칭 냉각)
 - **6장**: 발열 — 재료군별 총손실 → 체적발열률(HGEN). 링/CAD 공통 (MAT 기반)
+- **6B장**: **Maxwell transient 손실 추출** (PE1.2 p.20 방식) — `Setup1:Transient` 의
+  1.875~3.75 ms 시간평균 `CoreLoss`/`SolidLoss`/`StrandedLoss` → `LOSS_*` 갱신 후 6장 재실행.
+  `RUN_MAXWELL` 플래그로 미해석 시 해석 실행(장시간). `SYM` 배수(섹터↔full) 확인 필수
+- **6C장**: **HGEN 컨투어** — 열모델에 실제 맵핑된 손실밀도(viridis, z=0/x=0 슬라이스)
 - **7장**: 과도 해석 (transient)
-- **8장**: 후처리 — 코일 온도 이력 4점 (팔레트 고정 4색 + 직접 라벨)
-- **9장**: FEA 컨투어 시각화 (pyvista, inferno 순차램프) — 외표면 등각 / x=0 수직 절단(WJ↔ATF 비대칭) / z=0 횡단면. percentile clim + 범위 밖 하한색 클립
-- **10장**: 열등가회로 다이어그램 (matplotlib) — 노드색=온도(FEA 와 공용 램프), 사각=고정온도, 원=부동, 실선=COMBIN14(G 라벨), 점선=SURF152 결합, FEM 영역 박스(avg/max)
+- **8장**: 후처리 — 코일 온도 이력 4점 (팔레트 고정 4색 + 직접 라벨 dodge)
+- **9장**: FEA 컨투어 시각화 (pyvista, inferno) — 표면 등각(ambient 조명) / x=0 절단(WJ↔ATF) / z=0 횡단. 뷰별 자체 clim, 절단면 무조명
+- **10장**: 열등가회로 다이어그램 — **JMAG(JAC279 Fig.4-2) 스타일**: 직교 배선,
+  □저항(COMBIN14)/‖커패시터(MASS71)/접지(고정온도)/FEM 박스(SURF152 h·A) 심볼, 파랑 그룹박스, 노드색=온도
+- **10B장**: **3D 오버레이** — 회로 노드를 물리 위치(WJ 상부/ATF 하부/샤프트 축/공극 반경)에 구체로 배치, 반투명 형상 위에 튜브 배선
+
+### 대상 프로젝트 변경 (2026-07-14)
+
+CAD 경로 대상이 **`Electric_Motor_IcepakFEA_AEDT_3D_part1`** 로 변경됨
+(`D:\KDH\simVary\Ansys_Thermal\AEDT_IcepakFEA_ILT_2026\`, PE1.2 실습 재구성본).
+- 현재 파일에는 **Maxwell 3D 디자인(`Electric_Motor_IcepakFEA_AEDT`, 미해석)만** 저장돼 있음
+- **PE1.2 절차대로 [Create Target Design] 으로 권선 포함 IcepakFEA 디자인 생성 후** 3B 실행
+  (3B-1 은 IcepakFEA 타입 디자인을 자동 선택)
+- 참고 교재: `AEDT_IcepakFEA_ILT_2026/Module 1/AEDT_IcepakFEA_Thermal_2026R1_EN_PE1.2.pdf`
+  (p.20: EM Loss 링크, 1.875~3.75 ms 시간평균 — 6B 장의 근거)
 
 ## 4. 이전(초기) 버전에서 고친 오류들
 
