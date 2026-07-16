@@ -110,23 +110,27 @@ CAD 경로 대상이 **`Electric_Motor_IcepakFEA_AEDT_3D_part1`** 로 변경됨
 
 ### 4c. Maxwell 손실 확보 경로 (2026-07-16 확정)
 
-**결론: 손실은 Maxwell 2D 에서 추출** (`Electric_Motor_Mechanical_AEDT_2D_part1`,
-JAC279 원문도 사전 자계해석은 2D). 후반 주기 평균, `maxwell_losses.json`:
+**최종: Maxwell 3D 손실 채택** (`Electric_Motor_IcepakFEA_AEDT`, PE1.2 방식
+1.875~3.75 ms 시간평균). 배수 = `SymmetryFactor(8)×(1+HalfAxial)=16` (리포트 자동반영).
+검증: named expression(×8 필드적분)×2 = 리포트값 정확 일치. `maxwell_losses.json`:
 
-| 손실 | Maxwell 2D [W] | JAC279 예시 [W] |
-| --- | --- | --- |
-| 코일 동손 (StrandedLoss) | 1233.4 | 1004 |
-| 스테이터 철손 | 580.7 | 880 |
-| 로터 철손 | 41.7 | 65 |
-| 자석 (SolidLoss) | 4.6 | 71 (2D는 자석 와전류 과소평가 경향) |
+| 손실 (full machine) | **3D [W]** | 2D [W] | JAC279 예시 |
+| --- | --- | --- | --- |
+| 코일 동손 (StrandedLoss) | **2637.2** | 1233.4 | 1004 |
+| 스테이터 철손 | **1145.8** | 580.7 | 880 |
+| 로터 철손 | **59.7** | 41.7 | 65 |
+| 자석 (SolidLoss) | **0.32** | 4.6 | 71 |
 
-**3D transient (`Electric_Motor_IcepakFEA_AEDT`) 는 v261 에서 해석 불가** —
-`"Matching boundary not supported in Classic Parallel Recovery"`:
-주기경계(master/slave)와 v261 기본활성 CPR 기능의 충돌. 시도한 우회 전부 실패:
-① Ansoft Classic 메셔 전환 ② `CylindricalGap1` 메시연산 삭제(→G3dMesher 크래시는
-이걸로 해결됨) ③ serial(cores=1) ④ 새 세션 ⑤ 내부 플래그 `CPRIsEnabled`
-(솔버 바이너리에서 확인)를 env/cmu.env 로 주입. **GUI Beta Options 에서
-"Classic Parallel Recovery" 해제 후에만 3D 재시도 가치 있음.**
+- 3D 동손이 2D의 2.1배: **3D는 실제 엔드와인딩 도체 포함** (2D는 슬롯부만)
+- ⚠ 3D는 **초기메시** 해석 → 철손 과대평가 가능. 정밀시 메시 수렴 후 6B 재추출
+- 자석손실이 미미한 것은 1.5° 세그먼트(36슬라이스) 효과
+
+**3D 해석 차단 이슈 (해결됨)**: v261 기본활성 "Classic Parallel Recovery"
+(내부 `CPRIsEnabled`, 솔버 바이너리에서 확인)가 주기경계와 충돌 —
+`"Matching boundary not supported in Classic Parallel Recovery"`.
+프로그램적 우회 전부 실패(메셔 전환/CylindricalGap 삭제→G3dMesher 크래시는 해결/
+serial/새 세션/env·cmu.env 주입). **GUI Beta Options 에서 해제 후 해석 성공**
+(사용자 수행, 2026-07-16 16:12, 결과 384MB).
 
 ## 5. 실행 방법
 

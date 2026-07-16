@@ -1,8 +1,17 @@
 {
-  "StrandedLoss": 1233.4025411795028,
-  "SolidLoss": 4.563452976773259,
-  "CoreLoss": 622.3758742789771,
-  "CoreLoss_Stator": 580.6924517995918,
-  "CoreLoss_Rotor": 41.68342211860148,
-  "_source": "Maxwell2D Electric_Motor_Mechanical_AEDT_2D_part1 Setup1 : Transient"
+  "active_source": "3D",
+  "losses_3d_full_machine_W": {
+    "copper": 2637.2,
+    "iron_stator": 1145.8,
+    "iron_rotor": 59.7,
+    "magnet": 0.32,
+    "_method": "Electric_Motor_IcepakFEA_AEDT Setup1 Transient, 1.875~3.75ms 평균. 리포트값(x16 반영) + named expr x2 교차검증 일치. 초기메시 해석 유의"
+  },
+  "losses_2d_full_machine_W": {
+    "copper": 1233.4,
+    "iron_stator": 580.7,
+    "iron_rotor": 41.7,
+    "magnet": 4.6,
+    "_method": "Electric_Motor_Mechanical_AEDT_2D_part1, 후반주기 평균 (엔드와인딩 미포함)"
+  }
 }
