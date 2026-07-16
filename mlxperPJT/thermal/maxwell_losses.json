@@ -1,0 +1,8 @@
+{
+  "StrandedLoss": 1233.4025411795028,
+  "SolidLoss": 4.563452976773259,
+  "CoreLoss": 622.3758742789771,
+  "CoreLoss_Stator": 580.6924517995918,
+  "CoreLoss_Rotor": 41.68342211860148,
+  "_source": "Maxwell2D Electric_Motor_Mechanical_AEDT_2D_part1 Setup1 : Transient"
+}

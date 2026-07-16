@@ -108,6 +108,26 @@ CAD 경로 대상이 **`Electric_Motor_IcepakFEA_AEDT_3D_part1`** 로 변경됨
    노드(현 위에 위치, 반경 오차 ~ESIZE²/8R)가 빠져 면이 불완전 → ESURF 미생성
    (스테이터 보어에서 발생). → 반경 허용오차를 `1.6·ESIZE²/(8R)` 로 확대.
 
+### 4c. Maxwell 손실 확보 경로 (2026-07-16 확정)
+
+**결론: 손실은 Maxwell 2D 에서 추출** (`Electric_Motor_Mechanical_AEDT_2D_part1`,
+JAC279 원문도 사전 자계해석은 2D). 후반 주기 평균, `maxwell_losses.json`:
+
+| 손실 | Maxwell 2D [W] | JAC279 예시 [W] |
+| --- | --- | --- |
+| 코일 동손 (StrandedLoss) | 1233.4 | 1004 |
+| 스테이터 철손 | 580.7 | 880 |
+| 로터 철손 | 41.7 | 65 |
+| 자석 (SolidLoss) | 4.6 | 71 (2D는 자석 와전류 과소평가 경향) |
+
+**3D transient (`Electric_Motor_IcepakFEA_AEDT`) 는 v261 에서 해석 불가** —
+`"Matching boundary not supported in Classic Parallel Recovery"`:
+주기경계(master/slave)와 v261 기본활성 CPR 기능의 충돌. 시도한 우회 전부 실패:
+① Ansoft Classic 메셔 전환 ② `CylindricalGap1` 메시연산 삭제(→G3dMesher 크래시는
+이걸로 해결됨) ③ serial(cores=1) ④ 새 세션 ⑤ 내부 플래그 `CPRIsEnabled`
+(솔버 바이너리에서 확인)를 env/cmu.env 로 주입. **GUI Beta Options 에서
+"Classic Parallel Recovery" 해제 후에만 3D 재시도 가치 있음.**
+
 ## 5. 실행 방법
 
 ```bash
