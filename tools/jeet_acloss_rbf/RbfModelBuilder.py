@@ -11,22 +11,36 @@ class RbfModelBuilder:
         records: List[Dict],
         irms_min: float = 50.0,
         af_min: float = 0.3,
-        af_max: float = 3.0
+        af_max: float = 3.0,
+        exclude_points: Optional[List[Tuple[float, float, float]]] = None
     ) -> AcLossDataset:
         """
         Processes raw simulation records, matches Hybrid and FullFEA points,
         runs validation filters, performs coordinate transformations, and creates
         an AcLossDataset.
+
+        exclude_points: list of (speed_rpm, current_rms, phase_deg) tuples to
+        drop as known-bad TS-FEA runs (e.g. non-converged transients detected
+        by the AF neighbor-consistency check). Each exclusion is logged.
         """
         hybrid_data = [p for p in records if p.get("proximity_model") == 1]
         ts_data     = [p for p in records if p.get("proximity_model") == 3]
-        
+
+        excl = [tuple(map(float, e)) for e in (exclude_points or [])]
+
         af_points = []
         for ts_pt in ts_data:
             spd = ts_pt["speed"]
             curr = ts_pt["current"]
             ph = ts_pt["phase"]
-            
+
+            # Known-bad TS-FEA runs (data-quality exclusion)
+            if any(abs(spd - es) < 1.0 and abs(curr - ec) < 1.0
+                   and abs(ph - ep) < 1.0 for es, ec, ep in excl):
+                print(f"  [EXCLUDE] known-bad TS-FEA point dropped: "
+                      f"{spd:.0f} RPM, {curr:.1f} A, {ph:.1f} deg")
+                continue
+
             # Find matching hybrid record
             matches = [
                 h for h in hybrid_data
@@ -251,11 +265,94 @@ class RbfModelBuilder:
             f_coords.append(np.mean(f_by_speed[spd]))
             
         p_coeffs = np.polyfit(speed_coords, f_coords, 2)
-        
+
         return SeparableRbfModel(
             w_g=w_g,
             base_centers_i=irms_arr_base,
             base_centers_p=phase_arr_base,
+            ls_i=LS_I,
+            ls_p=LS_P,
+            p_coeffs=p_coeffs
+        )
+
+    @staticmethod
+    def build_separable_rbf_transfer(
+        dataset: AcLossDataset,
+        donor_model: SeparableRbfModel,
+        k_r: float,
+        n_base: int,
+        n_spd: int,
+        seed: int = 42,
+        lam: float = 1e-6,
+        base_speed: float = 16.0,
+        max_donor_speed: float = 16.0,
+        n_probe_transfer: int = 4
+    ) -> SeparableRbfModel:
+        """
+        Builds a Separable RBF for a scaled variant using SCL-M similarity
+        transfer: AF_scaled(w, I, beta) = AF_ref(k_r^2 * w, I / k_r, beta).
+
+        The 2D kernel and the calibration points in the *untransferable*
+        high band (mapped speed k_r^2 * w > max_donor_speed) use the scaled
+        model's own TS-FEA samples; low-band f-values are evaluated from the
+        donor (reference) model instead, so no low-speed TS-FEA of the
+        scaled variant is required.
+        """
+        speeds_k = dataset.speeds_k
+        irms_arr = dataset.irms_arr
+        phase_arr = dataset.phase_arr
+        af_arr = dataset.af_arr
+        LS_I, LS_P = dataset.LS_I, dataset.LS_P
+
+        rng = np.random.RandomState(seed)
+
+        # 2D kernel at the scaled model's own base speed
+        base_idx = np.where(np.abs(speeds_k - base_speed) < 0.1)[0]
+        bsel = rng.choice(base_idx, min(n_base, len(base_idx)), replace=False)
+        ib, pb, yb = irms_arr[bsel], phase_arr[bsel], af_arr[bsel]
+        nb = len(bsel)
+        Phi_g = np.zeros((nb, nb))
+        for j in range(nb):
+            r2 = (ib - ib[j])**2 / LS_I**2 + (pb - pb[j])**2 / LS_P**2
+            Phi_g[:, j] = r2 * np.log(np.sqrt(r2) + 1e-12)
+        w_g = np.linalg.solve(Phi_g + lam * np.eye(nb), yb)
+
+        def g_local(I, th):
+            Iv = np.asarray(I, float).ravel()[:, None]
+            thv = np.asarray(th, float).ravel()[:, None]
+            r2 = (Iv - ib)**2 / LS_I**2 + (thv - pb)**2 / LS_P**2
+            return (r2 * np.log(np.sqrt(r2) + 1e-12)) @ w_g
+
+        unique_speeds = sorted(set(np.round(speeds_k, 3)))
+        other_speeds = [s for s in unique_speeds
+                        if abs(s - base_speed) >= 0.1]
+
+        f_by_speed = {base_speed: [1.0]}
+        for spd in other_speeds:
+            grp = np.where(np.abs(speeds_k - spd) < 0.1)[0]
+            transferable = (spd * k_r**2) <= max_donor_speed + 0.1
+            # transferred probes cost no TS-FEA -> use a richer probe set
+            n_pick = n_probe_transfer if transferable else n_spd
+            for idx in rng.choice(grp, min(n_pick, len(grp)), replace=False):
+                I_val, th_val = irms_arr[idx], phase_arr[idx]
+                if transferable:
+                    # AF from the donor model via similarity mapping
+                    af_val = float(donor_model.predict(
+                        spd * k_r**2 * 1000.0, I_val / k_r, th_val))
+                else:
+                    af_val = af_arr[idx]      # own TS-FEA sample
+                f_val = af_val / (float(g_local(I_val, th_val)[0]) + 1e-12)
+                if 0.3 <= f_val <= 3.0:
+                    f_by_speed.setdefault(spd, []).append(f_val)
+
+        sc = sorted(f_by_speed.keys())
+        fc = [float(np.mean(f_by_speed[s])) for s in sc]
+        p_coeffs = np.polyfit(sc, fc, 2)
+
+        return SeparableRbfModel(
+            w_g=w_g,
+            base_centers_i=ib,
+            base_centers_p=pb,
             ls_i=LS_I,
             ls_p=LS_P,
             p_coeffs=p_coeffs
