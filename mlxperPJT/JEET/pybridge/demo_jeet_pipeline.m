@@ -54,6 +54,26 @@ heatmap(G.n_spd8, G.n_base, round(G.wmae_pct, 1));
 xlabel('own 8-kRPM cal points'); ylabel('own 16-kRPM base points');
 title('SC transfer plan, wMAE [%]');
 
-%% 8. regenerate the journal PNGs (then copy to Overleaf fig\)
+%% 8. per-speed kW surfaces on the map plane
+% source: 'tsfea' | 'hybrid' | 'calibrated'  (calibrated = Hybrid x AF)
+jeetPlotLossSurface('SC', 'iphase', 'tsfea');       % measured, I-beta plane
+jeetPlotLossSurface('SC', 'dq',     'calibrated');  % model, dq plane
+
+% side-by-side check: hybrid underestimation vs calibrated at one speed
+dsSC = jeetLoadDataset('SC');
+m16k = abs(dsSC.speed_rpm - 16000) < 1;
+af16 = jeetPredictAF('SC', dsSC.speed_rpm(m16k), ...
+    dsSC.irms_A(m16k), dsSC.phase_deg(m16k));
+figure('Name', '16 kRPM: hybrid vs calibrated vs TS-FEA');
+plot3(dsSC.irms_A(m16k), dsSC.phase_deg(m16k), dsSC.tsfea_kW(m16k), ...
+    'ko', 'DisplayName', 'TS-FEA'); hold on
+plot3(dsSC.irms_A(m16k), dsSC.phase_deg(m16k), dsSC.hybrid_kW(m16k), ...
+    'bs', 'DisplayName', 'Hybrid');
+plot3(dsSC.irms_A(m16k), dsSC.phase_deg(m16k), ...
+    dsSC.hybrid_kW(m16k) .* af16(:), 'r^', 'DisplayName', 'Calibrated');
+grid on; view(-35, 25); legend('Location', 'best');
+xlabel('I_{rms} [A]'); ylabel('\beta [deg]'); zlabel('P_{AC} [kW]');
+
+%% 9. regenerate the journal PNGs (then copy to Overleaf fig\)
 files = jeetMakeFigures();
 disp(files.')

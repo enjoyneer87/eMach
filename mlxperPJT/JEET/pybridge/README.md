@@ -38,6 +38,7 @@ jeetMakeFigures();                    % 저널 PNG 재생성
 | `jeetPredictAF(scale, rpm, A, deg)` | AF 예측 (스칼라/벡터) |
 | `jeetSimilarityPairs(scale)` | 상사 사상 검증쌍 → table |
 | `jeetTransferAblation(scale, ...)` | transfer 플랜 wMAE 그리드 |
+| `jeetPlotLossSurface(scale, plane?, source?)` | 속도별 kW surface — plane: `iphase`/`dq`, source: `tsfea`/`hybrid`/`calibrated` |
 | `jeetMakeFigures(outDir?)` | Fig 14 스타일 검증 PNG 재생성 |
 | `np2mat(x)` | ndarray/py.list → MATLAB double |
 

@@ -370,6 +370,22 @@ class AcLossPipeline:
                 'n_spd8': np.asarray(n_spd_list, float),
                 'wmae_pct': G}
 
+    def make_af_map_figure(self, scale: str, out_path: str) -> str:
+        """AF contour map on the id-iq plane, one panel per speed."""
+        from .AcLossPlotter import AcLossPlotter
+        os.makedirs(os.path.dirname(os.path.abspath(out_path)), exist_ok=True)
+        AcLossPlotter.plot_af_map_visualization(
+            self.load_dataset(scale), self.build_model(scale), out_path)
+        return out_path
+
+    def make_af_surface_figure(self, scale: str, out_path: str) -> str:
+        """3-D AF(id, iq) surfaces, one panel per speed."""
+        from .AcLossPlotter import AcLossPlotter
+        os.makedirs(os.path.dirname(os.path.abspath(out_path)), exist_ok=True)
+        AcLossPlotter.plot_3d_surface(
+            self.load_dataset(scale), self.build_model(scale), out_path)
+        return out_path
+
     def make_all_figures(self, out_dir: str) -> List[str]:
         """Regenerates the validation figures for Ref and SC."""
         outs = []
