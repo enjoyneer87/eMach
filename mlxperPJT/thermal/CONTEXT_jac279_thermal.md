@@ -132,6 +132,33 @@ CAD 경로 대상이 **`Electric_Motor_IcepakFEA_AEDT_3D_part1`** 로 변경됨
 serial/새 세션/env·cmu.env 주입). **GUI Beta Options 에서 해제 후 해석 성공**
 (사용자 수행, 2026-07-16 16:12, 결과 384MB).
 
+### 4d. 실형상(권선 포함) MAPDL 경로 완성 (2026-07-16)
+
+**~SATIN(.sat) 은 이 PC 에서 영구 불가** — 라이선스가 아니라 **설치 결함**
+(변환기 `ac4para_stride261.bat` 부재 + 무인자 호출 규약; `rdacis` 라이선스는 75석 존재).
+대체 파이프라인 (라이선스/변환기 불요, 전부 오픈소스):
+
+```
+AEDT .step export (재료군별 5종, step_export_icepakfea/)
+  → gmsh: OCC fragment(계면 컨포멀) + 주기면 1:1 페어링(setPeriodic)
+  → 코일엔드 절단(z≤80mm, JAC279 방식: 엔드는 회로로)
+  → 메시(2차 사면체) → ×8 회전 + z미러(HalfAxial) 패턴, tol 병합
+  → SOLID87 CDB (NBLOCK/EBLOCK) → MAPDL CDREAD    [tools_gmsh_step2cdb.py]
+```
+
+- 메시: **341,545 노드 / 187,728 SOLID87** (`real_motor_mesh_trim.cdb`, 72MB, git 미포함)
+- **VERIFICATION 모드 MAPDL 에서도 CDREAD+과도해석(900s, 2분) 가능 확인**
+- **슬롯 코일↔코어 결합**: CAD 에 라이너 간극 0.85~1.4mm 존재 → CONTA174 는
+  OPEN 판정으로 전도 0 (KEYOPT(5)=1/ICONT 로도 미해결) → **SURF152 정션노드
+  방식**(각도 16빈×z 4밴드, 직렬 2×TCC=4000)으로 교체, 64/64 빈 활성 ✓
+- **코일엔드 회로화**(JAC279 Fig 4-2 와 동일): 절단면→CEND 노드(h=k_cu/55mm),
+  손실 체적비 분배(슬롯 1607W FEM / 엔드 1030W 회로: ATF 258W+AIR 772W), C=222 J/K
+- **v5 결과** (Maxwell 3D 손실, t=900s): 코일 160~177°C, 스테이터 152~164°C,
+  로터 141~159°C, 자석 152~159°C / Center_WJ 149.3 < Center_ATF 159.1,
+  Tip_ATF 143.5 < Tip_WJ 166.5 / CEND_ATF 92.5 vs CEND_AIR 219.9
+- 러너: `run_real_motor_thermal.py` (임포트→정션→회로→SURF152→BFE→솔브→시각화)
+- 시각화: `viz_real/` (실단면 48슬롯/8극 V자석 컨투어 3뷰 + 코일 이력 CSV)
+
 ## 5. 실행 방법
 
 ```bash
