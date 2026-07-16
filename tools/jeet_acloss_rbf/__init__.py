@@ -6,6 +6,7 @@ from .AcLossJsonReader import AcLossJsonReader
 from .RbfModelBuilder import RbfModelBuilder
 from .AcLossEvaluator import AcLossEvaluator
 from .AcLossPlotter import AcLossPlotter
+from .pipeline import AcLossPipeline, DEFAULT_CONFIG
 
 __all__ = [
     "AcLossPoint",
@@ -15,5 +16,7 @@ __all__ = [
     "AcLossJsonReader",
     "RbfModelBuilder",
     "AcLossEvaluator",
-    "AcLossPlotter"
+    "AcLossPlotter",
+    "AcLossPipeline",
+    "DEFAULT_CONFIG"
 ]
