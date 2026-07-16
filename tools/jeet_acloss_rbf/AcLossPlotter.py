@@ -326,7 +326,8 @@ class AcLossPlotter:
         n_speed_list: List[int],
         n_base_len: int,
         n_spd_len: int,
-        out_path: str
+        out_path: str,
+        base_speed: float = 2.0
     ):
         """Plots ablation study results (Cell 17)."""
         hybrid_baseline = float(np.abs((dataset.h_ac_arr - dataset.f_ac_arr) / (dataset.f_ac_arr + 1e-12) * 100.0).mean())
@@ -363,7 +364,7 @@ class AcLossPlotter:
         ax2.set_yticks(range(len(n_base_list)))
         ax2.set_yticklabels(n_base_list)
         ax2.set_xlabel("n_speed/spd (cal. pts per speed)", fontsize=10)
-        ax2.set_ylabel("n_base (# 2kRPM base pts)", fontsize=10)
+        ax2.set_ylabel(f"n_base (# {base_speed:g}kRPM base pts)", fontsize=10)
         ax2.set_title("Separable RBF: Full MAE [%] Heatmap", fontsize=11, fontweight='bold')
         
         for bi2 in range(len(n_base_list)):
@@ -391,7 +392,7 @@ class AcLossPlotter:
                     label=f'Hybrid baseline ({hybrid_baseline:.1f}%)')
         ax3.axvline(n_base_len, color='dodgerblue', ls=':', lw=1.5,
                     label=f'Current n_base={n_base_len}')
-        ax3.set_xlabel("n_base (# 2kRPM base pts)", fontsize=10)
+        ax3.set_xlabel(f"n_base (# {base_speed:g}kRPM base pts)", fontsize=10)
         ax3.set_ylabel("Full MAE [%]", fontsize=10)
         ax3.set_title("Separable RBF: MAE vs n_base\n(line color = n_speed/spd)", fontsize=11, fontweight='bold')
         ax3.legend(fontsize=8, ncol=2)

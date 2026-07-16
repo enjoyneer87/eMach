@@ -131,22 +131,26 @@ class RbfModelBuilder:
         n_base: Optional[int] = None,
         n_spd: Optional[int] = None,
         seed: int = 42,
-        lam: float = 1e-6
+        lam: float = 1e-6,
+        base_speed: float = 2.0
     ) -> SeparableRbfModel:
         """
         Fits a 1D x 2D Separable RBF model.
         If n_base or n_spd is specified, it uses random subsampling with the given seed (CUSTOM behavior).
         Otherwise, it uses the default parameters and target currents selection (DEFAULT behavior).
+        base_speed [kRPM] selects where the 2D kernel g(I, beta) is learned
+        (f(base_speed) = 1 anchor). Learning at the maximum speed puts the
+        separability residual at low speed, where absolute losses are small.
         """
         speeds_k = dataset.speeds_k
         irms_arr = dataset.irms_arr
         phase_arr = dataset.phase_arr
         af_arr = dataset.af_arr
-        
+
         LS_I, LS_P = dataset.LS_I, dataset.LS_P
-        
-        # 1. Base speed selection (2.0 kRPM)
-        base_idx = np.where(np.abs(speeds_k - 2.0) < 0.1)[0]
+
+        # 1. Base speed selection
+        base_idx = np.where(np.abs(speeds_k - base_speed) < 0.1)[0]
         
         # Subsampling for n_base if specified
         if n_base is not None:
@@ -187,9 +191,11 @@ class RbfModelBuilder:
             return result.reshape(orig) if orig else float(result[0])
             
         # 2. Fit 1D speed polynomial f(speed)
-        other_speeds = [4.0, 8.0, 16.0]
-        
-        f_by_speed = {2.0: [1.0]}
+        unique_speeds = sorted(set(np.round(speeds_k, 3)))
+        other_speeds = [s for s in unique_speeds
+                        if abs(s - base_speed) >= 0.1]
+
+        f_by_speed = {base_speed: [1.0]}
         
         if n_base is None and n_spd is None:
             # DEFAULT mode: select using specific target currents

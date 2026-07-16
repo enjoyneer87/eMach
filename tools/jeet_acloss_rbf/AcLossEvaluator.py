@@ -100,7 +100,8 @@ class AcLossEvaluator:
         dataset: AcLossDataset,
         n_base: int,
         n_spd: int,
-        lam: float = 1e-6
+        lam: float = 1e-6,
+        base_speed: float = 2.0
     ) -> float:
         """Computes Leave-One-Out Cross-Validation MAE [%] for the Separable RBF model."""
         n = len(dataset)
@@ -111,9 +112,10 @@ class AcLossEvaluator:
         h_ac_arr = dataset.h_ac_arr
         f_ac_arr = dataset.f_ac_arr
         LS_I, LS_P = dataset.LS_I, dataset.LS_P
-        
-        base_idx = np.where(np.abs(speeds_k - 2.0) < 0.1)[0]
-        other_speeds = [4.0, 8.0, 16.0]
+
+        base_idx = np.where(np.abs(speeds_k - base_speed) < 0.1)[0]
+        unique_speeds = sorted(set(np.round(speeds_k, 3)))
+        other_speeds = [s for s in unique_speeds if abs(s - base_speed) >= 0.1]
         spd_grps = {s: np.where(np.abs(speeds_k - s) < 0.1)[0] for s in other_speeds}
         
         # We need a reproducible list of selected non-base indices for the main fold logic
@@ -146,7 +148,7 @@ class AcLossEvaluator:
                 return (r2 * np.log(np.sqrt(r2) + 1e-12)) @ w_g_tr
                 
             # Non-base speed calibration points excluding i
-            f_by_speed_tr = {2.0: [1.0]}
+            f_by_speed_tr = {base_speed: [1.0]}
             for spd in other_speeds:
                 grp = spd_grps[spd]
                 # Filter out validation sample i if present in group
@@ -261,7 +263,8 @@ class AcLossEvaluator:
         n_base_list: List[int],
         n_speed_list: List[int],
         n_seeds: int = 10,
-        lam: float = 1e-6
+        lam: float = 1e-6,
+        base_speed: float = 2.0
     ) -> np.ndarray:
         """
         Runs ablation study for Separable RBF model.
@@ -275,11 +278,12 @@ class AcLossEvaluator:
         h_ac_arr = dataset.h_ac_arr
         f_ac_arr = dataset.f_ac_arr
         LS_I, LS_P = dataset.LS_I, dataset.LS_P
-        
+
         unique_spds = sorted(set(speeds_k))
         spd_groups = {s: np.where(np.abs(speeds_k - s) < 0.01)[0] for s in unique_spds}
-        all_base_idx = spd_groups[2.0]
-        other_spds = [s for s in unique_spds if s != 2.0]
+        base_key = min(spd_groups, key=lambda s: abs(s - base_speed))
+        all_base_idx = spd_groups[base_key]
+        other_spds = [s for s in unique_spds if s != base_key]
         
         res_sep = np.full((len(n_base_list), len(n_speed_list)), np.nan)
         
@@ -313,7 +317,7 @@ class AcLossEvaluator:
                         return (r2 * np.log(np.sqrt(r2) + 1e-12)) @ wg
                         
                     # Cal points per non-base speed
-                    f_by = {2.0: [1.0]}
+                    f_by = {base_key: [1.0]}
                     for s in other_spds:
                         grp = spd_groups[s]
                         n_d = min(ns, len(grp))
@@ -431,7 +435,8 @@ class AcLossEvaluator:
         n_base: int,
         n_spd: int,
         seed: int = 42,
-        lam: float = 1e-6
+        lam: float = 1e-6,
+        base_speed: float = 2.0
     ) -> SeparableRbfModel:
         """Helper to build Separable model with custom subsampling parameters (matches cell 21 rebuild_sep_rbf)."""
         return RbfModelBuilder.build_separable_rbf(
@@ -439,5 +444,6 @@ class AcLossEvaluator:
             n_base=n_base,
             n_spd=n_spd,
             seed=seed,
-            lam=lam
+            lam=lam,
+            base_speed=base_speed
         )
