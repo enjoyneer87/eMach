@@ -1407,17 +1407,6 @@
       "proximity_model": 1,
       "mode": "Hybrid",
       "speed": 16000,
-      "current": 460.05,
-      "phase": 90.0,
-      "backup_dir": "D:\\KDH\\simVary\\e10_6TSweep\\SLFEA\\ACLossCalcExport_SC\\Hybrid_Speed_16000RPM_460.1A_90.0deg",
-      "hybrid_total_kW": 83.1008781450534,
-      "hybrid_prox_kW": 75.86317827997439,
-      "hybrid_skin_kW": 7.23769986507898
-    },
-    {
-      "proximity_model": 1,
-      "mode": "Hybrid",
-      "speed": 16000,
       "current": 690.025,
       "phase": 0.0,
       "backup_dir": "D:\\KDH\\simVary\\e10_6TSweep\\SLFEA\\ACLossCalcExport_SC\\Hybrid_Speed_16000RPM_690.0A_0.0deg",
@@ -1467,17 +1456,6 @@
       "backup_dir": "D:\\KDH\\simVary\\e10_6TSweep\\SLFEA\\ACLossCalcExport_SC\\Hybrid_Speed_16000RPM_690.0A_72.0deg",
       "hybrid_total_kW": 176.867166979846,
       "hybrid_prox_kW": 160.58470206093898,
-      "hybrid_skin_kW": 16.2824649189063
-    },
-    {
-      "proximity_model": 1,
-      "mode": "Hybrid",
-      "speed": 16000,
-      "current": 690.025,
-      "phase": 90.0,
-      "backup_dir": "D:\\KDH\\simVary\\e10_6TSweep\\SLFEA\\ACLossCalcExport_SC\\Hybrid_Speed_16000RPM_690.0A_90.0deg",
-      "hybrid_total_kW": 172.21553454594402,
-      "hybrid_prox_kW": 155.933069627037,
       "hybrid_skin_kW": 16.2824649189063
     },
     {
@@ -2895,20 +2873,6 @@
       "mode": "FullFEA",
       "speed": 16000,
       "current": 690.025,
-      "phase": 90.0,
-      "backup_dir": "D:\\KDH\\simVary\\e10_6TSweep\\SLFEA\\ACLossCalcExport_SC\\FullFEA_Speed_16000RPM_690.0A_90.0deg",
-      "fea_per_turn_raw": "57727.8817565131 : 29952.5142181607 : 15590.0742249738 : 8843.16189428602",
-      "fea_per_turn_sum_kW": 112.11363209393362,
-      "fea_total_ac_kW": 81.6932828231436,
-      "ts_dc_active_kW": 30.420349270790002,
-      "ts_dc_end_kW": 18.215774862394532,
-      "ts_ac_active_only_kW": 81.69328282314362
-    },
-    {
-      "proximity_model": 3,
-      "mode": "FullFEA",
-      "speed": 16000,
-      "current": 690.025,
       "phase": 72.0,
       "backup_dir": "D:\\KDH\\simVary\\e10_6TSweep\\SLFEA\\ACLossCalcExport_SC\\FullFEA_Speed_16000RPM_690.0A_72.0deg",
       "fea_per_turn_raw": "92113.957819517 : 48756.9978495669 : 30243.2154732819 : 16924.940632824 : 8048.11286050174 : 3630.42988508268",
@@ -3001,6 +2965,64 @@
       "ts_dc_active_kW": 31.41203536150226,
       "ts_dc_end_kW": 32.674714522511685,
       "ts_ac_active_only_kW": 316.5618356205068
+    },
+    {
+      "mode": "Hybrid",
+      "proximity_model": 1,
+      "backup_dir": "D:\\KDH\\simVary\\e10_6TSweep\\SLFEA\\ACLossCalcExport_SC\\Hybrid_Speed_16000RPM_690.025A_90.0deg_rerun",
+      "speed": 16000,
+      "current": 690.025,
+      "phase": 90.0,
+      "hybrid_total_kW": 172.21553454594402,
+      "hybrid_prox_kW": 155.933069627037,
+      "hybrid_skin_kW": 16.2824649189063,
+      "rerun_ts": "2026-07-17T15:23:49",
+      "rerun_reason": "outlier_recheck"
+    },
+    {
+      "mode": "FullFEA",
+      "proximity_model": 3,
+      "backup_dir": "D:\\KDH\\simVary\\e10_6TSweep\\SLFEA\\ACLossCalcExport_SC\\FullFEA_Speed_16000RPM_690.025A_90.0deg_rerun",
+      "speed": 16000,
+      "current": 690.025,
+      "phase": 90.0,
+      "fea_per_turn_raw": "89856.790899473 : 50430.2002352655 : 31663.9665124757 : 17665.5185049963 : 8318.96090881293 : 3653.9866828591",
+      "fea_per_turn_sum_kW": 201.58942374388252,
+      "fea_total_ac_kW": 183.918873447966,
+      "ts_dc_active_kW": 17.67055029591649,
+      "ts_dc_end_kW": 18.38085879281727,
+      "ts_ac_active_only_kW": 183.91887344796604,
+      "rerun_ts": "2026-07-17T15:23:49",
+      "rerun_reason": "outlier_recheck"
+    },
+    {
+      "mode": "Hybrid",
+      "proximity_model": 1,
+      "backup_dir": "D:\\KDH\\simVary\\e10_6TSweep\\SLFEA\\ACLossCalcExport_SC\\Hybrid_Speed_16000RPM_460.05A_90.0deg_rerun",
+      "speed": 16000,
+      "current": 460.05,
+      "phase": 90.0,
+      "hybrid_total_kW": 83.1008781450534,
+      "hybrid_prox_kW": 75.86317827997439,
+      "hybrid_skin_kW": 7.23769986507898,
+      "rerun_ts": "2026-07-17T15:37:06",
+      "rerun_reason": "outlier_recheck"
+    },
+    {
+      "mode": "FullFEA",
+      "proximity_model": 3,
+      "backup_dir": "D:\\KDH\\simVary\\e10_6TSweep\\SLFEA\\ACLossCalcExport_SC\\FullFEA_Speed_16000RPM_460.05A_90.0deg_rerun",
+      "speed": 16000,
+      "current": 460.05,
+      "phase": 90.0,
+      "fea_per_turn_raw": "43530.2581262142 : 23004.5606738419 : 14383.5148671313 : 7993.5254974003 : 3734.26244336469 : 1604.08234508652",
+      "fea_per_turn_sum_kW": 94.2502039530389,
+      "fea_total_ac_kW": 86.3954878440473,
+      "ts_dc_active_kW": 7.854716108991725,
+      "ts_dc_end_kW": 8.170454526841086,
+      "ts_ac_active_only_kW": 86.39548784404718,
+      "rerun_ts": "2026-07-17T15:37:06",
+      "rerun_reason": "outlier_recheck"
     }
   ]
 }

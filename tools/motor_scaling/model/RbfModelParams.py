@@ -17,6 +17,11 @@ class RbfModelParams:
     
     # Separable RBF specific
     p_coeffs: Optional[np.ndarray] = None   # speed scale polynomial coefficients [a2, a1, a0]
+    # Exponent-separable extension: AF = f(s) * g(I, beta)**p(s).
+    # q_coeffs is the spread-exponent polynomial p(s); None -> scalar form.
+    q_coeffs: Optional[np.ndarray] = None
+    #: clamp for g before exponentiation (TPS extrapolation guard)
+    G_CLIP = 1e-3
 
     def predict(self, speed_rpm: float, irms: np.ndarray, phase_deg: np.ndarray) -> np.ndarray:
         """
@@ -59,14 +64,19 @@ class RbfModelParams:
         irmv = irm.ravel()[:, None]
         phv = ph.ravel()[:, None]
         
-        # 2D base RBF at 2 kRPM
+        # 2D base RBF at the anchor speed
         r2 = ((irmv - self.centers_i)**2 / self.ls_i**2 +
               (phv - self.centers_p)**2 / self.ls_p**2)
         r = np.sqrt(r2)
         K = r2 * np.log(r + 1e-12)
         g_vals = (K @ self.weights).ravel()
-        
-        # Speed scaling polynomial f(speed)
+
+        # Speed scaling polynomial f(speed); optional spread exponent p(speed)
         f_vals = np.polyval(self.p_coeffs, sv)
-        result = f_vals * g_vals
+        if self.q_coeffs is None:
+            result = f_vals * g_vals
+        else:
+            p_vals = np.polyval(self.q_coeffs, sv)
+            g_pos = np.clip(g_vals, self.G_CLIP, None)
+            result = f_vals * g_pos**p_vals
         return result.reshape(orig) if orig else float(result[0])

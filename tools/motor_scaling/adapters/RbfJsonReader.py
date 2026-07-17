@@ -27,7 +27,25 @@ class RbfJsonReader:
             model_info = data["separable_model"]
             weights = np.array(model_info["base_weights"], dtype=float)
             p_coeffs = np.array(model_info["speed_poly_coeffs"], dtype=float)
-            
+            # exponent-separable extension AF = f(s) * g**p(s); optional
+            q_raw = model_info.get("spread_poly_coeffs")
+            q_coeffs = (np.array(q_raw, dtype=float)
+                        if q_raw is not None else None)
+
+            # New-style exports store the base-kernel centers explicitly
+            # (anchor-speed agnostic); prefer them when present.
+            if "base_centers_i" in model_info:
+                return RbfModelParams(
+                    model_type='Separable_1D_2D_RBF',
+                    weights=weights,
+                    centers_i=np.array(model_info["base_centers_i"], float),
+                    centers_p=np.array(model_info["base_centers_p"], float),
+                    ls_i=model_info.get("ls_i", ls_i),
+                    ls_p=model_info.get("ls_p", ls_p),
+                    p_coeffs=p_coeffs,
+                    q_coeffs=q_coeffs
+                )
+
             # The centers of the base model (typically at 2kRPM)
             # We can extract them from the list of af_points that have speed_kRPM == 2.0
             af_pts = data.get("af_points", [])

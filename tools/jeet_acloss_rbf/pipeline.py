@@ -47,17 +47,18 @@ DEFAULT_CONFIG = {
         'HalfSC': r'HalfSC\JEET_ACLoss_HalfSC_Map_Summary.json',
         'SC':     r'SC\JEET_ACLoss_SC_Map_Summary.json',
     },
-    # known-bad TS-FEA runs (AF neighbor-consistency scan)
-    'exclude': {
-        'SC': [(16000.0, 690.0, 90.0)],
-    },
+    # known-bad TS-FEA runs (AF neighbor-consistency scan). The single SC
+    # outlier (16 kRPM, 690 A, 90 deg; AF 0.47) was re-run in Motor-CAD on
+    # 2026-07-17 and replaced with the converged result (AF 1.068), and the
+    # missing (460 A, 90 deg) point was infilled (AF 1.040) -> no exclusions.
+    'exclude': {},
     'k_r': {'Ref': 1.0, 'HalfSC': 1.5, 'SC': 2.0},
     # sampling plan: mode 'own' (donor) or 'transfer' (similarity);
     # seeds are the representative draws (wMAE closest to the 10-seed mean)
     'plan': {
         'Ref':    {'mode': 'own',      'n_base': 22, 'n_spd': 4, 'seed': 9},
         'HalfSC': {'mode': 'transfer', 'n_base': 24, 'n_spd': 3, 'seed': 9},
-        'SC':     {'mode': 'transfer', 'n_base': 22, 'n_spd': 3, 'seed': 2},
+        'SC':     {'mode': 'transfer', 'n_base': 24, 'n_spd': 3, 'seed': 6},
     },
     'donor_scale': 'Ref',
     'n_probe_transfer': 6,       # donor probes per transferred speed (free)
@@ -169,10 +170,13 @@ class AcLossPipeline:
             self._models[scale] = model
         return model
 
-    def _build_with_seed(self, scale: str, seed: int) -> SeparableRbfModel:
+    def _build_with_seed(self, scale: str, seed: int,
+                         exponent: Optional[bool] = None
+                         ) -> SeparableRbfModel:
         plan = self.cfg['plan'][scale]
         ds = self.load_dataset(scale)
-        expo = bool(self.cfg.get('exponent', False))
+        expo = (bool(self.cfg.get('exponent', False))
+                if exponent is None else bool(exponent))
         if plan['mode'] == 'own':
             return AcLossEvaluator.rebuild_sep_model_with_subsampling(
                 ds, plan['n_base'], plan['n_spd'], seed,
@@ -280,14 +284,24 @@ class AcLossPipeline:
         return plt
 
     def make_validation_figure(self, scale: str, out_path: str) -> str:
-        """Parity plot + error boxplot (Fig 14 style). Returns out_path."""
+        """Parity plot + error boxplot (Fig 14 style). Returns out_path.
+
+        Four series against TS-FEA: uncorrected Hybrid, non-separable
+        3-D TPS RBF (all points, reference), scalar separable f*g and
+        the adopted exponent separable f*g**p — both separable forms use
+        the identical sampling plan/seed, isolating the model form.
+        """
         plt = self._journal_rc()
         ds = self.load_dataset(scale)
         model = self.build_model(scale)
         model_3d = RbfModelBuilder.build_3d_rbf(ds)
-        ea, e3, es = AcLossEvaluator.evaluate_errors(ds, model_3d, model)
-        _, wmae = self._metrics_of(scale, model)
         plan = self.cfg['plan'][scale]
+        model_sc = self._build_with_seed(scale, plan['seed'],
+                                         exponent=False)
+        ea, e3, es = AcLossEvaluator.evaluate_errors(ds, model_3d, model)
+        _, _, e_sc = AcLossEvaluator.evaluate_errors(ds, model_3d, model_sc)
+        _, wmae = self._metrics_of(scale, model)
+        _, wmae_sc = self._metrics_of(scale, model_sc)
         n_own = plan['n_base'] + (
             plan['n_spd'] * 3 if plan['mode'] == 'own' else plan['n_spd'])
         tag = (f'{n_own} pts' if plan['mode'] == 'own'
@@ -298,21 +312,27 @@ class AcLossPipeline:
                                           ds.irms_arr, ds.phase_arr)
         corr_sep = h_ac * model.predict(ds.speeds_k * 1000.0,
                                         ds.irms_arr, ds.phase_arr)
+        corr_sc = h_ac * model_sc.predict(ds.speeds_k * 1000.0,
+                                          ds.irms_arr, ds.phase_arr)
 
         fig, (ax, ax2) = plt.subplots(
             1, 2, figsize=(7.0, 2.9),
             gridspec_kw={'width_ratios': [1.15, 1]})
         fig.subplots_adjust(left=0.09, right=0.98, top=0.92, bottom=0.17,
                             wspace=0.30)
-        lim = [0, max(f_ac.max(), corr_3d.max(), corr_sep.max()) * 1.06]
+        lim = [0, max(f_ac.max(), corr_3d.max(), corr_sep.max(),
+                      corr_sc.max()) * 1.06]
         ax.plot(lim, lim, 'k--', lw=0.9, label='Perfect fit')
         ax.scatter(f_ac, h_ac, c='#999999', s=14, alpha=0.55, zorder=2,
                    label=f'Hybrid, uncorrected (MAE {np.abs(ea).mean():.1f}%)')
-        ax.scatter(f_ac, corr_3d, c='#2c6fad', s=20, alpha=0.75, marker='D',
+        ax.scatter(f_ac, corr_3d, c='#2c6fad', s=20, alpha=0.7, marker='D',
                    zorder=3, label=f'3D TPS RBF, {len(ds)} pts')
-        ax.scatter(f_ac, corr_sep, c='#e65100', s=26, alpha=0.85, marker='o',
+        ax.scatter(f_ac, corr_sc, c='#2e7d32', s=22, alpha=0.75, marker='^',
                    zorder=4,
-                   label=f'Separable RBF, {tag} (wMAE {wmae:.1f}%)')
+                   label=f'Scalar separable (wMAE {wmae_sc:.1f}%)')
+        ax.scatter(f_ac, corr_sep, c='#e65100', s=26, alpha=0.85, marker='o',
+                   zorder=5,
+                   label=f'Exponent separable, {tag} (wMAE {wmae:.1f}%)')
         ax.set_xlabel('TS-FEA AC loss [kW]')
         ax.set_ylabel('Predicted AC loss [kW]')
         ax.set_xlim(lim)
@@ -322,16 +342,17 @@ class AcLossPipeline:
         ax.spines[['top', 'right']].set_visible(False)
         ax.legend(fontsize=6.3, frameon=False, loc='upper left')
 
-        bp = ax2.boxplot([ea, e3, es],
-                         tick_labels=['Hybrid\n(uncorrected)', '3D TPS\nRBF',
-                                      'Separable\nRBF (adopted)'],
+        bp = ax2.boxplot([ea, e3, e_sc, es],
+                         tick_labels=['Hybrid\n(uncorr.)', '3D TPS\nRBF',
+                                      'Scalar\nseparable',
+                                      'Exponent\nseparable'],
                          patch_artist=True, widths=0.45,
                          medianprops={'color': 'black', 'lw': 0.9},
                          flierprops={'marker': 'o', 'ms': 2.5, 'mfc': 'none',
                                      'mec': '#888888', 'mew': 0.5})
         for box, c, a in zip(bp['boxes'],
-                             ['#999999', '#2c6fad', '#e65100'],
-                             [0.45, 0.6, 0.65]):
+                             ['#999999', '#2c6fad', '#2e7d32', '#e65100'],
+                             [0.45, 0.6, 0.6, 0.65]):
             box.set_facecolor(c)
             box.set_alpha(a)
         ax2.axhline(0, color='k', ls='--', lw=0.8)
@@ -339,7 +360,7 @@ class AcLossPipeline:
         ax2.grid(True, axis='y', ls=':', lw=0.45, color='#cccccc')
         ax2.set_axisbelow(True)
         ax2.spines[['top', 'right']].set_visible(False)
-        for x, arr in zip([1, 2, 3], [ea, e3, es]):
+        for x, arr in zip([1, 2, 3, 4], [ea, e3, e_sc, es]):
             ax2.text(x, np.max(arr) + 3, f'MAE {np.abs(arr).mean():.1f}%',
                      ha='center', fontsize=6.5, fontweight='bold')
 
@@ -376,6 +397,50 @@ class AcLossPipeline:
         return {'n_base': np.asarray(n_base_list, float),
                 'n_spd8': np.asarray(n_spd_list, float),
                 'wmae_pct': G}
+
+    def export_model_json(self, scale: str, out_path: str) -> str:
+        """Writes the adopted model as a motor_scaling-compatible JSON.
+
+        New-style 'separable_model' block with explicit base centers and
+        the spread-exponent polynomial; consumed by
+        tools.motor_scaling.adapters.RbfJsonReader -> RbfModelParams
+        (q_coeffs-aware), e.g. for the MTPA/FW efficiency-map stage.
+        """
+        import json
+        m = self.build_model(scale)
+        plan = self.cfg['plan'][scale]
+        data = {
+            '_meta': {
+                'scale': scale,
+                'exponent': m.q_coeffs is not None,
+                'base_speed_kRPM': self.cfg['base_speed'],
+                'plan': {k: plan[k] for k in
+                         ('mode', 'n_base', 'n_spd', 'seed')},
+            },
+            'length_scales': {'LS_I_A': float(m.ls_i),
+                              'LS_P_deg': float(m.ls_p)},
+            'separable_model': {
+                'model': 'Separable_1D_2D_RBF',
+                'n_base_centers': int(len(m.w_g)),
+                'base_weights': np.asarray(m.w_g, float).tolist(),
+                'base_centers_i':
+                    np.asarray(m.base_centers_i, float).tolist(),
+                'base_centers_p':
+                    np.asarray(m.base_centers_p, float).tolist(),
+                'ls_i': float(m.ls_i),
+                'ls_p': float(m.ls_p),
+                'speed_poly_coeffs':
+                    np.asarray(m.p_coeffs, float).tolist(),
+                'spread_poly_coeffs':
+                    (np.asarray(m.q_coeffs, float).tolist()
+                     if m.q_coeffs is not None else None),
+            },
+        }
+        os.makedirs(os.path.dirname(os.path.abspath(out_path)),
+                    exist_ok=True)
+        with open(out_path, 'w', encoding='utf-8') as f:
+            json.dump(data, f, indent=2)
+        return out_path
 
     def make_af_map_figure(self, scale: str, out_path: str) -> str:
         """AF contour map on the id-iq plane, one panel per speed."""

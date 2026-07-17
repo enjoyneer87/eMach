@@ -200,6 +200,8 @@ def plot_af_map_dq(dataset, model, out_path: str,
         sc = ax.scatter(id_v, iq_v, c=af_v, cmap='plasma', s=14,
                         edgecolors='k', linewidths=0.3,
                         vmin=vmin, vmax=vmax, zorder=3)
+        # square dq plane: same A-per-inch on both current axes
+        ax.set_aspect('equal', adjustable='box')
         ax.set_title(f'{spd / 1000:.0f} kRPM', fontsize=8)
         ax.set_xlabel('$i_d$ [A, pk]')
         if ax is axes[0]:
@@ -426,3 +428,92 @@ def plot_motor_geometry_dxf(
     return {'Ds_mm': 2 * float(r_out), 'Dr_mm': 2 * float(r_rotor),
             'g_mm': float(g_air), 'w_mm': float(w_c), 'h_mm': float(h_c),
             'slot_angle_deg': slot_ang}
+
+
+def plot_form_convergence(pipeline, out_path: str,
+                          scales=('Ref', 'HalfSC', 'SC'),
+                          n_base_list=(8, 10, 12, 16, 20, 24, 28),
+                          n_spd_by_scale=None,
+                          n_seeds: int = 10) -> str:
+    """Scalar vs exponent separable convergence: full-map wMAE vs n_base.
+
+    Own-sampling protocol (16-kRPM base kernel + n_spd calibration points
+    per non-base speed), multi-seed mean, log scale. The two curves share
+    the identical sample placement, so their gap isolates the contribution
+    of the spread exponent p(w). Degenerate low-count regressions are
+    capped at 10^3 for display.
+    """
+    import contextlib
+    import io
+
+    from .AcLossEvaluator import AcLossEvaluator
+
+    plt = _journal_rc()
+    ns_by = n_spd_by_scale or {'Ref': 4, 'HalfSC': 3, 'SC': 4}
+    kr_by = {'Ref': 1.0, 'HalfSC': 1.5, 'SC': 2.0}
+    base_speed = pipeline.cfg['base_speed']
+
+    fig, axes = plt.subplots(1, len(scales),
+                             figsize=(2.35 * len(scales), 2.35),
+                             layout='constrained', sharey=True)
+    if len(scales) == 1:
+        axes = [axes]
+
+    for k, (ax, scale) in enumerate(zip(axes, scales)):
+        with contextlib.redirect_stdout(io.StringIO()):
+            ds = pipeline.load_dataset(scale)
+        ns = ns_by.get(scale, 4)
+        pool = int(np.sum(np.abs(ds.speeds_k - base_speed) < 0.1))
+        nbs = sorted({min(n, pool) for n in n_base_list})
+
+        eh = np.abs((ds.h_ac_arr - ds.f_ac_arr)
+                    / (ds.f_ac_arr + 1e-12) * 100.0)
+        hyb_w = float(np.sum(ds.f_ac_arr * eh) / np.sum(ds.f_ac_arr))
+
+        for expo, sty in ((False, dict(color='#2e7d32', ls='--',
+                                       marker='s',
+                                       label=r'Scalar $f\cdot g$')),
+                          (True, dict(color='#e65100', ls='-',
+                                      marker='o',
+                                      label=r'Exponent $f\cdot g^{p}$'))):
+            ys = []
+            for nb in nbs:
+                vals = []
+                for seed in range(n_seeds):
+                    try:
+                        with contextlib.redirect_stdout(io.StringIO()):
+                            m = AcLossEvaluator.\
+                                rebuild_sep_model_with_subsampling(
+                                    ds, nb, ns, seed,
+                                    base_speed=base_speed, exponent=expo)
+                    except np.linalg.LinAlgError:
+                        continue
+                    pred = ds.h_ac_arr * m.predict(
+                        ds.speeds_k * 1000.0, ds.irms_arr, ds.phase_arr)
+                    e = np.abs((pred - ds.f_ac_arr)
+                               / (ds.f_ac_arr + 1e-12) * 100.0)
+                    vals.append(float(np.sum(ds.f_ac_arr * e)
+                                      / np.sum(ds.f_ac_arr)))
+                ys.append(min(np.mean(vals), 1e3) if vals else np.nan)
+            ax.plot(nbs, ys, lw=1.2, ms=3.2, **sty)
+
+        ax.axhline(hyb_w, color='#888888', ls=':', lw=0.9,
+                   label='Hybrid, uncorrected')
+        ax.axvline(pool, color='#2c6fad', ls=':', lw=0.9,
+                   label=r'available $n_{base}$')
+        ax.set_yscale('log')
+        ax.set_xlabel(r'$n_{base}$ (16-kRPM base points)')
+        if k == 0:
+            ax.set_ylabel(r'wMAE [%] (log)')
+            ax.legend(fontsize=6.0, frameon=False, loc='lower left')
+        tag = chr(ord('a') + k)
+        ax.set_title(f'({tag}) {scale} '
+                     f'($k_r{{=}}{kr_by.get(scale, 1):g}$, '
+                     f'{ns}/speed)', fontsize=8)
+        ax.grid(True, which='both', ls=':', lw=0.4, color='#dddddd')
+        ax.set_axisbelow(True)
+
+    os.makedirs(os.path.dirname(os.path.abspath(out_path)), exist_ok=True)
+    fig.savefig(out_path)
+    plt.close(fig)
+    return out_path
