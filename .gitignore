@@ -181,3 +181,6 @@ Class/pyMotorGeo/_tmp_real_mes/
 
 
 *.csv
+
+# acloss_ref_methods: per-element FEA extracts (~4 MB each, regeneratable)
+mlxperPJT/JEET/acloss_ref_methods/elhajji_b_data/Hybrid_Speed_*.json
