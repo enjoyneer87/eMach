@@ -63,15 +63,22 @@ from cauer_modeling import (  # noqa: E402
 # ---------------------------------------------------------------------------
 # e10 motor fixed parameters (verified against e10Turn6V261.mot + FEA mesh)
 # ---------------------------------------------------------------------------
-W_COND = 3.711e-3        # conductor width  [m] (.mot Copper_Width, tangential)
-H_COND = 1.686e-3        # conductor height [m] (.mot Copper_Height, radial)
-L_ACTIVE = 0.150         # active stack length [m] (.mot Stator_Lam_Length)
+# ── model: e10 HalfSC (k_r = 1.5) ──────────────────────────────────────
+# The FEA reference (212-record 4Speed JSON) and the elhajji_b_data mesh
+# both come from the SLFEA_Half model, swept at the ABSOLUTE Ref current
+# grid (0.1..460 A, i.e. 2/3 of the HalfSC 690 A rating). The previous
+# Ref-sized conductor dims here were a model mix-up: the winding-cell
+# centroids sit at r = 110-126 mm and the cell width 6.95 mm is 1.5 x the
+# Ref slot width (4.63 mm, paper tab:Radial b = 4.6).
+W_COND = 5.5665e-3       # conductor width  [m] (1.5 x Ref 3.711 mm)
+H_COND = 2.529e-3        # conductor height [m] (1.5 x Ref 1.686 mm)
+L_ACTIVE = 0.150         # active stack length [m] (k_a = 1)
 SIGMA = SIGMA_CU_20C     # [S/m]
 N_SLOTS = 48
 POLE_PAIRS = 4
 N_LAYERS = 6             # hairpin turns (conductors) per slot (.mot WindingLayers)
 PARALLEL_PATHS = 1       # .mot ParallelPaths=1 -> conductor carries full 460 A
-W_SLOT_MM = 6.95         # slot winding-cell width, measured from the FEA mesh
+W_SLOT_MM = 6.95         # HalfSC slot winding-cell width (measured on this mesh)
 W_SLOT = W_SLOT_MM * 1e-3
 
 I_PHASE_RMS = 460.0      # [A]

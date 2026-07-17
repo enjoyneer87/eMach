@@ -1,0 +1,47 @@
+{
+  "tag": "baseline",
+  "mat_file": "D:\\KangDH\\EveryMotor\\eMach\\mlxperPJT\\JEET\\map_exports\\e10\\SC\\lab_af_orig\\MotorLAB_elecdata_baseline.mat",
+  "grid_shape": [
+    33,
+    151
+  ],
+  "speed_rpm": {
+    "min": 0.0,
+    "max": 16000.0
+  },
+  "torque_Nm": {
+    "min": -15.26720501091195,
+    "max": 3465.967979196263
+  },
+  "efficiency_pct": {
+    "min": 0.0,
+    "max": 98.38362911545727,
+    "median": 82.24505935119227
+  },
+  "loss_keys": [
+    "Banding_Loss",
+    "Custom_Loss_Total_Internal",
+    "Custom_Loss_Total_Power_External",
+    "Custom_Loss_Total_Voltage_External",
+    "External_Line_Loss",
+    "Friction_Loss",
+    "Iron_Loss",
+    "Iron_Loss_Eddy",
+    "Iron_Loss_Hysteresis",
+    "Iron_Loss_Rotor",
+    "Iron_Loss_Rotor_Back_Iron",
+    "Iron_Loss_Rotor_Pole",
+    "Iron_Loss_Stator",
+    "Iron_Loss_Stator_Back_Iron",
+    "Iron_Loss_Stator_Tooth",
+    "Magnet_Loss",
+    "Mechanical_Loss",
+    "Sleeve_Loss",
+    "Stator_Copper_Loss",
+    "Stator_Copper_Loss_AC",
+    "Stator_Copper_Loss_DC",
+    "Total_Loss",
+    "Total_Loss_Motor",
+    "Windage_Loss"
+  ]
+}

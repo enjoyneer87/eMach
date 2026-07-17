@@ -1,0 +1,23 @@
+== Claude 작업 상태 (2026-07-01) ==
+
+[완료] 4턴 슬롯 단면 캡처
+  - slot_view_4turn.png (20KB)
+  - slot_view_4turn_fullscreen.png (74KB)
+  - 확인: 48슬롯, 8극 IPM, Stator Ø198mm 정상
+
+[필요] 6턴·8턴 캡처 (UIPI로 자동 실행 불가)
+  - 아래 방법 중 하나로 직접 실행해주세요:
+
+  방법 1: run_capture_slots.bat 더블클릭
+  방법 2: MATLAB >> run_capture_slots
+  방법 3: CMD에서 (일반 권한):
+    "C:\Users\user\.ansys_python_venvs\pyMotorEnv_310\Scripts\python.exe" capture_slot_views.py
+
+[주의] 8턴 모델 (e10Turn8V261.mot)
+  - ConductorHeight = 1.173mm (Winding_Depth 한계로 클램핑됨)
+  - 목표 점적율(62.88%)과 실제값이 다를 수 있음 → 캡처로 육안 확인 필요
+
+[다음 단계]
+  Phase 1: MATLAB >> test_phase1_verify
+  Phase 2: Motor-CAD에서 16k/690A/90° FEA 재계산
+  Phase 3: 캡처 완료 후 LAB 시뮬레이션

@@ -1,0 +1,15 @@
+{
+  "scalar": {
+    "CustomLossVariablesInternal_Lab": "Speed : Stator_Current_Phase_Peak : Stator_Current_Phase_RMS : Stator_Current_Line_Peak : Stator_Current_Line_RMS : Voltage_Phase_Peak : Voltage_Phase_RMS : Voltage_Line_Peak : Voltage_Line_RMS : Id_Peak : Id_RMS : Iq_Peak : Iq_RMS : Vd_Peak : Vd_RMS : Vq_Peak : Vq_RMS : Flux_Linkage_D : Flux_Linkage_Q : Phase_Advance : Frequency : Stator_Copper_Loss : Stator_Copper_Loss_AC : Stator_Copper_Loss_DC : Iron_Loss : Iron_Loss_Stator : Iron_Loss_Stator_Back_Iron : Iron_Loss_Stator_Tooth : Iron_Loss_Rotor : Iron_Loss_Rotor_Back_Iron : Iron_Loss_Rotor_Pole : Iron_Loss_Hysteresis : Iron_Loss_Eddy : Magnet_Loss : Sleeve_Loss : Banding_Loss : Mechanical_Loss : Windage_Loss : Friction_Loss : External_Line_Loss : Electromagnetic_Power : Electromagnetic_Torque : Magnet_Torque : Reluctance_Torque : Terminal_Power : Ld : Lq : PM_Flux_Linkage : DC_Bus_Voltage : Stator_Winding_Temp_Average : Magnet_Temp : Airgap_Temp : Bearing_Temp_Front : Bearing_Temp_Rear",
+    "NumCustomLossesInternal_Lab": 0,
+    "NumCustomLossesExternal_Lab": 0,
+    "CalcTypeCuLoss_MotorLAB": 3,
+    "LabModel_ACLoss_Method": 3,
+    "ACLossHighFrequencyScaling_Method": 1,
+    "EmagneticCalcType_Lab": 0,
+    "DCBusVoltage": 720,
+    "ControlStrat_MotorLAB": 0,
+    "OperatingMode_Lab": 0
+  },
+  "entries": []
+}

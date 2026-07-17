@@ -228,7 +228,7 @@ mcadApp.SetVariable('SpeedMin_MotorLAB', 0);
 mcadApp.SetVariable('SpeedMax_MotorLAB', 16000);
 mcadApp.SetVariable('Speedinc_MotorLAB', 500);
 mcadApp.SetVariable('CurrentSpec_MotorLAB', 1);       % RMS 입력
-mcadApp.SetVariable('Imax_RMS_MotorLAB', 460);
+mcadApp.SetVariable('Imax_RMS_MotorLAB', 920);  % 모터 정격 전류 (FEA sweep 범위와 일치)
 mcadApp.SetVariable('Imin_MotorLAB', 0);
 % 드라이브 설정(Vdc 등)은 .mot 저장값 유지 — 현재값 로그만
 for v = {'DCBusVoltage', 'ControlStrat_MotorLAB', 'ModulationIndex_MotorLAB', 'OperatingMode_Lab'}

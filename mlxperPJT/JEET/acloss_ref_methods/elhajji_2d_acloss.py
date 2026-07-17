@@ -47,8 +47,12 @@ from volpe_hybrid_acloss import (  # noqa: E402
 DATA_DIR = Path(__file__).resolve().parent / "elhajji_b_data"
 
 # conductor dims from e10Turn6V261.mot (Copper_Width/Copper_Height)
-W_COND = 3.711e-3
-H_COND = 1.686e-3
+# HalfSC (k_r = 1.5) conductor: the elhajji_b_data mesh is the SLFEA_Half
+# model (winding-cell centroids at r = 110-126 mm, cell width 6.95 mm =
+# 1.5 x the Ref slot width 4.63); the previous Ref-sized values
+# (3.711 x 1.686 mm) were a model mix-up.
+W_COND = 5.5665e-3
+H_COND = 2.529e-3
 L_ACTIVE = 0.150
 SIGMA = SIGMA_CU_20C
 POLE_PAIRS = 4

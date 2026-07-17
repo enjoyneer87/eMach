@@ -19,6 +19,9 @@ function P_rect = calcHybridProx1D(gamma_w, gamma_h, mu, sigma, lactive, Bm)
     %   P_rect - 사각형 도체의 전력 손실
 
     % 주어진 수식을 바탕으로 전력 손실 계산
-    P_rect = (gamma_w* gamma_h^3) / (12 * pi^2 * mu^2 * sigma) *(lactive * Bm.^2);   %[W]
+    % [FIX 2026-07-14] 분모 12*pi^2 -> 6 수정 (2*pi^2 ~= 19.7배 과소추정 버그).
+    % 표준식: P = gamma_w*gamma_h^3/(6*mu^2*sigma)*l*B^2 = sigma*omega^2*w*h^3*l*B^2/24
+    % (delta=sqrt(2/(omega*mu*sigma)), gamma=dim/delta 규약에서 MCAD /24 공식과 항등)
+    P_rect = (gamma_w* gamma_h^3) / (6 * mu^2 * sigma) *(lactive * Bm.^2);   %[W]
 
 end

@@ -33,7 +33,9 @@ function [P1DG1P,P1DG2P,P2DG1P,P2DG2P,P2DG1,P2DG2,PrectP,P1DInstant,PrectnonGamm
             f1_func = @(gamma) (1 / (8 * pi * sigma * mu_c^2)) * gamma.^4;
             % coeffif1 = calcProxf1(gamma);
             % g1 함수 정의
-            g1_func = @(gamma_w, gamma_h) (gamma_w .* gamma_h.^3) / (6 * pi^2 * mu_c^2 * sigma);
+            % [FIX 2026-07-14] 분모 6*pi^2 -> 6 수정 (pi^2 ~= 9.87배 과소추정 버그).
+            % 저주파에서 g2_func 및 MCAD /24 공식과 일치해야 함.
+            g1_func = @(gamma_w, gamma_h) (gamma_w .* gamma_h.^3) / (6 * mu_c^2 * sigma);
             % coeffg1=calcProxg1(gamma_w, gamma_h);
             %% Formula B
             % g2 함수 정의

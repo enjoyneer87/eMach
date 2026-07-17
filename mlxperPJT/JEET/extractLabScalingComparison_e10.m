@@ -18,7 +18,10 @@ eMachRoot = fullfile(scriptDir, '..', '..');
 addpath(genpath(eMachRoot));
 
 refMot = 'D:\KangDH\Thesis\e10\refModel\e10Turn6V261.mot';
-scMot  = 'D:\KangDH\Thesis\e10\SLFEA\e10Turn6V261SLFEA.mot';
+% Lab48: SC Lab rebuilt on Ref's 6x8 saturation grid (grid mode,
+% SatModelPoints_MotorLAB=2) -> all 48 nodes grid-coincident with the
+% scaled-Ref table, zero interpolation in the Fig 11 comparison
+scMot  = 'D:\KangDH\Thesis\e10\SLFEA\e10Turn6V261SLFEA_Lab48.mot';
 outMat = fullfile(scriptDir, 'map_exports', 'e10', ...
                   'lab_scaling_comparison_e10.mat');
 
