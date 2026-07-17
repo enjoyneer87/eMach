@@ -58,10 +58,10 @@ try:
         sl = solid.slice(normal="x")
         pl = pv.Plotter(off_screen=True, window_size=(1000, 780))
         pl.set_background("white")
-        pl.add_mesh(ext_half, cmap="inferno", clim=clim, n_colors=14,
+        pl.add_mesh(ext_half, scalars="Temperature (degC)", cmap="inferno", clim=clim, n_colors=14,
                     lighting=True, ambient=0.6, diffuse=0.4, specular=0.0,
                     scalar_bar_args=sb)
-        pl.add_mesh(sl, cmap="inferno", clim=clim, n_colors=14,
+        pl.add_mesh(sl, scalars="Temperature (degC)", cmap="inferno", clim=clim, n_colors=14,
                     lighting=False, show_scalar_bar=False)
         pl.add_text(f"t = {times[i]:5.0f} s   half-section "
                     f"(top: WJ / bottom: ATF)", font_size=13, color="black")
@@ -85,10 +85,10 @@ try:
         pl.set_background("white")
         pl.add_mesh(ghost, color="#d9d6c8", opacity=0.08, lighting=True,
                     ambient=0.5)
-        pl.add_mesh(coil, cmap="inferno", clim=clim, n_colors=14,
+        pl.add_mesh(coil, scalars="Temperature (degC)", cmap="inferno", clim=clim, n_colors=14,
                     lighting=True, ambient=0.6, diffuse=0.4, specular=0.0,
                     scalar_bar_args=sb)
-        pl.add_mesh(mag, cmap="inferno", clim=clim, n_colors=14,
+        pl.add_mesh(mag, scalars="Temperature (degC)", cmap="inferno", clim=clim, n_colors=14,
                     lighting=True, ambient=0.6, diffuse=0.4, specular=0.0,
                     show_scalar_bar=False)
         cm_, mm_ = float(np.nanmax(T[cpid])), float(np.nanmax(T[mpid]))

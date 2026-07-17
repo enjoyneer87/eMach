@@ -38,9 +38,11 @@ try:
     # 전 시간 최대/최소 (고정 컬러스케일)
     _, T_last = res.nodal_temperature(nsets - 1)
     T_last = np.asarray(T_last, float)
-    tmax = float(np.nanmax(T_last))
+    Ts = T_last[opid]                       # 솔리드 노드만 (회로 노드 제외!)
+    tmax = float(np.nanmax(Ts))
     clim = [70.0, tmax]
-    P("clim:", clim)
+    P("solid-only clim:", [round(c,1) for c in clim],
+      "| body range:", round(float(np.nanmin(Ts)),1), "~", round(tmax,1))
 
     # ── ① transient GIF (x=0 슬라이스, y-위) ────────────────────────────
     gif = os.path.join(OUT, "real_transient_x0.gif")
@@ -53,7 +55,8 @@ try:
         sl = solid.slice(normal="x")
         p.clear()
         p.set_background("white")
-        p.add_mesh(sl, cmap="inferno", clim=clim, lighting=False,
+        p.add_mesh(sl, scalars="Temperature (degC)", cmap="inferno", clim=clim, lighting=False,
+                   n_colors=14,
                    scalar_bar_args=dict(title="Temperature (degC)",
                                         title_font_size=14,
                                         label_font_size=12, n_labels=6,
