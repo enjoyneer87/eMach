@@ -264,10 +264,13 @@ class AcLossEvaluator:
         n_speed_list: List[int],
         n_seeds: int = 10,
         lam: float = 1e-6,
-        base_speed: float = 2.0
+        base_speed: float = 2.0,
+        exponent: bool = False
     ) -> np.ndarray:
         """
         Runs ablation study for Separable RBF model.
+        exponent=True evaluates the AF = f(s) * g**p(s) form (per-speed
+        log-space regression; n_spd >= 2 required, else scalar fallback).
         Returns:
             res_sep: 2D array of shape (len(n_base_list), len(n_speed_list)) containing mean MAE values.
         """
@@ -317,7 +320,7 @@ class AcLossEvaluator:
                         return (r2 * np.log(np.sqrt(r2) + 1e-12)) @ wg
                         
                     # Cal points per non-base speed
-                    f_by = {base_key: [1.0]}
+                    samples = {}
                     for s in other_spds:
                         grp = spd_groups[s]
                         n_d = min(ns, len(grp))
@@ -325,15 +328,20 @@ class AcLossEvaluator:
                             continue
                         for idx in rng.choice(grp, n_d, replace=False):
                             gv = float(_g_local(irms_arr[idx], phase_arr[idx])[0])
-                            f_by.setdefault(s, []).append(af_arr[idx] / (gv + 1e-12))
-                            
-                    sc = sorted(f_by.keys())
-                    fc = [np.mean(f_by[s]) for s in sc]
-                    pf = np.poly1d(np.polyfit(sc, fc, min(2, len(sc) - 1)))
-                    
+                            samples.setdefault(s, []).append(
+                                (float(af_arr[idx]), gv))
+
+                    p_coeffs, q_coeffs = RbfModelBuilder._fit_speed_scaling(
+                        samples, base_key, exponent, verbose=False)
+
                     # Predict on entire dataset
                     g_all = _g_local(irms_arr, phase_arr).ravel()
-                    af_pred = pf(speeds_k) * g_all
+                    f_all = np.polyval(p_coeffs, speeds_k)
+                    if q_coeffs is None:
+                        af_pred = f_all * g_all
+                    else:
+                        af_pred = f_all * np.clip(g_all, 1e-3, None) \
+                            ** np.polyval(q_coeffs, speeds_k)
                     err_pct = np.abs((h_ac_arr * af_pred - f_ac_arr) / (f_ac_arr + 1e-12) * 100.0)
                     seed_maes.append(err_pct.mean())
                     
@@ -436,7 +444,8 @@ class AcLossEvaluator:
         n_spd: int,
         seed: int = 42,
         lam: float = 1e-6,
-        base_speed: float = 2.0
+        base_speed: float = 2.0,
+        exponent: bool = False
     ) -> SeparableRbfModel:
         """Helper to build Separable model with custom subsampling parameters (matches cell 21 rebuild_sep_rbf)."""
         return RbfModelBuilder.build_separable_rbf(
@@ -445,5 +454,6 @@ class AcLossEvaluator:
             n_spd=n_spd,
             seed=seed,
             lam=lam,
-            base_speed=base_speed
+            base_speed=base_speed,
+            exponent=exponent
         )

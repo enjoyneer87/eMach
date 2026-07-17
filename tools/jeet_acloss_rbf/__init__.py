@@ -11,6 +11,8 @@ from .manuscript_figs import (
     extract_mes_fields,
     plot_field_panels,
     plot_motor_geometry_dxf,
+    plot_af_map_dq,
+    plot_af_surface_3d,
 )
 
 __all__ = [

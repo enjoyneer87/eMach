@@ -355,10 +355,16 @@ class AcLossPlotter:
         ax1.set_xlim([0, len(dataset) + 5])
         
         # (2) Separable RBF Heatmap
+        # Degenerate low-count fits (esp. exponent regression on ill-
+        # conditioned kernels) explode; cap the display at 10^3 so the
+        # usable region stays readable.
+        CAP = 1e3
+        res_disp = np.where(np.isfinite(res_sep),
+                            np.minimum(res_sep, CAP), np.nan)
         ax2 = axes[1]
-        vlo = np.nanpercentile(res_sep, 5)
-        vhi = np.nanpercentile(res_sep, 95)
-        im = ax2.imshow(res_sep, aspect='auto', cmap='RdYlGn_r', origin='lower', vmin=vlo, vmax=vhi)
+        vlo = np.nanpercentile(res_disp, 5)
+        vhi = np.nanpercentile(res_disp, 95)
+        im = ax2.imshow(res_disp, aspect='auto', cmap='RdYlGn_r', origin='lower', vmin=vlo, vmax=vhi)
         ax2.set_xticks(range(len(n_speed_list)))
         ax2.set_xticklabels(n_speed_list)
         ax2.set_yticks(range(len(n_base_list)))
@@ -366,14 +372,15 @@ class AcLossPlotter:
         ax2.set_xlabel("n_speed/spd (cal. pts per speed)", fontsize=10)
         ax2.set_ylabel(f"n_base (# {base_speed:g}kRPM base pts)", fontsize=10)
         ax2.set_title("Separable RBF: Full MAE [%] Heatmap", fontsize=11, fontweight='bold')
-        
+
         for bi2 in range(len(n_base_list)):
             for si2 in range(len(n_speed_list)):
                 v = res_sep[bi2, si2]
                 if not np.isnan(v):
-                    ax2.text(si2, bi2, f"{v:.1f}", ha='center', va='center', fontsize=7.5,
-                             color='white' if v > (vlo + vhi) / 2 else 'black')
-                             
+                    txt = r"$>\!10^3$" if v >= CAP else f"{v:.1f}"
+                    ax2.text(si2, bi2, txt, ha='center', va='center', fontsize=7.5,
+                             color='white' if min(v, CAP) > (vlo + vhi) / 2 else 'black')
+
         plt.colorbar(im, ax=ax2, label="MAE [%]", shrink=0.85)
         
         cur_nb_idx = min(range(len(n_base_list)), key=lambda i: abs(n_base_list[i] - n_base_len))
@@ -382,21 +389,23 @@ class AcLossPlotter:
                       fill=False, edgecolor='dodgerblue', linewidth=2.5, label='Current setting'))
         ax2.legend(fontsize=9, loc='upper right')
         
-        # (3) Separable RBF: MAE vs n_base
+        # (3) Separable RBF: MAE vs n_base (display capped at 10^3,
+        # log scale so the convergence knee stays visible)
         ax3 = axes[2]
         pal = plt.cm.plasma(np.linspace(0.1, 0.9, len(n_speed_list)))
         for si, ns in enumerate(n_speed_list):
-            ax3.plot(n_base_list, res_sep[:, si], 'o-', color=pal[si], lw=1.8, ms=5,
+            ax3.plot(n_base_list, res_disp[:, si], 'o-', color=pal[si], lw=1.8, ms=5,
                      label=f"n_spd/spd={ns}")
         ax3.axhline(hybrid_baseline, color='grey', ls=':', lw=1.5,
                     label=f'Hybrid baseline ({hybrid_baseline:.1f}%)')
         ax3.axvline(n_base_len, color='dodgerblue', ls=':', lw=1.5,
                     label=f'Current n_base={n_base_len}')
+        ax3.set_yscale('log')
         ax3.set_xlabel(f"n_base (# {base_speed:g}kRPM base pts)", fontsize=10)
-        ax3.set_ylabel("Full MAE [%]", fontsize=10)
+        ax3.set_ylabel("Full MAE [%] (log, capped at $10^3$)", fontsize=10)
         ax3.set_title("Separable RBF: MAE vs n_base\n(line color = n_speed/spd)", fontsize=11, fontweight='bold')
         ax3.legend(fontsize=8, ncol=2)
-        ax3.grid(True, ls='--', alpha=0.4)
+        ax3.grid(True, ls='--', alpha=0.4, which='both')
         
         plt.tight_layout()
         os.makedirs(os.path.dirname(out_path), exist_ok=True)

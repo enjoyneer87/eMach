@@ -34,11 +34,14 @@ from .SeparableRbfModel import SeparableRbfModel
 _E10 = r'D:\KangDH\EveryMotor\eMach\mlxperPJT\JEET\map_exports\e10'
 
 #: Adopted configuration of the paper (rev3): base kernel at 16 kRPM,
-#: Ref = donor with own sampling at all speeds, scaled variants use the
-#: SCL-M similarity transfer and own samples only in the high band.
+#: exponent separable model AF = f(w) * g(I, beta)**p(w), Ref = donor with
+#: own sampling at all speeds, scaled variants use the SCL-M similarity
+#: transfer and own samples (3 pts for the (f, p) regression) only in the
+#: high band.
 DEFAULT_CONFIG = {
     'data_root': _E10,
-    'base_speed': 16.0,          # kRPM, 2D-kernel anchor (f_1D = 1)
+    'base_speed': 16.0,          # kRPM, 2D-kernel anchor (f = 1, p = 1)
+    'exponent': True,            # AF = f * g**p (False -> scalar f * g)
     'json': {
         'Ref':    r'Ref\JEET_ACLoss_Ref_Map_Summary.json',
         'HalfSC': r'HalfSC\JEET_ACLoss_HalfSC_Map_Summary.json',
@@ -49,15 +52,15 @@ DEFAULT_CONFIG = {
         'SC': [(16000.0, 690.0, 90.0)],
     },
     'k_r': {'Ref': 1.0, 'HalfSC': 1.5, 'SC': 2.0},
-    # sampling plan: mode 'own' (donor) or 'transfer' (similarity)
+    # sampling plan: mode 'own' (donor) or 'transfer' (similarity);
+    # seeds are the representative draws (wMAE closest to the 10-seed mean)
     'plan': {
-        'Ref':    {'mode': 'own',      'n_base': 22, 'n_spd': 4, 'seed': 7},
-        'HalfSC': {'mode': 'transfer', 'n_base': 24, 'n_spd': 1,
-                   'seed': None},
-        'SC':     {'mode': 'transfer', 'n_base': 22, 'n_spd': 1, 'seed': 3},
+        'Ref':    {'mode': 'own',      'n_base': 22, 'n_spd': 4, 'seed': 9},
+        'HalfSC': {'mode': 'transfer', 'n_base': 24, 'n_spd': 3, 'seed': 9},
+        'SC':     {'mode': 'transfer', 'n_base': 22, 'n_spd': 3, 'seed': 2},
     },
     'donor_scale': 'Ref',
-    'n_probe_transfer': 4,       # donor probes per transferred speed (free)
+    'n_probe_transfer': 6,       # donor probes per transferred speed (free)
     'n_seeds_pick': 10,          # seeds scanned when seed is None
 }
 
@@ -144,10 +147,7 @@ class AcLossPipeline:
         """Builds (and caches) the donor model (Ref, own sampling)."""
         if self._donor is None:
             scale = self.cfg['donor_scale']
-            plan = self.cfg['plan'][scale]
-            self._donor = AcLossEvaluator.rebuild_sep_model_with_subsampling(
-                self.load_dataset(scale), plan['n_base'], plan['n_spd'],
-                plan['seed'], base_speed=self.cfg['base_speed'])
+            self._donor = self.build_model(scale)
         return self._donor
 
     def build_model(self, scale: str,
@@ -172,15 +172,17 @@ class AcLossPipeline:
     def _build_with_seed(self, scale: str, seed: int) -> SeparableRbfModel:
         plan = self.cfg['plan'][scale]
         ds = self.load_dataset(scale)
+        expo = bool(self.cfg.get('exponent', False))
         if plan['mode'] == 'own':
             return AcLossEvaluator.rebuild_sep_model_with_subsampling(
                 ds, plan['n_base'], plan['n_spd'], seed,
-                base_speed=self.cfg['base_speed'])
+                base_speed=self.cfg['base_speed'], exponent=expo)
         return RbfModelBuilder.build_separable_rbf_transfer(
             ds, self.build_donor(), self.cfg['k_r'][scale],
             plan['n_base'], plan['n_spd'], seed,
             base_speed=self.cfg['base_speed'],
-            n_probe_transfer=self.cfg['n_probe_transfer'])
+            n_probe_transfer=self.cfg['n_probe_transfer'],
+            exponent=expo)
 
     def pick_representative_seed(self, scale: str) -> int:
         """Seed in [0, n_seeds_pick) whose wMAE is closest to the mean."""
@@ -360,12 +362,17 @@ class AcLossPipeline:
             for si, ns in enumerate(n_spd_list):
                 ws = []
                 for seed in range(n_seeds):
-                    m = RbfModelBuilder.build_separable_rbf_transfer(
-                        ds, self.build_donor(), kr, nb, ns, seed,
-                        base_speed=self.cfg['base_speed'],
-                        n_probe_transfer=self.cfg['n_probe_transfer'])
+                    try:
+                        m = RbfModelBuilder.build_separable_rbf_transfer(
+                            ds, self.build_donor(), kr, nb, ns, seed,
+                            base_speed=self.cfg['base_speed'],
+                            n_probe_transfer=self.cfg['n_probe_transfer'],
+                            exponent=bool(self.cfg.get('exponent', False)))
+                    except np.linalg.LinAlgError:
+                        continue
                     ws.append(self._metrics_of(scale, m)[1])
-                G[bi, si] = float(np.mean(ws))
+                if ws:
+                    G[bi, si] = float(np.mean(ws))
         return {'n_base': np.asarray(n_base_list, float),
                 'n_spd8': np.asarray(n_spd_list, float),
                 'wmae_pct': G}

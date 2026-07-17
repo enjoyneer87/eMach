@@ -46,11 +46,15 @@ jeetMakeFigures();                    % 저널 PNG 재생성
 
 `jeet_acloss_rbf/pipeline.py`의 `DEFAULT_CONFIG`에 내장:
 
-- 기준 커널: **16 kRPM** (전류 집중 최대 발달점, `f_1D(16k)=1` 앵커)
-- Ref = donor: 자체 34점 (base 22 + 속도당 4)
-- HalfSC/SC = transfer: 자체 25/23점 (base 전량 + 8 kRPM 1점),
-  저속 f-값은 Ref 모델 상사 평가 `AF(k_r²ω, I/k_r, β)`
+- 모델식: **멱지수 분리** `AF = f(ω)·g(I,β)^p(ω)` — g는 16 kRPM 형상 커널,
+  속도별 (f, p)는 로그공간 선형회귀 (`exponent: True`)
+- 기준 커널: **16 kRPM** (전류 집중 최대 발달점, `f(16k)=1, p(16k)=1` 앵커)
+- Ref = donor: 자체 34점 (base 22 + 속도당 4), seed 9
+- HalfSC/SC = transfer: 자체 27/25점 (base 전량 + 8 kRPM **3점** — (f,p)
+  회귀 안정 임계), 저속 (f,p)는 Ref 모델 상사 평가 `AF(k_r²ω, I/k_r, β)`
+  프로브 6점/속도로 회귀, seed 9/2
 - 데이터 제외: SC (16 kRPM, 690 A, β=90°) — 미수렴 TS-FEA
+- 채택 wMAE: Ref 0.6% / HalfSC 1.2% / SC 1.2% (무보정 38.6/29.6/27.4%)
 
 설정을 바꾸려면 MATLAB에서:
 

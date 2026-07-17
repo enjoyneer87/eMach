@@ -153,6 +153,119 @@ def plot_field_panels(
     return out_path
 
 
+# ── AF map / 3-D surface (journal style) ───────────────────────────────
+
+def plot_af_map_dq(dataset, model, out_path: str,
+                   contour_levels: int = 8) -> str:
+    """Journal-style AF map on the id-iq plane, one panel per speed.
+
+    Measured AF samples (scatter) overlaid with the fitted Separable-RBF
+    contours. `dataset`/`model` come from AcLossPipeline.load_dataset /
+    build_model. Save to .pdf for a vector figure.
+    """
+    plt = _journal_rc()
+    speeds = sorted(set(p.speed_rpm for p in dataset.points))
+    n = len(speeds)
+    vmin = max(0.4, float(dataset.af_arr.min()) - 0.05)
+    vmax = float(dataset.af_arr.max()) + 0.05
+
+    fig, axes = plt.subplots(1, n, figsize=(1.85 * n, 2.4),
+                             layout='constrained')
+    if n == 1:
+        axes = [axes]
+    sc = None
+    for ax, spd in zip(axes, speeds):
+        pts = [p for p in dataset.points if p.speed_rpm == spd]
+        id_v = np.array([p.id_A for p in pts])
+        iq_v = np.array([p.iq_A for p in pts])
+        af_v = np.array([p.AF for p in pts])
+
+        pad = 80.0
+        id_g = np.linspace(id_v.min() - pad, id_v.max() + pad, 60)
+        iq_g = np.linspace(max(0.0, iq_v.min() - pad),
+                           iq_v.max() + pad, 60)
+        ID, IQ = np.meshgrid(id_g, iq_g)
+        irms_g = np.sqrt(ID**2 + IQ**2) / np.sqrt(2)
+        phase_g = np.degrees(np.arctan2(IQ, ID)) - 90.0
+        AF = model.predict(spd, irms_g.ravel(),
+                           phase_g.ravel()).reshape(ID.shape)
+        # blank the unsampled low-current core (RBF extrapolation)
+        rmin = 0.85 * min(p.current_rms for p in pts)
+        AF[irms_g < rmin] = np.nan
+
+        ct = ax.contour(ID, IQ, AF, levels=contour_levels,
+                        cmap='plasma', vmin=vmin, vmax=vmax,
+                        linewidths=0.8)
+        ax.clabel(ct, fmt='%.2f', fontsize=5.5)
+        sc = ax.scatter(id_v, iq_v, c=af_v, cmap='plasma', s=14,
+                        edgecolors='k', linewidths=0.3,
+                        vmin=vmin, vmax=vmax, zorder=3)
+        ax.set_title(f'{spd / 1000:.0f} kRPM', fontsize=8)
+        ax.set_xlabel('$i_d$ [A, pk]')
+        if ax is axes[0]:
+            ax.set_ylabel('$i_q$ [A, pk]')
+        ax.grid(True, ls=':', lw=0.4, color='#cccccc')
+        ax.set_axisbelow(True)
+    cb = fig.colorbar(sc, ax=list(axes), shrink=0.85)
+    cb.set_label('AF [-]', fontsize=7)
+    cb.ax.tick_params(labelsize=6.5)
+
+    os.makedirs(os.path.dirname(os.path.abspath(out_path)), exist_ok=True)
+    fig.savefig(out_path)
+    plt.close(fig)
+    return out_path
+
+
+def plot_af_surface_3d(dataset, model, out_path: str) -> str:
+    """Journal-style 3-D AF(id, iq) surfaces, one panel per speed."""
+    plt = _journal_rc()
+    speeds = sorted(set(p.speed_rpm for p in dataset.points))
+    n = len(speeds)
+    vmin = max(0.4, float(dataset.af_arr.min()) - 0.05)
+    vmax = float(dataset.af_arr.max()) + 0.05
+
+    fig = plt.figure(figsize=(1.95 * n, 2.6), layout='constrained')
+    surf = None
+    for k, spd in enumerate(speeds):
+        ax = fig.add_subplot(1, n, k + 1, projection='3d')
+        pts = [p for p in dataset.points if p.speed_rpm == spd]
+        id_v = np.array([p.id_A for p in pts])
+        iq_v = np.array([p.iq_A for p in pts])
+        af_v = np.array([p.AF for p in pts])
+
+        pad = 60.0
+        id_g = np.linspace(id_v.min() - pad, id_v.max() + pad, 40)
+        iq_g = np.linspace(max(0.0, iq_v.min() - pad),
+                           iq_v.max() + pad, 40)
+        ID, IQ = np.meshgrid(id_g, iq_g)
+        irms_g = np.sqrt(ID**2 + IQ**2) / np.sqrt(2)
+        phase_g = np.degrees(np.arctan2(IQ, ID)) - 90.0
+        AF = model.predict(spd, irms_g.ravel(),
+                           phase_g.ravel()).reshape(ID.shape)
+        # blank the unsampled low-current core (RBF extrapolation)
+        rmin = 0.85 * min(p.current_rms for p in pts)
+        AF[irms_g < rmin] = np.nan
+
+        surf = ax.plot_surface(ID, IQ, AF, cmap='plasma', vmin=vmin,
+                               vmax=vmax, alpha=0.75, linewidth=0,
+                               rstride=1, cstride=1)
+        ax.scatter(id_v, iq_v, af_v, c='k', s=6, depthshade=False)
+        ax.set_title(f'{spd / 1000:.0f} kRPM', fontsize=8, pad=0)
+        ax.set_xlabel('$i_d$ [A]', fontsize=6, labelpad=-4)
+        ax.set_ylabel('$i_q$ [A]', fontsize=6, labelpad=-4)
+        ax.set_zlabel('AF', fontsize=6, labelpad=-4)
+        ax.tick_params(labelsize=5, pad=-2)
+        ax.view_init(28, -50)
+    cb = fig.colorbar(surf, ax=fig.axes, shrink=0.7)
+    cb.set_label('AF [-]', fontsize=7)
+    cb.ax.tick_params(labelsize=6.5)
+
+    os.makedirs(os.path.dirname(os.path.abspath(out_path)), exist_ok=True)
+    fig.savefig(out_path)
+    plt.close(fig)
+    return out_path
+
+
 # ── DXF cross-section with dimensions ──────────────────────────────────
 
 def plot_motor_geometry_dxf(

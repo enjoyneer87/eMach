@@ -109,6 +109,56 @@ class RbfModelBuilder:
         return AcLossDataset(af_points)
 
     @staticmethod
+    def _fit_speed_scaling(
+        samples_by_speed: Dict[float, List[Tuple[float, float]]],
+        base_speed: float,
+        exponent: bool,
+        verbose: bool = True
+    ) -> Tuple[np.ndarray, Optional[np.ndarray]]:
+        """Fits the speed polynomials from per-speed (AF, g) sample pairs.
+
+        scalar mode  : f_s = mean(AF / g)                        (p = 1)
+        exponent mode: log AF = log f_s + p_s * log g  (per-speed linear
+                       regression), so the spread of the base-speed shape
+                       becomes speed-adjustable. Falls back to the scalar
+                       fit when a speed has < 2 usable pairs or no spread
+                       in log g (regression would be degenerate).
+
+        Returns (p_coeffs, q_coeffs): quadratic polynomials of f(s) and
+        p(s) over speed [kRPM], anchored at f(base)=1, p(base)=1.
+        q_coeffs is None in scalar mode.
+        """
+        speed_coords, f_coords, p_exps = [base_speed], [1.0], [1.0]
+        for spd in sorted(samples_by_speed.keys()):
+            pairs = [(a, g) for a, g in samples_by_speed[spd]
+                     if a > 0.0 and g > 0.0]
+            if not pairs:
+                continue
+            ratios = [a / g for a, g in pairs]
+            la = np.log([a for a, _ in pairs])
+            lg = np.log([g for _, g in pairs])
+            if exponent and len(pairs) >= 2 and float(np.ptp(lg)) > 1e-3:
+                p_s, logf_s = np.polyfit(lg, la, 1)
+                f_s = float(np.exp(logf_s))
+            else:
+                p_s, f_s = 1.0, float(np.mean(ratios))
+            if verbose:
+                extra = f'  p={p_s:.3f}' if exponent else ''
+                print(f'  f({int(spd * 1000):5d} RPM): n={len(pairs)}  '
+                      f'mean={np.mean(ratios):.4f}  '
+                      f'range=[{min(ratios):.4f}, {max(ratios):.4f}]{extra}')
+            speed_coords.append(spd)
+            f_coords.append(f_s)
+            p_exps.append(float(p_s))
+
+        order = np.argsort(speed_coords)
+        s_arr = np.asarray(speed_coords)[order]
+        p_coeffs = np.polyfit(s_arr, np.asarray(f_coords)[order], 2)
+        q_coeffs = (np.polyfit(s_arr, np.asarray(p_exps)[order], 2)
+                    if exponent else None)
+        return p_coeffs, q_coeffs
+
+    @staticmethod
     def build_3d_rbf(dataset: AcLossDataset, lam: float = 1e-6) -> RbfModel3D:
         """Fits a 3D TPS RBF model on the dataset."""
         n = len(dataset)
@@ -146,7 +196,8 @@ class RbfModelBuilder:
         n_spd: Optional[int] = None,
         seed: int = 42,
         lam: float = 1e-6,
-        base_speed: float = 2.0
+        base_speed: float = 2.0,
+        exponent: bool = False
     ) -> SeparableRbfModel:
         """
         Fits a 1D x 2D Separable RBF model.
@@ -155,6 +206,9 @@ class RbfModelBuilder:
         base_speed [kRPM] selects where the 2D kernel g(I, beta) is learned
         (f(base_speed) = 1 anchor). Learning at the maximum speed puts the
         separability residual at low speed, where absolute losses are small.
+        exponent=True fits AF = f(s) * g(I, beta)**p(s) — the per-speed
+        (f, p) pair comes from a log-space linear regression, which needs
+        >= 2 (robustly 3) calibration points per non-base speed.
         """
         speeds_k = dataset.speeds_k
         irms_arr = dataset.irms_arr
@@ -209,8 +263,19 @@ class RbfModelBuilder:
         other_speeds = [s for s in unique_speeds
                         if abs(s - base_speed) >= 0.1]
 
-        f_by_speed = {base_speed: [1.0]}
-        
+        samples_by_speed: Dict[float, List[Tuple[float, float]]] = {}
+
+        def admit(spd, idx):
+            I_val = irms_arr[idx]
+            th_val = phase_arr[idx]
+            af_actual = af_arr[idx]
+            g_val = float(predict_g_local(I_val, th_val))
+            f_val = af_actual / (g_val + 1e-12)
+            if not (0.3 <= f_val <= 3.0):
+                return
+            samples_by_speed.setdefault(spd, []).append((float(af_actual),
+                                                         g_val))
+
         if n_base is None and n_spd is None:
             # DEFAULT mode: select using specific target currents
             target_currents = [115.0, 230.0, 345.0, 460.0]
@@ -224,17 +289,9 @@ class RbfModelBuilder:
                     best_idx = _valid_idx[np.argmin(diffs)]
                     selected_other_idx.append(best_idx)
             selected_other_idx = np.unique(selected_other_idx)
-            
+
             for idx in selected_other_idx:
-                spd = speeds_k[idx]
-                I_val = irms_arr[idx]
-                th_val = phase_arr[idx]
-                af_actual = af_arr[idx]
-                g_val = predict_g_local(I_val, th_val)
-                f_val = af_actual / (g_val + 1e-12)
-                if not (0.3 <= f_val <= 3.0):
-                    continue
-                f_by_speed.setdefault(spd, []).append(f_val)
+                admit(speeds_k[idx], idx)
         else:
             # CUSTOM mode: select randomly from the speed groups
             rng = np.random.RandomState(seed)
@@ -243,28 +300,10 @@ class RbfModelBuilder:
                 spd_idx = np.where(np.abs(speeds_k - spd) < 0.1)[0]
                 n_sel = min(n_s, len(spd_idx))
                 for idx in rng.choice(spd_idx, n_sel, replace=False):
-                    I_val = irms_arr[idx]
-                    th_val = phase_arr[idx]
-                    af_actual = af_arr[idx]
-                    g_val = predict_g_local(I_val, th_val)
-                    f_val = af_actual / (g_val + 1e-12)
-                    if not (0.3 <= f_val <= 3.0):
-                        continue
-                    f_by_speed.setdefault(spd, []).append(f_val)
-                    
-        # Diagnose speed scaling values
-        for _s, _flist in sorted(f_by_speed.items()):
-            print(f'  f({int(_s*1000):5d} RPM): n={len(_flist)}  '
-                  f'mean={np.mean(_flist):.4f}  '
-                  f'range=[{min(_flist):.4f}, {max(_flist):.4f}]')
-                  
-        speed_coords = []
-        f_coords = []
-        for spd in sorted(f_by_speed.keys()):
-            speed_coords.append(spd)
-            f_coords.append(np.mean(f_by_speed[spd]))
-            
-        p_coeffs = np.polyfit(speed_coords, f_coords, 2)
+                    admit(spd, idx)
+
+        p_coeffs, q_coeffs = RbfModelBuilder._fit_speed_scaling(
+            samples_by_speed, base_speed, exponent)
 
         return SeparableRbfModel(
             w_g=w_g,
@@ -272,7 +311,8 @@ class RbfModelBuilder:
             base_centers_p=phase_arr_base,
             ls_i=LS_I,
             ls_p=LS_P,
-            p_coeffs=p_coeffs
+            p_coeffs=p_coeffs,
+            q_coeffs=q_coeffs
         )
 
     @staticmethod
@@ -286,7 +326,8 @@ class RbfModelBuilder:
         lam: float = 1e-6,
         base_speed: float = 16.0,
         max_donor_speed: float = 16.0,
-        n_probe_transfer: int = 4
+        n_probe_transfer: int = 4,
+        exponent: bool = False
     ) -> SeparableRbfModel:
         """
         Builds a Separable RBF for a scaled variant using SCL-M similarity
@@ -297,6 +338,10 @@ class RbfModelBuilder:
         model's own TS-FEA samples; low-band f-values are evaluated from the
         donor (reference) model instead, so no low-speed TS-FEA of the
         scaled variant is required.
+
+        exponent=True fits AF = f(s) * g(I, beta)**p(s) per speed via
+        log-space regression (needs n_spd >= 3 own points in the high band
+        for a stable fit; transferred probes are free, use >= 6).
         """
         speeds_k = dataset.speeds_k
         irms_arr = dataset.irms_arr
@@ -327,7 +372,7 @@ class RbfModelBuilder:
         other_speeds = [s for s in unique_speeds
                         if abs(s - base_speed) >= 0.1]
 
-        f_by_speed = {base_speed: [1.0]}
+        samples_by_speed: Dict[float, List[Tuple[float, float]]] = {}
         for spd in other_speeds:
             grp = np.where(np.abs(speeds_k - spd) < 0.1)[0]
             transferable = (spd * k_r**2) <= max_donor_speed + 0.1
@@ -341,13 +386,14 @@ class RbfModelBuilder:
                         spd * k_r**2 * 1000.0, I_val / k_r, th_val))
                 else:
                     af_val = af_arr[idx]      # own TS-FEA sample
-                f_val = af_val / (float(g_local(I_val, th_val)[0]) + 1e-12)
+                g_val = float(g_local(I_val, th_val)[0])
+                f_val = af_val / (g_val + 1e-12)
                 if 0.3 <= f_val <= 3.0:
-                    f_by_speed.setdefault(spd, []).append(f_val)
+                    samples_by_speed.setdefault(spd, []).append(
+                        (float(af_val), g_val))
 
-        sc = sorted(f_by_speed.keys())
-        fc = [float(np.mean(f_by_speed[s])) for s in sc]
-        p_coeffs = np.polyfit(sc, fc, 2)
+        p_coeffs, q_coeffs = RbfModelBuilder._fit_speed_scaling(
+            samples_by_speed, base_speed, exponent, verbose=False)
 
         return SeparableRbfModel(
             w_g=w_g,
@@ -355,5 +401,6 @@ class RbfModelBuilder:
             base_centers_p=pb,
             ls_i=LS_I,
             ls_p=LS_P,
-            p_coeffs=p_coeffs
+            p_coeffs=p_coeffs,
+            q_coeffs=q_coeffs
         )

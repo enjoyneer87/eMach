@@ -23,8 +23,8 @@ Tout = jeetScanOutliers('SC');       % empty after adopted exclusion
 disp(Tout)
 
 %% 4. adopted model metrics (paper numbers)
-mRef = jeetMetrics('Ref')            %#ok<NOPTS>  wMAE 0.56 %
-mSC  = jeetMetrics('SC')             %#ok<NOPTS>  wMAE ~5.1 %
+mRef = jeetMetrics('Ref')            %#ok<NOPTS>  wMAE ~0.6 %
+mSC  = jeetMetrics('SC')             %#ok<NOPTS>  wMAE ~1.2 % (exponent model)
 
 %% 5. AF prediction from the workspace (e.g., beta sweep)
 beta = 0:2:90;
