@@ -7,6 +7,11 @@ from .RbfModelBuilder import RbfModelBuilder
 from .AcLossEvaluator import AcLossEvaluator
 from .AcLossPlotter import AcLossPlotter
 from .pipeline import AcLossPipeline, DEFAULT_CONFIG
+from .manuscript_figs import (
+    extract_mes_fields,
+    plot_field_panels,
+    plot_motor_geometry_dxf,
+)
 
 __all__ = [
     "AcLossPoint",
@@ -18,5 +23,8 @@ __all__ = [
     "AcLossEvaluator",
     "AcLossPlotter",
     "AcLossPipeline",
-    "DEFAULT_CONFIG"
+    "DEFAULT_CONFIG",
+    "extract_mes_fields",
+    "plot_field_panels",
+    "plot_motor_geometry_dxf"
 ]
