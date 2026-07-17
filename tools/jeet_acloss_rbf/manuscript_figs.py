@@ -517,3 +517,294 @@ def plot_form_convergence(pipeline, out_path: str,
     fig.savefig(out_path)
     plt.close(fig)
     return out_path
+
+
+def plot_flux_torque_scaling(ref_fluxmap_mat: str, sc_satmap_mat: str,
+                             out_path: str, k_r: float = 2.0,
+                             k_a: float = 1.0, pole_pairs: int = 4,
+                             ref_axes_rms: bool = True) -> dict:
+    """Circuit-level scaling validation (Fig 11): scaled-Ref vs actual SC.
+
+    ref_fluxmap_mat : FluxMap_Py export of the reference model
+        (``FluxMap_dq`` struct with Id/Iq/Fd/Fq; dq axes in the Motor-CAD
+        RMS-amplitude convention when ``ref_axes_rms``).
+    sc_satmap_mat   : Motor-CAD Lab SaturationLossMap of the scaled model
+        (peak dq axes, Flux_Linkage_D/Q, Electromagnetic_Torque).
+
+    The reference map is converted to peak axes and scaled with
+    ``motor_scaling.morphisms.scale_motor_map`` (I x k_r, lambda x
+    k_a*k_r); torque is recomputed as 1.5 p (lam_d iq - lam_q id) so the
+    comparison uses only scaled flux linkages. Panels: (a) flux-linkage
+    contours, (b) torque contours (actual solid vs scaled dashed),
+    (c) torque relative-error map. Returns the deviation metrics.
+    """
+    from scipy.interpolate import griddata
+    from scipy.io import loadmat
+
+    from motor_scaling.model.BaseMotorMap import BaseMotorMap
+    from motor_scaling.morphisms.MotorScaler import scale_motor_map
+
+    plt = _journal_rc()
+
+    fm = loadmat(ref_fluxmap_mat)['FluxMap_dq'][0, 0]
+    conv = np.sqrt(2.0) if ref_axes_rms else 1.0
+    base = BaseMotorMap(
+        id_grid=np.squeeze(fm['Id']) * conv,
+        iq_grid=np.squeeze(fm['Iq']) * conv,
+        lambda_d=np.squeeze(fm['Fd']),
+        lambda_q=np.squeeze(fm['Fq']),
+        r_dc=0.0,
+        p_fe_grid=np.zeros_like(np.squeeze(fm['Fd'])),
+        p_cu_ac_hybrid=np.zeros_like(np.squeeze(fm['Fd'])),
+        pole_pairs=pole_pairs)
+    scaled = scale_motor_map(base, k_r, k_a)
+
+    d = loadmat(sc_satmap_mat)
+    sid = np.squeeze(d['Id_Peak'])
+    siq = np.squeeze(d['Iq_Peak'])
+    lam_d_sc = np.squeeze(d['Flux_Linkage_D'])
+    lam_q_sc = np.squeeze(d['Flux_Linkage_Q'])
+    t_sc = np.squeeze(d['Electromagnetic_Torque'])
+
+    pts = (scaled.id_grid.ravel(), scaled.iq_grid.ravel())
+    lam_d_s = griddata(pts, scaled.lambda_d.ravel(), (sid, siq))
+    lam_q_s = griddata(pts, scaled.lambda_q.ravel(), (sid, siq))
+    t_s = 1.5 * pole_pairs * (lam_d_s * siq - lam_q_s * sid)
+
+    valid = np.isfinite(lam_d_s)
+    t_hi = np.abs(t_sc) > 0.05 * np.nanmax(np.abs(t_sc))
+    m_t = valid & t_hi
+    metrics = {
+        'lam_d_rmse_mVs': float(np.sqrt(np.nanmean(
+            (lam_d_s - lam_d_sc)[valid] ** 2)) * 1e3),
+        'lam_q_rmse_mVs': float(np.sqrt(np.nanmean(
+            (lam_q_s - lam_q_sc)[valid] ** 2)) * 1e3),
+        'lam_q_mape_pct': float(np.nanmean(np.abs(
+            (lam_q_s - lam_q_sc)[valid & (lam_q_sc > 0.05)]
+            / lam_q_sc[valid & (lam_q_sc > 0.05)])) * 100),
+        'torque_mape_pct': float(np.nanmean(np.abs(
+            (t_s - t_sc)[m_t] / t_sc[m_t])) * 100),
+        'torque_max_pct': float(np.nanmax(np.abs(
+            (t_s - t_sc)[m_t] / t_sc[m_t])) * 100),
+        # normalized by the map peak torque: avoids the blow-up where the
+        # magnet and reluctance terms cancel (iq -> 0, deep-id corner,
+        # far outside any operating trajectory)
+        'torque_norm_mean_pct': float(np.nanmean(np.abs(
+            (t_s - t_sc)[valid])) / np.nanmax(np.abs(t_sc)) * 100),
+        'torque_norm_max_pct': float(np.nanmax(np.abs(
+            (t_s - t_sc)[valid])) / np.nanmax(np.abs(t_sc)) * 100),
+        'coverage_pct': float(np.mean(valid) * 100),
+    }
+
+    err_t = np.where(valid, np.abs(t_s - t_sc)
+                     / np.nanmax(np.abs(t_sc)) * 100, np.nan)
+
+    fig, axes = plt.subplots(1, 3, figsize=(7.05, 2.55),
+                             layout='constrained')
+    kw_sc = dict(colors='#1a3a5c', linewidths=0.9, linestyles='solid')
+    kw_s = dict(colors='#e65100', linewidths=0.9, linestyles='dashed')
+
+    ax = axes[0]
+    lv_d = np.round(np.linspace(np.nanmin(lam_d_sc),
+                                np.nanmax(lam_d_sc), 7), 2)
+    lv_q = np.round(np.linspace(0.05, np.nanmax(lam_q_sc), 6), 2)
+    c1 = ax.contour(sid, siq, lam_d_sc, levels=lv_d, **kw_sc)
+    ax.contour(sid, siq, lam_d_s, levels=lv_d, **kw_s)
+    ax.contour(sid, siq, lam_q_sc, levels=lv_q,
+               colors='#5a7ea3', linewidths=0.7, linestyles='solid')
+    ax.contour(sid, siq, lam_q_s, levels=lv_q,
+               colors='#f0a860', linewidths=0.7, linestyles='dashed')
+    ax.clabel(c1, fmt='%.2f', fontsize=5)
+    ax.set_title(r'(a) $\lambda_d$ (dark), $\lambda_q$ (light) [Vs]',
+                 fontsize=7.5)
+
+    ax = axes[1]
+    lv_t = np.linspace(200, np.nanmax(t_sc), 8)
+    c1 = ax.contour(sid, siq, t_sc, levels=lv_t, **kw_sc)
+    ax.contour(sid, siq, t_s, levels=lv_t, **kw_s)
+    ax.clabel(c1, fmt='%.0f', fontsize=5)
+    ax.set_title('(b) electromagnetic torque [Nm]', fontsize=7.5)
+
+    ax = axes[2]
+    pm = ax.pcolormesh(sid, siq, err_t, cmap='YlOrRd', vmin=0,
+                       vmax=max(1.0, np.nanpercentile(err_t, 99.5)),
+                       shading='auto')
+    cb = fig.colorbar(pm, ax=ax, shrink=0.85)
+    cb.set_label(r'$|\Delta T| / T_{max}$ [%]', fontsize=6.5)
+    cb.ax.tick_params(labelsize=6)
+    ax.set_title(f"(c) torque deviation "
+                 f"(mean {metrics['torque_norm_mean_pct']:.2f}%"
+                 f" of $T_{{max}}$)", fontsize=7.5)
+
+    from matplotlib.lines import Line2D
+    axes[0].legend(handles=[
+        Line2D([], [], color='#1a3a5c', lw=0.9, label='SC, FEA'),
+        Line2D([], [], color='#e65100', lw=0.9, ls='--',
+               label=r'Ref, scaled ($k_r{=}2$)')],
+        fontsize=5.8, frameon=False, loc='upper left')
+    for ax in axes:
+        ax.set_aspect('equal', adjustable='box')
+        ax.set_xlabel('$i_d$ [A, pk]')
+        ax.grid(True, ls=':', lw=0.4, color='#dddddd')
+        ax.set_axisbelow(True)
+    axes[0].set_ylabel('$i_q$ [A, pk]')
+
+    os.makedirs(os.path.dirname(os.path.abspath(out_path)), exist_ok=True)
+    fig.savefig(out_path)
+    plt.close(fig)
+    return metrics
+
+
+def plot_flux_torque_scaling_tps(comparison_mat: str, out_path: str,
+                                 k_r: float = 2.0, pole_pairs: int = 4,
+                                 n_grid: int = 121) -> dict:
+    """Fig 11 from the .mot-embedded Lab build nodes, TPS-reconstructed.
+
+    comparison_mat : lab_scaling_comparison_e10.mat written by
+        extractLabScalingComparison_e10.m — structs ``scaledS`` (Ref build
+        nodes with the SCL-M laws applied) and ``scS`` (actual SC build
+        nodes), fields Is/Gamma/Id_pk/Iq_pk/PsiD/PsiQ.
+
+    Both flux-linkage surfaces are rebuilt with the SAME thin-plate-spline
+    interpolant on the (id, iq) nodes, so the comparison contains no
+    Lab map-generation chain and no asymmetric gridding; the
+    electromagnetic torque is recomputed from each side's fluxes as
+    T_em = 1.5 p (psi_d iq - psi_q id). Returns deviation metrics.
+    """
+    from scipy.io import loadmat
+
+    plt = _journal_rc()
+
+    d = loadmat(comparison_mat)
+
+    def unpack(name):
+        s = d[name][0, 0]
+        return {k: np.asarray(s[k]).ravel().astype(float)
+                for k in ('Is', 'Gamma', 'Id_pk', 'Iq_pk', 'PsiD', 'PsiQ')}
+
+    sca = unpack('scaledS')
+    sc = unpack('scS')
+
+    # The Lab build samples form a tensor grid in (Is, gamma), where the
+    # flux surfaces are smooth and gently curved; fitting the TPS in that
+    # polar domain (instead of scattered dq) avoids inter-node wiggle from
+    # the coarse gamma spacing and involves no extrapolation anywhere
+    # inside the quarter disc.
+    ls_i = max(sc['Is'].max(), sca['Is'].max())
+    ls_g = 90.0
+
+    def tps_fit(s, g, v, lam=1e-10):
+        n = len(s)
+        r2 = (((s[:, None] - s[None, :]) / ls_i) ** 2
+              + ((g[:, None] - g[None, :]) / ls_g) ** 2)
+        phi = r2 * np.log(np.sqrt(r2) + 1e-12)
+        w = np.linalg.solve(phi + lam * np.eye(n), v)
+
+        def ev(s_g, g_g):
+            r2g = (((s_g.ravel()[:, None] - s[None, :]) / ls_i) ** 2
+                   + ((g_g.ravel()[:, None] - g[None, :]) / ls_g) ** 2)
+            k = r2g * np.log(np.sqrt(r2g) + 1e-12)
+            return (k @ w).reshape(s_g.shape)
+        return ev
+
+    f_d_sca = tps_fit(sca['Is'], sca['Gamma'], sca['PsiD'])
+    f_q_sca = tps_fit(sca['Is'], sca['Gamma'], sca['PsiQ'])
+    f_d_sc = tps_fit(sc['Is'], sc['Gamma'], sc['PsiD'])
+    f_q_sc = tps_fit(sc['Is'], sc['Gamma'], sc['PsiQ'])
+
+    amp = float(min(sc['Is'].max(), sca['Is'].max()))
+    id_g = np.linspace(-amp, 0.0, n_grid)
+    iq_g = np.linspace(0.0, amp, n_grid)
+    ID, IQ = np.meshgrid(id_g, iq_g)
+    IS_G = np.sqrt(ID**2 + IQ**2)
+    # dq -> (Is, gamma): id = -Is sin(gamma), iq = Is cos(gamma)
+    GA_G = np.degrees(np.arctan2(-ID, IQ))
+    inside = IS_G <= amp * 1.0001
+
+    lam_d_s, lam_q_s = f_d_sca(IS_G, GA_G), f_q_sca(IS_G, GA_G)
+    lam_d_c, lam_q_c = f_d_sc(IS_G, GA_G), f_q_sc(IS_G, GA_G)
+    for a in (lam_d_s, lam_q_s, lam_d_c, lam_q_c):
+        a[~inside] = np.nan
+
+    t_s = 1.5 * pole_pairs * (lam_d_s * IQ - lam_q_s * ID)
+    t_c = 1.5 * pole_pairs * (lam_d_c * IQ - lam_q_c * ID)
+
+    valid = inside & np.isfinite(t_c)
+    t_hi = np.abs(t_c) > 0.05 * np.nanmax(np.abs(t_c))
+    m_t = valid & t_hi
+    metrics = {
+        'lam_d_rmse_mVs': float(np.sqrt(np.nanmean(
+            (lam_d_s - lam_d_c)[valid] ** 2)) * 1e3),
+        'lam_q_rmse_mVs': float(np.sqrt(np.nanmean(
+            (lam_q_s - lam_q_c)[valid] ** 2)) * 1e3),
+        'lam_q_mape_pct': float(np.nanmean(np.abs(
+            (lam_q_s - lam_q_c)[valid & (lam_q_c > 0.05)]
+            / lam_q_c[valid & (lam_q_c > 0.05)])) * 100),
+        'torque_mape_pct': float(np.nanmean(np.abs(
+            (t_s - t_c)[m_t] / t_c[m_t])) * 100),
+        'torque_norm_mean_pct': float(np.nanmean(np.abs(
+            (t_s - t_c)[valid])) / np.nanmax(np.abs(t_c)) * 100),
+        'torque_norm_max_pct': float(np.nanmax(np.abs(
+            (t_s - t_c)[valid])) / np.nanmax(np.abs(t_c)) * 100),
+    }
+
+    err_t = np.where(valid, np.abs(t_s - t_c)
+                     / np.nanmax(np.abs(t_c)) * 100, np.nan)
+
+    fig, axes = plt.subplots(1, 3, figsize=(7.05, 2.55),
+                             layout='constrained')
+    kw_sc = dict(colors='#1a3a5c', linewidths=0.9, linestyles='solid')
+    kw_s = dict(colors='#e65100', linewidths=0.9, linestyles='dashed')
+
+    ax = axes[0]
+    lv_d = np.round(np.linspace(np.nanmin(lam_d_c),
+                                np.nanmax(lam_d_c), 7), 2)
+    lv_q = np.round(np.linspace(0.05, np.nanmax(lam_q_c), 6), 2)
+    c1 = ax.contour(ID, IQ, lam_d_c, levels=lv_d, **kw_sc)
+    ax.contour(ID, IQ, lam_d_s, levels=lv_d, **kw_s)
+    ax.contour(ID, IQ, lam_q_c, levels=lv_q,
+               colors='#5a7ea3', linewidths=0.7, linestyles='solid')
+    ax.contour(ID, IQ, lam_q_s, levels=lv_q,
+               colors='#f0a860', linewidths=0.7, linestyles='dashed')
+    ax.clabel(c1, fmt='%.2f', fontsize=5)
+    ax.scatter(sc['Id_pk'], sc['Iq_pk'], s=4, c='#1a3a5c', marker='o',
+               zorder=5, linewidths=0)
+    ax.set_title(r'(a) $\lambda_d$ (dark), $\lambda_q$ (light) [Vs]',
+                 fontsize=7.5)
+
+    ax = axes[1]
+    lv_t = np.linspace(200, np.nanmax(t_c), 8)
+    c1 = ax.contour(ID, IQ, t_c, levels=lv_t, **kw_sc)
+    ax.contour(ID, IQ, t_s, levels=lv_t, **kw_s)
+    ax.clabel(c1, fmt='%.0f', fontsize=5)
+    ax.set_title('(b) electromagnetic torque [Nm]', fontsize=7.5)
+
+    ax = axes[2]
+    pm = ax.pcolormesh(ID, IQ, err_t, cmap='YlOrRd', vmin=0,
+                       vmax=max(1.0, np.nanpercentile(err_t, 99.5)),
+                       shading='auto')
+    cb = fig.colorbar(pm, ax=ax, shrink=0.85)
+    cb.set_label(r'$|\Delta T_{em}| / T_{em,max}$ [%]', fontsize=6.5)
+    cb.ax.tick_params(labelsize=6)
+    ax.set_title(f"(c) torque deviation "
+                 f"(mean {metrics['torque_norm_mean_pct']:.2f}%"
+                 f" of $T_{{em,max}}$)", fontsize=7.5)
+
+    from matplotlib.lines import Line2D
+    axes[0].legend(handles=[
+        Line2D([], [], color='#1a3a5c', lw=0.9,
+               label='SC, FEA build nodes (TPS)'),
+        Line2D([], [], color='#e65100', lw=0.9, ls='--',
+               label=r'Ref, scaled ($k_r{=}2$, TPS)')],
+        fontsize=5.5, frameon=False, loc='upper left')
+    for ax in axes:
+        ax.set_aspect('equal', adjustable='box')
+        ax.set_xlabel('$i_d$ [A, pk]')
+        ax.grid(True, ls=':', lw=0.4, color='#dddddd')
+        ax.set_axisbelow(True)
+    axes[0].set_ylabel('$i_q$ [A, pk]')
+
+    os.makedirs(os.path.dirname(os.path.abspath(out_path)), exist_ok=True)
+    fig.savefig(out_path)
+    plt.close(fig)
+    return metrics
