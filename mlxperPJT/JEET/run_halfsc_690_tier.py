@@ -40,7 +40,7 @@ def main() -> None:
     from tools.motorCAD.pyMCAD import calc_dc_loss_kw
 
     db = load_db()
-    recs = db.get('records', db if isinstance(db, list) else [])
+    recs = db if isinstance(db, list) else db.get('records', [])
     combos = sorted({(r['speed'], r['phase']) for r in recs
                      if abs(r.get('current', 0) - 460.0) < 0.5})
     done = {(r['speed'], r['phase'], r['mode']) for r in recs
@@ -130,7 +130,7 @@ def main() -> None:
                   flush=True)
 
     mc.quit()
-    print('done — 690 A tier complete')
+    print('done - 690 A tier complete')
 
 
 if __name__ == '__main__':
