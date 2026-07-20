@@ -450,7 +450,8 @@ class RbfModelBuilder:
         base_speed: float = 16.0,
         max_donor_speed: float = 16.0,
         n_probe_transfer: int = 4,
-        exponent: bool = False
+        exponent: bool = False,
+        placement: str = "random"
     ) -> SeparableRbfModel:
         """
         Builds a Separable RBF for a scaled variant using SCL-M similarity
@@ -476,7 +477,13 @@ class RbfModelBuilder:
 
         # 2D kernel at the scaled model's own base speed
         base_idx = np.where(np.abs(speeds_k - base_speed) < 0.1)[0]
-        bsel = rng.choice(base_idx, min(n_base, len(base_idx)), replace=False)
+        if placement == "structured":
+            bsel = RbfModelBuilder._maximin_indices(
+                base_idx, irms_arr[base_idx] / LS_I,
+                phase_arr[base_idx] / LS_P, n_base)
+        else:
+            bsel = rng.choice(base_idx, min(n_base, len(base_idx)),
+                              replace=False)
         ib, pb, yb = irms_arr[bsel], phase_arr[bsel], af_arr[bsel]
         nb = len(bsel)
         Phi_g = np.zeros((nb, nb))
@@ -501,7 +508,24 @@ class RbfModelBuilder:
             transferable = (spd * k_r**2) <= max_donor_speed + 0.1
             # transferred probes cost no TS-FEA -> use a richer probe set
             n_pick = n_probe_transfer if transferable else n_spd
-            for idx in rng.choice(grp, min(n_pick, len(grp)), replace=False):
+            if placement == "structured":
+                g = np.asarray(g_local(irms_arr[grp], phase_arr[grp]),
+                               float).ravel()
+                ok = grp[g > 0]
+                k = min(n_pick, len(grp))
+                if len(ok) < k:
+                    pick = RbfModelBuilder._maximin_indices(
+                        grp, irms_arr[grp] / LS_I, phase_arr[grp] / LS_P, k)
+                else:
+                    lg = np.log(np.asarray(
+                        g_local(irms_arr[ok], phase_arr[ok]), float).ravel())
+                    order = ok[np.argsort(lg)]
+                    q = (np.linspace(0.0, 1.0, k)
+                         * (len(order) - 1)).round().astype(int)
+                    pick = order[np.unique(q)]
+            else:
+                pick = rng.choice(grp, min(n_pick, len(grp)), replace=False)
+            for idx in pick:
                 I_val, th_val = irms_arr[idx], phase_arr[idx]
                 if transferable:
                     # AF from the donor model via similarity mapping

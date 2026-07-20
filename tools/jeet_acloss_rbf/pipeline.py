@@ -372,8 +372,16 @@ class AcLossPipeline:
     def transfer_ablation_grid(self, scale: str,
                                n_base_list: Optional[List[int]] = None,
                                n_spd_list: Optional[List[int]] = None,
-                               n_seeds: int = 10) -> Dict[str, np.ndarray]:
-        """wMAE grid of the transfer plan over (n_base, n_spd8)."""
+                               n_seeds: int = 10,
+                               placement: str = 'random'
+                               ) -> Dict[str, np.ndarray]:
+        """wMAE grid of the transfer plan over (n_base, n_spd8).
+
+        placement='structured' uses the deterministic maximin + kappa-span
+        rule, so a single run per cell is enough (no seed averaging).
+        """
+        if placement == 'structured':
+            n_seeds = 1
         n_base_list = n_base_list or [8, 10, 12, 16, 20, 24]
         n_spd_list = n_spd_list or [0, 1, 2, 3, 4]
         ds = self.load_dataset(scale)
@@ -388,7 +396,8 @@ class AcLossPipeline:
                             ds, self.build_donor(), kr, nb, ns, seed,
                             base_speed=self.cfg['base_speed'],
                             n_probe_transfer=self.cfg['n_probe_transfer'],
-                            exponent=bool(self.cfg.get('exponent', False)))
+                            exponent=bool(self.cfg.get('exponent', False)),
+                            placement=placement)
                     except np.linalg.LinAlgError:
                         continue
                     ws.append(self._metrics_of(scale, m)[1])

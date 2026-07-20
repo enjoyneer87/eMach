@@ -14,6 +14,7 @@ from .manuscript_figs import (
     plot_af_map_dq,
     plot_af_surface_3d,
     plot_form_convergence,
+    plot_cost_accuracy,
     plot_flux_torque_scaling,
 )
 
@@ -34,5 +35,6 @@ __all__ = [
     "plot_af_map_dq",
     "plot_af_surface_3d",
     "plot_form_convergence",
+    "plot_cost_accuracy",
     "plot_flux_torque_scaling",
 ]

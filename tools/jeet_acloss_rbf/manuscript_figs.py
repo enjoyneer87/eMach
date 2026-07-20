@@ -435,7 +435,8 @@ def plot_form_convergence(pipeline, out_path: str,
                           n_base_list=(8, 10, 12, 16, 20, 24, 28),
                           n_spd_by_scale=None,
                           n_seeds: int = 10,
-                          show_titles: bool = True) -> str:
+                          show_titles: bool = True,
+                          placement: str = 'random') -> str:
     """Scalar vs exponent separable convergence: full-map wMAE vs n_base.
 
     Own-sampling protocol (16-kRPM base kernel + n_spd calibration points
@@ -448,8 +449,11 @@ def plot_form_convergence(pipeline, out_path: str,
     import io
 
     from .AcLossEvaluator import AcLossEvaluator
+    from .RbfModelBuilder import RbfModelBuilder
 
     plt = _journal_rc()
+    if placement == 'structured':
+        n_seeds = 1
     ns_by = n_spd_by_scale or {'Ref': 4, 'HalfSC': 3, 'SC': 4}
     kr_by = {'Ref': 1.0, 'HalfSC': 1.5, 'SC': 2.0}
     base_speed = pipeline.cfg['base_speed']
@@ -483,10 +487,20 @@ def plot_form_convergence(pipeline, out_path: str,
                 for seed in range(n_seeds):
                     try:
                         with contextlib.redirect_stdout(io.StringIO()):
-                            m = AcLossEvaluator.\
-                                rebuild_sep_model_with_subsampling(
-                                    ds, nb, ns, seed,
-                                    base_speed=base_speed, exponent=expo)
+                            if placement == 'structured':
+                                plan = RbfModelBuilder.plan_sampling_indices(
+                                    ds, n_base=nb, n_spd=ns,
+                                    base_speed=base_speed,
+                                    placement='structured', seed=seed)
+                                m = RbfModelBuilder.build_separable_rbf(
+                                    ds, base_speed=base_speed,
+                                    exponent=expo, index_plan=plan)
+                            else:
+                                m = AcLossEvaluator.\
+                                    rebuild_sep_model_with_subsampling(
+                                        ds, nb, ns, seed,
+                                        base_speed=base_speed,
+                                        exponent=expo)
                     except np.linalg.LinAlgError:
                         continue
                     pred = ds.h_ac_arr * m.predict(
@@ -514,6 +528,67 @@ def plot_form_convergence(pipeline, out_path: str,
                          f'{ns}/speed)', fontsize=8)
         ax.grid(True, which='both', ls=':', lw=0.4, color='#dddddd')
         ax.set_axisbelow(True)
+
+    os.makedirs(os.path.dirname(os.path.abspath(out_path)), exist_ok=True)
+    fig.savefig(out_path)
+    plt.close(fig)
+    return out_path
+
+
+def plot_cost_accuracy(sweep, out_path: str, scale: str,
+                       show_titles: bool = True,
+                       annotate_adopted: bool = True) -> str:
+    """Cost--accuracy Pareto front of the sampling plan for one scale.
+
+    x = own TS-FEA points actually spent (transferred probes are free),
+    y = full-map wMAE.  One curve per plan variant (own / transfer x
+    random / structured).  ``sweep`` is the dict from
+    ``cost_accuracy.sweep_cost_accuracy``.
+    """
+    plt = _journal_rc()
+    e = sweep['scales'][scale]
+
+    sty = {
+        'own/random': dict(color='#8d8d8d', ls='--', marker='s',
+                           label='Own, random'),
+        'own/structured': dict(color='#2e7d32', ls='-', marker='s',
+                               label='Own, structured'),
+        'transfer/random': dict(color='#b28ad8', ls='--', marker='o',
+                                label='Transfer, random'),
+        'transfer/structured': dict(color='#e65100', ls='-', marker='o',
+                                    label='Transfer, structured'),
+    }
+
+    fig, ax = plt.subplots(figsize=(3.2, 2.5), layout='constrained')
+    for name, front in e['pareto_by_variant'].items():
+        if not front:
+            continue
+        xs = [r['budget'] for r in front]
+        ys = [r['wmae'] for r in front]
+        ax.plot(xs, ys, lw=1.2, ms=3.2,
+                **sty.get(name, dict(label=name)))
+
+    ax.axhline(e['hybrid_wmae'], color='#888888', ls=':', lw=0.9,
+               label='Hybrid, uncorrected')
+    if annotate_adopted:
+        best = e['pareto_by_variant'].get('transfer/structured') or []
+        pick = next((r for r in best if r['budget'] == 27), None)
+        if pick:
+            ax.annotate(f"adopted: {pick['budget']} pts, "
+                        f"{pick['wmae']:.2f}%",
+                        xy=(pick['budget'], pick['wmae']),
+                        xytext=(-52, -1), textcoords='offset points',
+                        fontsize=6.0, ha='right', va='center',
+                        arrowprops=dict(arrowstyle='->', lw=0.7,
+                                        color='#444444'))
+    ax.set_yscale('log')
+    ax.set_xlabel('own TS-FEA points (cost)')
+    ax.set_ylabel(r'wMAE [%] (log)')
+    ax.legend(fontsize=5.8, frameon=False, loc='upper right')
+    if show_titles:
+        ax.set_title(f"{scale} ($k_r{{=}}{e['k_r']:g}$)", fontsize=8)
+    ax.grid(True, which='both', ls=':', lw=0.4, color='#dddddd')
+    ax.set_axisbelow(True)
 
     os.makedirs(os.path.dirname(os.path.abspath(out_path)), exist_ok=True)
     fig.savefig(out_path)
