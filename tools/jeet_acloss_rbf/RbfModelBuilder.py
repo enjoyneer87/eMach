@@ -190,6 +190,121 @@ class RbfModelBuilder:
         )
 
     @staticmethod
+    def _maximin_indices(cand, x, y, k) -> np.ndarray:
+        """Deterministic farthest-point (maximin) subset of ``cand``.
+
+        Seeds at the candidate closest to the centroid and then repeatedly
+        adds the candidate farthest from everything already chosen, so the
+        result covers the plane without depending on a random seed.
+        """
+        cand = np.asarray(cand)
+        if k >= len(cand):
+            return cand
+        X = np.column_stack([np.asarray(x, float), np.asarray(y, float)])
+        picked = [int(np.argmin(((X - X.mean(0)) ** 2).sum(1)))]
+        d = np.sqrt(((X - X[picked[0]]) ** 2).sum(1))
+        for _ in range(int(k) - 1):
+            nxt = int(np.argmax(d))
+            picked.append(nxt)
+            d = np.minimum(d, np.sqrt(((X - X[nxt]) ** 2).sum(1)))
+        return cand[picked]
+
+    @staticmethod
+    def plan_sampling_indices(
+        dataset: AcLossDataset,
+        n_base: int,
+        n_spd: int,
+        base_speed: float = 16.0,
+        placement: str = "random",
+        seed: int = 42,
+        lam: float = 1e-6
+    ) -> dict:
+        """Chooses which operating points to run TS-FEA at.
+
+        ``placement='random'`` reproduces the seeded draw used for the
+        convergence study.  ``placement='structured'`` is a deterministic,
+        transferable rule with two stages:
+
+          1. base speed  -- maximin coverage of the (I_rms, beta) plane,
+             which is what the shape kernel kappa has to interpolate;
+          2. other speeds -- *kappa-span* selection.  Because kappa is
+             already identified at stage 1, it can be evaluated on every
+             candidate before any further TS-FEA is spent; picking points
+             at even quantiles of log kappa maximises the lever arm of the
+             per-speed log-space regression log AF = log f + p log kappa.
+             Short lever arms are exactly what destabilises p when only a
+             few calibration points are available.
+
+        Returns ``{'base', 'by_speed', 'all', 'placement', 'log_kappa_span'}``
+        so the same point set can be handed to any calibration form.
+        """
+        speeds_k, I, P = dataset.speeds_k, dataset.irms_arr, dataset.phase_arr
+        LS_I, LS_P = dataset.LS_I, dataset.LS_P
+        base_idx = np.where(np.abs(speeds_k - base_speed) < 0.1)[0]
+        others = [s for s in sorted(set(np.round(speeds_k, 3)))
+                  if abs(s - base_speed) >= 0.1]
+        rng = np.random.RandomState(seed)
+
+        if placement == "structured":
+            bsel = RbfModelBuilder._maximin_indices(
+                base_idx, I[base_idx] / LS_I, P[base_idx] / LS_P, n_base)
+        elif placement == "random":
+            bsel = rng.choice(base_idx, min(n_base, len(base_idx)),
+                              replace=False)
+        else:
+            raise ValueError(f"unknown placement: {placement!r}")
+
+        # kappa on the chosen base points (needed for the structured rule)
+        kappa = None
+        if placement == "structured":
+            ib, pb = I[bsel], P[bsel]
+            nb = len(bsel)
+            Phi = np.zeros((nb, nb))
+            for j in range(nb):
+                r2 = ((ib - ib[j]) ** 2 / LS_I ** 2
+                      + (pb - pb[j]) ** 2 / LS_P ** 2)
+                Phi[:, j] = r2 * np.log(np.sqrt(r2) + 1e-12)
+            w = np.linalg.solve(Phi + lam * np.eye(nb), dataset.af_arr[bsel])
+
+            def kappa(iv, pv):                              # noqa: F811
+                r2 = ((np.asarray(iv, float).ravel()[:, None] - ib) ** 2
+                      / LS_I ** 2
+                      + (np.asarray(pv, float).ravel()[:, None] - pb) ** 2
+                      / LS_P ** 2)
+                return (r2 * np.log(np.sqrt(r2) + 1e-12)) @ w
+
+        by_speed, spans = {}, {}
+        for spd in others:
+            grp = np.where(np.abs(speeds_k - spd) < 0.1)[0]
+            k = min(int(n_spd), len(grp))
+            if placement == "random":
+                sel = rng.choice(grp, k, replace=False)
+            else:
+                g = np.asarray(kappa(I[grp], P[grp]), float).ravel()
+                ok = grp[g > 0]
+                if len(ok) < k:                    # kernel degenerate here
+                    sel = RbfModelBuilder._maximin_indices(
+                        grp, I[grp] / LS_I, P[grp] / LS_P, k)
+                else:
+                    lg = np.log(np.asarray(kappa(I[ok], P[ok]),
+                                           float).ravel())
+                    order = ok[np.argsort(lg)]
+                    q = (np.linspace(0.0, 1.0, k) * (len(order) - 1)
+                         ).round().astype(int)
+                    sel = order[np.unique(q)]
+            by_speed[float(spd)] = np.asarray(sel)
+            if kappa is not None and len(sel):
+                lg = np.log(np.clip(np.asarray(kappa(I[sel], P[sel]),
+                                               float).ravel(), 1e-12, None))
+                spans[float(spd)] = float(np.ptp(lg))
+
+        all_idx = np.concatenate([np.asarray(bsel)]
+                                 + [v for v in by_speed.values() if len(v)])
+        return {"base": np.asarray(bsel), "by_speed": by_speed,
+                "all": np.unique(all_idx), "placement": placement,
+                "log_kappa_span": spans}
+
+    @staticmethod
     def build_separable_rbf(
         dataset: AcLossDataset,
         n_base: Optional[int] = None,
@@ -197,7 +312,8 @@ class RbfModelBuilder:
         seed: int = 42,
         lam: float = 1e-6,
         base_speed: float = 2.0,
-        exponent: bool = False
+        exponent: bool = False,
+        index_plan: Optional[dict] = None
     ) -> SeparableRbfModel:
         """
         Fits a 1D x 2D Separable RBF model.
@@ -221,7 +337,9 @@ class RbfModelBuilder:
         base_idx = np.where(np.abs(speeds_k - base_speed) < 0.1)[0]
         
         # Subsampling for n_base if specified
-        if n_base is not None:
+        if index_plan is not None:
+            selected_base_idx = np.asarray(index_plan["base"])
+        elif n_base is not None:
             rng = np.random.RandomState(seed)
             nb_sel = min(n_base, len(base_idx))
             selected_base_idx = rng.choice(base_idx, nb_sel, replace=False)
@@ -276,7 +394,12 @@ class RbfModelBuilder:
             samples_by_speed.setdefault(spd, []).append((float(af_actual),
                                                          g_val))
 
-        if n_base is None and n_spd is None:
+        if index_plan is not None:
+            # EXPLICIT mode: caller supplied the sampling plan
+            for spd, idxs in index_plan["by_speed"].items():
+                for idx in np.asarray(idxs):
+                    admit(spd, idx)
+        elif n_base is None and n_spd is None:
             # DEFAULT mode: select using specific target currents
             target_currents = [115.0, 230.0, 345.0, 460.0]
             selected_other_idx = []

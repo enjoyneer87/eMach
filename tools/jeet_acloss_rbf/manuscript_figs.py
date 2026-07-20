@@ -434,7 +434,8 @@ def plot_form_convergence(pipeline, out_path: str,
                           scales=('Ref', 'HalfSC', 'SC'),
                           n_base_list=(8, 10, 12, 16, 20, 24, 28),
                           n_spd_by_scale=None,
-                          n_seeds: int = 10) -> str:
+                          n_seeds: int = 10,
+                          show_titles: bool = True) -> str:
     """Scalar vs exponent separable convergence: full-map wMAE vs n_base.
 
     Own-sampling protocol (16-kRPM base kernel + n_spd calibration points
@@ -472,10 +473,10 @@ def plot_form_convergence(pipeline, out_path: str,
 
         for expo, sty in ((False, dict(color='#2e7d32', ls='--',
                                        marker='s',
-                                       label=r'Scalar $f\cdot g$')),
+                                       label=r'Scalar $f\cdot\kappa$')),
                           (True, dict(color='#e65100', ls='-',
                                       marker='o',
-                                      label=r'Exponent $f\cdot g^{p}$'))):
+                                      label=r'Exponent $f\cdot\kappa^{p}$'))):
             ys = []
             for nb in nbs:
                 vals = []
@@ -506,10 +507,11 @@ def plot_form_convergence(pipeline, out_path: str,
         if k == 0:
             ax.set_ylabel(r'wMAE [%] (log)')
             ax.legend(fontsize=6.0, frameon=False, loc='lower left')
-        tag = chr(ord('a') + k)
-        ax.set_title(f'({tag}) {scale} '
-                     f'($k_r{{=}}{kr_by.get(scale, 1):g}$, '
-                     f'{ns}/speed)', fontsize=8)
+        if show_titles:
+            tag = chr(ord('a') + k)
+            ax.set_title(f'({tag}) {scale} '
+                         f'($k_r{{=}}{kr_by.get(scale, 1):g}$, '
+                         f'{ns}/speed)', fontsize=8)
         ax.grid(True, which='both', ls=':', lw=0.4, color='#dddddd')
         ax.set_axisbelow(True)
 
