@@ -1,7 +1,14 @@
 """
 Motor-CAD API를 이용한 슬롯 단면 + 권선 뷰 캡처
-JEETResult_MCAD.m 참조: mcad.SaveScreenToFile("StatorWinding", path)
-Python API: mcad.save_screen_to_file("StatorWinding", path)
+
+API: initialise_tab_names() → save_motorcad_screen_to_file("Geometry;Winding", path)
+도큐: https://motorcad.docs.pyansys.com/version/stable/methods/_autosummary_UI/
+      ansys.motorcad.core.motorcad_methods.MotorCAD.save_motorcad_screen_to_file.html
+
+save_motorcad_screen_to_file(screen_name, file_name):
+  - screen_name 형식: "tabName;SubTab" (예: "Geometry;Axial", "Geometry;Winding")
+  - 호출 전 initialise_tab_names() 필수
+  - Motor-CAD UI visible 상태 필요 (set_visible(True))
 """
 import sys
 import os
@@ -22,35 +29,33 @@ MOT_FILES = {
 }
 OUT_DIR = r"D:\KangDH\EveryMotor\eMach\mlxperPJT\JEET\figures"
 
-# 저장할 캡처 컨텍스트 목록
-# SaveScreenToFile(context, path) — context 문자열:
-#   "Radial"        : Geometry 탭 Radial 단면
-#   "StatorWinding" : Winding 탭 권선 단면 (원하는 뷰)
-CAPTURE_CONTEXTS = [
-    ("StatorWinding", "winding"),   # 권선 단면 — 도체 배치 확인
-    ("Radial",        "radial"),    # 형상 단면 — 기존 뷰
+# 저장할 탭 캡처 목록
+# save_motorcad_screen_to_file(screen_name, file) — screen_name = "Tab;SubTab"
+#   "Geometry;Winding" : 권선 배치 탭 (턴수·도체 배치 확인) ← 핵심
+#   "Geometry;Axial"   : 축방향 단면 뷰
+#   ⚠️ "Geometry;Winding" 은 존재하지 않는 조합 → 항상 실패했음.
+#      Motor-CAD v2026.1.1 기준 Winding 은 Geometry 의 하위탭이 아니라 최상위 탭이고,
+#      Geometry 의 하위탭은 Radial / Axial / Editor / 3D 이다.
+#      2026-07-20 실측으로 유효 확인: Winding;Definition, Winding;Pattern, Geometry;Radial
+CAPTURE_TABS = [
+    ("Winding;Definition", "winding"),  # ← 핵심: 슬롯 단면 + 도체 치수/점적율 표
+    ("Winding;Pattern",    "pattern"),  # 권선 패턴
+    ("Geometry;Radial",    "radial"),   # 반경방향 슬롯 단면
 ]
 
 os.makedirs(OUT_DIR, exist_ok=True)
 
 
-def save_screen(mcad, context, out_path):
-    """SaveScreenToFile(context, path) — MATLAB/Python 공통 API"""
+def save_screen_tab(mcad, tab_name, out_path):
+    """save_motorcad_screen_to_file API. initialise_tab_names() 선행 필수."""
     try:
-        # Python ansys.motorcad.core API (snake_case)
-        mcad.save_screen_to_file(context, out_path)
-        print(f"  [OK] save_screen_to_file('{context}') -> {out_path}")
+        mcad.initialise_tab_names()
+        mcad.save_motorcad_screen_to_file(tab_name, out_path)
+        print(f"  [OK] save_motorcad_screen_to_file('{tab_name}') -> {out_path}")
         return True
-    except Exception as e1:
-        print(f"  [WARN] save_screen_to_file 실패: {e1}")
-    try:
-        # MATLAB COM API 직접 호출 (camelCase fallback)
-        mcad.SaveScreenToFile(context, out_path)
-        print(f"  [OK] SaveScreenToFile('{context}') -> {out_path}")
-        return True
-    except Exception as e2:
-        print(f"  [ERROR] SaveScreenToFile 실패: {e2}")
-    return False
+    except Exception as e:
+        print(f"  [ERROR] save_motorcad_screen_to_file('{tab_name}'): {e}")
+        return False
 
 
 for label, mot_path in MOT_FILES.items():
@@ -61,7 +66,9 @@ for label, mot_path in MOT_FILES.items():
         continue
 
     try:
+        # 기존 COM 인스턴스 충돌 방지: open_new_instance=True
         mcad = MotorCAD(open_new_instance=True, enable_exceptions=True)
+        mcad.set_visible(True)   # UI 표시 필수 (save_motorcad_screen_to_file 요구)
         mcad.load_from_file(mot_path)
         print(f"  [OK] Loaded")
 
@@ -70,18 +77,20 @@ for label, mot_path in MOT_FILES.items():
         except Exception:
             pass
 
-        # 각 컨텍스트 캡처
-        for ctx, suffix in CAPTURE_CONTEXTS:
+        # 각 탭 캡처
+        for tab_name, suffix in CAPTURE_TABS:
             out_path = os.path.join(OUT_DIR, f"slot_{suffix}_{label}.png")
-            save_screen(mcad, ctx, out_path)
+            save_screen_tab(mcad, tab_name, out_path)
 
-        # 도체 치수 출력 (8턴 클램핑 확인)
+        # 도체 치수 + 턴수 확인 (8턴 클램핑 체크)
         try:
-            w = mcad.get_variable("ConductorWidth")
-            h = mcad.get_variable("ConductorHeight")
-            print(f"  [INFO] Conductor: W={w:.4f} mm  H={h:.4f} mm")
+            w = mcad.get_variable("Copper_Width")
+            h = mcad.get_variable("Copper_Height")
+            n = int(mcad.get_variable("WindingLayers"))
+            fill = mcad.get_variable("GrossSlotFillFactor")
+            print(f"  [INFO] WindingLayers={n}  Copper W={w:.4f} mm  H={h:.4f} mm  Fill={fill:.4f}")
         except Exception as e:
-            print(f"  [WARN] 도체 치수 읽기 실패: {e}")
+            print(f"  [WARN] 치수 읽기 실패: {e}")
 
         mcad.quit()
 

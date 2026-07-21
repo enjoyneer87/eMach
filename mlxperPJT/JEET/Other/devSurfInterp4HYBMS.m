@@ -14,8 +14,21 @@ matFileList    =findMatFiles(pwd)'
 matFileList    =matFileList(contains(matFileList,'wire'))           
 MSmatFileList  =matFileList(contains(matFileList,'MS'))         
 REFmatFileList =MSmatFileList(contains(MSmatFileList,'SCL'))            
-REFmatFileList =REFmatFileList(contains(REFmatFileList,'MagB'))         
+REFmatFileList =REFmatFileList(contains(REFmatFileList,'MagB'))
+% 2026-07-20: 아래 이름기반 필터(주석)는 산출물(*FitwithDT.mat)을 걸러내려던 것이나
+%   주석 상태여서 산출물까지 입력으로 읽혔고, 그 파일엔 WireTable 이 없어
+%   27행 load 직후 28행 height(WireTable) 에서 미정의 변수 오류가 났다.
+%   → 이름 대신 "파일 안에 WireTable 이 실제로 있는지"로 판정한다(견고).
+%   실측(2026-07-20): *_wireTable.mat = WireTable 보유 / *DenseFitwithDT.mat = WireFitTable 만.
 % REFmatFileList=REFmatFileList(~contains(REFmatFileList,'DT'))
+hasWireTable   =cellfun(@(f) any(strcmp({whos('-file',f).name},'WireTable')), REFmatFileList);
+if ~any(hasWireTable)
+    error('devSurfInterp4HYBMS:noInput', ...
+          'WireTable 을 가진 .mat 이 없습니다. pwd=%s (대상 %d개 검사)', ...
+          pwd, numel(REFmatFileList));
+end
+fprintf('[filter] WireTable 보유 %d / 후보 %d 개 선택\n', sum(hasWireTable), numel(REFmatFileList));
+REFmatFileList =REFmatFileList(hasWireTable);
 
 [~,MatfileNames,~]=fileparts(REFmatFileList)
 timeStepReducedFactor=1;  % 480 step -> 240 = 2

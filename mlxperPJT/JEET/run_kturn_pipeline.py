@@ -187,7 +187,7 @@ def generate_turn_mots(base_mot: Path, turns, base_turns: int, out_dir: Path,
 
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    mc = pymotorcad.MotorCAD(enable_success_variable=False)
+    mc = pymotorcad.MotorCAD(open_new_instance=True, enable_success_variable=False)
     try:
         mc.set_variable("MessageDisplayState", 2)  # 헤드리스: GUI 팝업 억제
     except Exception:

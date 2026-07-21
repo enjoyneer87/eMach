@@ -51,7 +51,7 @@ HalfSC 해석. `elhajji_b_data/` (MS B) 소비.
 ```
 elhajji_b_data/   → MS B (HalfSC, Hybrid_Speed_* .mes) ✅ halfsc/sc_hybrid에 사용
 sc_b_data/        → TS B (SC, FullFEA_Speed_* .mes)    ⚠️ Hybrid 복제에 부적합
-sc_b_data_hybrid/ → MS B (SC, Hybrid_Speed_* .mes)     ⏳ 추출 중
+sc_b_data_hybrid/ → MS B (SC, Hybrid_Speed_* .mes)     ✅ 완료 (6 cases)
 ```
 
 **VlpG2p는 반드시 MS B로 계산해야 Hybrid 공식 복제가 성립.**
@@ -81,9 +81,20 @@ Linux/Mac mount에서도 동작함.
 
 ---
 
-## 현재 작업 (2026-07-17)
+## 완료 현황 (2026-07-17)
 
-1. `extract_sc_b_hybrid.py` 실행 → `sc_b_data_hybrid/` 채우기  
-   ← `pyMotorEnv_310` venv에서 실행 필요 (일반 venv, conda 아님)
-2. 완료 후 `mesh_b_vs_mcad.py sc_hybrid` 실행
-3. SC Figure 4 플롯 생성 (`figures/sc_method_comparison_fig4.png`)
+✅ `sc_b_data_hybrid/` 완료 (6 cases: 2k/4k/8k/16k × 920A, 16k × 460A, 16k 54°)  
+✅ `mesh_b_vs_mcad.py sc_hybrid` 완료 → `mesh_b_vs_mcad_sc_hybrid.json`  
+✅ SC Figure 4 생성 → `../figures/sc_hybrid_method_comparison_fig4.png`
+
+### SC MS B 핵심 결과
+
+| 속도 (rpm) | Vlp/TS | AF = TS/MCAD |
+|---|---|---|
+| 2000 (36°) | 1.29 | 2.91 |
+| 4000 (36°) | 1.17 | 2.43 |
+| 8000 (36°) | 1.03 | 1.94 |
+| 16000 (36°) | 0.88 | 1.78 |
+| 16000 (54°) | 1.01 | — |
+
+Vlp/TS가 고속에서 1에 수렴 → MS B 소스 유효성 확인.

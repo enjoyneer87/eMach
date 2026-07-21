@@ -34,7 +34,7 @@ def initialise_mcad(base_mot_path: str, extra_sys_paths: list[str]) -> None:
     unique_path = base.parent / f"{base.stem}_{p.name}{base.suffix}"
     shutil.copy2(base_mot_path, str(unique_path))
 
-    mcApp = pymotorcad.MotorCAD(enable_success_variable=False)
+    mcApp = pymotorcad.MotorCAD(open_new_instance=True, enable_success_variable=False)
     try:
         mcApp.set_variable("MessageDisplayState", 2)  # suppress all GUI popups (headless batch)
     except Exception:
