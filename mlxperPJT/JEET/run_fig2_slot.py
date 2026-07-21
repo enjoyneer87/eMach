@@ -21,7 +21,8 @@ sys.path.insert(0, r"D:\KangDH\EveryMotor\eMach\tools")
 import matplotlib
 matplotlib.use("Agg")
 
-from jeet_acloss_rbf import (plot_fig2_slot_comparison, make_fig2_slot_gif,
+from jeet_acloss_rbf import (plot_fig2_slot_comparison, plot_fig2_slot_rms,
+                             make_fig2_slot_gif,
                              plot_fig_b_slot_comparison, make_fig_b_slot_gif)
 
 FIELDS = (r"D:\KangDH\EveryMotor\eMach\mlxperPJT\JEET"
@@ -43,6 +44,11 @@ B_FIG_OUT = r"E:\KDH\Overleaf\JEET-2024_rev1\fig\fig2_slot_b_comparison.png"
 B_DATA_JSON = os.path.join(DRIVE_DIR, "fig2_slot_b_static_data.json")
 B_GIF_OUT = os.path.join(DRIVE_DIR, "fig2_slot_b_comparison.gif")
 B_GIF_SUMMARY = os.path.join(DRIVE_DIR, "fig2_slot_b_gif_summary.json")
+
+# 주기-RMS 판 (순시 스냅샷 비교의 정의 불일치를 해소한 버전)
+RMS_FIG_OUT = (r"E:\KDH\Overleaf\JEET-2024_rev1\fig"
+               r"\fig2_slot_je_rms_comparison.png")
+RMS_JSON = os.path.join(DRIVE_DIR, "fig2_slot_je_rms_summary.json")
 
 FREQ_HZ = 1066.67          # 16000 rpm, 8극 -> f_e = rpm/60 * P/2
 
@@ -141,10 +147,18 @@ def main():
     ap.add_argument("--skip-gif", action="store_true")
     ap.add_argument("--only-b", action="store_true",
                     help="B 필드 그림만 생성 (Je 생략)")
+    ap.add_argument("--only-rms", action="store_true",
+                    help="주기-RMS Je 그림만 생성")
     a = ap.parse_args()
 
     if a.only_b:
         run_b_field(a)
+        return
+    if a.only_rms:
+        plot_fig2_slot_rms(TS_PATH, HY_PATH, RMS_FIG_OUT, slot_id=a.slot,
+                           freq_hz=FREQ_HZ, airgap_side=a.airgap_side,
+                           out_json=RMS_JSON)
+        print("RMS Fig PNG (Overleaf):", RMS_FIG_OUT)
         return
 
     print("=== 정적 2-패널 (step %d) ===" % a.step)

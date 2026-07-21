@@ -1187,7 +1187,9 @@ def plot_fig2_slot_comparison(ts_path: str, hybrid_path: str,
                               freq_hz: float = 1066.67,
                               airgap_side: str = 'bottom',
                               show_titles: bool = False,
-                              vlim_percentile: float = 98.0) -> dict:
+                              vlim_percentile: float = 98.0,
+                              copper_height_mm: Optional[float] = 1.686
+                              ) -> dict:
     """Fig 2: 단일 슬롯의 TS-FEA 실측 Je vs Hybrid 참고 재구성 Je (정적).
 
     두 패널 모두 **TS-FEA 의 도체 메시(형상·삼각분할)** 를 도메인으로
@@ -1218,7 +1220,8 @@ def plot_fig2_slot_comparison(ts_path: str, hybrid_path: str,
     # 임의 위상에서의 단면(여기서는 |J| 의 1/8~1/10)만 보여 실제보다
     # 훨씬 평탄해진다. 두 패널 모두 크기로 비교한다 (REPRODUCE.md 14).
     je_hy = hybrid_je_at_points(p_hy, xy_ts, freq_hz, slot_id=slot_id,
-                               signed=False) / 1e6
+                               signed=False,
+                               thickness_mm=copper_height_mm) / 1e6
 
     geom = slot_reference_geometry(p_ts, slot_id, airgap_side)
     # 최댓값으로 자르면 공극 코너의 단일 핫스폿(738)이 스케일을 독점해
@@ -1260,7 +1263,8 @@ def plot_fig2_slot_comparison(ts_path: str, hybrid_path: str,
 def make_fig2_slot_gif(ts_path: str, hybrid_path: str, out_gif: str,
                        slot_id: int = 1, freq_hz: float = 1066.67,
                        airgap_side: str = 'bottom', fps: int = 10,
-                       out_json: Optional[str] = None) -> dict:
+                       out_json: Optional[str] = None,
+                       copper_height_mm: Optional[float] = 1.686) -> dict:
     """Fig 2 소재의 128스텝 동기 애니메이션(TS-FEA 실측 vs Hybrid 참고).
 
     ``plot_fig2_slot_comparison`` 과 같은 원칙으로, 매 스텝 두 패널
@@ -1289,7 +1293,8 @@ def make_fig2_slot_gif(ts_path: str, hybrid_path: str, out_gif: str,
         je_ts = np.abs(p_ts['je_am2'][m_ts]) / 1e6
         xy_ts = np.column_stack([p_ts['x_mm'][m_ts], p_ts['y_mm'][m_ts]])
         je_hy = hybrid_je_at_points(p_hy, xy_ts, freq_hz, slot_id=slot_id,
-                                    signed=False) / 1e6
+                                    signed=False,
+                                    thickness_mm=copper_height_mm) / 1e6
         geom = slot_reference_geometry(p_ts, slot_id, airgap_side)
         frames.append({'step': step_ts, 'rotate_deg': p_ts['rotate_deg'],
                        'frame': f_ts, 'je_ts': je_ts, 'je_hy': je_hy,
@@ -1374,6 +1379,109 @@ def slot_reference_geometry(p: dict, slot_id: int = 1,
     f_slot = _slot_frame(p, slot_id, airgap_side, domain='slot')
     return {'outline': _boundary_segments(f_slot['triang']),
             'extent': f_slot['bbox'], 'frame': f_slot}
+
+
+def plot_fig2_slot_rms(ts_path: str, hybrid_path: str, out_path: str,
+                       slot_id: int = 1, freq_hz: float = 1066.67,
+                       airgap_side: str = 'bottom',
+                       show_titles: bool = True,
+                       vlim_percentile: float = 98.0,
+                       copper_height_mm: Optional[float] = 1.686,
+                       out_json: Optional[str] = None) -> dict:
+    """Fig 2 의 **주기-RMS** 판 --- 순시 스냅샷 비교의 사과-오렌지 문제 해소.
+
+    ``plot_fig2_slot_comparison`` 은 한 스텝의 TS-FEA **순시** Je 를
+    재구성의 **페이저 진폭**과 나란히 놓는다. 두 양은 정의가 달라서
+    그대로 비교하면 안 되고, 게다가 그 스텝은 |Je| 전역 최댓값 스텝으로
+    고른 것이라(REPRODUCE.md 주의 8) **구성상 쏠림이 최대로 보이는
+    시점**이다. 두 효과가 겹쳐 Hybrid 의 결함이 실제보다 크게 보인다.
+
+    이 함수는 전 주기(128블록)를 훑어 요소별 RMS 를 만든다. TS 는 순시값
+    의 RMS, 재구성은 진폭/sqrt(2) 의 RMS 로 **같은 정의**가 된다.
+
+    이 기준에서 관측되는 것(실측): 재구성은 반경방향 쏠림 **기울기**를
+    거의 맞춘다(공극층/슬롯바닥층 비 TS 2.52 vs 재구성 2.44). 못 맞추는
+    것은 **크기**로, 손실 대리 지표에서 약 15배 낮다. 즉 Hybrid 의 결함은
+    "쏠림을 못 본다"가 아니라 "쏠림의 세기를 과소평가한다"이다.
+    """
+    from .field_metrics import (iter_mes_blocks, slot_conductor_codes,
+                                hybrid_je_at_points)
+
+    plt = _journal_rc()
+    print('전 주기 RMS 누적 중 ...')
+    sq_ts = sq_hy = None
+    n = 0
+    p_last = None
+    for (_, p_ts), (_, p_hy) in zip(iter_mes_blocks(ts_path),
+                                    iter_mes_blocks(hybrid_path)):
+        m = np.isin(p_ts['reg'], list(slot_conductor_codes(p_ts, slot_id)))
+        if sq_ts is None:
+            sq_ts = np.zeros(int(m.sum()))
+            sq_hy = np.zeros(int(m.sum()))
+        xy = np.column_stack([p_ts['x_mm'][m], p_ts['y_mm'][m]])
+        sq_ts += (p_ts['je_am2'][m] / 1e6) ** 2
+        amp = hybrid_je_at_points(p_hy, xy, freq_hz, slot_id=slot_id,
+                                  signed=False,
+                                  thickness_mm=copper_height_mm) / 1e6
+        sq_hy += (amp / np.sqrt(2.0)) ** 2
+        n += 1
+        p_last = p_ts
+    rms_ts = np.sqrt(sq_ts / n)
+    rms_hy = np.sqrt(sq_hy / n)
+    print('블록 %d개 누적 완료' % n)
+
+    f_ts = _slot_frame(p_last, slot_id, airgap_side)
+    geom = slot_reference_geometry(p_last, slot_id, airgap_side)
+    vlim = float(np.percentile(np.concatenate([rms_ts, rms_hy]),
+                               vlim_percentile))
+
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(4.2, 2.6),
+                                  layout='constrained')
+    kw = {'cmap': 'plasma', 'vmin': 0.0,
+          'outline': geom['outline'], 'extent': geom['extent']}
+    cf = _draw_slot_contour(ax1, f_ts, rms_ts, vlim, **kw)
+    _draw_slot_contour(ax2, f_ts, rms_hy, vlim, **kw)
+    if show_titles:
+        ax1.set_title('(a) TS-FEA', fontsize=9)
+        ax2.set_title('(b) Hybrid (reference)', fontsize=9)
+    cb = fig.colorbar(cf, ax=(ax1, ax2), shrink=0.85)
+    cb.set_label(r'$J_{e,\mathrm{rms}}$ [A/mm$^2$]', fontsize=9)
+
+    os.makedirs(os.path.dirname(os.path.abspath(out_path)), exist_ok=True)
+    fig.savefig(out_path)
+    plt.close(fig)
+    print('RMS 그림 저장:', out_path)
+
+    # 층별 지표 (쏠림 기울기 근거)
+    reg = p_last['reg'][f_ts['mask']]
+    r = np.hypot(p_last['x_mm'][f_ts['mask']], p_last['y_mm'][f_ts['mask']])
+    order = sorted(np.unique(reg), key=lambda c: r[reg == c].mean())
+    layers = [{'region': p_last['names'].get(int(c), str(c)),
+               'r_mean_mm': float(r[reg == c].mean()),
+               'ts_rms_A_mm2': float(rms_ts[reg == c].mean()),
+               'hybrid_rms_A_mm2': float(rms_hy[reg == c].mean())}
+              for c in order]
+    grad_ts = layers[0]['ts_rms_A_mm2'] / layers[-1]['ts_rms_A_mm2']
+    grad_hy = layers[0]['hybrid_rms_A_mm2'] / layers[-1]['hybrid_rms_A_mm2']
+    summary = {
+        'slot_id': slot_id, 'n_blocks': n, 'freq_hz': freq_hz,
+        'quantity': 'cycle RMS (TS instantaneous RMS; reconstruction'
+                    ' amplitude/sqrt(2) RMS) -- same definition both panels',
+        'copper_height_mm': copper_height_mm,
+        'vlim_A_mm2': vlim, 'per_layer': layers,
+        'crowding_gradient_airgap_over_slotbottom': {
+            'ts_fea': grad_ts, 'hybrid_reference': grad_hy},
+        'loss_proxy_ratio_ts_over_hybrid':
+            float((rms_ts ** 2).sum() / (rms_hy ** 2).sum()),
+    }
+    print('쏠림 기울기  TS %.3f  vs  재구성 %.3f' % (grad_ts, grad_hy))
+    if out_json:
+        os.makedirs(os.path.dirname(os.path.abspath(out_json)),
+                   exist_ok=True)
+        with open(out_json, 'w', encoding='utf-8') as fh:
+            json.dump(summary, fh, ensure_ascii=False, indent=1)
+        print('RMS 요약 JSON 저장:', out_json)
+    return summary
 
 
 def _slot_b_panel(p: dict, slot_id: int, airgap_side: str):

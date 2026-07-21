@@ -177,8 +177,13 @@ def parse_mes_txt(path: str, block: int = 1) -> dict:
     with open(path, encoding='utf-8', errors='ignore') as fh:
         lines = fh.readlines()
     blocks, regions_tbl = _locate_blocks(lines)
-    names, jval, sigma = _parse_regions(lines, regions_tbl)
-    return _build_block_dict(lines, blocks[block - 1], names, jval, sigma,
+    blk = blocks[block - 1]
+    # 블록마다 자기 RegionsTable 을 쓴다 --- 첫 블록 것을 재사용하면
+    # jval/sigma 가 블록 1 값에 고정된다(회전각마다 상전류가 달라지므로
+    # 128블록 중 절반에서 부호까지 틀어진다).
+    names, jval, sigma = _parse_regions(
+        lines, blk['tables'].get('RegionsTable', regions_tbl))
+    return _build_block_dict(lines, blk, names, jval, sigma,
                              path, len(blocks))
 
 
@@ -192,8 +197,9 @@ def iter_mes_blocks(path: str):
     with open(path, encoding='utf-8', errors='ignore') as fh:
         lines = fh.readlines()
     blocks, regions_tbl = _locate_blocks(lines)
-    names, jval, sigma = _parse_regions(lines, regions_tbl)
     for i, blk in enumerate(blocks):
+        names, jval, sigma = _parse_regions(
+            lines, blk['tables'].get('RegionsTable', regions_tbl))
         yield i + 1, _build_block_dict(lines, blk, names, jval, sigma,
                                        path, len(blocks))
 
@@ -425,14 +431,28 @@ def _tangential_b(p: dict) -> np.ndarray:
 
 
 def _conductor_layers(p: dict, codes, mu0: float,
-                      face_frac: float = 0.2) -> list:
+                      face_frac: float = 0.2,
+                      thickness_mm: Optional[float] = None) -> list:
     """도체층별 1-D 경계값 문제의 기하·경계 H 를 모은다.
 
     경계 H 는 각 면에서 두께의 ``face_frac`` 이내 요소들의 평균으로
     잡는다 --- 반경 최소/최대 **단일 요소**를 쓰면 슬롯바닥 층에서
     철심에 접한 요소 하나가 B 를 2배 이상으로 끌어올려 그 층에만 거대한
     가짜 기울기가 생긴다(실제로 겪음).
+
+    층의 반경 범위는 **절점(node) 좌표**로 잡는다. 요소 중심 퍼짐을 쓰면
+    바깥 요소 반개씩이 빠져 두께가 16% 과소평가된다(TS-FEA 기준 1.416 mm
+    vs 절점 1.699 mm, `.mot` 의 Copper_Height 1.686 mm 가 정답).
+    이는 공극 층에서 이미 겪은 것과 같은 함정이다(REPRODUCE.md 주의 3).
+
+    ``thickness_mm`` 을 주면 확산 두께를 그 값으로 강제한다. **MS-FEA 의
+    `ArmatureSlot*` 영역은 도체와 함침을 합친 셀**이라(면적 9.685 vs
+    TS 6.180 mm^2) 절점 범위조차 2.127 mm 로 실제 구리 1.686 mm 보다
+    26% 크다. 와전류는 구리에서만 흐르므로 MS 를 소스로 쓸 땐 `.mot` 의
+    Copper_Height 를 넘겨 주는 편이 옳다.
     """
+    nd = p['node_xy']
+    r_node = np.hypot(nd[:, 0], nd[:, 1])
     r = np.hypot(p['x_mm'], p['y_mm'])
     btan = _tangential_b(p)
     layers = []
@@ -440,15 +460,19 @@ def _conductor_layers(p: dict, codes, mu0: float,
         m = p['reg'] == code
         if m.sum() < 3:
             continue
-        rr, bb = r[m], btan[m]
-        r_lo, r_hi = float(rr.min()), float(rr.max())
-        t = (r_hi - r_lo) * 1e-3                                # [m]
-        if t <= 0:
+        ids = np.unique(p['tri'][m].ravel())
+        r_lo, r_hi = float(r_node[ids].min()), float(r_node[ids].max())
+        if r_hi <= r_lo:
             continue
         span = r_hi - r_lo
+        t = (span if thickness_mm is None else float(thickness_mm)) * 1e-3
+        rr, bb = r[m], btan[m]
         near_lo = rr <= r_lo + face_frac * span
         near_hi = rr >= r_hi - face_frac * span
+        if not near_lo.any() or not near_hi.any():
+            continue
         layers.append({'code': code, 'r_lo': r_lo, 'r_hi': r_hi, 't': t,
+                       'span_mm': span,
                        'h0': float(bb[near_lo].mean()) / mu0,
                        'ht': float(bb[near_hi].mean()) / mu0})
     layers.sort(key=lambda d: d['r_lo'])
@@ -473,7 +497,8 @@ def _layer_je(layer: dict, xl: np.ndarray, k: complex,
 
 def hybrid_je_reference(p: dict, freq_hz: float, sigma: float = 4.709e7,
                         mu0: float = 4e-7 * np.pi,
-                        signed: bool = False) -> np.ndarray:
+                        signed: bool = False,
+                        thickness_mm: Optional[float] = None) -> np.ndarray:
     """Hybrid(MS-FEA) 요소별 B 로부터 \"참고용\" 근접 와전류밀도 Je 를 재구성.
 
     **주의**: TS-FEA 의 Je 는 실제로 풀린 값이고, 이 함수가 만드는 값은
@@ -510,10 +535,12 @@ def hybrid_je_reference(p: dict, freq_hz: float, sigma: float = 4.709e7,
     codes = [c for c, name in p['names'].items()
              if _is_conductor_region(name)]
     je = np.zeros(len(reg))
-    for layer in _conductor_layers(p, codes, mu0):
+    for layer in _conductor_layers(p, codes, mu0,
+                                   thickness_mm=thickness_mm):
         m = reg == layer['code']
-        xl = (r[m] - layer['r_lo']) * 1e-3                     # [m], 0..t
-        je[m] = _layer_je(layer, xl, k, signed)
+        # 영역 내 반경 위치를 비율로 잡아 확산 두께에 대응시킨다
+        frac = np.clip((r[m] - layer['r_lo']) / layer['span_mm'], 0.0, 1.0)
+        je[m] = _layer_je(layer, frac * layer['t'], k, signed)
     return je
 
 
@@ -521,7 +548,8 @@ def hybrid_je_at_points(p_source: dict, query_xy: np.ndarray,
                         freq_hz: float, slot_id: Optional[int] = None,
                         sigma: float = 4.709e7,
                         mu0: float = 4e-7 * np.pi,
-                        signed: bool = False) -> np.ndarray:
+                        signed: bool = False,
+                        thickness_mm: Optional[float] = None) -> np.ndarray:
     """Hybrid B 로부터, **임의의 좌표**에서 참고용 근접 Je 를 평가한다.
 
     ``hybrid_je_reference`` 와 **같은 층별(도체별) 1-D 경계값 문제**를
@@ -561,7 +589,8 @@ def hybrid_je_at_points(p_source: dict, query_xy: np.ndarray,
         raise ValueError('p_source 에서 도체 요소를 찾지 못함'
                          ' (slot_id 확인)')
 
-    layers = _conductor_layers(p_source, codes, mu0)
+    layers = _conductor_layers(p_source, codes, mu0,
+                               thickness_mm=thickness_mm)
     if not layers:
         raise ValueError('유효한 도체층이 없음 (요소 수/두께 확인)')
 
@@ -581,8 +610,8 @@ def hybrid_je_at_points(p_source: dict, query_xy: np.ndarray,
         sel = owner == i
         if not sel.any():
             continue
-        xl = np.clip((r_q[sel] - d['r_lo']) * 1e-3, 0.0, d['t'])
-        out[sel] = _layer_je(d, xl, k, signed)
+        frac = np.clip((r_q[sel] - d['r_lo']) / d['span_mm'], 0.0, 1.0)
+        out[sel] = _layer_je(d, frac * d['t'], k, signed)
     return out
 
 
