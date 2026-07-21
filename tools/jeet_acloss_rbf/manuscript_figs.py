@@ -1563,6 +1563,7 @@ def plot_fig2_kernel_comparison(ts_path: str, hybrid_path: str,
                                 vlim_percentile: float = 98.0,
                                 panels: Sequence[str] = ('ts', '1d',
                                                          'strips', '2d'),
+                                panel_labels: Optional[Sequence[str]] = None,
                                 out_json: Optional[str] = None) -> dict:
     """커널 차원수 비교 3-패널: TS-FEA / 1-D 재구성 / 2-D 재구성 (주기 RMS).
 
@@ -1592,9 +1593,14 @@ def plot_fig2_kernel_comparison(ts_path: str, hybrid_path: str,
             sq_1d = np.zeros(int(m.sum()))
         xy = np.column_stack([p_ts['x_mm'][m], p_ts['y_mm'][m]])
         sq_ts += (p_ts['je_am2'][m] / 1e6) ** 2
+        a_slot0 = slot_mean_angle(p_ts, slot_id)
+        bars_h = slot_bar_geometry(p_ts, slot_id,
+                                   angle_rad=a_slot0)[0]['h_mm']
+        # 두께도 TS 기하에서 --- copper_h_mm 기본값(Ref 1.686)을 SC 에
+        # 그대로 흘리면 1-D 값만 조용히 틀어진다(실제로 겪음).
         amp = hybrid_je_at_points(p_ms, xy, freq_hz, slot_id=slot_id,
                                   signed=False,
-                                  thickness_mm=copper_h_mm) / 1e6
+                                  thickness_mm=bars_h) / 1e6
         sq_1d += (amp / np.sqrt(2.0)) ** 2
         # 기하 기준은 TS-FEA (순수 구리). MS-FEA 영역은 함침 포함이라
         # 25% 크므로 그대로 쓰면 (a) 패널과 도체 영역이 어긋난다.
@@ -1659,7 +1665,9 @@ def plot_fig2_kernel_comparison(ts_path: str, hybrid_path: str,
                                 np.zeros(f_ts['triang'].x.size),
                                 levels=np.linspace(0, vlim, 21),
                                 cmap='plasma')
-    for ax, lab in zip(axs, '(a) (b) (c) (d)'.split()):
+    labs = (panel_labels if panel_labels is not None
+            else '(a) (b) (c) (d)'.split())
+    for ax, lab in zip(axs, labs):
         ax.set_xlabel(lab, fontsize=9)
     cb = fig.colorbar(cf, ax=list(axs), shrink=0.85)
     cb.set_label(r'$J_{e,\mathrm{rms}}$ [A/mm$^2$]', fontsize=9)
