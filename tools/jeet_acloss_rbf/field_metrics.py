@@ -204,6 +204,128 @@ def loading_metrics(p: dict) -> dict:
     }
 
 
+def maxwell_torque(p: dict, l_stack_mm: float = 150.0,
+                   n_sectors: Optional[int] = None) -> dict:
+    """공극 Maxwell 응력 적분으로 전자기 토크를 산출한다.
+
+    반경 r 의 원통면에 대한 응력 토크를 공극 두께에 걸쳐 평균한 형태
+
+        T = l / (mu0 * dr) * \\int_A r * B_r * B_theta dA
+
+    를 쓴다. 단일 원주만 쓰는 것보다 메시 이산화에 둔감하다. ``n_sectors``
+    는 전체 원주 대비 모델 배수로, 생략하면 고정자 영역의 각도 범위에서
+    자동 추정한다(예: 45도 섹터 -> 8).
+    """
+    MU0 = 4e-7 * np.pi
+    x, y = p['x_mm'], p['y_mm']
+    r = np.hypot(x, y)
+    gap = [c for c, n in p['names'].items() if _AIRGAP_RE.match(n)]
+    m = np.isin(p['reg'], gap)
+    if not m.any():
+        return {'torque_Nm': float('nan')}
+
+    if n_sectors is None:
+        st = [c for c, n in p['names'].items() if n.strip().lower() == 'stator']
+        span = 360.0
+        if st:
+            ms = p['reg'] == st[0]
+            th = np.degrees(np.arctan2(y[ms], x[ms]))
+            span = float(th.max() - th.min())
+        n_sectors = int(round(360.0 / span)) if span > 0 else 1
+
+    # 공극은 여러 개의 얇은 층(a1..aN)으로 나뉘고 층마다 정렬 기준(고정자/
+    # 회전자)이 달라, 층 하나하나가 독립적인 토크 추정치를 준다. 층의
+    # 반경 두께는 요소 중심 퍼짐이 아니라 면적/(각도폭*반경)으로 구해야
+    # 한다 --- 중심 퍼짐은 요소 크기만큼 과소평가되어 토크를 부풀린다.
+    per_layer, torques = {}, []
+    for code in gap:
+        ml = p['reg'] == code
+        if ml.sum() < 3:
+            continue
+        rl = r[ml]
+        ct, st_ = x[ml] / rl, y[ml] / rl
+        br = p['bx'][ml] * ct + p['by'][ml] * st_
+        bt = -p['bx'][ml] * st_ + p['by'][ml] * ct
+        area = p['area_mm2'][ml] * 1e-6
+        span = np.radians(float(np.ptp(np.degrees(
+            np.arctan2(y[ml], x[ml])))))
+        rmean = float(rl.mean()) * 1e-3
+        if span <= 0 or rmean <= 0:
+            continue
+        h_eff = float(area.sum()) / (span * rmean)      # 층 두께 [m]
+        t = (n_sectors * (l_stack_mm * 1e-3) / (MU0 * h_eff)
+             * float(np.sum(rl * 1e-3 * br * bt * area)))
+        per_layer[p['names'][code]] = {'torque_Nm': t,
+                                       'h_eff_mm': h_eff * 1e3}
+        torques.append(t)
+
+    if not torques:
+        return {'torque_Nm': float('nan')}
+    t = float(np.mean(torques))
+    spread = (float(np.ptp(torques)) / abs(t) * 100.0) if t else float('nan')
+    return {'torque_Nm': t, 'layer_spread_pct': spread,
+            'per_layer': per_layer, 'n_sectors': int(n_sectors),
+            'annulus_r_mm': [float(r[m].min()), float(r[m].max())],
+            'l_stack_mm': float(l_stack_mm)}
+
+
+_MOT_KEYS = ('WindingLayers', 'ParallelPaths', 'RMSCurrent',
+             'RMSCurrentDensity', 'Copper_Width', 'Copper_Height',
+             'Resistance_MotorLAB', 'EndWindingResistance_Lab',
+             'Stator_Lam_Dia', 'Stator_Lam_Length', 'Pole_Number',
+             'Slot_Number', 'ArmatureConductor_Temperature', 'DCBusVoltage')
+
+
+def read_mot(path: str, keys=_MOT_KEYS) -> dict:
+    """Motor-CAD ``.mot`` (INI 형식 텍스트)에서 권선·저항 값을 읽는다.
+
+    Motor-CAD 를 띄우지 않고 파일만으로 읽으므로 COM 이 필요 없다.
+    ``ResistanceActivePart`` 는 Motor-CAD 자체 정의와 같이 전체 상저항에서
+    엔드와인딩 몫을 뺀 값이다(getMcadMachineDataFromMotFile.m 와 동일).
+
+    주의: 파생 출력(``RMSCurrentDensity``, ``Resistance_MotorLAB``)은
+    Motor-CAD 가 재계산할 때만 갱신되므로, 턴수만 바꾸고 재계산하지 않은
+    파일에서는 옛 값이 남아 있을 수 있다. 도체 면적으로 교차 확인할 것.
+    """
+    with open(path, encoding='latin-1', errors='ignore') as fh:
+        txt = fh.read()
+    out: Dict[str, object] = {'path': path}
+    for k in keys:
+        m = re.search(rf'^\s*{k}\s*=\s*(.+)$', txt, re.M | re.I)
+        if not m:
+            continue
+        v = m.group(1).strip()
+        try:
+            out[k] = float(v)
+        except ValueError:
+            out[k] = v
+    rt = out.get('Resistance_MotorLAB')
+    re_ = out.get('EndWindingResistance_Lab')
+    if isinstance(rt, float) and isinstance(re_, float):
+        out['ResistanceActivePart'] = rt - re_
+        out['R_active_mOhm'] = (rt - re_) * 1e3
+        out['R_end_mOhm'] = re_ * 1e3
+        out['R_total_mOhm'] = rt * 1e3
+    w, h = out.get('Copper_Width'), out.get('Copper_Height')
+    if isinstance(w, float) and isinstance(h, float):
+        out['A_conductor_mm2_rect'] = w * h
+    return out
+
+
+def winding_losses(mot: dict, i_rms_a: Optional[float] = None) -> dict:
+    """3상 DC 동손 P = 3 I^2 R (활성부/엔드/합계)."""
+    i = float(i_rms_a if i_rms_a is not None
+              else mot.get('RMSCurrent', float('nan')))
+    r_a = mot.get('ResistanceActivePart')
+    r_e = mot.get('EndWindingResistance_Lab')
+    r_t = mot.get('Resistance_MotorLAB')
+    f = 3.0 * i * i
+    return {'i_rms_a': i,
+            'p_active_kW': f * r_a / 1e3 if r_a else float('nan'),
+            'p_end_kW': f * r_e / 1e3 if r_e else float('nan'),
+            'p_total_kW': f * r_t / 1e3 if r_t else float('nan')}
+
+
 def compare_models(paths: Dict[str, str],
                    out_json: Optional[str] = None) -> dict:
     """모델별 지표를 모아 비율까지 계산한다 (Ref 기준)."""
