@@ -37,7 +37,8 @@ import traceback
 import numpy as np
 
 MATS_DEFAULT = dict(stator=1, magnet=2, coil=3, shaft=4, rotor=5)
-STANDARD_GIFS = ("transient_3d_cut", "transient_core", "transient_coilmag", "transient_coil_z0")
+STANDARD_GIFS = ("transient_3d_cut", "transient_core", "transient_coilmag",
+                 "transient_coil_z0", "transient_dashboard")
 STANDARD_PNGS = ("contour_iso", "contour_z0", "cut_3d", "coil_only", "magnet_only", "component_history")
 CMAP = "inferno"
 COMP_COLORS = {"Coil": "#2a78d6", "Magnet": "#e34948", "Rotor": "#1baf7a",
@@ -247,81 +248,168 @@ class ThermalViz:
             p = os.path.join(self.out, fn); pl.screenshot(p); pl.close(); outs.append(p)
         return outs
 
-    def history_png(self):
-        import matplotlib; matplotlib.use("Agg"); import matplotlib.pyplot as plt
-        roles = [r for r in ("coil", "magnet", "rotor", "stator") if r in self._sub]
-        pid = {r: self.opid[np.unique(self._sub[r][0].point_data["vtkOriginalPointIds"])] for r in roles}
+    _CAP = {"coil": "Coil", "magnet": "Magnet", "rotor": "Rotor", "stator": "Stator"}
+
+    def _compute_hist(self, roles):
+        """부품별 avg/max 온도 시간이력. pid 는 gid 기반이라 트림 후에도 정확."""
+        pid = {r: np.unique(self._sub[r][1]) for r in roles}
         hist = {r: {"avg": [], "max": []} for r in roles}
         for i in range(self.nsets):
             T = self._T(i)
             for r in roles:
-                v = T[pid[r]]; hist[r]["avg"].append(float(np.nanmean(v))); hist[r]["max"].append(float(np.nanmax(v)))
+                v = T[pid[r]]
+                hist[r]["avg"].append(float(np.nanmean(v)))
+                hist[r]["max"].append(float(np.nanmax(v)))
+        return hist
+
+    def _draw_history(self, ax, hist, roles, cursor_i=None):
+        """이력 곡선(+옵션: 현재시각 세로 커서·현재값 점)을 ax 에 그린다."""
         INK, GRIDC = "#333333", "#e5e5e0"
-        capmap = {"coil": "Coil", "magnet": "Magnet", "rotor": "Rotor", "stator": "Stator"}
-        fig, ax = plt.subplots(figsize=(9.5, 6))
         for r in roles:
-            c = COMP_COLORS[capmap[r]]
-            ax.plot(self.times, hist[r]["max"], color=c, lw=2, label=f"{capmap[r]} max")
+            c = COMP_COLORS[self._CAP[r]]
+            ax.plot(self.times, hist[r]["max"], color=c, lw=2, label=f"{self._CAP[r]} max")
             ax.plot(self.times, hist[r]["avg"], color=c, lw=1.3, ls="--", alpha=0.7)
-            ax.annotate(f"{hist[r]['max'][-1]:.1f}", xy=(self.times[-1], hist[r]["max"][-1]),
-                        xytext=(self.times[-1] * 1.01, hist[r]["max"][-1]), va="center", fontsize=9, color=INK)
-        ax.set_xlabel("Time, s", color=INK); ax.set_ylabel("Temperature, degC", color=INK)
-        ax.set_title(f"{self.label} - component temperatures", color=INK, fontsize=12)
+            if cursor_i is not None:
+                ax.plot(self.times[cursor_i], hist[r]["max"][cursor_i], "o", color=c,
+                        ms=8, mec="white", mew=1.0, zorder=5)
+        if cursor_i is not None:
+            ax.axvline(self.times[cursor_i], color=INK, lw=1.2, ls=":", alpha=0.85)
+        ax.set_xlabel("Time, s", color=INK)
+        ax.set_ylabel("Temperature, degC", color=INK)
         ax.grid(True, color=GRIDC, lw=0.8)
-        for s in ("top", "right"): ax.spines[s].set_visible(False)
-        ax.legend(frameon=False, fontsize=9, labelcolor=INK, ncol=2); ax.set_xlim(0, self.times[-1] * 1.28)
-        fig.tight_layout(); p = os.path.join(self.out, "component_history.png"); fig.savefig(p, dpi=150); plt.close(fig)
+        for s in ("top", "right"):
+            ax.spines[s].set_visible(False)
+        ax.legend(frameon=False, fontsize=9, labelcolor=INK, ncol=2)
+
+    def history_png(self):
+        import matplotlib; matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+        roles = [r for r in ("coil", "magnet", "rotor", "stator") if r in self._sub]
+        hist = self._compute_hist(roles)
+        fig, ax = plt.subplots(figsize=(9.5, 6))
+        self._draw_history(ax, hist, roles)
+        for r in roles:
+            ax.annotate(f"{hist[r]['max'][-1]:.1f}",
+                        xy=(self.times[-1], hist[r]["max"][-1]),
+                        xytext=(self.times[-1] * 1.01, hist[r]["max"][-1]),
+                        va="center", fontsize=9, color="#333333")
+        ax.set_title(f"{self.label} - component temperatures", color="#333333", fontsize=12)
+        ax.set_xlim(0, self.times[-1] * 1.28)
+        fig.tight_layout()
+        p = os.path.join(self.out, "component_history.png")
+        fig.savefig(p, dpi=150); plt.close(fig)
         return p
 
-    # ── 열등가회로 3D 오버레이 ───────────────────────────────────────────
-    def circuit_3d_png(self, nodes, edges, node_T=None, label="", fname="circuit_3d.png"):
-        """열등가회로를 실형상 위에 3D로 오버레이.
+    # ── 합성 대시보드 GIF (3d_cut + 이력곡선/현재시각 커서) ─────────────────
+    @staticmethod
+    def _hstack(a, b):
+        """두 이미지를 높이 맞춰 좌우 결합."""
+        try:
+            from PIL import Image
+            H = max(a.shape[0], b.shape[0])
 
-        nodes  {name: (x,y,z)}  회로 노드 3D 위치(메시 단위)
-        edges  [(a,b), ...]     노드 간 연결(열저항)
-        node_T {name: T}|None   노드 온도(색). None 이면 회색.
-        구·튜브 크기는 형상 반경 self.R 에 비례 → 단위/스케일 무관.
+            def fit(img):
+                im = Image.fromarray(img[..., :3].astype(np.uint8))
+                w = max(1, int(round(im.width * H / im.height)))
+                return np.asarray(im.resize((w, H)))
+            return np.hstack([fit(a), fit(b)])
+        except Exception:
+            H = min(a.shape[0], b.shape[0])
+            return np.hstack([a[:H, :, :3], b[:H, :, :3]])
+
+    def combined_gif(self, label="", name="transient_dashboard"):
+        """3d_cut(좌) + 부품 온도이력 곡선·현재시각 커서(우) 합성 대시보드 GIF.
+        기존 3d_cut 프레임 렌더 + 이력곡선 렌더를 매 프레임 합치는 형태."""
+        import matplotlib; matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+        roles = [r for r in ("coil", "magnet", "rotor", "stator") if r in self._sub]
+        hist = self._compute_hist(roles)
+        allmax = [m for r in roles for m in hist[r]["max"]]
+        ylim = (self.clim[0] - 3, max(allmax) + 8)
+        frames = []
+        for i in range(self.nsets):
+            T = self._T(i)
+            pl = self._render_cut3d_frame(T)
+            pl.add_text(f"t={self.times[i]:5.0f}s  half-section  {label}",
+                        font_size=12, color="black")
+            left = pl.screenshot(return_img=True); pl.close()
+            fig, ax = plt.subplots(figsize=(6.2, max(4.0, left.shape[0] / 150.0)), dpi=150)
+            self._draw_history(ax, hist, roles, cursor_i=i)
+            ax.set_title(f"component temperatures   t={self.times[i]:.0f}s",
+                         color="#333333", fontsize=11)
+            ax.set_xlim(0, self.times[-1]); ax.set_ylim(*ylim)
+            fig.tight_layout()
+            fig.canvas.draw()
+            right = np.asarray(fig.canvas.buffer_rgba())[..., :3]
+            plt.close(fig)
+            frames.append(self._hstack(left, right))
+        return self._save_gif(name, frames)
+
+    # ── 열등가회로 3D 오버레이 ───────────────────────────────────────────
+    def _render_circuit(self, nodes, edges, node_T, label, title_extra=""):
+        """회로 오버레이 1프레임 렌더 → Plotter 반환(PNG/GIF 공유).
+
+        nodes {name:(x,y,z)} 노드 위치, edges [(a,b)] 연결(열저항),
+        node_T {name:T}|None 노드 온도(색; None→회색). 색 정규화는 self.clim 고정.
+        구·튜브 크기는 형상 반경 self.R 비례 → 단위/스케일 무관.
         """
         import matplotlib.cm as cm
         import matplotlib.colors as mcolors
         pv = self.pv
         R = self.R if self.R else 0.1
         r_tube, r_node, off = 0.017 * R, 0.085 * R, 0.11 * R
-        self.solid.point_data["Temperature (degC)"] = self.Tend[self.opid]
         surf = self.solid.extract_surface()
         p = pv.Plotter(off_screen=True, window_size=(1400, 1050))
         p.set_background("white")
-        p.add_mesh(surf, color="#c9c2ae", opacity=0.18, lighting=True,
+        p.add_mesh(surf, color="#c9c2ae", opacity=0.16, lighting=True,
                    smooth_shading=True, ambient=0.5)
         for a, b in edges:
             if a in nodes and b in nodes:
                 p.add_mesh(pv.Line(nodes[a], nodes[b]).tube(radius=r_tube),
                            color="#b9b8ad", opacity=0.9)
-        norm = cmap = None
-        if node_T:
-            vals = list(node_T.values())
-            norm = mcolors.Normalize(min(vals), max(vals))
-            cmap = cm.get_cmap(CMAP)
+        norm = mcolors.Normalize(self.clim[0], self.clim[1])
+        cmap = cm.get_cmap(CMAP)
+
+        def has(k):
+            return node_T and k in node_T and node_T[k] is not None
         for k, xyz in nodes.items():
-            col = cmap(norm(node_T[k]))[:3] if (node_T and k in node_T) else "#8a8878"
+            col = cmap(norm(node_T[k]))[:3] if has(k) else "#8a8878"
             p.add_mesh(pv.Sphere(radius=r_node, center=xyz), color=col,
                        smooth_shading=True, ambient=0.45, diffuse=0.6)
         pts = np.array([nodes[k] for k in nodes]) + np.array([off, off * 0.8, 0.0])
-        labels = [(f"{k} {node_T[k]:.1f}" if (node_T and k in node_T) else k) for k in nodes]
+        labels = [(f"{k} {node_T[k]:.1f}" if has(k) else k) for k in nodes]
         p.add_point_labels(pts, labels, font_size=14, text_color="black",
                            shape_color="white", shape_opacity=0.78,
                            always_visible=True, show_points=False)
-        p.add_text(f"{label} - thermal circuit overlay (node color = temperature)",
+        p.add_text(f"{label} - thermal circuit overlay{title_extra}",
                    font_size=12, color="black")
         p.view_vector((1, -0.35, 0.45), viewup=(0, 1, 0)); p.camera.zoom(1.2)
+        return p
+
+    def circuit_3d_png(self, nodes, edges, node_T=None, label="", fname="circuit_3d.png"):
+        """열등가회로 3D 오버레이(최종 t 정적 PNG)."""
+        p = self._render_circuit(nodes, edges, node_T, label,
+                                  title_extra=" (node color = temperature)")
         pth = os.path.join(self.out, fname); p.screenshot(pth); p.close()
         return pth
+
+    def circuit_3d_gif(self, nodes, edges, node_T_fn, label=""):
+        """열등가회로 3D 오버레이 과도 GIF. node_T_fn(T)->{name:T} 로 매 프레임
+        노드 온도(색·라벨) 갱신. 노드 위치는 고정, 색스케일은 self.clim 고정."""
+        frames = []
+        for i in range(self.nsets):
+            T = self._T(i)
+            p = self._render_circuit(nodes, edges, node_T_fn(T), label,
+                                     title_extra=f"  t={self.times[i]:.0f}s")
+            frames.append(p.screenshot(return_img=True)); p.close()
+        return self._save_gif("transient_circuit_3d", frames)
 
     # ── 오케스트레이터 ───────────────────────────────────────────────────
     def render_all(self, gifs=STANDARD_GIFS, pngs=STANDARD_PNGS, log=print):
         done = []
         dispatch_gif = {"transient_3d_cut": self.cut3d_gif, "transient_core": self.core_gif,
-                        "transient_coilmag": self.coilmag_gif, "transient_coil_z0": self.coil_z0_gif}
+                        "transient_coilmag": self.coilmag_gif, "transient_coil_z0": self.coil_z0_gif,
+                        "transient_dashboard": lambda: self.combined_gif(label=self.label)}
         for g in gifs:
             try:
                 p, mb = dispatch_gif[g](); done.append(p); log(f"  GIF {g}: {mb:.2f}MB")
@@ -360,8 +448,11 @@ def render_standard_viz(rth_path, out_dir, label="", clim_lo=None, mats=None,
             tv.circuit_3d_png(c.get("nodes", {}), c.get("edges", []),
                               node_T=c.get("node_T"), label=label)
             log("  PNG circuit_3d: ok")
+            if c.get("node_T_fn"):
+                tv.circuit_3d_gif(c["nodes"], c["edges"], c["node_T_fn"], label=label)
+                log("  GIF transient_circuit_3d: ok")
         except Exception as e:
-            log(f"  PNG circuit_3d FAIL: {repr(e)[:120]}")
+            log(f"  circuit FAIL: {repr(e)[:120]}")
     return done
 
 

@@ -46,11 +46,17 @@ def wj_circuit_builder(tv):
     }
     edges = [("GAP_S", "GAP_R"), ("GAP_S", "COOL"), ("GAP_R", "SHF"),
              ("SHF", "AIR"), ("AIR", "CEND"), ("CEND", "COOL")]
-    node_T = {"COOL": 27.0,
-              "GAP_S": mx.get("stator"), "GAP_R": mx.get("rotor"),
-              "SHF": mx.get("shaft", 90.0), "AIR": mx.get("coil"),
-              "CEND": mx.get("coil")}
-    return dict(nodes=nodes, edges=edges, node_T=node_T)
+
+    def node_T_fn(T):
+        """임의 시각 온도배열 -> 노드온도(색). circuit GIF 프레임마다 호출."""
+        m = tv._maxes(T)
+        return {"COOL": 27.0,
+                "GAP_S": m.get("stator"), "GAP_R": m.get("rotor"),
+                "SHF": m.get("shaft", 90.0), "AIR": m.get("coil"),
+                "CEND": m.get("coil")}
+
+    return dict(nodes=nodes, edges=edges,
+                node_T=node_T_fn(tv.Tend), node_T_fn=node_T_fn)
 
 
 def run(key):
