@@ -264,16 +264,22 @@ class ThermalViz:
                 hist[r]["max"].append(float(np.nanmax(v)))
         return hist
 
-    def _draw_history(self, ax, hist, roles, cursor_i=None):
-        """이력 곡선(+옵션: 현재시각 세로 커서·현재값 점)을 ax 에 그린다."""
+    def _draw_history(self, ax, hist, roles, cursor_i=None, annotate_values=False):
+        """이력 곡선(+옵션: 현재시각 세로 커서·현재값 점·값 텍스트)을 ax 에 그린다."""
         INK, GRIDC = "#333333", "#e5e5e0"
         for r in roles:
             c = COMP_COLORS[self._CAP[r]]
             ax.plot(self.times, hist[r]["max"], color=c, lw=2, label=f"{self._CAP[r]} max")
             ax.plot(self.times, hist[r]["avg"], color=c, lw=1.3, ls="--", alpha=0.7)
             if cursor_i is not None:
-                ax.plot(self.times[cursor_i], hist[r]["max"][cursor_i], "o", color=c,
+                v = hist[r]["max"][cursor_i]
+                ax.plot(self.times[cursor_i], v, "o", color=c,
                         ms=8, mec="white", mew=1.0, zorder=5)
+                if annotate_values:
+                    ax.annotate(f"{v:.0f}", xy=(self.times[cursor_i], v),
+                                xytext=(6, 0), textcoords="offset points",
+                                va="center", ha="left", fontsize=9, color=c,
+                                fontweight="bold", zorder=6)
         if cursor_i is not None:
             ax.axvline(self.times[cursor_i], color=INK, lw=1.2, ls=":", alpha=0.85)
         ax.set_xlabel("Time, s", color=INK)
@@ -376,15 +382,26 @@ class ThermalViz:
         frames = []
         for i in range(self.nsets):
             T = self._T(i); ts = self.times[i]
-            pl = self._render_cut3d_circuit(T, nodes, edges, node_T_fn(T), label,
+            nt = node_T_fn(T)                       # 회로 노드 온도(좌·우 공용)
+            pl = self._render_cut3d_circuit(T, nodes, edges, nt, label,
                                             title_extra=f"  t={ts:.0f}s")
             left = pl.screenshot(return_img=True); pl.close()
-            fig, ax = plt.subplots(figsize=(6.4, max(4.0, left.shape[0] / 150.0)),
+            fig, ax = plt.subplots(figsize=(6.6, max(4.0, left.shape[0] / 150.0)),
                                    dpi=150)
-            self._draw_history(ax, hist, roles, cursor_i=i)
+            # 각 곡선 현재값 텍스트 주석 포함
+            self._draw_history(ax, hist, roles, cursor_i=i, annotate_values=True)
             ax.set_title(f"component temperatures   t={ts:.0f}s",
                          color="#333333", fontsize=11)
-            ax.set_xlim(0, self.times[-1]); ax.set_ylim(*ylim)
+            ax.set_xlim(0, self.times[-1] * 1.06); ax.set_ylim(*ylim)
+            # 회로 노드 값 텍스트 블록(우하단)
+            items = [f"{k} {nt[k]:.0f}" for k in nt if nt.get(k) is not None]
+            node_str = "circuit nodes @t:\n" + "   ".join(items[:3]) + \
+                       ("\n" + "   ".join(items[3:]) if len(items) > 3 else "")
+            ax.text(0.98, 0.03, node_str, transform=ax.transAxes,
+                    va="bottom", ha="right", fontsize=8.5, color="#333333",
+                    family="monospace",
+                    bbox=dict(boxstyle="round,pad=0.35", fc="white",
+                              ec="#cccccc", alpha=0.9))
             fig.tight_layout(); fig.canvas.draw()
             right = np.asarray(fig.canvas.buffer_rgba())[..., :3]
             plt.close(fig)
