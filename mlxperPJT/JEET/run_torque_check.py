@@ -26,6 +26,11 @@ MODELS = {
            "irms": 920.0,
            "mes": (r"D:\KangDH\EveryMotor\eMach\mlxperPJT\JEET\map_exports"
                    r"\e10\fields\Magnetic_SC_16k_36deg_OnLoadTorque.txt")},
+    # HalfSC 는 자체 전류한계 690 A 케이스의 FEA 결과가 없어 .mes 대조가
+    # 불가하다. Motor-CAD 해만 읽는다.
+    "HalfSC": {"mot": (r"D:\KangDH\Thesis\e10\SLFEA_Half"
+                       r"\e10Turn6V261SLFEA_Half.mot"),
+               "irms": 690.0, "mes": None},
 }
 
 TORQUE_VARS = ["AvTorqueMS", "AvTorqueVW", "AvTorqueMsVw", "AvTorqueDQ",
@@ -80,7 +85,7 @@ def main():
                     pass
 
             mx = float("nan")
-            if os.path.exists(cfg["mes"]):
+            if cfg["mes"] and os.path.exists(cfg["mes"]):
                 mx = maxwell_torque(parse_mes_txt(cfg["mes"]))["torque_Nm"]
 
             out["models"][name] = {"i_rms_a": cfg["irms"],
