@@ -1573,7 +1573,8 @@ def plot_fig2_kernel_comparison(ts_path: str, hybrid_path: str,
     """
     from .field_metrics import (iter_mes_blocks, slot_conductor_codes,
                                 hybrid_je_at_points, conductor_je_2d,
-                                conductor_je_strips, slot_mean_angle)
+                                conductor_je_strips, slot_mean_angle,
+                                slot_bar_geometry)
 
     plt = _journal_rc()
     print('커널 비교 누적 중 (매 %d블록) ...' % every)
@@ -1595,15 +1596,24 @@ def plot_fig2_kernel_comparison(ts_path: str, hybrid_path: str,
                                   signed=False,
                                   thickness_mm=copper_h_mm) / 1e6
         sq_1d += (amp / np.sqrt(2.0)) ** 2
-        a_slot = slot_mean_angle(p_ms, slot_id)
-        for code in slot_conductor_codes(p_ms, slot_id):
-            rs = conductor_je_strips(p_ms, code, freq_hz, copper_w_mm,
-                                     copper_h_mm, n_strips=n_strips,
-                                     angle_rad=a_slot)
+        # 기하 기준은 TS-FEA (순수 구리). MS-FEA 영역은 함침 포함이라
+        # 25% 크므로 그대로 쓰면 (a) 패널과 도체 영역이 어긋난다.
+        a_slot = slot_mean_angle(p_ts, slot_id)
+        bars = slot_bar_geometry(p_ts, slot_id, angle_rad=a_slot)
+        ms_codes = sorted(slot_conductor_codes(p_ms, slot_id),
+                          key=lambda c: np.hypot(
+                              p_ms['x_mm'][p_ms['reg'] == c],
+                              p_ms['y_mm'][p_ms['reg'] == c]).mean())
+        for bar, code in zip(bars, ms_codes):
+            ctr = (bar['r_c'], bar['t_c'])
+            rs = conductor_je_strips(p_ms, code, freq_hz, bar['w_mm'],
+                                     bar['h_mm'], n_strips=n_strips,
+                                     angle_rad=a_slot, center_rt=ctr)
             sq_st[code] = sq_st.get(code, 0.0) + (
                 np.abs(rs['je']) / np.sqrt(2.0) / 1e6) ** 2
-            r2 = conductor_je_2d(p_ms, code, freq_hz, copper_w_mm,
-                                 copper_h_mm, angle_rad=a_slot)
+            r2 = conductor_je_2d(p_ms, code, freq_hz, bar['w_mm'],
+                                 bar['h_mm'], angle_rad=a_slot,
+                                 center_rt=ctr)
             sq_2d[code] = sq_2d.get(code, 0.0) + (
                 np.abs(r2['je']) / np.sqrt(2.0) / 1e6) ** 2
             gxy[code] = ((rs['x_mm'], rs['y_mm']),
@@ -1700,7 +1710,8 @@ def make_fig2_kernel_gif(ts_path: str, hybrid_path: str, out_gif: str,
     """커널 비교 3-패널의 주기 애니메이션 (순시 크기 기준)."""
     from .field_metrics import (iter_mes_blocks, slot_conductor_codes,
                                 hybrid_je_at_points, conductor_je_2d,
-                                conductor_je_strips, slot_mean_angle)
+                                conductor_je_strips, slot_mean_angle,
+                                slot_bar_geometry)
     from matplotlib.animation import PillowWriter
 
     plt = _journal_rc()
@@ -1720,14 +1731,21 @@ def make_fig2_kernel_gif(ts_path: str, hybrid_path: str, out_gif: str,
                                     signed=False,
                                     thickness_mm=copper_h_mm) / 1e6
         g_st, g_2d = [], []
-        a_slot = slot_mean_angle(p_ms, slot_id)
-        for code in slot_conductor_codes(p_ms, slot_id):
-            rs = conductor_je_strips(p_ms, code, freq_hz, copper_w_mm,
-                                     copper_h_mm, n_strips=n_strips,
-                                     angle_rad=a_slot)
+        a_slot = slot_mean_angle(p_ts, slot_id)
+        bars = slot_bar_geometry(p_ts, slot_id, angle_rad=a_slot)
+        ms_codes = sorted(slot_conductor_codes(p_ms, slot_id),
+                          key=lambda c: np.hypot(
+                              p_ms['x_mm'][p_ms['reg'] == c],
+                              p_ms['y_mm'][p_ms['reg'] == c]).mean())
+        for bar, code in zip(bars, ms_codes):
+            ctr = (bar['r_c'], bar['t_c'])
+            rs = conductor_je_strips(p_ms, code, freq_hz, bar['w_mm'],
+                                     bar['h_mm'], n_strips=n_strips,
+                                     angle_rad=a_slot, center_rt=ctr)
             g_st.append((rs['x_mm'], rs['y_mm'], np.abs(rs['je']) / 1e6))
-            r2 = conductor_je_2d(p_ms, code, freq_hz, copper_w_mm,
-                                 copper_h_mm, angle_rad=a_slot)
+            r2 = conductor_je_2d(p_ms, code, freq_hz, bar['w_mm'],
+                                 bar['h_mm'], angle_rad=a_slot,
+                                 center_rt=ctr)
             g_2d.append((r2['x_mm'], r2['y_mm'], np.abs(r2['je']) / 1e6))
         frames.append({'frame': f_ts, 'geom': geom, 'ts': je_ts,
                        'd1': je_1d, 'dst': g_st, 'd2': g_2d,
@@ -1797,6 +1815,7 @@ def make_fig2_kernel_gif(ts_path: str, hybrid_path: str, out_gif: str,
 
 
 def plot_kernel_sampling_map(hybrid_path: str, out_path: str,
+                             ts_path: Optional[str] = None,
                              slot_id: int = 1, step: int = 70,
                              airgap_side: str = 'bottom',
                              copper_w_mm: float = 3.711,
@@ -1818,19 +1837,27 @@ def plot_kernel_sampling_map(hybrid_path: str, out_path: str,
     가른다. 왜 (c)만 B 의 반경 성분을 쓸 수 있는지도 이 그림에서 보인다.
     """
     from .field_metrics import (parse_mes_txt, slot_conductor_codes,
-                                _conductor_layers, slot_mean_angle)
+                                _conductor_layers, slot_mean_angle,
+                                slot_bar_geometry)
 
     plt = _journal_rc()
     p = parse_mes_txt(hybrid_path, block=step)
-    f = _slot_frame(p, slot_id, airgap_side, domain='slot')
+    # 기하 기준은 TS-FEA(순수 구리). 없으면 MS-FEA 자체 영역으로 폴백.
+    p_geom = parse_mes_txt(ts_path, block=step) if ts_path else p
+    f = _slot_frame(p_geom, slot_id, airgap_side, domain='slot')
     R = f['R']
-    geom = slot_reference_geometry(p, slot_id, airgap_side)
-    codes = sorted(slot_conductor_codes(p, slot_id),
-                   key=lambda c: np.hypot(p['x_mm'][p['reg'] == c],
-                                          p['y_mm'][p['reg'] == c]).mean())
-    layers = _conductor_layers(p, codes, 4e-7 * np.pi,
+    geom = slot_reference_geometry(p_geom, slot_id, airgap_side,
+                                   p_outline=p)
+    a_slot = slot_mean_angle(p_geom, slot_id)
+    bars = slot_bar_geometry(p_geom, slot_id, angle_rad=a_slot)
+    codes = sorted(slot_conductor_codes(p_geom, slot_id),
+                   key=lambda c: np.hypot(
+                       p_geom['x_mm'][p_geom['reg'] == c],
+                       p_geom['y_mm'][p_geom['reg'] == c]).mean())
+    layers = _conductor_layers(p_geom, codes, 4e-7 * np.pi,
                                face_frac=face_frac)
-    r_all = np.hypot(p['x_mm'], p['y_mm'])
+    r_all = np.hypot(p_geom['x_mm'], p_geom['y_mm'])
+    p = p_geom
 
     fig, axs = plt.subplots(1, 3, figsize=(_COLW_IN * 2.0, 3.0),
                             layout='constrained')
@@ -1861,16 +1888,15 @@ def plot_kernel_sampling_map(hybrid_path: str, out_path: str,
 
     # ---- (b) 스트립별 2점 ----
     n_b = 0
-    for lay in layers:
-        m = p['reg'] == lay['code']
-        ang = slot_mean_angle(p, slot_id)
-        c, s = np.cos(-ang), np.sin(-ang)
-        Rb = np.array([[c, -s], [s, c]])
-        r_c = float(np.hypot(p['x_mm'][m].mean(), p['y_mm'][m].mean()))
-        tt = np.linspace(-copper_w_mm / 2, copper_w_mm / 2, n_strips)
+    cb_, sb_ = np.cos(-a_slot), np.sin(-a_slot)
+    Rb = np.array([[cb_, -sb_], [sb_, cb_]])
+    for bar in bars:
+        tt = np.linspace(-bar['w_mm'] / 2, bar['w_mm'] / 2,
+                         n_strips) + bar['t_c']
         for sgn, col in ((-1, '#1f77b4'), (+1, '#d62728')):
             q = np.column_stack([np.full(n_strips,
-                                         r_c + sgn * copper_h_mm / 2),
+                                         bar['r_c']
+                                         + sgn * bar['h_mm'] / 2),
                                  tt]) @ Rb
             lx, ly = to_local(q[:, 0], q[:, 1])
             axs[1].plot(lx, ly, '.', ms=2.2, color=col)
@@ -1878,14 +1904,10 @@ def plot_kernel_sampling_map(hybrid_path: str, out_path: str,
 
     # ---- (c) 격자 둘레 전체 ----
     n_c = 0
-    for lay in layers:
-        m = p['reg'] == lay['code']
-        ang = slot_mean_angle(p, slot_id)
-        c, s = np.cos(-ang), np.sin(-ang)
-        Rb = np.array([[c, -s], [s, c]])
-        r_c = float(np.hypot(p['x_mm'][m].mean(), p['y_mm'][m].mean()))
-        rr_off = np.linspace(-copper_h_mm / 2, copper_h_mm / 2, ny)
-        tt_off = np.linspace(-copper_w_mm / 2, copper_w_mm / 2, nx)
+    for bar in bars:
+        r_c, t_c = bar['r_c'], bar['t_c']
+        rr_off = np.linspace(-bar['h_mm'] / 2, bar['h_mm'] / 2, ny)
+        tt_off = np.linspace(-bar['w_mm'] / 2, bar['w_mm'] / 2, nx) + t_c
         RR, TT = np.meshgrid(rr_off, tt_off, indexing='ij')
         edge = np.zeros(RR.shape, bool)
         edge[0, :] = edge[-1, :] = True

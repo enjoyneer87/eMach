@@ -615,6 +615,43 @@ def hybrid_je_at_points(p_source: dict, query_xy: np.ndarray,
     return out
 
 
+def slot_bar_geometry(p: dict, slot_id: int,
+                      angle_rad: Optional[float] = None) -> list:
+    """도체 막대의 **실제 메시 기하**를 슬롯 로컬 좌표로 뽑는다.
+
+    TS-FEA 의 `Turn_*` 영역은 순수 구리라 절점 범위가 `.mot` 의
+    Copper_Width/Height 와 0.6% 안에서 맞는다(Ref 1.676x3.689 vs
+    1.686x3.711). 반면 MS-FEA 의 `ArmatureSlot*` 는 구리와 함침을 합친
+    셀이라 25% 크다(2.095x4.631). 따라서 **기하 기준은 TS-FEA** 로
+    잡고, MS-FEA 는 그 위에서 장을 보간해 쓰는 쪽이 옳다 --- 그래야
+    모든 패널이 같은 도체 영역을 그린다.
+
+    ``angle_rad`` 생략 시 ``slot_mean_angle`` 을 쓴다.
+
+    Returns 반경 오름차순 리스트, 각 원소는
+    ``{'code', 'r_c', 't_c', 'h_mm', 'w_mm'}`` (r_c/t_c 는 로컬 중심).
+    """
+    ang = slot_mean_angle(p, slot_id) if angle_rad is None else angle_rad
+    c, s = np.cos(-ang), np.sin(-ang)
+    R = np.array([[c, -s], [s, c]])
+    nd_loc = p['node_xy'] @ R.T
+    out = []
+    for code in slot_conductor_codes(p, slot_id):
+        m = p['reg'] == code
+        if not m.any():
+            continue
+        ids = np.unique(p['tri'][m].ravel())
+        q = nd_loc[ids]
+        cen = np.column_stack([p['x_mm'][m], p['y_mm'][m]]) @ R.T
+        out.append({'code': int(code),
+                    'r_c': float(cen[:, 0].mean()),
+                    't_c': float(cen[:, 1].mean()),
+                    'h_mm': float(q[:, 0].max() - q[:, 0].min()),
+                    'w_mm': float(q[:, 1].max() - q[:, 1].min())})
+    out.sort(key=lambda d: d['r_c'])
+    return out
+
+
 def block_angles(path: str) -> dict:
     """블록별 **누적** 회전각 [deg] 과 시각 [s] 을 뽑는다 (가볍다).
 
@@ -691,7 +728,8 @@ def conductor_je_strips(p_source: dict, code: int, freq_hz: float,
                         n_strips: int = 20, n_radial: int = 26,
                         sigma: float = 4.709e7,
                         mu0: float = 4e-7 * np.pi,
-                        angle_rad: Optional[float] = None) -> dict:
+                        angle_rad: Optional[float] = None,
+                        center_rt: Optional[tuple] = None) -> dict:
     """도체를 접선 방향 **스트립**으로 나눠 스트립마다 1-D 확산을 푼다.
 
     Motor-CAD 의 FEA Paths 화면을 보면 슬롯 영역에 막대당 ~20개의
@@ -726,9 +764,15 @@ def conductor_je_strips(p_source: dict, code: int, freq_hz: float,
     # 격자는 막대의 **로컬 좌표 실제 중심**에 놓아야 한다. 접선 0(슬롯
     # 중심선)에 고정하면 중심선에서 벗어난 막대가 통째로 어긋난다 ---
     # 공극쪽 바는 개구부에 잘려 접선 중심이 -0.119 mm 다(실제로 겪음).
-    xy_loc = np.column_stack([x, y]) @ R.T
-    r_c = float(xy_loc[:, 0].mean())
-    t_c = float(xy_loc[:, 1].mean())
+    if center_rt is not None:
+        # 기하 기준을 외부(보통 TS-FEA)에서 받는다 --- MS-FEA 영역은
+        # 함침을 포함해 25% 크므로 그 중심/범위를 쓰면 도체 영역이
+        # TS-FEA 패널과 어긋난다(slot_bar_geometry 참조).
+        r_c, t_c = float(center_rt[0]), float(center_rt[1])
+    else:
+        xy_loc = np.column_stack([x, y]) @ R.T
+        r_c = float(xy_loc[:, 0].mean())
+        t_c = float(xy_loc[:, 1].mean())
 
     rr_off = np.linspace(-height_mm / 2, height_mm / 2, n_radial)
     tt_c = np.linspace(-width_mm / 2, width_mm / 2, n_strips)
@@ -778,7 +822,8 @@ def conductor_je_2d(p_source: dict, code: int, freq_hz: float,
                     i_net_a: Optional[float] = None,
                     sigma: float = 4.709e7, mu0: float = 4e-7 * np.pi,
                     nx: int = 40, ny: int = 26,
-                    angle_rad: Optional[float] = None) -> dict:
+                    angle_rad: Optional[float] = None,
+                    center_rt: Optional[tuple] = None) -> dict:
     """도체 단면 하나를 **2-D** 확산 방정식으로 풀어 유도 Je 를 구한다.
 
     ``hybrid_je_at_points`` 의 1-D 커널(반경 방향만)과 달리 접선 방향까지
@@ -820,9 +865,15 @@ def conductor_je_2d(p_source: dict, code: int, freq_hz: float,
     # 격자는 막대의 **로컬 좌표 실제 중심**에 놓아야 한다. 접선 0(슬롯
     # 중심선)에 고정하면 중심선에서 벗어난 막대가 통째로 어긋난다 ---
     # 공극쪽 바는 개구부에 잘려 접선 중심이 -0.119 mm 다(실제로 겪음).
-    xy_loc = np.column_stack([x, y]) @ R.T
-    r_c = float(xy_loc[:, 0].mean())
-    t_c = float(xy_loc[:, 1].mean())
+    if center_rt is not None:
+        # 기하 기준을 외부(보통 TS-FEA)에서 받는다 --- MS-FEA 영역은
+        # 함침을 포함해 25% 크므로 그 중심/범위를 쓰면 도체 영역이
+        # TS-FEA 패널과 어긋난다(slot_bar_geometry 참조).
+        r_c, t_c = float(center_rt[0]), float(center_rt[1])
+    else:
+        xy_loc = np.column_stack([x, y]) @ R.T
+        r_c = float(xy_loc[:, 0].mean())
+        t_c = float(xy_loc[:, 1].mean())
 
     # 로컬 x = 반경 방향(두께 height_mm), 로컬 y = 접선 방향(폭 width_mm).
     # 두 축을 바꿔 넣으면 막대를 90도 눕힌 채 푸는 셈이 되어 확산 해가
