@@ -42,8 +42,18 @@ SC_HY = os.path.join(F, "Magnetic_SC_Hybrid_OP920A_36deg_"
 # 구리 치수는 .mot 의 Copper_Width/Copper_Height 이며 스케일 변형체마다
 # 다르다 --- SC 는 Ref 의 정확히 2배(k_r=2), HalfSC 는 1.5배. Ref 값을
 # 그대로 쓰면 SC 막대가 실제보다 작게 그려진다(실제로 겪음).
+# 8 kRPM 재현 확인용 (f_e 533.3 Hz --- eta 가 1/sqrt(2) 로 줄어든다)
+TS8 = os.path.join(F, "Magnetic_Ref_OP460A_36deg_8k_OnLoadTorque.txt")
+HY8 = os.path.join(F, "Magnetic_Ref_Hybrid_OP460A_36deg_8k_"
+                      "OnLoadTorque.txt")
+SC8 = os.path.join(F, "Magnetic_SC_OP920A_36deg_8k_OnLoadTorque.txt")
+SC_HY8 = os.path.join(F, "Magnetic_SC_Hybrid_OP920A_36deg_8k_"
+                         "OnLoadTorque.txt")
+# 구리 치수는 이제 TS 메시에서 자동으로 읽으므로 표의 값은 참고용이다
 SOURCES = {"Ref": (TS, HY, "Ref", 1066.67, 3.711, 1.686),
-           "SC": (SC, SC_HY, "SC", 1066.67, 7.422, 3.372)}
+           "SC": (SC, SC_HY, "SC", 1066.67, 7.422, 3.372),
+           "Ref8k": (TS8, HY8, "Ref8k", 533.33, 3.711, 1.686),
+           "SC8k": (SC8, SC_HY8, "SC8k", 533.33, 7.422, 3.372)}
 CU_H, CU_W = 1.686, 3.711            # [mm] .mot Copper_Height/Width
 NX, NY = 40, 26                      # 접선 x 반경
 EVERY = 4                            # 128블록 중 매 4번째만 (32스텝)
