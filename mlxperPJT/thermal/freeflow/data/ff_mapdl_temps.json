@@ -1,0 +1,33 @@
+{
+  "_loss_source": "Prius-estimate (Motor-CAD returned 0)",
+  "_oil": {
+    "T": 70.0,
+    "htc_wind": 1500.0,
+    "htc_stator": 2500.0
+  },
+  "_timing": {
+    "solve_time_s": 13.5,
+    "mesh_nodes": 544400,
+    "mesh_elements": 316733
+  },
+  "losses_W": {
+    "copper": 3350.0,
+    "stator_iron": 585.0,
+    "rotor_iron": 65.0,
+    "magnet": 24.0
+  },
+  "per_part": {
+    "stator": {
+      "max": 74.80756579059847,
+      "min": 70.14548827734978
+    },
+    "winding": {
+      "max": 95.59579747470707,
+      "min": 54.47628358603862
+    },
+    "rotor": {
+      "max": 72.07052648216558,
+      "min": 70.18925248469768
+    }
+  }
+}

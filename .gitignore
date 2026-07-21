@@ -187,3 +187,9 @@ mlxperPJT/JEET/acloss_ref_methods/elhajji_b_data/Hybrid_Speed_*.json
 
 # Prius 열해석 산출물(이미지/GIF)은 Google Drive 보관 (DATA_LOCATION.md)
 mlxperPJT/thermal/prius/viz/
+
+# Fluent 전사로그 -> Google Drive (Prius_thermal_viz/fluent_trn)
+fluent-*.trn
+*.trn
+
+mlxperPJT/thermal/freeflow/viz/

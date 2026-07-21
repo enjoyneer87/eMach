@@ -1,0 +1,18 @@
+{
+  "_operating_point": {
+    "ShaftSpeed": 16000,
+    "RMSCurrent": 460,
+    "PeakCurrent": 650.538238691624,
+    "DCBusVoltage": 720,
+    "PhaseAdvance": 43.33
+  },
+  "_source": "e10Turn6V261.mot Motor-CAD do_magnetic_calculation",
+  "_param_ref": "ActiveXParametersMotorCADv261.txt",
+  "losses_W": {},
+  "_summary_W": {
+    "copper": 0.0,
+    "stator_iron": 0.0,
+    "rotor_iron": 0.0,
+    "magnet": 0.0
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "MAPDL\n(e10 oil-cooled\nsteady conduction)": {
+    "t": 13.5,
+    "note": "544k nodes/317k tet10, static"
+  },
+  "Icepak\n(Prius fixed-T\nconduction+jacket)": {
+    "t": 94.0,
+    "note": "250A, conduction+convection"
+  },
+  "FreeFlow\n(Rocky SPH\noil-fill flow)": {
+    "t": 18313.0,
+    "note": "288k particles, 8s physical time, GPU"
+  }
+}
