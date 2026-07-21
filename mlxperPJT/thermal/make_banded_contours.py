@@ -37,7 +37,7 @@ try:
     for fname, mesh, clim, nc, lit in views:
         p = pv.Plotter(off_screen=True, window_size=(1280, 960))
         p.set_background("white")
-        kw = dict(cmap="inferno", clim=clim, n_colors=nc,
+        kw = dict(scalars="Temperature (degC)", cmap="inferno", clim=clim, n_colors=nc,
                   scalar_bar_args=sb, below_color="#3987e5")
         if lit:
             kw.update(smooth_shading=True, ambient=0.62, diffuse=0.38,

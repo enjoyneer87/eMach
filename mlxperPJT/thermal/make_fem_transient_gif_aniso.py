@@ -6,8 +6,8 @@ import traceback
 import numpy as np
 
 SP = r"C:\Users\moa\AppData\Local\Temp\claude\d--KDH-NvidiaNemo\292f8893-fe65-44a6-9565-cb88503b2e90\scratchpad"
-OUT = os.path.join(SP, "viz_real")
-log = open(os.path.join(SP, "fem_gif.txt"), "w", encoding="utf-8")
+OUT = os.path.join(SP, "viz_real_aniso")
+log = open(os.path.join(SP, "fem_gif_aniso.txt"), "w", encoding="utf-8")
 def P(*a):
     log.write(" ".join(str(x) for x in a) + "\n"); log.flush()
 
@@ -16,8 +16,7 @@ try:
     from ansys.mapdl import reader as rd
     pv.OFF_SCREEN = True
 
-    rth = sorted(glob.glob(os.path.join(SP, "real_*", "file.rth")),
-                 key=os.path.getmtime)[-1]
+    rth = os.path.join(SP, "real_17904", "file.rth")   # 직교이방성 결과
     res = rd.read_binary(rth)
     nsets = res.nsets
     times = np.asarray(res.time_values, float)

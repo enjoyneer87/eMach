@@ -55,7 +55,7 @@ try:
         if ghost is not None:
             p.add_mesh(ghost.extract_surface(), color="#d9d6c8",
                        opacity=0.10, lighting=True, ambient=0.5)
-        kw = dict(cmap="inferno", clim=clim, n_colors=12,
+        kw = dict(scalars="Temperature (degC)", cmap="inferno", clim=clim, n_colors=12,
                   scalar_bar_args=sb)
         if view == "xy":
             kw.update(lighting=False)          # 평면 뷰는 무조명 평면색

@@ -7,7 +7,7 @@ import time
 import traceback
 
 SP = r"C:\Users\moa\AppData\Local\Temp\claude\d--KDH-NvidiaNemo\292f8893-fe65-44a6-9565-cb88503b2e90\scratchpad"
-OUT = os.path.join(SP, "viz_real")
+OUT = os.path.join(SP, "viz_real_aniso")
 os.makedirs(OUT, exist_ok=True)
 log = open(os.path.join(SP, "run_real_viz.txt"), "w", encoding="utf-8")
 def P(*a):
@@ -23,7 +23,13 @@ try:
     M_CS, M_MG, M_CO, M_SH, M_CR = 1, 2, 3, 4, 5
     K_CORE, CP_CORE, RHO_CORE = 23.0, 460.0, 7650.0
     K_MAG, CP_MAG, RHO_MAG = 9.0, 460.0, 7500.0
-    K_COIL, CP_COIL, RHO_COIL = 380.0, 380.0, 8960.0 * 0.45
+    # 권선 직교이방성 (2023 Ansys "Anisotropic Thermal Conductivity for
+    # Coil-Windings"): 슬롯 소선은 축(z)방향 -> 축 k 高(구리 지배),
+    # 횡 k 低(절연/함침 지배). 코일엔드는 잘라내 회로화했으므로 소선이
+    # 전부 글로벌 z -> ESYS 회전 불요, SOLID87 KXX/KYY/KZZ 직접 사용.
+    K_COIL_TRANS = 2.5      # 횡(x,y) [W/mK]  (논문 권장값)
+    K_COIL_AXIAL = 250.0    # 축(z)  [W/mK]  (논문값; fill 0.45 스케일시 ~180)
+    CP_COIL, RHO_COIL = 380.0, 8960.0 * 0.45
     K_SHAFT, CP_SHAFT, RHO_SHAFT = 52.0, 460.0, 7870.0
     # Maxwell 3D 손실 (full machine, x16 검증 완료)
     LOSS_COPPER, LOSS_MAGNET = 2637.2, 0.32
@@ -65,10 +71,14 @@ try:
     mapdl.et(4, "MASS71"); mapdl.keyopt(4, 3, 1)
     for n, k, c, r in ((M_CS, K_CORE, CP_CORE, RHO_CORE),
                        (M_MG, K_MAG, CP_MAG, RHO_MAG),
-                       (M_CO, K_COIL, CP_COIL, RHO_COIL),
                        (M_SH, K_SHAFT, CP_SHAFT, RHO_SHAFT),
                        (M_CR, K_CORE, CP_CORE, RHO_CORE)):
         mapdl.mp("KXX", n, k); mapdl.mp("C", n, c); mapdl.mp("DENS", n, r)
+    # 코일: 직교이방성 (KZZ=축=구리 지배, KXX=KYY=횡=절연 지배)
+    mapdl.mp("KXX", M_CO, K_COIL_TRANS); mapdl.mp("KYY", M_CO, K_COIL_TRANS)
+    mapdl.mp("KZZ", M_CO, K_COIL_AXIAL)
+    mapdl.mp("C", M_CO, CP_COIL); mapdl.mp("DENS", M_CO, RHO_COIL)
+    P(f"coil orthotropic: k_trans={K_COIL_TRANS} k_axial={K_COIL_AXIAL} W/mK")
 
     # ── 열등가회로 (링 러너와 동일 구조) ─────────────────────────────────
     nmax = int(mapdl.get_value("NODE", 0, "NUM", "MAXD"))
@@ -192,7 +202,7 @@ try:
         make_surf(sel_cyl(z_range=(z, z), mat=M_CR), N["AIR"], HTC_AIR,
                   f"rotor-end z={z:+.3f}")
     # 코일 z단면(절단면) -> 코일엔드 lumped 노드 (구리 전도 등가 h)
-    H_CU_END = 380.0 / 0.055        # k_cu / (엔드 경로 절반 ~55mm) ≈ 6900
+    H_CU_END = K_COIL_AXIAL / 0.055   # 축방향 k / 엔드경로 ~55mm (이방성 일관)
     def sel_coilcut(th_ranges):
         def _fn():
             mapdl.allsel()
