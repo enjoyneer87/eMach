@@ -1144,7 +1144,7 @@ def plot_fig2_slot_comparison(ts_path: str, hybrid_path: str,
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(4.2, 2.6),
                                   layout='constrained')
     cf = _draw_slot_contour(ax1, f_ts, je_ts, vlim)
-    _draw_slot_contour(ax2, f_ts, je_hy, vlim, show_airgap_label=False)
+    _draw_slot_contour(ax2, f_ts, je_hy, vlim)
     if show_titles:
         ax1.set_title('(a) TS-FEA', fontsize=9)
         ax2.set_title('(b) Hybrid (reference)', fontsize=9)
@@ -1212,8 +1212,7 @@ def make_fig2_slot_gif(ts_path: str, hybrid_path: str, out_gif: str,
                                   layout='constrained')
     cf = _draw_slot_contour(ax1, frames[0]['frame'], frames[0]['je_ts'],
                             vlim)
-    _draw_slot_contour(ax2, frames[0]['frame'], frames[0]['je_hy'], vlim,
-                       show_airgap_label=False)
+    _draw_slot_contour(ax2, frames[0]['frame'], frames[0]['je_hy'], vlim)
     ax1.set_title('TS-FEA', fontsize=9)
     ax2.set_title('Hybrid (reference, on TS-FEA mesh)', fontsize=9)
     cb = fig.colorbar(cf, ax=(ax1, ax2), shrink=0.85)
@@ -1229,7 +1228,7 @@ def make_fig2_slot_gif(ts_path: str, hybrid_path: str, out_gif: str,
                           show_airgap_label=True)
         ax2.clear()
         _draw_slot_contour(ax2, rec['frame'], rec['je_hy'], vlim,
-                          show_airgap_label=False)
+                          show_airgap_label=True)
         suptitle.set_text('slot %d   step %d/%d   rotate %.2f deg'
                           % (slot_id, i + 1, n, rec['rotate_deg']))
         step_max.append({
