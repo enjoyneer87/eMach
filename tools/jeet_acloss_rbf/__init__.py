@@ -20,6 +20,8 @@ from .manuscript_figs import (
     slot_reference_geometry,
     plot_fig2_slot_comparison,
     plot_fig2_slot_rms,
+    plot_fig2_kernel_comparison,
+    make_fig2_kernel_gif,
     make_fig2_slot_gif,
     plot_fig_b_slot_comparison,
     make_fig_b_slot_gif,
@@ -36,6 +38,7 @@ from .field_metrics import (
     hybrid_je_reference,
     hybrid_je_at_points,
     conductor_je_2d,
+    conductor_je_strips,
     slot_conductor_codes,
 )
 from .form_study import operating_beta_band, region_mask, run_form_study
@@ -64,6 +67,8 @@ __all__ = [
     "slot_reference_geometry",
     "plot_fig2_slot_comparison",
     "plot_fig2_slot_rms",
+    "plot_fig2_kernel_comparison",
+    "make_fig2_kernel_gif",
     "make_fig2_slot_gif",
     "plot_fig_b_slot_comparison",
     "make_fig_b_slot_gif",
@@ -79,6 +84,7 @@ __all__ = [
     "hybrid_je_reference",
     "hybrid_je_at_points",
     "conductor_je_2d",
+    "conductor_je_strips",
     "slot_conductor_codes",
     # 보정 형태 비교 · 비용-정확도
     "operating_beta_band",

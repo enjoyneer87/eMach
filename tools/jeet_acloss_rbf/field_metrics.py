@@ -615,6 +615,82 @@ def hybrid_je_at_points(p_source: dict, query_xy: np.ndarray,
     return out
 
 
+def conductor_je_strips(p_source: dict, code: int, freq_hz: float,
+                        width_mm: float, height_mm: float,
+                        n_strips: int = 20, n_radial: int = 26,
+                        sigma: float = 4.709e7,
+                        mu0: float = 4e-7 * np.pi) -> dict:
+    """도체를 접선 방향 **스트립**으로 나눠 스트립마다 1-D 확산을 푼다.
+
+    Motor-CAD 의 FEA Paths 화면을 보면 슬롯 영역에 막대당 ~20개의
+    샘플링 라인이 그어져 있다 --- 실제 하이브리드는 막대 하나에서 B 를
+    한 쌍이 아니라 **여러 위치에서** 뽑아 쓴다. 이 함수는 그 방식을
+    흉내 낸다: 각 스트립의 안/바깥 반경면에서 접선 B 를 보간해 그
+    스트립만의 1-D 경계값 문제를 풀고, 반경 방향으로 쌓는다.
+
+    ``hybrid_je_at_points`` (막대당 경계 2점) 와 ``conductor_je_2d``
+    (완전 2-D) 사이의 중간 단계다. 셋을 나란히 놓으면 크기 과소평가가
+    **커널 차원수** 때문인지 **샘플링 밀도** 때문인지 분리할 수 있다.
+
+    수송 성분은 스트립별이 아니라 **막대 전체 평균**으로 뺀다 ---
+    TS-FEA 의 ``Je`` 열이 막대 단위로 평균 0 이기 때문.
+
+    Returns ``conductor_je_2d`` 와 같은 형식 ``{'je', 'x_mm', 'y_mm'}``
+    (je 는 (n_radial, n_strips) 복소 배열).
+    """
+    from scipy.interpolate import griddata as _griddata
+
+    m = p_source['reg'] == code
+    if not m.any():
+        raise ValueError('region code %r 없음' % code)
+    x, y = p_source['x_mm'][m], p_source['y_mm'][m]
+    ang = np.arctan2(y.mean(), x.mean())
+    c, s = np.cos(-ang), np.sin(-ang)
+    R = np.array([[c, -s], [s, c]])
+    r_c = float(np.hypot(x.mean(), y.mean()))
+
+    rr_off = np.linspace(-height_mm / 2, height_mm / 2, n_radial)
+    tt_c = np.linspace(-width_mm / 2, width_mm / 2, n_strips)
+    RR, TT = np.meshgrid(rr_off, tt_c, indexing='ij')
+    loc = np.column_stack([(RR + r_c).ravel(), TT.ravel()])
+    glob = loc @ R
+
+    # 스트립 양 면(안/바깥 반경)에서 접선 B 를 보간
+    face_lo = np.column_stack([np.full(n_strips, r_c - height_mm / 2),
+                               tt_c]) @ R
+    face_hi = np.column_stack([np.full(n_strips, r_c + height_mm / 2),
+                               tt_c]) @ R
+    near = np.hypot(p_source['x_mm'] - glob[:, 0].mean(),
+                    p_source['y_mm'] - glob[:, 1].mean()) < 6.0
+    pts = np.column_stack([p_source['x_mm'][near], p_source['y_mm'][near]])
+    btan = _tangential_b(p_source)[near]
+
+    def samp(q):
+        v = _griddata(pts, btan, q, method='linear')
+        if np.isnan(v).any():
+            v = np.where(np.isnan(v),
+                         _griddata(pts, btan, q, method='nearest'), v)
+        return v
+
+    h0 = samp(face_lo) / mu0
+    ht = samp(face_hi) / mu0
+
+    omega = 2.0 * np.pi * freq_hz
+    delta = 1.0 / np.sqrt(0.5 * omega * mu0 * sigma)
+    k = (1.0 + 1.0j) / delta
+    t = height_mm * 1e-3
+    xl = (rr_off + height_mm / 2) * 1e-3            # 0..t
+    skt = np.sinh(k * t)
+    # (n_radial, n_strips)
+    j = (k * (-h0[None, :] * np.cosh(k * (t - xl[:, None]))
+              + ht[None, :] * np.cosh(k * xl[:, None])) / skt)
+    j = j - j.mean()                                # 막대 전체 수송 제거
+    return {'je': j,
+            'x_mm': glob[:, 0].reshape(RR.shape),
+            'y_mm': glob[:, 1].reshape(RR.shape),
+            'n_strips': n_strips}
+
+
 def conductor_je_2d(p_source: dict, code: int, freq_hz: float,
                     width_mm: float, height_mm: float,
                     i_net_a: Optional[float] = None,
@@ -656,11 +732,16 @@ def conductor_je_2d(p_source: dict, code: int, freq_hz: float,
     R = np.array([[c, -s], [s, c]])                 # 전역 -> 로컬
     r_c = float(np.hypot(x.mean(), y.mean()))
 
-    xs = np.linspace(-width_mm / 2, width_mm / 2, nx)
-    ys = np.linspace(-height_mm / 2, height_mm / 2, ny)
-    XX, YY = np.meshgrid(xs, ys, indexing='ij')
-    loc = np.column_stack([(XX + r_c).ravel(), YY.ravel()])
+    # 로컬 x = 반경 방향(두께 height_mm), 로컬 y = 접선 방향(폭 width_mm).
+    # 두 축을 바꿔 넣으면 막대를 90도 눕힌 채 푸는 셈이 되어 확산 해가
+    # 완전히 달라진다(실제로 겪음 --- 얇은 쪽이 delta 를 결정한다).
+    rr_off = np.linspace(-height_mm / 2, height_mm / 2, ny)   # 반경
+    tt_off = np.linspace(-width_mm / 2, width_mm / 2, nx)     # 접선
+    RR, TT = np.meshgrid(rr_off, tt_off, indexing='ij')
+    XX, YY = RR, TT
+    loc = np.column_stack([(RR + r_c).ravel(), TT.ravel()])
     glob = loc @ R                                   # 로컬 -> 전역
+    nx, ny = RR.shape                                # (반경, 접선)
 
     near = np.hypot(p_source['x_mm'] - glob[:, 0].mean(),
                     p_source['y_mm'] - glob[:, 1].mean()) < 6.0
@@ -672,8 +753,8 @@ def conductor_je_2d(p_source: dict, code: int, freq_hz: float,
                                   method='nearest'), a_bc)
     a_bc = a_bc.reshape(nx, ny)
 
-    dx = (xs[1] - xs[0]) * 1e-3
-    dy = (ys[1] - ys[0]) * 1e-3
+    dx = (rr_off[1] - rr_off[0]) * 1e-3          # 반경 방향 간격
+    dy = (tt_off[1] - tt_off[0]) * 1e-3          # 접선 방향 간격
     omega = 2.0 * np.pi * freq_hz
     k2 = 1j * omega * mu0 * sigma
     n = nx * ny
@@ -710,7 +791,9 @@ def conductor_je_2d(p_source: dict, code: int, freq_hz: float,
     s2 = (sigma * (1.0 - 1j * omega * a_p)).sum() * cell
     e0 = (i_net_a - s1) / s2
     j_tot = sigma * (-1j * omega * (a_h + e0 * a_p) + e0)
-    return {'je': j_tot - j_tot.mean(), 'xy_local': (XX, YY), 'e0': e0}
+    return {'je': j_tot - j_tot.mean(), 'xy_local': (XX, YY), 'e0': e0,
+            'x_mm': glob[:, 0].reshape(nx, ny),
+            'y_mm': glob[:, 1].reshape(nx, ny)}
 
 
 def compare_models(paths: Dict[str, str],

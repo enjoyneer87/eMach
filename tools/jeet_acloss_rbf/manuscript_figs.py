@@ -1509,6 +1509,256 @@ def plot_fig2_slot_rms(ts_path: str, hybrid_path: str, out_path: str,
     return summary
 
 
+def _draw_bar_grids(ax, frame, grids, vlim, cmap='plasma',
+                    outline=None, extent=None, show_airgap_label=True):
+    """막대별 구조격자(2-D 해)를 슬롯 프레임 위에 pcolormesh 로 얹는다.
+
+    2-D 해는 TS-FEA 메시가 아니라 막대마다의 (nx, ny) 격자 위에 있으므로
+    삼각등고선 대신 격자별로 그린다. ``grids`` 는
+    ``[(x_mm, y_mm, values), ...]`` (전역 좌표).
+    """
+    R = frame['R']
+    im = None
+    for gx, gy, gv in grids:
+        pr = np.column_stack([gx.ravel(), gy.ravel()]) @ R.T
+        X = pr[:, 0].reshape(gx.shape)
+        Y = pr[:, 1].reshape(gx.shape)
+        im = ax.pcolormesh(X, Y, gv, cmap=cmap, vmin=0.0, vmax=vlim,
+                           shading='gouraud')
+    if outline is not None and len(outline):
+        from matplotlib.collections import LineCollection
+        ax.add_collection(LineCollection(outline, colors='0.25',
+                                         linewidths=0.6, zorder=5))
+    x0, x1v, y0, y1v = extent if extent is not None else frame['bbox']
+    ax.set_aspect('equal')
+    ax.set_xticks([])
+    ax.set_yticks([])
+    side = frame['airgap_side']
+    pad_main, pad_arrow = 0.15 * (x1v - x0), 0.18 * (y1v - y0)
+    ax.set_xlim(x0 - pad_main, x1v + pad_main)
+    ax.set_ylim(y0 - pad_arrow if side == 'bottom' else y0,
+                y1v + pad_arrow if side == 'top' else y1v)
+    if show_airgap_label and side == 'bottom':
+        cx = 0.5 * (x0 + x1v)
+        scale = 0.12 * max(x1v - x0, y1v - y0)
+        ax.annotate('', xy=(cx, y0 - scale), xytext=(cx, y0),
+                    arrowprops={'arrowstyle': '-|>', 'lw': 1.3,
+                                'color': 'black'})
+        ax.text(cx, y0 - 1.15 * scale, 'airgap', fontsize=7.5,
+                ha='center', va='top')
+    return im
+
+
+def plot_fig2_kernel_comparison(ts_path: str, hybrid_path: str,
+                                out_path: str, slot_id: int = 1,
+                                freq_hz: float = 1066.67,
+                                airgap_side: str = 'bottom',
+                                every: int = 4,
+                                copper_w_mm: float = 3.711,
+                                copper_h_mm: float = 1.686,
+                                n_strips: int = 20,
+                                vlim_percentile: float = 98.0,
+                                out_json: Optional[str] = None) -> dict:
+    """커널 차원수 비교 3-패널: TS-FEA / 1-D 재구성 / 2-D 재구성 (주기 RMS).
+
+    (b)와 (c)는 **같은 MS-FEA 여기**를 쓰고 커널 차원수만 다르다 ---
+    (b)는 반경 방향 1-D 닫힌형, (c)는 막대 단면 2-D 확산 수치해
+    (``conductor_je_2d``). 크기 격차가 여기 자계 탓인지 커널 탓인지를
+    눈으로 가르는 것이 목적이다.
+    """
+    from .field_metrics import (iter_mes_blocks, slot_conductor_codes,
+                                hybrid_je_at_points, conductor_je_2d,
+                                conductor_je_strips)
+
+    plt = _journal_rc()
+    print('커널 비교 누적 중 (매 %d블록) ...' % every)
+    sq_ts = sq_1d = None
+    sq_st, sq_2d, gxy = {}, {}, {}
+    n = 0
+    p_last = p_ms_last = None
+    for (bi, p_ts), (_, p_ms) in zip(iter_mes_blocks(ts_path),
+                                     iter_mes_blocks(hybrid_path)):
+        if (bi - 1) % every:
+            continue
+        m = np.isin(p_ts['reg'], list(slot_conductor_codes(p_ts, slot_id)))
+        if sq_ts is None:
+            sq_ts = np.zeros(int(m.sum()))
+            sq_1d = np.zeros(int(m.sum()))
+        xy = np.column_stack([p_ts['x_mm'][m], p_ts['y_mm'][m]])
+        sq_ts += (p_ts['je_am2'][m] / 1e6) ** 2
+        amp = hybrid_je_at_points(p_ms, xy, freq_hz, slot_id=slot_id,
+                                  signed=False,
+                                  thickness_mm=copper_h_mm) / 1e6
+        sq_1d += (amp / np.sqrt(2.0)) ** 2
+        for code in slot_conductor_codes(p_ms, slot_id):
+            rs = conductor_je_strips(p_ms, code, freq_hz, copper_w_mm,
+                                     copper_h_mm, n_strips=n_strips)
+            sq_st[code] = sq_st.get(code, 0.0) + (
+                np.abs(rs['je']) / np.sqrt(2.0) / 1e6) ** 2
+            r2 = conductor_je_2d(p_ms, code, freq_hz, copper_w_mm,
+                                 copper_h_mm)
+            sq_2d[code] = sq_2d.get(code, 0.0) + (
+                np.abs(r2['je']) / np.sqrt(2.0) / 1e6) ** 2
+            gxy[code] = ((rs['x_mm'], rs['y_mm']),
+                         (r2['x_mm'], r2['y_mm']))
+        n += 1
+        p_last, p_ms_last = p_ts, p_ms
+    rms_ts = np.sqrt(sq_ts / n)
+    rms_1d = np.sqrt(sq_1d / n)
+    g_st = [(gxy[c][0][0], gxy[c][0][1], np.sqrt(sq_st[c] / n))
+            for c in sq_st]
+    g_2d = [(gxy[c][1][0], gxy[c][1][1], np.sqrt(sq_2d[c] / n))
+            for c in sq_2d]
+    print('블록 %d개 누적 완료' % n)
+
+    f_ts = _slot_frame(p_last, slot_id, airgap_side)
+    geom = slot_reference_geometry(p_last, slot_id, airgap_side,
+                                   p_outline=p_ms_last)
+    allv = np.concatenate([rms_ts, rms_1d]
+                          + [g[2].ravel() for g in g_st]
+                          + [g[2].ravel() for g in g_2d])
+    vlim = float(np.percentile(allv, vlim_percentile))
+
+    fig, axs = plt.subplots(1, 4, figsize=(_COLW_IN * 2.1, 2.7),
+                            layout='constrained')
+    kw = {'cmap': 'plasma', 'vmin': 0.0,
+          'outline': geom['outline'], 'extent': geom['extent']}
+    cf = _draw_slot_contour(axs[0], f_ts, rms_ts, vlim, **kw)
+    _draw_slot_contour(axs[1], f_ts, rms_1d, vlim, **kw)
+    for ax, grids in ((axs[2], g_st), (axs[3], g_2d)):
+        _draw_bar_grids(ax, f_ts, grids, vlim, cmap='plasma',
+                        outline=geom['outline'], extent=geom['extent'])
+    for ax, lab in zip(axs, ('(a)', '(b)', '(c)', '(d)')):
+        ax.set_title(lab, fontsize=9)
+    cb = fig.colorbar(cf, ax=list(axs), shrink=0.85)
+    cb.set_label(r'$J_{e,\mathrm{rms}}$ [A/mm$^2$]', fontsize=9)
+
+    os.makedirs(os.path.dirname(os.path.abspath(out_path)), exist_ok=True)
+    fig.savefig(out_path)
+    plt.close(fig)
+    print('커널 비교 그림 저장:', out_path)
+
+    def gsum(gs):
+        return float(sum((g[2] ** 2).mean() * g[2].size for g in gs))
+
+    summary = {
+        'slot_id': slot_id, 'n_blocks': n, 'every': every,
+        'freq_hz': freq_hz, 'vlim_A_mm2': vlim, 'n_strips': n_strips,
+        'panels': {'a': 'TS-FEA', 'b': '1-D, 2-point boundary',
+                   'c': '1-D, %d strips (Motor-CAD style)' % n_strips,
+                   'd': '2-D'},
+        'mean_sq_A_mm2': {
+            'ts_fea': float((rms_ts ** 2).mean()),
+            'kernel_1d_2pt': float((rms_1d ** 2).mean()),
+            'kernel_1d_strips': float(np.mean(
+                [(g[2] ** 2).mean() for g in g_st])),
+            'kernel_2d': float(np.mean(
+                [(g[2] ** 2).mean() for g in g_2d]))},
+    }
+    r = summary['mean_sq_A_mm2']
+    print('평균제곱 비 (TS 기준):  1-D 2pt %.2f   1-D strips %.2f   2-D %.2f'
+          % (r['ts_fea'] / r['kernel_1d_2pt'],
+             r['ts_fea'] / r['kernel_1d_strips'],
+             r['ts_fea'] / r['kernel_2d']))
+    if out_json:
+        os.makedirs(os.path.dirname(os.path.abspath(out_json)),
+                   exist_ok=True)
+        with open(out_json, 'w', encoding='utf-8') as fh:
+            json.dump(summary, fh, ensure_ascii=False, indent=1)
+    return summary
+
+
+def make_fig2_kernel_gif(ts_path: str, hybrid_path: str, out_gif: str,
+                         slot_id: int = 1, freq_hz: float = 1066.67,
+                         airgap_side: str = 'bottom', every: int = 2,
+                         copper_w_mm: float = 3.711,
+                         copper_h_mm: float = 1.686,
+                         n_strips: int = 20, fps: int = 8) -> dict:
+    """커널 비교 3-패널의 주기 애니메이션 (순시 크기 기준)."""
+    from .field_metrics import (iter_mes_blocks, slot_conductor_codes,
+                                hybrid_je_at_points, conductor_je_2d,
+                                conductor_je_strips)
+    from matplotlib.animation import PillowWriter
+
+    plt = _journal_rc()
+    print('커널 비교 GIF 프레임 수집 중 (매 %d블록) ...' % every)
+    frames = []
+    for (bi, p_ts), (_, p_ms) in zip(iter_mes_blocks(ts_path),
+                                     iter_mes_blocks(hybrid_path)):
+        if (bi - 1) % every:
+            continue
+        f_ts = _slot_frame(p_ts, slot_id, airgap_side)
+        geom = slot_reference_geometry(p_ts, slot_id, airgap_side,
+                                       p_outline=p_ms)
+        m = f_ts['mask']
+        xy = np.column_stack([p_ts['x_mm'][m], p_ts['y_mm'][m]])
+        je_ts = np.abs(p_ts['je_am2'][m]) / 1e6
+        je_1d = hybrid_je_at_points(p_ms, xy, freq_hz, slot_id=slot_id,
+                                    signed=False,
+                                    thickness_mm=copper_h_mm) / 1e6
+        g_st, g_2d = [], []
+        for code in slot_conductor_codes(p_ms, slot_id):
+            rs = conductor_je_strips(p_ms, code, freq_hz, copper_w_mm,
+                                     copper_h_mm, n_strips=n_strips)
+            g_st.append((rs['x_mm'], rs['y_mm'], np.abs(rs['je']) / 1e6))
+            r2 = conductor_je_2d(p_ms, code, freq_hz, copper_w_mm,
+                                 copper_h_mm)
+            g_2d.append((r2['x_mm'], r2['y_mm'], np.abs(r2['je']) / 1e6))
+        frames.append({'frame': f_ts, 'geom': geom, 'ts': je_ts,
+                       'd1': je_1d, 'dst': g_st, 'd2': g_2d,
+                       'rotate_deg': p_ts['rotate_deg']})
+    n = len(frames)
+    print('프레임 %d개' % n)
+    allv = np.concatenate([f['ts'] for f in frames]
+                          + [f['d1'] for f in frames]
+                          + [g[2].ravel() for f in frames
+                             for g in f['dst']]
+                          + [g[2].ravel() for f in frames
+                             for g in f['d2']])
+    vlim = float(np.percentile(allv, 99.0))
+
+    fig, axs = plt.subplots(1, 4, figsize=(_COLW_IN * 2.1, 2.7),
+                            layout='constrained')
+    kw0 = {'cmap': 'plasma', 'vmin': 0.0,
+           'outline': frames[0]['geom']['outline'],
+           'extent': frames[0]['geom']['extent']}
+    cf = _draw_slot_contour(axs[0], frames[0]['frame'], frames[0]['ts'],
+                            vlim, **kw0)
+    cb = fig.colorbar(cf, ax=list(axs), shrink=0.85)
+    cb.set_label(r'$|J_e|$ [A/mm$^2$]', fontsize=9)
+    suptitle = fig.suptitle('', fontsize=8)
+
+    def update(i):
+        rec = frames[i]
+        kw = {'cmap': 'plasma', 'vmin': 0.0,
+              'outline': rec['geom']['outline'],
+              'extent': rec['geom']['extent']}
+        for ax in axs:
+            ax.clear()
+        _draw_slot_contour(axs[0], rec['frame'], rec['ts'], vlim, **kw)
+        _draw_slot_contour(axs[1], rec['frame'], rec['d1'], vlim, **kw)
+        for ax, gs in ((axs[2], rec['dst']), (axs[3], rec['d2'])):
+            _draw_bar_grids(ax, rec['frame'], gs, vlim, cmap='plasma',
+                            outline=rec['geom']['outline'],
+                            extent=rec['geom']['extent'])
+        for ax, lab in zip(axs, ('(a) TS-FEA', '(b) 1-D 2pt',
+                                 '(c) 1-D strips', '(d) 2-D')):
+            ax.set_title(lab, fontsize=9)
+        suptitle.set_text('slot %d   frame %d/%d   rotate %.2f deg'
+                          % (slot_id, i + 1, n, rec['rotate_deg']))
+
+    os.makedirs(os.path.dirname(os.path.abspath(out_gif)), exist_ok=True)
+    writer = PillowWriter(fps=fps)
+    with writer.saving(fig, out_gif, dpi=110):
+        for i in range(n):
+            update(i)
+            writer.grab_frame()
+    plt.close(fig)
+    print('커널 비교 GIF 저장:', out_gif)
+    return {'slot_id': slot_id, 'n_frames': n, 'vlim_A_mm2': vlim,
+            'every': every}
+
+
 def _slot_b_panel(p: dict, slot_id: int, airgap_side: str):
     """슬롯 내부 전체 메시 프레임과 그 위의 |B| 를 함께 만든다."""
     frame = _slot_frame(p, slot_id, airgap_side, domain='slot')

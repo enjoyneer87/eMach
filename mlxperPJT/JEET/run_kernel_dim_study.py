@@ -23,7 +23,9 @@ import numpy as np
 
 sys.path.insert(0, r"D:\KangDH\EveryMotor\eMach\tools")
 from jeet_acloss_rbf import (iter_mes_blocks, slot_conductor_codes,
-                             hybrid_je_at_points, conductor_je_2d)
+                             hybrid_je_at_points, conductor_je_2d,
+                             plot_fig2_kernel_comparison,
+                             make_fig2_kernel_gif)
 
 F = r"D:\KangDH\EveryMotor\eMach\mlxperPJT\JEET\map_exports\e10\fields"
 TS = os.path.join(F, "Magnetic_Ref_ARCHIVE_460A_36deg_OnLoadTorque.txt")
@@ -88,4 +90,29 @@ def main():
           % ((t**2).sum() / (a**2).sum(), (t**2).sum() / (b**2).sum()))
 
 
-main()
+def figures():
+    """3-패널 PNG + GIF (눈으로 확인용). 배치 규칙대로 저장."""
+    png = os.path.join(r"E:\KDH\Overleaf\JEET-2024_rev1", "fig",
+                       "fig2_slot_je_kernel_dim.png")
+    drive = os.path.join(r"J:\내 드라이브",
+                         "EveryMotor_JEET_data", "results")
+    plot_fig2_kernel_comparison(
+        TS, HY, png, slot_id=SLOT, freq_hz=FREQ, every=EVERY,
+        copper_w_mm=CU_W, copper_h_mm=CU_H,
+        out_json=os.path.join(drive, "fig2_slot_je_kernel_dim.json"))
+    print("PNG (Overleaf):", png)
+    make_fig2_kernel_gif(
+        TS, HY, os.path.join(drive, "fig2_slot_je_kernel_dim.gif"),
+        slot_id=SLOT, freq_hz=FREQ, every=2,
+        copper_w_mm=CU_W, copper_h_mm=CU_H)
+
+
+if __name__ == '__main__':
+    import argparse
+    ap = argparse.ArgumentParser()
+    ap.add_argument('--figures', action='store_true',
+                    help='표 대신 PNG/GIF 생성')
+    if ap.parse_args().figures:
+        figures()
+    else:
+        main()
