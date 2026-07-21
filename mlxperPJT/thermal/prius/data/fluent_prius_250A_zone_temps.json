@@ -1,0 +1,52 @@
+{
+  "stator": {
+    "min": 46.7,
+    "mean": 83.2,
+    "max": 99.9
+  },
+  "airgap": {
+    "min": 90.0,
+    "mean": 93.0,
+    "max": 97.5
+  },
+  "shaft": {
+    "min": 54.9,
+    "mean": 74.1,
+    "max": 87.0
+  },
+  "rotor": {
+    "min": 83.2,
+    "mean": 88.7,
+    "max": 89.7
+  },
+  "frame": {
+    "min": 39.3,
+    "mean": 44.8,
+    "max": 51.3
+  },
+  "magnet": {
+    "min": 86.2,
+    "mean": 88.4,
+    "max": 89.4
+  },
+  "insulation": {
+    "min": 74.0,
+    "mean": 90.0,
+    "max": 101.3
+  },
+  "coil": {
+    "min": 92.7,
+    "mean": 112.5,
+    "max": 118.2
+  },
+  "fluid_jacket": {
+    "min": 26.8,
+    "mean": 35.9,
+    "max": 48.9
+  },
+  "cover": {
+    "min": 41.9,
+    "mean": 45.3,
+    "max": 54.7
+  }
+}
