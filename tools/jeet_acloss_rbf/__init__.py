@@ -19,6 +19,8 @@ from .manuscript_figs import (
     plot_flux_torque_scaling,
     plot_fig2_slot_comparison,
     make_fig2_slot_gif,
+    plot_fig_b_slot_comparison,
+    make_fig_b_slot_gif,
 )
 from .field_metrics import (
     parse_mes_txt,
@@ -58,6 +60,8 @@ __all__ = [
     "plot_flux_torque_scaling",
     "plot_fig2_slot_comparison",
     "make_fig2_slot_gif",
+    "plot_fig_b_slot_comparison",
+    "make_fig_b_slot_gif",
     # 부하 지표 (.mes / .mot 직접 파싱)
     "parse_mes_txt",
     "iter_mes_blocks",

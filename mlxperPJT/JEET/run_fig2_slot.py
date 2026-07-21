@@ -21,7 +21,8 @@ sys.path.insert(0, r"D:\KangDH\EveryMotor\eMach\tools")
 import matplotlib
 matplotlib.use("Agg")
 
-from jeet_acloss_rbf import plot_fig2_slot_comparison, make_fig2_slot_gif
+from jeet_acloss_rbf import (plot_fig2_slot_comparison, make_fig2_slot_gif,
+                             plot_fig_b_slot_comparison, make_fig_b_slot_gif)
 
 FIELDS = (r"D:\KangDH\EveryMotor\eMach\mlxperPJT\JEET"
           r"\map_exports\e10\fields")
@@ -36,6 +37,12 @@ DATA_JSON = os.path.join(DRIVE_DIR, "fig2_slot_je_static_data.json")
 GIF_OUT = os.path.join(DRIVE_DIR, "fig2_slot_je_comparison.gif")
 GIF_SUMMARY = os.path.join(DRIVE_DIR, "fig2_slot_je_gif_summary.json")
 MANIFEST = os.path.join(DRIVE_DIR, "fig2_slot_je_MANIFEST.md")
+
+# B 필드(슬롯 내부 전체 메시) 산출물
+B_FIG_OUT = r"E:\KDH\Overleaf\JEET-2024_rev1\fig\fig2_slot_b_comparison.png"
+B_DATA_JSON = os.path.join(DRIVE_DIR, "fig2_slot_b_static_data.json")
+B_GIF_OUT = os.path.join(DRIVE_DIR, "fig2_slot_b_comparison.gif")
+B_GIF_SUMMARY = os.path.join(DRIVE_DIR, "fig2_slot_b_gif_summary.json")
 
 FREQ_HZ = 1066.67          # 16000 rpm, 8극 -> f_e = rpm/60 * P/2
 
@@ -56,6 +63,17 @@ def write_manifest(static_data, gif_summary):
         "| 128스텝 동기 애니메이션 GIF | `%s` | "
         "`manuscript_figs.make_fig2_slot_gif` |" % GIF_OUT,
         "| GIF 스텝별 \\|Je\\|max 요약 | `%s` | 위와 동일 |" % GIF_SUMMARY,
+        "| 슬롯 내부 전체 메시 \\|B\\| PNG | `%s` | "
+        "`manuscript_figs.plot_fig_b_slot_comparison` |" % B_FIG_OUT,
+        "| \\|B\\| 그림의 원본 필드 데이터 | `%s` | 위와 동일 |"
+        % B_DATA_JSON,
+        "| \\|B\\| 128스텝 GIF | `%s` | "
+        "`manuscript_figs.make_fig_b_slot_gif` |" % B_GIF_OUT,
+        "| \\|B\\| 스텝별 요약 | `%s` | 위와 동일 |" % B_GIF_SUMMARY,
+        "",
+        "`--only-b` 로 B 산출물만 따로 생성할 수 있다. Je 는 두 패널이"
+        " TS-FEA 도체 메시를 공유하지만, B 는 두 해석 모두 자기 메시에서"
+        " 실제로 푼 값이라 각자 자기 메시에 그린다.",
         "",
         "## 원본 전 주기 export (입력)",
         "",
@@ -93,13 +111,41 @@ def write_manifest(static_data, gif_summary):
     print("매니페스트 저장:", MANIFEST)
 
 
+def run_b_field(a):
+    """슬롯 내부 전체 메시 |B| 그림·GIF (TS-FEA vs MS-FEA)."""
+    print("=== B 정적 2-패널 (step %d) ===" % a.step)
+    b_static = plot_fig_b_slot_comparison(
+        TS_PATH, HY_PATH, B_FIG_OUT, slot_id=a.slot, step=a.step,
+        airgap_side=a.airgap_side)
+    os.makedirs(DRIVE_DIR, exist_ok=True)
+    with open(B_DATA_JSON, "w", encoding="utf-8") as fh:
+        json.dump(b_static, fh, ensure_ascii=False, indent=1)
+    print("B 데이터 JSON (Drive):", B_DATA_JSON)
+
+    if a.skip_gif:
+        print("--skip-gif 지정: B GIF 생략")
+        return b_static, None
+
+    print("\n=== B 128스텝 동기 GIF ===")
+    b_gif = make_fig_b_slot_gif(
+        TS_PATH, HY_PATH, B_GIF_OUT, slot_id=a.slot,
+        airgap_side=a.airgap_side, out_json=B_GIF_SUMMARY)
+    return b_static, b_gif
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--slot", type=int, default=1)
     ap.add_argument("--step", type=int, default=70)
     ap.add_argument("--airgap-side", default="bottom")
     ap.add_argument("--skip-gif", action="store_true")
+    ap.add_argument("--only-b", action="store_true",
+                    help="B 필드 그림만 생성 (Je 생략)")
     a = ap.parse_args()
+
+    if a.only_b:
+        run_b_field(a)
+        return
 
     print("=== 정적 2-패널 (step %d) ===" % a.step)
     static_data = plot_fig2_slot_comparison(

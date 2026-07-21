@@ -15,6 +15,7 @@ from jeet_acloss_rbf import AcLossPipeline, loading_metrics, parse_mes_txt
 | 논문 | 내용 | 실행 스크립트 | 패키지 함수 | 산출 JSON |
 |---|---|---|---|---|
 | Fig 2 | 슬롯 내 전류 쏠림(TS-FEA vs Hybrid 참고, TS-FEA 도체 메시 공유) | `run_fig2_slot.py` | `plot_fig2_slot_comparison`, `make_fig2_slot_gif`, `hybrid_je_at_points` | `fig2_slot_je_static_data.json`, GIF·요약은 Drive (`fig2_slot_je_MANIFEST.md` 참조) |
+| Fig 2 보조 | 슬롯 내부 **전체 메시** \|B\| (TS-FEA vs MS-FEA, 각자 자기 메시) | `run_fig2_slot.py --only-b` | `plot_fig_b_slot_comparison`, `make_fig_b_slot_gif` | `fig2_slot_b_static_data.json`, GIF·요약은 Drive |
 | Fig 7 | 스칼라 vs 멱지수 수렴 | `run_manuscript_figs78.py` | `plot_form_convergence` | --- |
 | Fig 8 | 전달 플랜 절제 히트맵 | `run_manuscript_figs78.py` | `plot_transfer_ablation` | --- |
 | Fig 9 | 모터 단면 기하 | `run_geometry_fig.py` | `plot_motor_geometry_dxf` | `geometry_dims_e10.json` |
@@ -95,14 +96,45 @@ from jeet_acloss_rbf import AcLossPipeline, loading_metrics, parse_mes_txt
     분산이 0에 가까운 쪽이 "층").
 
 11. **Hybrid 참고 재구성은 두 가지 평가 방식이 있다** —
-    `hybrid_je_reference(p, ...)` 는 *그 데이터셋 자신의* 도체 요소에서
-    (층마다 독립된 얇은 1-D 경계값 문제로) 평가하고,
-    `hybrid_je_at_points(p_source, query_xy, ...)` 는 슬롯 도체 스택
-    *전체* 반경 두께를 하나의 확산 슬랩으로 취급해 **임의의 좌표**에서
-    평가한다. Fig 2 는 후자를 쓴다 --- Hybrid 자신의(더 거칠거나
+    `hybrid_je_reference(p, ...)` 는 *그 데이터셋 자신의* 도체 요소에서,
+    `hybrid_je_at_points(p_source, query_xy, ...)` 는 **임의의 좌표**에서
+    평가한다. 물리(층별 1-D 경계값 문제)는 둘이 동일하며 평가 지점만
+    다르다. Fig 2 는 후자를 쓴다 --- Hybrid 자신의(더 거칠거나
     이상화된) 메시가 아니라 TS-FEA 의 실제 도체 메시 좌표를 넘겨서,
     두 패널이 같은 형상(도메인) 위에 그려지고 Hybrid 쪽 메시 모양이
     그림에 드러나지 않게 한다.
+
+12. **B 에서 Je 를 역산할 때 세 가지를 틀리기 쉽다** (Fig 2 에서 실제로
+    셋 다 겪었고, 증상은 "Hybrid 패널만 공극이 반대쪽에 있는 것처럼
+    보인다"였다):
+
+    - **스택 전체를 한 슬랩으로 풀면 안 된다.** 도체는 서로 절연돼
+      있어 와전류가 각 바 안에서 순환한다. 6층 스택(약 11.6 mm =
+      5 delta)을 하나로 잡으면 양 끝면에만 부호 반대인 큰 J 가 서고
+      가운데가 0 이 되어 위아래가 뒤집힌 그림이 나온다. **층마다** 풀 것.
+    - **경계 H 는 `|B|` 가 아니라 부호 있는 접선 성분** `B_theta =
+      (-y·Bx + x·By)/r` 로 잡을 것. 슬롯 누설 접선장은 스택을 가로지르며
+      부호가 바뀌는데(공극쪽 음 --> 슬롯바닥쪽 양), 크기만 취하면 중간
+      층에서 기울기의 부호·크기가 모두 틀어진다.
+    - **경계값을 반경 최소/최대 "단일 요소"에서 읽지 말 것.** 슬롯바닥
+      층은 배후철심에 접한 요소 하나가 반경 성분 때문에 `|B|` 를
+      0.24 --> 0.88 T 로 부풀려 그 층에만 다른 층의 4--9배짜리 가짜
+      기울기를 만든다. 각 면에서 두께의 20% 이내 요소 평균을 쓸 것.
+
+    검산 방법: **TS-FEA 의 `Je` 열은 층 평균이 0 이다**(유도 성분만 담고
+    전송 전류는 `J` 열에 있음). 재구성값도 층 평균을 빼서 같은 정의로
+    맞춰야 비교가 성립한다 --- 빼지 않으면 균일한 전송 성분이 층 전체를
+    한 가지 색으로 덮어 쏠림이 보이지 않는다.
+
+13. **B 그림은 도체가 아니라 슬롯 내부 전체 메시로 그린다.** B 는 도체
+    밖에도 존재하므로 `_slot_frame(..., domain='slot')` 이 함침
+    (`Impreg_LossSlot`)·웨지(`StatorWedge`)·슬롯공기(`StatorAir`) 까지
+    포함한다. 철심(`Stator`, |B|~1.6 T)은 반드시 제외할 것 --- 넣으면
+    슬롯 내부(0~0.6 T)가 전부 한 색으로 뭉갠다. 또 **MS-FEA 모델에는
+    함침 영역이 아예 없다**(도체 + 웨지 + 공기뿐). 그래서 B 그림은 Je
+    그림과 달리 각 패널을 자기 메시에 그린다 --- 두 해석 모두 자기
+    메시에서 실제로 푼 값이라 그편이 정직하고, MS-FEA 슬롯 모델이
+    이상화돼 있다는 점도 함께 드러난다.
 
 ## 검증된 교차 확인
 
@@ -114,6 +146,13 @@ from jeet_acloss_rbf import AcLossPipeline, loading_metrics, parse_mes_txt
 | SC $T_{em}$ | Motor-CAD 3284.29 Nm | 공극 Maxwell 적분 3267.88 Nm | 0.5% |
 | $\vec{B}$ 보존 | Ref 층별 $|B|$ | SC 층별 $|B|$ | 0.1% |
 | 슬롯 번호 대응(Turn_ vs ArmatureSlot) | TS-FEA 슬롯1 각도 −3.75° | Hybrid 슬롯1 각도 −3.79° | 물리적으로 같은 슬롯 |
+| 슬롯1 도체 층평균 \|B\| (step 70) | TS-FEA 0.2769 T | MS-FEA 0.2658 T | 4.0% (층별로는 최대 30%) |
+
+> 위 \|B\| 비교는 **도체 영역에서만** 해야 한다. 슬롯 내부 전체로 평균을
+> 내면 MS-FEA 가 26% 높게 나오는데, 이는 물리가 아니라 MS-FEA 모델에
+> 함침 영역(저자장)이 없어 평균 대상 요소 집합이 다르기 때문이다
+> (주의사항 13). 두 해석의 B 가 도체에서 4% 내로 일치한다는 점이
+> MS-FEA 의 B 로부터 Je 를 역산하는 근거가 된다.
 
 ## 미완
 

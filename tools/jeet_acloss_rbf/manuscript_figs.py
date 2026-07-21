@@ -996,12 +996,30 @@ _AIRGAP_R2 = {
 }
 
 
-def _slot_frame(p: dict, slot_id: int, airgap_side: str = 'bottom'):
+def _is_slot_filler(name: str) -> bool:
+    """도체는 아니지만 **슬롯 내부**를 채우는 영역인가.
+
+    함침/절연(``Impreg_LossSlot``), 웨지(``StatorWedge``), 슬롯 개구부
+    공기(``StatorAir``). 철심(``Stator``)과 공극(``a1``..)은 제외한다 ---
+    철심은 |B| 가 1.5 T 대라 슬롯 내부 스케일을 완전히 덮어버린다.
+    """
+    s = name.lower().replace('_', '')
+    return ('impreg' in s or 'wedge' in s
+            or 'statorair' in s or 'slotair' in s)
+
+
+def _slot_frame(p: dict, slot_id: int, airgap_side: str = 'bottom',
+                domain: str = 'conductors', margin_mm: float = 1.5):
     """한 슬롯을 로컬(회전) 좌표로 변환하고 삼각분할·화살표 위치를 만든다.
 
     Fig 9(``plot_motor_geometry_dxf``)와 동일한 1차 회전 관례 위에,
     ``airgap_side`` 로 공극이 화면의 어느 쪽에 오는지 고른다
     ('left','right','top','bottom').
+
+    ``domain='conductors'`` (기본): 도체 요소만 --- Je 비교(Fig 2)용.
+    ``domain='slot'``: 도체 + 함침/웨지/슬롯공기까지, 즉 **슬롯 내부 전체
+    메시**. B 는 도체 밖에도 존재하므로 B 그림에는 이쪽을 쓴다. 회전
+    기준각은 두 경우 모두 도체 무게중심으로 잡아 프레임이 일치한다.
     """
     import matplotlib.tri as mtri
     from .field_metrics import slot_conductor_codes
@@ -1009,18 +1027,37 @@ def _slot_frame(p: dict, slot_id: int, airgap_side: str = 'bottom'):
     if airgap_side not in _AIRGAP_R2:
         raise ValueError("airgap_side must be one of %s"
                          % sorted(_AIRGAP_R2))
+    if domain not in ('conductors', 'slot'):
+        raise ValueError("domain must be 'conductors' or 'slot'")
 
     codes = slot_conductor_codes(p, slot_id)
-    mask = np.isin(p['reg'], list(codes))
-    if not mask.any():
+    cond_mask = np.isin(p['reg'], list(codes))
+    if not cond_mask.any():
         raise ValueError('slot %d: no conductor elements matched' % slot_id)
-    x, y = p['x_mm'][mask], p['y_mm'][mask]
 
-    ang = float(np.degrees(np.arctan2(y.mean(), x.mean())))
+    xc, yc = p['x_mm'][cond_mask], p['y_mm'][cond_mask]
+    ang = float(np.degrees(np.arctan2(yc.mean(), xc.mean())))
     th = np.radians(-ang)
     R1 = np.array([[np.cos(th), -np.sin(th)], [np.sin(th), np.cos(th)]])
     R = _AIRGAP_R2[airgap_side] @ R1
 
+    if domain == 'conductors':
+        mask = cond_mask
+    else:
+        # 도체 bbox 를 margin 만큼 넓힌 창 안의 "슬롯 채움" 영역을 더한다
+        pr_all = np.column_stack([p['x_mm'], p['y_mm']]) @ R.T
+        pc = pr_all[cond_mask]
+        cx0, cx1 = pc[:, 0].min(), pc[:, 0].max()
+        cy0, cy1 = pc[:, 1].min(), pc[:, 1].max()
+        win = ((pr_all[:, 0] >= cx0 - margin_mm)
+               & (pr_all[:, 0] <= cx1 + margin_mm)
+               & (pr_all[:, 1] >= cy0 - margin_mm)
+               & (pr_all[:, 1] <= cy1 + margin_mm))
+        filler = np.array([_is_slot_filler(p['names'].get(c, ''))
+                           for c in p['reg']])
+        mask = cond_mask | (win & filler)
+
+    x, y = p['x_mm'][mask], p['y_mm'][mask]
     tri = p['tri'][mask]
     node_ids = np.unique(tri.ravel())
     id_map = {nid: i for i, nid in enumerate(node_ids)}
@@ -1053,18 +1090,22 @@ def _node_average(tri_local, n_nodes, elem_values):
 
 def _draw_slot_contour(ax, frame: dict, je_values: np.ndarray,
                        vlim: float, cmap: str = 'plasma',
-                       n_levels: int = 21, show_airgap_label: bool = True):
+                       n_levels: int = 21, show_airgap_label: bool = True,
+                       vmin: Optional[float] = None):
     """``_slot_frame`` 결과 위에 매끄러운 등고선(tricontourf)을 그린다.
 
-    ``je_values`` 는 이미 ``frame['mask']`` 로 선택된(즉 도체 요소 개수와
+    ``je_values`` 는 이미 ``frame['mask']`` 로 선택된(즉 도메인 요소 개수와
     같은 길이의) 값이어야 한다 --- 두 패널이 서로 다른 데이터셋에서 온
     값을 같은 ``frame``(같은 도메인/삼각분할) 위에 그릴 수 있게 하기
     위해, 이 함수는 원본 전체 배열이 아니라 선택된 값만 받는다.
+
+    ``vmin`` 생략 시 ``-vlim``(부호 있는 Je 용 발산 스케일), 0 을 주면
+    크기값(|B| 등) 용 순차 스케일이 된다.
     """
     triang = frame['triang']
     n_nodes = triang.x.size
     node_je = _node_average(triang.triangles, n_nodes, je_values)
-    levels = np.linspace(-vlim, vlim, n_levels)
+    levels = np.linspace(-vlim if vmin is None else vmin, vlim, n_levels)
     cf = ax.tricontourf(triang, node_je, levels=levels, cmap=cmap,
                         extend='both')
     ax.tricontour(triang, node_je, levels=levels, colors='k',
@@ -1257,4 +1298,155 @@ def make_fig2_slot_gif(ts_path: str, hybrid_path: str, out_gif: str,
         with open(out_json, 'w', encoding='utf-8') as fh:
             json.dump(summary, fh, ensure_ascii=False, indent=1)
         print('요약 JSON 저장:', out_json)
+    return summary
+
+
+def _slot_b_panel(p: dict, slot_id: int, airgap_side: str):
+    """슬롯 내부 전체 메시 프레임과 그 위의 |B| 를 함께 만든다."""
+    frame = _slot_frame(p, slot_id, airgap_side, domain='slot')
+    m = frame['mask']
+    b_mag = np.hypot(p['bx'][m], p['by'][m])
+    return frame, b_mag
+
+
+def plot_fig_b_slot_comparison(ts_path: str, hybrid_path: str,
+                               out_path: str, slot_id: int = 1,
+                               step: int = 70,
+                               airgap_side: str = 'bottom',
+                               show_titles: bool = True) -> dict:
+    """슬롯 내부 전체 메시 위의 |B| 비교 (TS-FEA vs MS-FEA/Hybrid, 정적).
+
+    Je 그림(``plot_fig2_slot_comparison``)과 두 가지가 다르다:
+
+    1. **도메인이 도체가 아니라 슬롯 내부 전체**(도체 + 함침 + 웨지 +
+       슬롯 공기, 철심 제외)다 --- B 는 도체 밖에도 존재하기 때문이다.
+    2. **각 패널이 자기 데이터셋의 메시를 쓴다.** Je 는 Hybrid 에 실측값이
+       없어 TS-FEA 메시 위에 재구성해 얹었지만, B 는 두 해석 모두 자기
+       메시에서 실제로 푼 값이라 그대로 그리는 편이 정직하다 --- 덤으로
+       MS-FEA 슬롯 모델이 함침 영역 없이 이상화돼 있다는 점도 드러난다.
+
+    색상 스케일은 두 패널 공통(0..max)이다.
+    """
+    from .field_metrics import parse_mes_txt
+
+    plt = _journal_rc()
+    p_ts = parse_mes_txt(ts_path, block=step)
+    p_hy = parse_mes_txt(hybrid_path, block=step)
+
+    f_ts, b_ts = _slot_b_panel(p_ts, slot_id, airgap_side)
+    f_hy, b_hy = _slot_b_panel(p_hy, slot_id, airgap_side)
+    vmax = float(max(b_ts.max(), b_hy.max()))
+
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(4.2, 2.6),
+                                  layout='constrained')
+    cf = _draw_slot_contour(ax1, f_ts, b_ts, vmax, cmap='viridis', vmin=0.0)
+    _draw_slot_contour(ax2, f_hy, b_hy, vmax, cmap='viridis', vmin=0.0)
+    if show_titles:
+        ax1.set_title('(a) TS-FEA', fontsize=9)
+        ax2.set_title('(b) MS-FEA (Hybrid)', fontsize=9)
+    cb = fig.colorbar(cf, ax=(ax1, ax2), shrink=0.85)
+    cb.set_label(r'$|B|$ [T]', fontsize=9)
+
+    os.makedirs(os.path.dirname(os.path.abspath(out_path)), exist_ok=True)
+    fig.savefig(out_path)
+    plt.close(fig)
+    print('B 정적 그림 저장:', out_path)
+
+    def pack(p, frame, b):
+        m = frame['mask']
+        return {'x_mm': p['x_mm'][m].tolist(),
+                'y_mm': p['y_mm'][m].tolist(),
+                'b_mag_T': b.tolist(),
+                'n_elements': int(m.sum())}
+
+    return {
+        'slot_id': slot_id, 'step': step, 'airgap_side': airgap_side,
+        'vmax_T': vmax, 'rotate_deg': p_ts.get('rotate_deg'),
+        'domain': 'slot interior (conductors + impregnation + wedge + air),'
+                  ' each panel on its own mesh',
+        'ts_fea': pack(p_ts, f_ts, b_ts),
+        'ms_fea_hybrid': pack(p_hy, f_hy, b_hy),
+    }
+
+
+def make_fig_b_slot_gif(ts_path: str, hybrid_path: str, out_gif: str,
+                        slot_id: int = 1, airgap_side: str = 'bottom',
+                        fps: int = 10,
+                        out_json: Optional[str] = None) -> dict:
+    """슬롯 내부 전체 메시 |B| 의 128스텝 동기 애니메이션.
+
+    ``plot_fig_b_slot_comparison`` 과 같은 도메인·관례를 쓰되 전 주기를
+    훑는다. 색상 스케일은 전 스텝 공통(99.5th percentile)으로 고정한다.
+    """
+    from .field_metrics import iter_mes_blocks
+    from matplotlib.animation import PillowWriter
+
+    plt = _journal_rc()
+    print('TS-FEA/MS-FEA |B| 동기 파싱 중 ...')
+    frames = []
+    for (_, p_ts), (_, p_hy) in zip(iter_mes_blocks(ts_path),
+                                    iter_mes_blocks(hybrid_path)):
+        f_ts, b_ts = _slot_b_panel(p_ts, slot_id, airgap_side)
+        f_hy, b_hy = _slot_b_panel(p_hy, slot_id, airgap_side)
+        frames.append({'rotate_deg': p_ts['rotate_deg'],
+                       'f_ts': f_ts, 'b_ts': b_ts,
+                       'f_hy': f_hy, 'b_hy': b_hy})
+    n = len(frames)
+    print('동기화 프레임 %d개' % n)
+
+    all_b = np.concatenate([f['b_ts'] for f in frames]
+                           + [f['b_hy'] for f in frames])
+    vmax = float(np.percentile(all_b, 99.5))
+
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(4.2, 2.6),
+                                  layout='constrained')
+    cf = _draw_slot_contour(ax1, frames[0]['f_ts'], frames[0]['b_ts'], vmax,
+                            cmap='viridis', vmin=0.0)
+    _draw_slot_contour(ax2, frames[0]['f_hy'], frames[0]['b_hy'], vmax,
+                       cmap='viridis', vmin=0.0)
+    ax1.set_title('TS-FEA', fontsize=9)
+    ax2.set_title('MS-FEA (Hybrid)', fontsize=9)
+    cb = fig.colorbar(cf, ax=(ax1, ax2), shrink=0.85)
+    cb.set_label(r'$|B|$ [T]', fontsize=9)
+    suptitle = fig.suptitle('', fontsize=8)
+
+    step_max = []
+
+    def update(i):
+        rec = frames[i]
+        ax1.clear()
+        _draw_slot_contour(ax1, rec['f_ts'], rec['b_ts'], vmax,
+                          cmap='viridis', vmin=0.0)
+        ax2.clear()
+        _draw_slot_contour(ax2, rec['f_hy'], rec['b_hy'], vmax,
+                          cmap='viridis', vmin=0.0)
+        suptitle.set_text('slot %d   step %d/%d   rotate %.2f deg'
+                          % (slot_id, i + 1, n, rec['rotate_deg']))
+        step_max.append({
+            'step': i + 1, 'rotate_deg': rec['rotate_deg'],
+            'ts_fea_max_T': float(rec['b_ts'].max()),
+            'ms_fea_max_T': float(rec['b_hy'].max()),
+            'ts_fea_mean_T': float(rec['b_ts'].mean()),
+            'ms_fea_mean_T': float(rec['b_hy'].mean()),
+        })
+
+    os.makedirs(os.path.dirname(os.path.abspath(out_gif)), exist_ok=True)
+    writer = PillowWriter(fps=fps)
+    with writer.saving(fig, out_gif, dpi=110):
+        for i in range(n):
+            update(i)
+            writer.grab_frame()
+    plt.close(fig)
+    print('B GIF 저장:', out_gif)
+
+    summary = {'slot_id': slot_id, 'airgap_side': airgap_side,
+              'n_frames': n, 'vmax_T': vmax,
+              'domain': 'slot interior, each panel on its own mesh',
+              'per_step': step_max}
+    if out_json:
+        os.makedirs(os.path.dirname(os.path.abspath(out_json)),
+                   exist_ok=True)
+        with open(out_json, 'w', encoding='utf-8') as fh:
+            json.dump(summary, fh, ensure_ascii=False, indent=1)
+        print('B 요약 JSON 저장:', out_json)
     return summary

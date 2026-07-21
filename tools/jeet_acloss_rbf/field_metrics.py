@@ -412,6 +412,65 @@ def winding_losses(mot: dict, i_rms_a: Optional[float] = None) -> dict:
             'p_total_kW': f * r_t / 1e3 if r_t else float('nan')}
 
 
+def _tangential_b(p: dict) -> np.ndarray:
+    """슬롯 확산 문제를 구동하는 **부호 있는** 접선(원주방향) B 성분.
+
+    ``|B|`` 를 쓰면 안 된다 --- 슬롯 누설 접선장은 스택을 가로지르며
+    부호가 바뀌므로(공극쪽 음, 슬롯바닥쪽 양) 크기만 취하면 층별 기울기
+    dH/dx 의 부호와 크기가 모두 틀어진다. 또한 슬롯바닥에서는 배후철심
+    때문에 반경 성분이 커서 ``|B|`` 가 크게 부풀려진다.
+    """
+    r = np.hypot(p['x_mm'], p['y_mm'])
+    return (-p['y_mm'] * p['bx'] + p['x_mm'] * p['by']) / r
+
+
+def _conductor_layers(p: dict, codes, mu0: float,
+                      face_frac: float = 0.2) -> list:
+    """도체층별 1-D 경계값 문제의 기하·경계 H 를 모은다.
+
+    경계 H 는 각 면에서 두께의 ``face_frac`` 이내 요소들의 평균으로
+    잡는다 --- 반경 최소/최대 **단일 요소**를 쓰면 슬롯바닥 층에서
+    철심에 접한 요소 하나가 B 를 2배 이상으로 끌어올려 그 층에만 거대한
+    가짜 기울기가 생긴다(실제로 겪음).
+    """
+    r = np.hypot(p['x_mm'], p['y_mm'])
+    btan = _tangential_b(p)
+    layers = []
+    for code in codes:
+        m = p['reg'] == code
+        if m.sum() < 3:
+            continue
+        rr, bb = r[m], btan[m]
+        r_lo, r_hi = float(rr.min()), float(rr.max())
+        t = (r_hi - r_lo) * 1e-3                                # [m]
+        if t <= 0:
+            continue
+        span = r_hi - r_lo
+        near_lo = rr <= r_lo + face_frac * span
+        near_hi = rr >= r_hi - face_frac * span
+        layers.append({'code': code, 'r_lo': r_lo, 'r_hi': r_hi, 't': t,
+                       'h0': float(bb[near_lo].mean()) / mu0,
+                       'ht': float(bb[near_hi].mean()) / mu0})
+    layers.sort(key=lambda d: d['r_lo'])
+    return layers
+
+
+def _layer_je(layer: dict, xl: np.ndarray, k: complex,
+              signed: bool) -> np.ndarray:
+    """한 층의 국소좌표 ``xl`` [m] 에서 **유도** 와전류밀도를 평가.
+
+    닫힌형 해 J(x)=dH/dx 는 수송(균일) 성분까지 포함한다 --- 그 층 평균
+    ``(Ht-H0)/t`` 가 곧 바에 흐르는 전송 전류밀도다. TS-FEA 의 ``Je``
+    열은 유도 성분만 담고 있어 층 평균이 0 이므로(실측 확인), 비교
+    가능하도록 같은 평균을 빼서 돌려준다.
+    """
+    t, h0, ht = layer['t'], layer['h0'], layer['ht']
+    j = k * (-h0 * np.cosh(k * (t - xl))
+             + ht * np.cosh(k * xl)) / np.sinh(k * t)
+    j = j - (ht - h0) / t
+    return j.real if signed else np.abs(j)
+
+
 def hybrid_je_reference(p: dict, freq_hz: float, sigma: float = 4.709e7,
                         mu0: float = 4e-7 * np.pi,
                         signed: bool = False) -> np.ndarray:
@@ -423,54 +482,38 @@ def hybrid_je_reference(p: dict, freq_hz: float, sigma: float = 4.709e7,
     닫힌형 해가 성립한다면\"이라는 가정 하에 역산한 근사값이다 --- 실제
     FEA 출력이 아니라 이론적 참고선(reference)이다.
 
-    각 도체(층)의 두 경계면(도체 내 r 최소/최대 요소)에서 측정된 MS-FEA
-    B 를 그 경계의 접선 H 로 삼아 1-D 확산 방정식의 경계값 문제를 풀고
-    (Appendix 식 (diffusion)의 일반해에 두 면 경계조건을 대입),
+    각 도체(층)의 두 경계면에서 측정된 MS-FEA **접선** B 를 그 경계의 H 로
+    삼아 1-D 확산 방정식의 경계값 문제를 풀고 (Appendix 식 (diffusion)의
+    일반해에 두 면 경계조건을 대입),
 
         H(x) = [H0 sinh(k(t-x)) + Ht sinh(kx)] / sinh(kt)
         J(x) = dH/dx,   k = (1+j)/delta,  delta = 1/sqrt(0.5 w mu0 sigma)
 
     도체 내 각 요소의 국소 좌표 x(0=안쪽 경계, t=바깥쪽 경계, t=도체
-    반경방향 두께)에서 J(x) 를 평가해 요소별로 돌려준다. Hybrid 는
-    도체 내부 전류밀도가 균일하다고 가정하므로(이 배열의 DC 성분),
-    반환값은 그 위에 얹히는 유도(induced) 성분만을 뜻하며 TS-FEA 의
-    Je 열과 같은 정의로 비교할 수 있다.
+    반경방향 두께)에서 J(x) 를 평가하고, 층 평균(=수송 전류 성분)을 빼서
+    **유도 성분만** 요소별로 돌려준다 --- TS-FEA 의 Je 열과 같은 정의라
+    그대로 비교할 수 있다. 경계 H 와 평균 제거의 근거는
+    ``_tangential_b`` / ``_conductor_layers`` / ``_layer_je`` 참조.
 
     ``signed=False``(기본): 크기 |J(x)| 반환(총손실 비교용).
     ``signed=True``: 등고선 시각화(Fig 2 style)용으로 특정 기준 위상
     (t=0, 즉 Re[J(x)])에서의 부호 있는 값을 반환 --- 위상 기준이 임의라는
     점에서 이 자체가 "참고용" 재구성임을 다시 한 번 유의할 것.
     """
-    reg, x, y = p['reg'], p['x_mm'], p['y_mm']
-    r = np.hypot(x, y)
-    bt = np.hypot(p['bx'], p['by'])          # 국소 |B| (경계 접선 성분 근사)
+    reg = p['reg']
+    r = np.hypot(p['x_mm'], p['y_mm'])
 
     omega = 2.0 * np.pi * freq_hz
     delta = 1.0 / np.sqrt(0.5 * omega * mu0 * sigma)          # [m]
     k = (1.0 + 1.0j) / delta
 
+    codes = [c for c, name in p['names'].items()
+             if _is_conductor_region(name)]
     je = np.zeros(len(reg))
-    for code, name in p['names'].items():
-        if not _is_conductor_region(name):
-            continue
-        m = reg == code
-        if m.sum() < 3:
-            continue
-        rr = r[m]
-        i_lo, i_hi = np.argmin(rr), np.argmax(rr)
-        t = (rr.max() - rr.min()) * 1e-3                       # [m]
-        if t <= 0:
-            continue
-        h0 = bt[m][i_lo] / mu0                                  # H = B/mu0
-        ht = bt[m][i_hi] / mu0
-        xl = (rr - rr.min()) * 1e-3                             # [m], 0..t
-
-        skt = np.sinh(k * t)
-        h_of_x = (h0 * np.sinh(k * (t - xl)) + ht * np.sinh(k * xl)) / skt
-        # dH/dx (해석적 미분)
-        j_of_x = k * (-h0 * np.cosh(k * (t - xl))
-                      + ht * np.cosh(k * xl)) / skt
-        je[m] = j_of_x.real if signed else np.abs(j_of_x)
+    for layer in _conductor_layers(p, codes, mu0):
+        m = reg == layer['code']
+        xl = (r[m] - layer['r_lo']) * 1e-3                     # [m], 0..t
+        je[m] = _layer_je(layer, xl, k, signed)
     return je
 
 
@@ -481,63 +524,66 @@ def hybrid_je_at_points(p_source: dict, query_xy: np.ndarray,
                         signed: bool = False) -> np.ndarray:
     """Hybrid B 로부터, **임의의 좌표**에서 참고용 근접 Je 를 평가한다.
 
-    ``hybrid_je_reference`` 는 도체 층마다 독립된 얇은 1-D 경계값 문제를
-    풀어 *그 데이터셋 자신의* 요소에서만 평가했다. 이 함수는 대신 한
-    슬롯의 도체 스택 **전체 반경 두께**를 하나의 확산 슬랩으로 취급해
-    경계 조건(안쪽 r_min = 공극쪽, 바깥쪽 r_max = 슬롯바닥쪽)만
-    ``p_source`` 에서 구하고, 그 닫힌형 해 J(x) 를 ``query_xy`` 로 주어진
-    임의의 좌표에서 평가한다 --- 그 좌표가 ``p_source`` 자신의 요소일
-    필요가 없다. 예를 들어 다른 데이터셋(예: TS-FEA)의 도체 요소 좌표를
-    넘기면, Hybrid 의 B 로 재구성한 값을 TS-FEA 의 실제(더 촘촘하거나
-    비이상화된) 메시 형상 위에 그대로 겹쳐 그릴 수 있다.
+    ``hybrid_je_reference`` 와 **같은 층별(도체별) 1-D 경계값 문제**를
+    풀되, 해를 ``p_source`` 자신의 요소가 아니라 ``query_xy`` 로 주어진
+    임의의 좌표에서 평가한다. 예를 들어 다른 데이터셋(예: TS-FEA)의 도체
+    요소 좌표를 넘기면, Hybrid 의 B 로 재구성한 값을 TS-FEA 의 실제(더
+    촘촘하거나 비이상화된) 메시 형상 위에 그대로 겹쳐 그릴 수 있다.
+
+    각 질의점은 반경으로 소속 도체층을 찾고(밴드 포함 우선, 층간 절연
+    간극이나 밴드 밖이면 가장 가까운 층 중심), 그 층의 국소 좌표
+    x(0=층의 안쪽 면, t=바깥쪽 면)에서 J(x) 를 평가한다.
+
+    **층별로 푸는 이유**: 도체는 서로 절연되어 있어 와전류가 각 바
+    내부에서 순환한다. 스택 전체(여기서는 약 11.6 mm = 5delta)를 하나의
+    슬랩으로 잡으면 양쪽 끝면에만 부호가 반대인 큰 J 가 생기고 가운데가
+    0 이 되어, 공극쪽 쏠림이 아니라 "위아래가 뒤집힌" 그림이 나온다
+    (실제로 겪음 --- REPRODUCE.md 주의사항 12).
 
     ``p_source`` : 경계 B 를 제공하는 Hybrid(MS-FEA) 블록 딕셔너리
-        (``parse_mes_txt``/``iter_mes_blocks`` 반환값). B 는 이 슬롯의
-        전체 도체 영역에서 가져오며(``slot_id`` 로 특정 슬롯 한정,
-        생략 시 데이터셋에 있는 모든 도체 요소 사용).
+        (``parse_mes_txt``/``iter_mes_blocks`` 반환값).
     ``query_xy`` : (N, 2) 배열, [mm], ``p_source`` 와 같은 전역 좌표계.
         원점 기준 반경(r)만 쓰므로 어느 데이터셋에서 왔는지는 무관하다.
     ``slot_id`` : 경계 B 를 구할 슬롯 번호(``slot_conductor_codes`` 로
         선택). 두 데이터셋의 슬롯 번호가 물리적으로 같은 위치인지는
         미리 각도로 확인해 둘 것(REPRODUCE.md 참조).
 
-    Returns ``query_xy`` 와 같은 길이의 배열. 경계 밖(r_min~r_max 밖)의
-    질의점은 경계값으로 클램프한다(외삽은 cosh 발산 위험이 있어 하지
-    않는다).
+    Returns ``query_xy`` 와 같은 길이의 배열.
     """
     reg = p_source['reg']
-    x, y = p_source['x_mm'], p_source['y_mm']
-    bt = np.hypot(p_source['bx'], p_source['by'])
-
     if slot_id is not None:
-        src_mask = np.isin(reg, list(slot_conductor_codes(p_source, slot_id)))
+        codes = sorted(slot_conductor_codes(p_source, slot_id))
     else:
         names = p_source['names']
-        src_mask = np.array([_is_conductor_region(names.get(c, ''))
-                             for c in reg])
-    if not src_mask.any():
+        codes = sorted(c for c in np.unique(reg)
+                       if _is_conductor_region(names.get(c, '')))
+    if not codes:
         raise ValueError('p_source 에서 도체 요소를 찾지 못함'
                          ' (slot_id 확인)')
 
-    r_src = np.hypot(x[src_mask], y[src_mask])
-    i_lo, i_hi = np.argmin(r_src), np.argmax(r_src)
-    r0, r1 = float(r_src[i_lo]), float(r_src[i_hi])
-    t = (r1 - r0) * 1e-3                                    # [m]
-    if t <= 0:
-        raise ValueError('반경 방향 두께가 0 이하 (r1<=r0)')
-    h0 = bt[src_mask][i_lo] / mu0
-    ht = bt[src_mask][i_hi] / mu0
+    layers = _conductor_layers(p_source, codes, mu0)
+    if not layers:
+        raise ValueError('유효한 도체층이 없음 (요소 수/두께 확인)')
 
     omega = 2.0 * np.pi * freq_hz
     delta = 1.0 / np.sqrt(0.5 * omega * mu0 * sigma)
     k = (1.0 + 1.0j) / delta
-    skt = np.sinh(k * t)
 
+    centers = np.array([0.5 * (d['r_lo'] + d['r_hi']) for d in layers])
     r_q = np.hypot(np.asarray(query_xy)[:, 0], np.asarray(query_xy)[:, 1])
-    xl = np.clip((r_q - r0) * 1e-3, 0.0, t)                  # [m], 0..t
+    # 밴드 포함 우선, 간극·밴드 밖은 가장 가까운 층 중심으로 배정
+    owner = np.argmin(np.abs(r_q[:, None] - centers[None, :]), axis=1)
+    for i, d in enumerate(layers):
+        owner[(r_q >= d['r_lo']) & (r_q <= d['r_hi'])] = i
 
-    j_of_x = k * (-h0 * np.cosh(k * (t - xl)) + ht * np.cosh(k * xl)) / skt
-    return j_of_x.real if signed else np.abs(j_of_x)
+    out = np.zeros(len(r_q))
+    for i, d in enumerate(layers):
+        sel = owner == i
+        if not sel.any():
+            continue
+        xl = np.clip((r_q[sel] - d['r_lo']) * 1e-3, 0.0, d['t'])
+        out[sel] = _layer_je(d, xl, k, signed)
+    return out
 
 
 def compare_models(paths: Dict[str, str],
