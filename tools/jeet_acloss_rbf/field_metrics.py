@@ -615,11 +615,83 @@ def hybrid_je_at_points(p_source: dict, query_xy: np.ndarray,
     return out
 
 
+def block_angles(path: str) -> dict:
+    """블록별 **누적** 회전각 [deg] 과 시각 [s] 을 뽑는다 (가볍다).
+
+    주의: 헤더의 ``Rotate Step`` 은 누적각이 아니라 **스텝당 증분**이며
+    모든 블록에서 같은 값이다(예: Ref/SC TS -0.7031, SC Hybrid -2.0000).
+    이걸 누적각으로 오해하면 두 파일의 각도 격자를 잘못 비교하게 된다
+    (실제로 겪음). 누적각 = (블록번호-1) x 증분 으로 만든다. ``Time`` 이
+    있으면 그대로 쓰며, 이쪽이 더 신뢰할 만하다.
+
+    Returns ``{'deg': ndarray, 'sec': ndarray, 'step_deg': float}``.
+    """
+    steps, times = [], []
+    with open(path, encoding='utf-8', errors='ignore') as fh:
+        for ln in fh:
+            m = re.match(r"^\s*\d+\s+Solution\s+\d+(.*)$", ln)
+            if not m:
+                continue
+            body = m.group(1)
+            d = re.search(r"Rotate Step\s*(-?[0-9.eE+]+)", body)
+            t = re.search(r"Time\s+(-?[0-9.eE+]+)\s*\[s\]", body)
+            steps.append(float(d.group(1)) if d else 0.0)
+            times.append(float(t.group(1)) if t else np.nan)
+    steps = np.asarray(steps, float)
+    times = np.asarray(times, float)
+    # 증분은 블록 2 이후가 대표값 (블록 1 은 0)
+    inc = float(steps[1]) if steps.size > 1 else 0.0
+    deg = np.arange(steps.size) * inc
+    if np.isfinite(times[1:]).all() and times.size > 1:
+        dt = float(times[1])
+        sec = np.arange(times.size) * dt
+    else:
+        sec = np.full(steps.size, np.nan)
+    return {'deg': deg, 'sec': sec, 'step_deg': inc}
+
+
+def match_blocks_by_angle(path_a: str, path_b: str,
+                          tol_deg: float = 0.05):
+    """두 export 의 블록을 **누적 회전각**으로 짝짓는다.
+
+    두 해석이 같은 스텝 격자로 풀렸다는 보장이 없다 --- 실제로 SC 의
+    속도스윕 백업본은 TS 가 0.7031 deg/step(128블록), Hybrid 가
+    2.0 deg/step(47블록)이라 0 deg 외에는 겹치는 각도가 없었다. 그대로
+    ``zip`` 하면 다른 회전자 위치를 짝지어 조용히 틀린 비교가 된다
+    (주의사항 7의 변종).
+
+    각 b 블록에 대해 누적각이 가장 가까운 a 블록을 찾고, 차이가
+    ``tol_deg`` 이내인 쌍만 돌려준다. 격자가 같으면 전부 정확히 매칭된다.
+
+    Returns ``[(ia, ib, deg_a, deg_b), ...]`` (1-based 블록 번호).
+    """
+    A, B = block_angles(path_a), block_angles(path_b)
+    aa, ab = A['deg'], B['deg']
+    pairs = []
+    for jb, angb in enumerate(ab):
+        ja = int(np.argmin(np.abs(aa - angb)))
+        if abs(aa[ja] - angb) <= tol_deg:
+            pairs.append((ja + 1, jb + 1, float(aa[ja]), float(angb)))
+    return pairs
+
+
+def slot_mean_angle(p: dict, slot_id: int) -> float:
+    """슬롯 도체 전체의 평균 각도 [rad] --- 막대별 로컬 프레임의 공통 기준.
+
+    ``conductor_je_2d`` / ``conductor_je_strips`` 에 ``angle_rad`` 로
+    넘기면 모든 막대가 같은 방향으로 정렬돼 슬롯 축과 어긋나지 않는다.
+    """
+    codes = list(slot_conductor_codes(p, slot_id))
+    m = np.isin(p['reg'], codes)
+    return float(np.arctan2(p['y_mm'][m].mean(), p['x_mm'][m].mean()))
+
+
 def conductor_je_strips(p_source: dict, code: int, freq_hz: float,
                         width_mm: float, height_mm: float,
                         n_strips: int = 20, n_radial: int = 26,
                         sigma: float = 4.709e7,
-                        mu0: float = 4e-7 * np.pi) -> dict:
+                        mu0: float = 4e-7 * np.pi,
+                        angle_rad: Optional[float] = None) -> dict:
     """도체를 접선 방향 **스트립**으로 나눠 스트립마다 1-D 확산을 푼다.
 
     Motor-CAD 의 FEA Paths 화면을 보면 슬롯 영역에 막대당 ~20개의
@@ -644,22 +716,32 @@ def conductor_je_strips(p_source: dict, code: int, freq_hz: float,
     if not m.any():
         raise ValueError('region code %r 없음' % code)
     x, y = p_source['x_mm'][m], p_source['y_mm'][m]
-    ang = np.arctan2(y.mean(), x.mean())
+    # 막대마다 자기 무게중심 각도를 쓰면 슬롯 축과 어긋나 사각형이 각자
+    # 기울어진다(공극쪽 바는 개구부에 잘려 무게중심이 밀림 --- 실측
+    # 편차 0.138 deg = r 84 mm 에서 0.2 mm). 슬롯 공통 각도를 넘길 것.
+    ang = (np.arctan2(y.mean(), x.mean()) if angle_rad is None
+           else float(angle_rad))
     c, s = np.cos(-ang), np.sin(-ang)
     R = np.array([[c, -s], [s, c]])
-    r_c = float(np.hypot(x.mean(), y.mean()))
+    # 격자는 막대의 **로컬 좌표 실제 중심**에 놓아야 한다. 접선 0(슬롯
+    # 중심선)에 고정하면 중심선에서 벗어난 막대가 통째로 어긋난다 ---
+    # 공극쪽 바는 개구부에 잘려 접선 중심이 -0.119 mm 다(실제로 겪음).
+    xy_loc = np.column_stack([x, y]) @ R.T
+    r_c = float(xy_loc[:, 0].mean())
+    t_c = float(xy_loc[:, 1].mean())
 
     rr_off = np.linspace(-height_mm / 2, height_mm / 2, n_radial)
     tt_c = np.linspace(-width_mm / 2, width_mm / 2, n_strips)
     RR, TT = np.meshgrid(rr_off, tt_c, indexing='ij')
-    loc = np.column_stack([(RR + r_c).ravel(), TT.ravel()])
+    loc = np.column_stack([(RR + r_c).ravel(),
+                           (TT + t_c).ravel()])
     glob = loc @ R
 
     # 스트립 양 면(안/바깥 반경)에서 접선 B 를 보간
     face_lo = np.column_stack([np.full(n_strips, r_c - height_mm / 2),
-                               tt_c]) @ R
+                               tt_c + t_c]) @ R
     face_hi = np.column_stack([np.full(n_strips, r_c + height_mm / 2),
-                               tt_c]) @ R
+                               tt_c + t_c]) @ R
     near = np.hypot(p_source['x_mm'] - glob[:, 0].mean(),
                     p_source['y_mm'] - glob[:, 1].mean()) < 6.0
     pts = np.column_stack([p_source['x_mm'][near], p_source['y_mm'][near]])
@@ -695,7 +777,8 @@ def conductor_je_2d(p_source: dict, code: int, freq_hz: float,
                     width_mm: float, height_mm: float,
                     i_net_a: Optional[float] = None,
                     sigma: float = 4.709e7, mu0: float = 4e-7 * np.pi,
-                    nx: int = 40, ny: int = 26) -> dict:
+                    nx: int = 40, ny: int = 26,
+                    angle_rad: Optional[float] = None) -> dict:
     """도체 단면 하나를 **2-D** 확산 방정식으로 풀어 유도 Je 를 구한다.
 
     ``hybrid_je_at_points`` 의 1-D 커널(반경 방향만)과 달리 접선 방향까지
@@ -727,10 +810,19 @@ def conductor_je_2d(p_source: dict, code: int, freq_hz: float,
     if not m.any():
         raise ValueError('region code %r 없음' % code)
     x, y = p_source['x_mm'][m], p_source['y_mm'][m]
-    ang = np.arctan2(y.mean(), x.mean())
+    # 막대마다 자기 무게중심 각도를 쓰면 슬롯 축과 어긋나 사각형이 각자
+    # 기울어진다(공극쪽 바는 개구부에 잘려 무게중심이 밀림 --- 실측
+    # 편차 0.138 deg = r 84 mm 에서 0.2 mm). 슬롯 공통 각도를 넘길 것.
+    ang = (np.arctan2(y.mean(), x.mean()) if angle_rad is None
+           else float(angle_rad))
     c, s = np.cos(-ang), np.sin(-ang)
     R = np.array([[c, -s], [s, c]])                 # 전역 -> 로컬
-    r_c = float(np.hypot(x.mean(), y.mean()))
+    # 격자는 막대의 **로컬 좌표 실제 중심**에 놓아야 한다. 접선 0(슬롯
+    # 중심선)에 고정하면 중심선에서 벗어난 막대가 통째로 어긋난다 ---
+    # 공극쪽 바는 개구부에 잘려 접선 중심이 -0.119 mm 다(실제로 겪음).
+    xy_loc = np.column_stack([x, y]) @ R.T
+    r_c = float(xy_loc[:, 0].mean())
+    t_c = float(xy_loc[:, 1].mean())
 
     # 로컬 x = 반경 방향(두께 height_mm), 로컬 y = 접선 방향(폭 width_mm).
     # 두 축을 바꿔 넣으면 막대를 90도 눕힌 채 푸는 셈이 되어 확산 해가
@@ -739,7 +831,8 @@ def conductor_je_2d(p_source: dict, code: int, freq_hz: float,
     tt_off = np.linspace(-width_mm / 2, width_mm / 2, nx)     # 접선
     RR, TT = np.meshgrid(rr_off, tt_off, indexing='ij')
     XX, YY = RR, TT
-    loc = np.column_stack([(RR + r_c).ravel(), TT.ravel()])
+    loc = np.column_stack([(RR + r_c).ravel(),
+                           (TT + t_c).ravel()])
     glob = loc @ R                                   # 로컬 -> 전역
     nx, ny = RR.shape                                # (반경, 접선)
 

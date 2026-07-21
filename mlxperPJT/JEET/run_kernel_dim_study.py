@@ -32,6 +32,12 @@ TS = os.path.join(F, "Magnetic_Ref_ARCHIVE_460A_36deg_OnLoadTorque.txt")
 HY = os.path.join(F, "Magnetic_Ref_Hybrid_ARCHIVE_460A_36deg_full_"
                      "OnLoadTorque.txt")
 SLOT, FREQ, SIGMA, MU0 = 1, 1066.67, 4.709e7, 4e-7 * np.pi
+SC = os.path.join(F, "Magnetic_SC_ARCHIVE_920A_36deg_OnLoadTorque.txt")
+SC_HY = os.path.join(F, "Magnetic_SC_Hybrid_ARCHIVE_920A_36deg_"
+                        "OnLoadTorque.txt")
+# model -> (TS-FEA, MS-FEA, 파일태그, 전기주파수)
+SOURCES = {"Ref": (TS, HY, "Ref", 1066.67),
+           "SC": (SC, SC_HY, "SC", 1066.67)}
 CU_H, CU_W = 1.686, 3.711            # [mm] .mot Copper_Height/Width
 NX, NY = 40, 26                      # 접선 x 반경
 EVERY = 4                            # 128블록 중 매 4번째만 (32스텝)
@@ -90,21 +96,35 @@ def main():
           % ((t**2).sum() / (a**2).sum(), (t**2).sum() / (b**2).sum()))
 
 
-def figures():
-    """3-패널 PNG + GIF (눈으로 확인용). 배치 규칙대로 저장."""
-    png = os.path.join(r"E:\KDH\Overleaf\JEET-2024_rev1", "fig",
-                       "fig2_slot_je_kernel_dim.png")
-    drive = os.path.join(r"J:\내 드라이브",
-                         "EveryMotor_JEET_data", "results")
+def figures(model='Ref'):
+    """커널 비교 PNG/GIF. 배치 규칙대로 저장.
+
+    ``model='Ref'`` 또는 ``'SC'`` --- SC 는 스케일 변형체에서도 TS 와
+    2-D 가 비슷한지 확인하기 위한 것.
+    """
+    ts, hy, tag, freq = SOURCES[model]
+    figdir = r"E:\KDH\Overleaf\JEET-2024_rev1"
+    drive = os.path.join(r"J:\내 드라이브", "EveryMotor_JEET_data",
+                         "results")
+
+    # 4패널 (진단용, 전체 비교)
     plot_fig2_kernel_comparison(
-        TS, HY, png, slot_id=SLOT, freq_hz=FREQ, every=EVERY,
+        ts, hy, os.path.join(figdir, "fig", "fig2_%s_kernel_dim.png" % tag),
+        slot_id=SLOT, freq_hz=freq, every=EVERY,
         copper_w_mm=CU_W, copper_h_mm=CU_H,
-        out_json=os.path.join(drive, "fig2_slot_je_kernel_dim.json"))
-    print("PNG (Overleaf):", png)
+        out_json=os.path.join(drive, "fig2_%s_kernel_dim.json" % tag))
+
+    # 2패널 TS vs 2-D (논문 후보)
+    plot_fig2_kernel_comparison(
+        ts, hy, os.path.join(figdir, "fig", "fig2_%s_ts_vs_2d.png" % tag),
+        slot_id=SLOT, freq_hz=freq, every=EVERY,
+        copper_w_mm=CU_W, copper_h_mm=CU_H, panels=('ts', '2d'),
+        out_json=os.path.join(drive, "fig2_%s_ts_vs_2d.json" % tag))
+
     make_fig2_kernel_gif(
-        TS, HY, os.path.join(drive, "fig2_slot_je_kernel_dim.gif"),
-        slot_id=SLOT, freq_hz=FREQ, every=2,
-        copper_w_mm=CU_W, copper_h_mm=CU_H)
+        ts, hy, os.path.join(drive, "fig2_%s_ts_vs_2d.gif" % tag),
+        slot_id=SLOT, freq_hz=freq, every=2,
+        copper_w_mm=CU_W, copper_h_mm=CU_H, panels=('ts', '2d'))
 
 
 if __name__ == '__main__':
@@ -112,7 +132,9 @@ if __name__ == '__main__':
     ap = argparse.ArgumentParser()
     ap.add_argument('--figures', action='store_true',
                     help='표 대신 PNG/GIF 생성')
-    if ap.parse_args().figures:
-        figures()
+    ap.add_argument('--model', default='Ref', choices=sorted(SOURCES))
+    a = ap.parse_args()
+    if a.figures:
+        figures(a.model)
     else:
         main()

@@ -1157,13 +1157,13 @@ def _draw_slot_contour(ax, frame: dict, je_values: np.ndarray,
     ax.set_yticks([])
     side = frame['airgap_side']
     if side in ('top', 'bottom'):
-        pad_main, pad_arrow = 0.15 * (x1v - x0), 0.18 * (y1v - y0)
+        pad_main, pad_arrow = 0.10 * (x1v - x0), 0.085 * (y1v - y0)
         ax.set_xlim(x0 - pad_main, x1v + pad_main)
         lo = y0 - pad_arrow if side == 'bottom' else y0
         hi = y1v + pad_arrow if side == 'top' else y1v
         ax.set_ylim(lo, hi)
     else:
-        pad_main, pad_arrow = 0.15 * (y1v - y0), 0.35 * (x1v - x0)
+        pad_main, pad_arrow = 0.10 * (y1v - y0), 0.20 * (x1v - x0)
         ax.set_ylim(y0 - pad_main, y1v + pad_main)
         lo = x0 - pad_arrow if side == 'left' else x0
         hi = x1v + pad_arrow if side == 'right' else x1v
@@ -1180,15 +1180,15 @@ def _draw_slot_contour(ax, frame: dict, je_values: np.ndarray,
             ax0, ay0 = frame['anchor']
         d = {'left': (-1, 0), 'right': (1, 0),
             'top': (0, 1), 'bottom': (0, -1)}[side]
-        scale = 0.12 * max(x1v - x0, y1v - y0)
+        # 짧게: 화살표 길이·여백을 줄이고 라벨도 'gap' 으로
+        scale = 0.055 * max(x1v - x0, y1v - y0)
         tip = (ax0 + d[0] * scale, ay0 + d[1] * scale)
         ax.annotate('', xy=tip, xytext=(ax0, ay0),
-                   arrowprops={'arrowstyle': '-|>', 'lw': 1.3,
-                               'color': 'black'})
-        ha = 'center' if d[0] == 0 else ('right' if d[0] < 0 else 'left')
-        va = 'center' if d[1] == 0 else ('top' if d[1] < 0 else 'bottom')
-        ax.text(tip[0] + d[0] * 0.15 * scale, tip[1] + d[1] * 0.15 * scale,
-               'airgap', fontsize=7.5, ha=ha, va=va)
+                   arrowprops={'arrowstyle': '-|>', 'lw': 1.0,
+                               'color': 'black',
+                               'shrinkA': 0, 'shrinkB': 0})
+        # 텍스트 없이 화살표만 --- 하단 (a)/(b) 라벨과 겹치지 않게 하고
+        # 공극 방향은 캡션에서 설명한다(공간도 아낀다).
     return cf
 
 
@@ -1249,8 +1249,8 @@ def plot_fig2_slot_comparison(ts_path: str, hybrid_path: str,
     cf = _draw_slot_contour(ax1, f_ts, je_ts, vlim, **kw)
     _draw_slot_contour(ax2, f_ts, je_hy, vlim, **kw)
     if show_titles:
-        ax1.set_title('(a)', fontsize=9)
-        ax2.set_title('(b)', fontsize=9)
+        ax1.set_xlabel('(a)', fontsize=9)
+        ax2.set_xlabel('(b)', fontsize=9)
     cb = fig.colorbar(cf, ax=(ax1, ax2), shrink=0.85)
     cb.set_label(r'$|J_e|$ [A/mm$^2$]', fontsize=9)
 
@@ -1467,8 +1467,8 @@ def plot_fig2_slot_rms(ts_path: str, hybrid_path: str, out_path: str,
     cf = _draw_slot_contour(ax1, f_ts, rms_ts, vlim, **kw)
     _draw_slot_contour(ax2, f_ts, rms_hy, vlim, **kw)
     if show_titles:
-        ax1.set_title('(a)', fontsize=9)
-        ax2.set_title('(b)', fontsize=9)
+        ax1.set_xlabel('(a)', fontsize=9)
+        ax2.set_xlabel('(b)', fontsize=9)
     cb = fig.colorbar(cf, ax=(ax1, ax2), shrink=0.85)
     cb.set_label(r'$J_{e,\mathrm{rms}}$ [A/mm$^2$]', fontsize=9)
 
@@ -1534,18 +1534,18 @@ def _draw_bar_grids(ax, frame, grids, vlim, cmap='plasma',
     ax.set_xticks([])
     ax.set_yticks([])
     side = frame['airgap_side']
-    pad_main, pad_arrow = 0.15 * (x1v - x0), 0.18 * (y1v - y0)
+    pad_main, pad_arrow = 0.10 * (x1v - x0), 0.085 * (y1v - y0)
     ax.set_xlim(x0 - pad_main, x1v + pad_main)
     ax.set_ylim(y0 - pad_arrow if side == 'bottom' else y0,
                 y1v + pad_arrow if side == 'top' else y1v)
     if show_airgap_label and side == 'bottom':
+        # 화살표만 --- 하단 (a)/(b) 라벨과 겹치지 않게, 방향은 캡션에서
         cx = 0.5 * (x0 + x1v)
-        scale = 0.12 * max(x1v - x0, y1v - y0)
+        scale = 0.055 * max(x1v - x0, y1v - y0)
         ax.annotate('', xy=(cx, y0 - scale), xytext=(cx, y0),
-                    arrowprops={'arrowstyle': '-|>', 'lw': 1.3,
-                                'color': 'black'})
-        ax.text(cx, y0 - 1.15 * scale, 'airgap', fontsize=7.5,
-                ha='center', va='top')
+                    arrowprops={'arrowstyle': '-|>', 'lw': 1.0,
+                                'color': 'black',
+                                'shrinkA': 0, 'shrinkB': 0})
     return im
 
 
@@ -1558,6 +1558,8 @@ def plot_fig2_kernel_comparison(ts_path: str, hybrid_path: str,
                                 copper_h_mm: float = 1.686,
                                 n_strips: int = 20,
                                 vlim_percentile: float = 98.0,
+                                panels: Sequence[str] = ('ts', '1d',
+                                                         'strips', '2d'),
                                 out_json: Optional[str] = None) -> dict:
     """커널 차원수 비교 3-패널: TS-FEA / 1-D 재구성 / 2-D 재구성 (주기 RMS).
 
@@ -1568,7 +1570,7 @@ def plot_fig2_kernel_comparison(ts_path: str, hybrid_path: str,
     """
     from .field_metrics import (iter_mes_blocks, slot_conductor_codes,
                                 hybrid_je_at_points, conductor_je_2d,
-                                conductor_je_strips)
+                                conductor_je_strips, slot_mean_angle)
 
     plt = _journal_rc()
     print('커널 비교 누적 중 (매 %d블록) ...' % every)
@@ -1590,13 +1592,15 @@ def plot_fig2_kernel_comparison(ts_path: str, hybrid_path: str,
                                   signed=False,
                                   thickness_mm=copper_h_mm) / 1e6
         sq_1d += (amp / np.sqrt(2.0)) ** 2
+        a_slot = slot_mean_angle(p_ms, slot_id)
         for code in slot_conductor_codes(p_ms, slot_id):
             rs = conductor_je_strips(p_ms, code, freq_hz, copper_w_mm,
-                                     copper_h_mm, n_strips=n_strips)
+                                     copper_h_mm, n_strips=n_strips,
+                                     angle_rad=a_slot)
             sq_st[code] = sq_st.get(code, 0.0) + (
                 np.abs(rs['je']) / np.sqrt(2.0) / 1e6) ** 2
             r2 = conductor_je_2d(p_ms, code, freq_hz, copper_w_mm,
-                                 copper_h_mm)
+                                 copper_h_mm, angle_rad=a_slot)
             sq_2d[code] = sq_2d.get(code, 0.0) + (
                 np.abs(r2['je']) / np.sqrt(2.0) / 1e6) ** 2
             gxy[code] = ((rs['x_mm'], rs['y_mm']),
@@ -1619,17 +1623,31 @@ def plot_fig2_kernel_comparison(ts_path: str, hybrid_path: str,
                           + [g[2].ravel() for g in g_2d])
     vlim = float(np.percentile(allv, vlim_percentile))
 
-    fig, axs = plt.subplots(1, 4, figsize=(_COLW_IN * 2.1, 2.7),
+    npan = len(panels)
+    wide = _COLW_IN * (1.05 if npan <= 2 else 2.1)
+    fig, axs = plt.subplots(1, npan, figsize=(wide, 2.7),
                             layout='constrained')
+    axs = np.atleast_1d(axs)
     kw = {'cmap': 'plasma', 'vmin': 0.0,
           'outline': geom['outline'], 'extent': geom['extent']}
-    cf = _draw_slot_contour(axs[0], f_ts, rms_ts, vlim, **kw)
-    _draw_slot_contour(axs[1], f_ts, rms_1d, vlim, **kw)
-    for ax, grids in ((axs[2], g_st), (axs[3], g_2d)):
-        _draw_bar_grids(ax, f_ts, grids, vlim, cmap='plasma',
-                        outline=geom['outline'], extent=geom['extent'])
-    for ax, lab in zip(axs, ('(a)', '(b)', '(c)', '(d)')):
-        ax.set_title(lab, fontsize=9)
+    cf = None
+    for ax, key in zip(axs, panels):
+        if key == 'ts':
+            cf = _draw_slot_contour(ax, f_ts, rms_ts, vlim, **kw)
+        elif key == '1d':
+            c2 = _draw_slot_contour(ax, f_ts, rms_1d, vlim, **kw)
+            cf = cf or c2
+        else:
+            _draw_bar_grids(ax, f_ts, g_st if key == 'strips' else g_2d,
+                            vlim, cmap='plasma', outline=geom['outline'],
+                            extent=geom['extent'])
+    if cf is None:                       # 등고선 패널이 없으면 스칼라맵 생성
+        cf = axs[0].tricontourf(f_ts['triang'],
+                                np.zeros(f_ts['triang'].x.size),
+                                levels=np.linspace(0, vlim, 21),
+                                cmap='plasma')
+    for ax, lab in zip(axs, '(a) (b) (c) (d)'.split()):
+        ax.set_xlabel(lab, fontsize=9)
     cb = fig.colorbar(cf, ax=list(axs), shrink=0.85)
     cb.set_label(r'$J_{e,\mathrm{rms}}$ [A/mm$^2$]', fontsize=9)
 
@@ -1673,11 +1691,13 @@ def make_fig2_kernel_gif(ts_path: str, hybrid_path: str, out_gif: str,
                          airgap_side: str = 'bottom', every: int = 2,
                          copper_w_mm: float = 3.711,
                          copper_h_mm: float = 1.686,
-                         n_strips: int = 20, fps: int = 8) -> dict:
+                         n_strips: int = 20, fps: int = 8,
+                         panels: Sequence[str] = ('ts', '1d',
+                                                  'strips', '2d')) -> dict:
     """커널 비교 3-패널의 주기 애니메이션 (순시 크기 기준)."""
     from .field_metrics import (iter_mes_blocks, slot_conductor_codes,
                                 hybrid_je_at_points, conductor_je_2d,
-                                conductor_je_strips)
+                                conductor_je_strips, slot_mean_angle)
     from matplotlib.animation import PillowWriter
 
     plt = _journal_rc()
@@ -1697,12 +1717,14 @@ def make_fig2_kernel_gif(ts_path: str, hybrid_path: str, out_gif: str,
                                     signed=False,
                                     thickness_mm=copper_h_mm) / 1e6
         g_st, g_2d = [], []
+        a_slot = slot_mean_angle(p_ms, slot_id)
         for code in slot_conductor_codes(p_ms, slot_id):
             rs = conductor_je_strips(p_ms, code, freq_hz, copper_w_mm,
-                                     copper_h_mm, n_strips=n_strips)
+                                     copper_h_mm, n_strips=n_strips,
+                                     angle_rad=a_slot)
             g_st.append((rs['x_mm'], rs['y_mm'], np.abs(rs['je']) / 1e6))
             r2 = conductor_je_2d(p_ms, code, freq_hz, copper_w_mm,
-                                 copper_h_mm)
+                                 copper_h_mm, angle_rad=a_slot)
             g_2d.append((r2['x_mm'], r2['y_mm'], np.abs(r2['je']) / 1e6))
         frames.append({'frame': f_ts, 'geom': geom, 'ts': je_ts,
                        'd1': je_1d, 'dst': g_st, 'd2': g_2d,
@@ -1717,13 +1739,18 @@ def make_fig2_kernel_gif(ts_path: str, hybrid_path: str, out_gif: str,
                              for g in f['d2']])
     vlim = float(np.percentile(allv, 99.0))
 
-    fig, axs = plt.subplots(1, 4, figsize=(_COLW_IN * 2.1, 2.7),
+    npan = len(panels)
+    wide = _COLW_IN * (1.05 if npan <= 2 else 2.1)
+    fig, axs = plt.subplots(1, npan, figsize=(wide, 2.7),
                             layout='constrained')
+    axs = np.atleast_1d(axs)
     kw0 = {'cmap': 'plasma', 'vmin': 0.0,
            'outline': frames[0]['geom']['outline'],
            'extent': frames[0]['geom']['extent']}
     cf = _draw_slot_contour(axs[0], frames[0]['frame'], frames[0]['ts'],
                             vlim, **kw0)
+    for ax in axs:
+        ax.clear()
     cb = fig.colorbar(cf, ax=list(axs), shrink=0.85)
     cb.set_label(r'$|J_e|$ [A/mm$^2$]', fontsize=9)
     suptitle = fig.suptitle('', fontsize=8)
@@ -1736,14 +1763,21 @@ def make_fig2_kernel_gif(ts_path: str, hybrid_path: str, out_gif: str,
         for ax in axs:
             ax.clear()
         _draw_slot_contour(axs[0], rec['frame'], rec['ts'], vlim, **kw)
-        _draw_slot_contour(axs[1], rec['frame'], rec['d1'], vlim, **kw)
-        for ax, gs in ((axs[2], rec['dst']), (axs[3], rec['d2'])):
-            _draw_bar_grids(ax, rec['frame'], gs, vlim, cmap='plasma',
-                            outline=rec['geom']['outline'],
-                            extent=rec['geom']['extent'])
-        for ax, lab in zip(axs, ('(a) TS-FEA', '(b) 1-D 2pt',
-                                 '(c) 1-D strips', '(d) 2-D')):
-            ax.set_title(lab, fontsize=9)
+        lut = {'ts': rec['ts'], '1d': rec['d1'],
+               'strips': rec['dst'], '2d': rec['d2']}
+        names = {'ts': 'TS-FEA', '1d': '1-D 2pt',
+                 'strips': '1-D strips', '2d': '2-D'}
+        for ax, key in zip(axs, panels):
+            if key in ('ts', '1d'):
+                _draw_slot_contour(ax, rec['frame'], lut[key], vlim, **kw)
+            else:
+                _draw_bar_grids(ax, rec['frame'], lut[key], vlim,
+                                cmap='plasma',
+                                outline=rec['geom']['outline'],
+                                extent=rec['geom']['extent'])
+        for ax, lab in zip(axs, ['(%s) %s' % (c, names[k]) for c, k
+                                 in zip('abcd', panels)]):
+            ax.set_xlabel(lab, fontsize=9)
         suptitle.set_text('slot %d   frame %d/%d   rotate %.2f deg'
                           % (slot_id, i + 1, n, rec['rotate_deg']))
 
@@ -1781,7 +1815,7 @@ def plot_kernel_sampling_map(hybrid_path: str, out_path: str,
     가른다. 왜 (c)만 B 의 반경 성분을 쓸 수 있는지도 이 그림에서 보인다.
     """
     from .field_metrics import (parse_mes_txt, slot_conductor_codes,
-                                _conductor_layers)
+                                _conductor_layers, slot_mean_angle)
 
     plt = _journal_rc()
     p = parse_mes_txt(hybrid_path, block=step)
@@ -1826,7 +1860,7 @@ def plot_kernel_sampling_map(hybrid_path: str, out_path: str,
     n_b = 0
     for lay in layers:
         m = p['reg'] == lay['code']
-        ang = np.arctan2(p['y_mm'][m].mean(), p['x_mm'][m].mean())
+        ang = slot_mean_angle(p, slot_id)
         c, s = np.cos(-ang), np.sin(-ang)
         Rb = np.array([[c, -s], [s, c]])
         r_c = float(np.hypot(p['x_mm'][m].mean(), p['y_mm'][m].mean()))
@@ -1843,7 +1877,7 @@ def plot_kernel_sampling_map(hybrid_path: str, out_path: str,
     n_c = 0
     for lay in layers:
         m = p['reg'] == lay['code']
-        ang = np.arctan2(p['y_mm'][m].mean(), p['x_mm'][m].mean())
+        ang = slot_mean_angle(p, slot_id)
         c, s = np.cos(-ang), np.sin(-ang)
         Rb = np.array([[c, -s], [s, c]])
         r_c = float(np.hypot(p['x_mm'][m].mean(), p['y_mm'][m].mean()))
@@ -1938,8 +1972,8 @@ def plot_fig_b_slot_comparison(ts_path: str, hybrid_path: str,
     cf = _draw_slot_contour(ax1, f_ts, b_ts, vmax, **kw)
     _draw_slot_contour(ax2, f_hy, b_hy, vmax, **kw)
     if show_titles:
-        ax1.set_title('(a)', fontsize=9)
-        ax2.set_title('(b)', fontsize=9)
+        ax1.set_xlabel('(a)', fontsize=9)
+        ax2.set_xlabel('(b)', fontsize=9)
     cb = fig.colorbar(cf, ax=(ax1, ax2), shrink=0.85)
     cb.set_label(r'$|B|$ [T]', fontsize=9)
 

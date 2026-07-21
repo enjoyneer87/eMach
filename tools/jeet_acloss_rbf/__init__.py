@@ -40,6 +40,9 @@ from .field_metrics import (
     hybrid_je_at_points,
     conductor_je_2d,
     conductor_je_strips,
+    slot_mean_angle,
+    block_angles,
+    match_blocks_by_angle,
     slot_conductor_codes,
 )
 from .form_study import operating_beta_band, region_mask, run_form_study
@@ -87,6 +90,9 @@ __all__ = [
     "hybrid_je_at_points",
     "conductor_je_2d",
     "conductor_je_strips",
+    "slot_mean_angle",
+    "block_angles",
+    "match_blocks_by_angle",
     "slot_conductor_codes",
     # 보정 형태 비교 · 비용-정확도
     "operating_beta_band",
