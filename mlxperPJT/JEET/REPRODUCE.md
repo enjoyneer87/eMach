@@ -14,7 +14,7 @@ from jeet_acloss_rbf import AcLossPipeline, loading_metrics, parse_mes_txt
 
 | 논문 | 내용 | 실행 스크립트 | 패키지 함수 | 산출 JSON |
 |---|---|---|---|---|
-| Fig 2 | 슬롯 내 전류 쏠림(TS-FEA vs Hybrid 참고) | `run_fig2_slot.py` | `plot_fig2_slot_comparison`, `make_fig2_slot_gif` | `fig2_slot_je_static_data.json`, GIF·요약은 Drive (`fig2_slot_je_MANIFEST.md` 참조) |
+| Fig 2 | 슬롯 내 전류 쏠림(TS-FEA vs Hybrid 참고, TS-FEA 도체 메시 공유) | `run_fig2_slot.py` | `plot_fig2_slot_comparison`, `make_fig2_slot_gif`, `hybrid_je_at_points` | `fig2_slot_je_static_data.json`, GIF·요약은 Drive (`fig2_slot_je_MANIFEST.md` 참조) |
 | Fig 7 | 스칼라 vs 멱지수 수렴 | `run_manuscript_figs78.py` | `plot_form_convergence` | --- |
 | Fig 8 | 전달 플랜 절제 히트맵 | `run_manuscript_figs78.py` | `plot_transfer_ablation` | --- |
 | Fig 9 | 모터 단면 기하 | `run_geometry_fig.py` | `plot_motor_geometry_dxf` | `geometry_dims_e10.json` |
@@ -93,6 +93,16 @@ from jeet_acloss_rbf import AcLossPipeline, loading_metrics, parse_mes_txt
     함수만 쓰면 되지만, 새 명명 변형을 만나면 반경(r) 기준으로 어느
     쪽이 층/슬롯인지 먼저 검증할 것(문자·숫자 각각으로 그룹핑해 반경
     분산이 0에 가까운 쪽이 "층").
+
+11. **Hybrid 참고 재구성은 두 가지 평가 방식이 있다** —
+    `hybrid_je_reference(p, ...)` 는 *그 데이터셋 자신의* 도체 요소에서
+    (층마다 독립된 얇은 1-D 경계값 문제로) 평가하고,
+    `hybrid_je_at_points(p_source, query_xy, ...)` 는 슬롯 도체 스택
+    *전체* 반경 두께를 하나의 확산 슬랩으로 취급해 **임의의 좌표**에서
+    평가한다. Fig 2 는 후자를 쓴다 --- Hybrid 자신의(더 거칠거나
+    이상화된) 메시가 아니라 TS-FEA 의 실제 도체 메시 좌표를 넘겨서,
+    두 패널이 같은 형상(도메인) 위에 그려지고 Hybrid 쪽 메시 모양이
+    그림에 드러나지 않게 한다.
 
 ## 검증된 교차 확인
 

@@ -30,6 +30,7 @@ from .field_metrics import (
     winding_losses,
     compare_models,
     hybrid_je_reference,
+    hybrid_je_at_points,
     slot_conductor_codes,
 )
 from .form_study import operating_beta_band, region_mask, run_form_study
@@ -67,6 +68,7 @@ __all__ = [
     "winding_losses",
     "compare_models",
     "hybrid_je_reference",
+    "hybrid_je_at_points",
     "slot_conductor_codes",
     # 보정 형태 비교 · 비용-정확도
     "operating_beta_band",

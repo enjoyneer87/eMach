@@ -1051,14 +1051,19 @@ def _node_average(tri_local, n_nodes, elem_values):
     return node_val / np.maximum(node_cnt, 1)
 
 
-def _draw_slot_contour(ax, frame: dict, je_element: np.ndarray,
+def _draw_slot_contour(ax, frame: dict, je_values: np.ndarray,
                        vlim: float, cmap: str = 'plasma',
                        n_levels: int = 21, show_airgap_label: bool = True):
-    """``_slot_frame`` 결과 위에 매끄러운 등고선(tricontourf)을 그린다."""
+    """``_slot_frame`` 결과 위에 매끄러운 등고선(tricontourf)을 그린다.
+
+    ``je_values`` 는 이미 ``frame['mask']`` 로 선택된(즉 도체 요소 개수와
+    같은 길이의) 값이어야 한다 --- 두 패널이 서로 다른 데이터셋에서 온
+    값을 같은 ``frame``(같은 도메인/삼각분할) 위에 그릴 수 있게 하기
+    위해, 이 함수는 원본 전체 배열이 아니라 선택된 값만 받는다.
+    """
     triang = frame['triang']
     n_nodes = triang.x.size
-    node_je = _node_average(triang.triangles, n_nodes,
-                            je_element[frame['mask']])
+    node_je = _node_average(triang.triangles, n_nodes, je_values)
     levels = np.linspace(-vlim, vlim, n_levels)
     cf = ax.tricontourf(triang, node_je, levels=levels, cmap=cmap,
                         extend='both')
@@ -1107,32 +1112,39 @@ def plot_fig2_slot_comparison(ts_path: str, hybrid_path: str,
                               show_titles: bool = False) -> dict:
     """Fig 2: 단일 슬롯의 TS-FEA 실측 Je vs Hybrid 참고 재구성 Je (정적).
 
-    ``ts_path`` 는 전 주기 export(다중 Solution 블록) TS-FEA 텍스트,
-    ``hybrid_path`` 는 대응하는 Hybrid(MS-FEA) 전 주기 export 텍스트.
-    ``step`` 은 1-based 블록 번호(둘 다 같은 회전각으로 동기화돼 있어야
-    한다). 두 패널 모두 ``airgap_side`` 방향에 공극 화살표를 붙인다.
+    두 패널 모두 **TS-FEA 의 도체 메시(형상·삼각분할)** 를 도메인으로
+    쓴다 --- Hybrid 는 자신의(더 거칠거나 이상화된) 메시가 아니라, 그
+    B 로부터 재구성한 값을 TS-FEA 도체 요소의 좌표에서 평가해 얹는다
+    (``hybrid_je_at_points``). 두 데이터셋이 물리적으로 같은 슬롯을
+    가리키는지는 REPRODUCE.md 의 각도 대조 방법으로 미리 확인해 둘 것.
+
+    ``ts_path``/``hybrid_path`` 는 전 주기 export(다중 Solution 블록)
+    텍스트. ``step`` 은 1-based 블록 번호(둘 다 같은 회전각 격자로
+    동기화돼 있어야 한다).
 
     Returns dict with the per-element field data actually plotted (for
     JSON export alongside the figure).
     """
-    from .field_metrics import parse_mes_txt, hybrid_je_reference
+    from .field_metrics import parse_mes_txt, hybrid_je_at_points
 
     plt = _journal_rc()
     p_ts = parse_mes_txt(ts_path, block=step)
     p_hy = parse_mes_txt(hybrid_path, block=step)
 
-    je_ts = p_ts['je_am2'] / 1e6                      # A/mm2, signed
-    je_hy = hybrid_je_reference(p_hy, freq_hz, signed=True) / 1e6
+    f_ts = _slot_frame(p_ts, slot_id, airgap_side)      # 유일한 도메인
+    m_ts = f_ts['mask']
+    je_ts = p_ts['je_am2'][m_ts] / 1e6                  # A/mm2, signed
 
-    f_ts = _slot_frame(p_ts, slot_id, airgap_side)
-    f_hy = _slot_frame(p_hy, slot_id, airgap_side)
-    vlim = max(np.abs(je_ts[f_ts['mask']]).max(),
-              np.abs(je_hy[f_hy['mask']]).max())
+    xy_ts = np.column_stack([p_ts['x_mm'][m_ts], p_ts['y_mm'][m_ts]])
+    je_hy = hybrid_je_at_points(p_hy, xy_ts, freq_hz, slot_id=slot_id,
+                               signed=True) / 1e6
+
+    vlim = max(np.abs(je_ts).max(), np.abs(je_hy).max())
 
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(4.2, 2.6),
                                   layout='constrained')
     cf = _draw_slot_contour(ax1, f_ts, je_ts, vlim)
-    _draw_slot_contour(ax2, f_hy, je_hy, vlim, show_airgap_label=False)
+    _draw_slot_contour(ax2, f_ts, je_hy, vlim, show_airgap_label=False)
     if show_titles:
         ax1.set_title('(a) TS-FEA', fontsize=9)
         ax2.set_title('(b) Hybrid (reference)', fontsize=9)
@@ -1143,17 +1155,14 @@ def plot_fig2_slot_comparison(ts_path: str, hybrid_path: str,
     fig.savefig(out_path)
     plt.close(fig)
 
-    m_ts, m_hy = f_ts['mask'], f_hy['mask']
     return {
         'slot_id': slot_id, 'step': step, 'freq_hz': freq_hz,
         'airgap_side': airgap_side, 'vlim_A_mm2': float(vlim),
         'rotate_deg': p_ts.get('rotate_deg'),
-        'ts_fea': {'x_mm': p_ts['x_mm'][m_ts].tolist(),
-                   'y_mm': p_ts['y_mm'][m_ts].tolist(),
-                   'je_A_mm2': je_ts[m_ts].tolist()},
-        'hybrid_reference': {'x_mm': p_hy['x_mm'][m_hy].tolist(),
-                             'y_mm': p_hy['y_mm'][m_hy].tolist(),
-                             'je_A_mm2': je_hy[m_hy].tolist()},
+        'domain': 'TS-FEA conductor mesh (both panels)',
+        'x_mm': xy_ts[:, 0].tolist(), 'y_mm': xy_ts[:, 1].tolist(),
+        'ts_fea': {'je_A_mm2': je_ts.tolist()},
+        'hybrid_reference': {'je_A_mm2': je_hy.tolist()},
     }
 
 
@@ -1163,50 +1172,50 @@ def make_fig2_slot_gif(ts_path: str, hybrid_path: str, out_gif: str,
                        out_json: Optional[str] = None) -> dict:
     """Fig 2 소재의 128스텝 동기 애니메이션(TS-FEA 실측 vs Hybrid 참고).
 
+    ``plot_fig2_slot_comparison`` 과 같은 원칙으로, 매 스텝 두 패널
+    모두 **그 스텝 TS-FEA 의 도체 메시**를 도메인으로 쓴다. Hybrid 는
+    그 스텝의 B 로 재구성한 값을 TS-FEA 좌표에서 평가해 얹는다.
+
     ``ts_path``/``hybrid_path`` 는 같은 회전각 격자로 export 된 전 주기
-    데이터여야 한다(둘 다 Rotate Step 값이 스텝별로 일치하는지는 호출
-    전에 확인해 둘 것). 매 스텝 색상 스케일은 전 스텝 공통(99.5th
+    데이터여야 한다. 매 스텝 색상 스케일은 전 스텝 공통(99.5th
     percentile)으로 고정한다.
 
     ``out_json`` 이 주어지면 스텝별 |Je| 최댓값 등 요약 시계열을 저장한다
     (원시 프레임 전체를 JSON 에 담기엔 너무 커서, 그림의 재현에 필요한
     것은 이 함수 자체이고 JSON 은 스텝 선택 근거 요약임을 명시).
     """
-    from .field_metrics import iter_mes_blocks, hybrid_je_reference
+    from .field_metrics import iter_mes_blocks, hybrid_je_at_points
     from matplotlib.animation import PillowWriter
 
     plt = _journal_rc()
 
-    def collect(path, is_hybrid):
-        out = []
-        for step, p in iter_mes_blocks(path):
-            je = (hybrid_je_reference(p, freq_hz, signed=True)
-                  if is_hybrid else p['je_am2']) / 1e6
-            frame = _slot_frame(p, slot_id, airgap_side)
-            out.append({'step': step, 'rotate_deg': p['rotate_deg'],
-                       'frame': frame, 'je': je})
-        return out
-
-    print('TS-FEA 파싱 중 ...')
-    ts_frames = collect(ts_path, False)
-    print('Hybrid 파싱 중 ...')
-    hy_frames = collect(hybrid_path, True)
-    n = min(len(ts_frames), len(hy_frames))
+    print('TS-FEA/Hybrid 동기 파싱 중 ...')
+    frames = []
+    for (step_ts, p_ts), (step_hy, p_hy) in zip(iter_mes_blocks(ts_path),
+                                                iter_mes_blocks(hybrid_path)):
+        f_ts = _slot_frame(p_ts, slot_id, airgap_side)
+        m_ts = f_ts['mask']
+        je_ts = p_ts['je_am2'][m_ts] / 1e6
+        xy_ts = np.column_stack([p_ts['x_mm'][m_ts], p_ts['y_mm'][m_ts]])
+        je_hy = hybrid_je_at_points(p_hy, xy_ts, freq_hz, slot_id=slot_id,
+                                    signed=True) / 1e6
+        frames.append({'step': step_ts, 'rotate_deg': p_ts['rotate_deg'],
+                       'frame': f_ts, 'je_ts': je_ts, 'je_hy': je_hy})
+    n = len(frames)
     print('동기화 프레임 %d개' % n)
 
-    all_je = np.concatenate(
-        [f['je'][f['frame']['mask']] for f in ts_frames]
-        + [f['je'][f['frame']['mask']] for f in hy_frames])
+    all_je = np.concatenate([f['je_ts'] for f in frames]
+                            + [f['je_hy'] for f in frames])
     vlim = float(np.percentile(np.abs(all_je), 99.5))
 
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(4.2, 2.6),
                                   layout='constrained')
-    cf = _draw_slot_contour(ax1, ts_frames[0]['frame'], ts_frames[0]['je'],
+    cf = _draw_slot_contour(ax1, frames[0]['frame'], frames[0]['je_ts'],
                             vlim)
-    _draw_slot_contour(ax2, hy_frames[0]['frame'], hy_frames[0]['je'], vlim,
+    _draw_slot_contour(ax2, frames[0]['frame'], frames[0]['je_hy'], vlim,
                        show_airgap_label=False)
     ax1.set_title('TS-FEA', fontsize=9)
-    ax2.set_title('Hybrid (reference)', fontsize=9)
+    ax2.set_title('Hybrid (reference, on TS-FEA mesh)', fontsize=9)
     cb = fig.colorbar(cf, ax=(ax1, ax2), shrink=0.85)
     cb.set_label(r'$J_e$ [A/mm$^2$]', fontsize=9)
     suptitle = fig.suptitle('', fontsize=8)
@@ -1214,18 +1223,19 @@ def make_fig2_slot_gif(ts_path: str, hybrid_path: str, out_gif: str,
     step_max = []
 
     def update(i):
-        for ax, rec in ((ax1, ts_frames[i]), (ax2, hy_frames[i])):
-            ax.clear()
-            _draw_slot_contour(ax, rec['frame'], rec['je'], vlim,
-                              show_airgap_label=(ax is ax1))
+        rec = frames[i]
+        ax1.clear()
+        _draw_slot_contour(ax1, rec['frame'], rec['je_ts'], vlim,
+                          show_airgap_label=True)
+        ax2.clear()
+        _draw_slot_contour(ax2, rec['frame'], rec['je_hy'], vlim,
+                          show_airgap_label=False)
         suptitle.set_text('slot %d   step %d/%d   rotate %.2f deg'
-                          % (slot_id, i + 1, n, ts_frames[i]['rotate_deg']))
+                          % (slot_id, i + 1, n, rec['rotate_deg']))
         step_max.append({
-            'step': i + 1, 'rotate_deg': ts_frames[i]['rotate_deg'],
-            'ts_fea_max_A_mm2': float(np.abs(
-                ts_frames[i]['je'][ts_frames[i]['frame']['mask']]).max()),
-            'hybrid_ref_max_A_mm2': float(np.abs(
-                hy_frames[i]['je'][hy_frames[i]['frame']['mask']]).max()),
+            'step': i + 1, 'rotate_deg': rec['rotate_deg'],
+            'ts_fea_max_A_mm2': float(np.abs(rec['je_ts']).max()),
+            'hybrid_ref_max_A_mm2': float(np.abs(rec['je_hy']).max()),
         })
 
     os.makedirs(os.path.dirname(os.path.abspath(out_gif)), exist_ok=True)
@@ -1239,7 +1249,9 @@ def make_fig2_slot_gif(ts_path: str, hybrid_path: str, out_gif: str,
 
     summary = {'slot_id': slot_id, 'freq_hz': freq_hz,
               'airgap_side': airgap_side, 'n_frames': n,
-              'vlim_A_mm2': vlim, 'per_step': step_max}
+              'vlim_A_mm2': vlim,
+              'domain': 'TS-FEA conductor mesh (both panels)',
+              'per_step': step_max}
     if out_json:
         os.makedirs(os.path.dirname(os.path.abspath(out_json)),
                    exist_ok=True)

@@ -25,7 +25,7 @@ import numpy as np
 
 __all__ = ["parse_mes_txt", "iter_mes_blocks", "region_summary",
            "loading_metrics", "compare_models", "hybrid_je_reference",
-           "slot_conductor_codes"]
+           "hybrid_je_at_points", "slot_conductor_codes"]
 
 _AIRGAP_RE = re.compile(r"^a\d+$", re.I)
 # Motor-CAD 명명은 Turn_<층>_<슬롯> 이다. 첫 인덱스가 반경방향 층으로,
@@ -472,6 +472,72 @@ def hybrid_je_reference(p: dict, freq_hz: float, sigma: float = 4.709e7,
                       + ht * np.cosh(k * xl)) / skt
         je[m] = j_of_x.real if signed else np.abs(j_of_x)
     return je
+
+
+def hybrid_je_at_points(p_source: dict, query_xy: np.ndarray,
+                        freq_hz: float, slot_id: Optional[int] = None,
+                        sigma: float = 4.709e7,
+                        mu0: float = 4e-7 * np.pi,
+                        signed: bool = False) -> np.ndarray:
+    """Hybrid B 로부터, **임의의 좌표**에서 참고용 근접 Je 를 평가한다.
+
+    ``hybrid_je_reference`` 는 도체 층마다 독립된 얇은 1-D 경계값 문제를
+    풀어 *그 데이터셋 자신의* 요소에서만 평가했다. 이 함수는 대신 한
+    슬롯의 도체 스택 **전체 반경 두께**를 하나의 확산 슬랩으로 취급해
+    경계 조건(안쪽 r_min = 공극쪽, 바깥쪽 r_max = 슬롯바닥쪽)만
+    ``p_source`` 에서 구하고, 그 닫힌형 해 J(x) 를 ``query_xy`` 로 주어진
+    임의의 좌표에서 평가한다 --- 그 좌표가 ``p_source`` 자신의 요소일
+    필요가 없다. 예를 들어 다른 데이터셋(예: TS-FEA)의 도체 요소 좌표를
+    넘기면, Hybrid 의 B 로 재구성한 값을 TS-FEA 의 실제(더 촘촘하거나
+    비이상화된) 메시 형상 위에 그대로 겹쳐 그릴 수 있다.
+
+    ``p_source`` : 경계 B 를 제공하는 Hybrid(MS-FEA) 블록 딕셔너리
+        (``parse_mes_txt``/``iter_mes_blocks`` 반환값). B 는 이 슬롯의
+        전체 도체 영역에서 가져오며(``slot_id`` 로 특정 슬롯 한정,
+        생략 시 데이터셋에 있는 모든 도체 요소 사용).
+    ``query_xy`` : (N, 2) 배열, [mm], ``p_source`` 와 같은 전역 좌표계.
+        원점 기준 반경(r)만 쓰므로 어느 데이터셋에서 왔는지는 무관하다.
+    ``slot_id`` : 경계 B 를 구할 슬롯 번호(``slot_conductor_codes`` 로
+        선택). 두 데이터셋의 슬롯 번호가 물리적으로 같은 위치인지는
+        미리 각도로 확인해 둘 것(REPRODUCE.md 참조).
+
+    Returns ``query_xy`` 와 같은 길이의 배열. 경계 밖(r_min~r_max 밖)의
+    질의점은 경계값으로 클램프한다(외삽은 cosh 발산 위험이 있어 하지
+    않는다).
+    """
+    reg = p_source['reg']
+    x, y = p_source['x_mm'], p_source['y_mm']
+    bt = np.hypot(p_source['bx'], p_source['by'])
+
+    if slot_id is not None:
+        src_mask = np.isin(reg, list(slot_conductor_codes(p_source, slot_id)))
+    else:
+        names = p_source['names']
+        src_mask = np.array([_is_conductor_region(names.get(c, ''))
+                             for c in reg])
+    if not src_mask.any():
+        raise ValueError('p_source 에서 도체 요소를 찾지 못함'
+                         ' (slot_id 확인)')
+
+    r_src = np.hypot(x[src_mask], y[src_mask])
+    i_lo, i_hi = np.argmin(r_src), np.argmax(r_src)
+    r0, r1 = float(r_src[i_lo]), float(r_src[i_hi])
+    t = (r1 - r0) * 1e-3                                    # [m]
+    if t <= 0:
+        raise ValueError('반경 방향 두께가 0 이하 (r1<=r0)')
+    h0 = bt[src_mask][i_lo] / mu0
+    ht = bt[src_mask][i_hi] / mu0
+
+    omega = 2.0 * np.pi * freq_hz
+    delta = 1.0 / np.sqrt(0.5 * omega * mu0 * sigma)
+    k = (1.0 + 1.0j) / delta
+    skt = np.sinh(k * t)
+
+    r_q = np.hypot(np.asarray(query_xy)[:, 0], np.asarray(query_xy)[:, 1])
+    xl = np.clip((r_q - r0) * 1e-3, 0.0, t)                  # [m], 0..t
+
+    j_of_x = k * (-h0 * np.cosh(k * (t - xl)) + ht * np.cosh(k * xl)) / skt
+    return j_of_x.real if signed else np.abs(j_of_x)
 
 
 def compare_models(paths: Dict[str, str],
