@@ -11,21 +11,24 @@
 
 | 항목 | 위치 | 상태 |
 |------|------|------|
-| 데이터 JSON (`data/*.json`) | Drive 폴더 | ✅ 업로드됨 |
+| 데이터 JSON (`data/*.json`) | Drive `Prius_thermal_viz/` | ✅ 업로드됨 (Git에도 유지 — 코드 실행용) |
 | ├ `prius_losses.json` | Drive | ✅ |
 | ├ `fluent_prius_zone_temps.json` | Drive | ✅ |
 | ├ `fluent_prius_250A_zone_temps.json` | Drive | ✅ |
 | └ `icepak_prius_250A_temps.json` | Drive | ✅ |
-| 이미지·GIF (`viz/**`, ~21MB) | Drive 폴더 | ⏳ 수동 업로드 필요 |
+| 이미지·GIF (`viz/**`, 47개 20.2MiB) | Drive `Prius_thermal_viz/viz/` | ✅ 업로드됨 (Git 언트랙, 로컬 보존) |
 
-## 이미지·GIF 업로드 방법 (택1)
-스크립트 환경엔 rclone/gdrive CLI 가 없어 자동 대량업로드 불가. 아래 중 하나:
+## Git 추적 정책
+- **코드**(scripts, thermal_viz.py, README, 이 문서): Git 추적.
+- **데이터 JSON**: Git 추적 유지(16KB, 코드 실행용) + Drive 백업.
+- **이미지·GIF(`viz/`)**: `.gitignore` 로 Git 미추적. 로컬 디스크 + Drive 에 보관.
+  (Git 이력에는 과거 커밋에 남아있어 복구 가능)
 
-1. **드래그-드롭(권장, 무설정)**: 브라우저에서 위 Drive 폴더를 열고, 로컬
-   `D:\KDH\NvidiaNemo\eMach\mlxperPJT\thermal\prius\viz\` 의 `waterjacket_low/`,
-   `waterjacket_high/`, `comparison/` 폴더를 그대로 끌어다 놓기.
-2. **rclone**: `rclone config` 로 gdrive 리모트(예: `gdrive:`) 1회 설정 후
-   `rclone copy "D:\KDH\NvidiaNemo\eMach\mlxperPJT\thermal\prius\viz" gdrive:Prius_thermal_viz/viz`
+## 이미지·GIF 재업로드/동기화 (rclone)
+`gdrive:` 리모트 설정됨(rclone v1.74.4, `C:\Users\moa\rclone\`). 재생성 후:
+```
+rclone copy "D:\KDH\NvidiaNemo\eMach\mlxperPJT\thermal\prius\viz" gdrive:Prius_thermal_viz/viz
+```
 
 ## 재생성
 산출물은 코드로 언제든 재생성 가능(원본 `.rth` 결과 있을 때):
