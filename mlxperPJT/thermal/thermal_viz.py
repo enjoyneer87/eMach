@@ -37,8 +37,10 @@ import traceback
 import numpy as np
 
 MATS_DEFAULT = dict(stator=1, magnet=2, coil=3, shaft=4, rotor=5)
+# transient_dashboard(3패널: 3d_cut+circuit+이력)는 circuit 정보가 필요해
+# render_standard_viz 의 circuit 경로에서 생성(STANDARD_GIFS 미포함).
 STANDARD_GIFS = ("transient_3d_cut", "transient_core", "transient_coilmag",
-                 "transient_coil_z0", "transient_dashboard")
+                 "transient_coil_z0")
 STANDARD_PNGS = ("contour_iso", "contour_z0", "cut_3d", "coil_only", "magnet_only", "component_history")
 CMAP = "inferno"
 COMP_COLORS = {"Coil": "#2a78d6", "Magnet": "#e34948", "Rotor": "#1baf7a",
@@ -345,6 +347,55 @@ class ThermalViz:
             frames.append(self._hstack(left, right))
         return self._save_gif(name, frames)
 
+    @staticmethod
+    def _vstack(a, b):
+        """두 이미지를 폭 맞춰 상하 결합."""
+        try:
+            from PIL import Image
+            W = max(a.shape[1], b.shape[1])
+
+            def fit(img):
+                im = Image.fromarray(img[..., :3].astype(np.uint8))
+                h = max(1, int(round(im.height * W / im.width)))
+                return np.asarray(im.resize((W, h)))
+            return np.vstack([fit(a), fit(b)])
+        except Exception:
+            W = min(a.shape[1], b.shape[1])
+            return np.vstack([a[:, :W, :3], b[:, :W, :3]])
+
+    def full_dashboard_gif(self, nodes, edges, node_T_fn, label="",
+                           name="transient_dashboard"):
+        """종합 대시보드 GIF: 3d_cut + circuit_3d + 온도이력(커서)을 한 프레임에.
+        상단 [3d_cut | circuit_3d], 하단 [부품 온도이력 곡선·현재시각 커서].
+        세 렌더 함수를 매 프레임 합치는 형태."""
+        import matplotlib; matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+        roles = [r for r in ("coil", "magnet", "rotor", "stator") if r in self._sub]
+        hist = self._compute_hist(roles)
+        allmax = [m for r in roles for m in hist[r]["max"]]
+        ylim = (self.clim[0] - 3, max(allmax) + 8)
+        frames = []
+        for i in range(self.nsets):
+            T = self._T(i); ts = self.times[i]
+            pl = self._render_cut3d_frame(T)
+            pl.add_text(f"t={ts:5.0f}s  half-section  {label}",
+                        font_size=12, color="black")
+            left = pl.screenshot(return_img=True); pl.close()
+            pc = self._render_circuit(nodes, edges, node_T_fn(T), label,
+                                      title_extra=f"  t={ts:.0f}s")
+            circ = pc.screenshot(return_img=True); pc.close()
+            top = self._hstack(left, circ)
+            fig, ax = plt.subplots(figsize=(top.shape[1] / 150.0, 3.6), dpi=150)
+            self._draw_history(ax, hist, roles, cursor_i=i)
+            ax.set_title(f"component temperatures   t={ts:.0f}s",
+                         color="#333333", fontsize=11)
+            ax.set_xlim(0, self.times[-1]); ax.set_ylim(*ylim)
+            fig.tight_layout(); fig.canvas.draw()
+            bottom = np.asarray(fig.canvas.buffer_rgba())[..., :3]
+            plt.close(fig)
+            frames.append(self._vstack(top, bottom))
+        return self._save_gif(name, frames)
+
     # ── 열등가회로 3D 오버레이 ───────────────────────────────────────────
     def _render_circuit(self, nodes, edges, node_T, label, title_extra=""):
         """회로 오버레이 1프레임 렌더 → Plotter 반환(PNG/GIF 공유).
@@ -408,8 +459,8 @@ class ThermalViz:
     def render_all(self, gifs=STANDARD_GIFS, pngs=STANDARD_PNGS, log=print):
         done = []
         dispatch_gif = {"transient_3d_cut": self.cut3d_gif, "transient_core": self.core_gif,
-                        "transient_coilmag": self.coilmag_gif, "transient_coil_z0": self.coil_z0_gif,
-                        "transient_dashboard": lambda: self.combined_gif(label=self.label)}
+                        "transient_coilmag": self.coilmag_gif,
+                        "transient_coil_z0": self.coil_z0_gif}
         for g in gifs:
             try:
                 p, mb = dispatch_gif[g](); done.append(p); log(f"  GIF {g}: {mb:.2f}MB")
@@ -451,6 +502,9 @@ def render_standard_viz(rth_path, out_dir, label="", clim_lo=None, mats=None,
             if c.get("node_T_fn"):
                 tv.circuit_3d_gif(c["nodes"], c["edges"], c["node_T_fn"], label=label)
                 log("  GIF transient_circuit_3d: ok")
+                tv.full_dashboard_gif(c["nodes"], c["edges"], c["node_T_fn"],
+                                      label=label)
+                log("  GIF transient_dashboard(3panel): ok")
         except Exception as e:
             log(f"  circuit FAIL: {repr(e)[:120]}")
     return done

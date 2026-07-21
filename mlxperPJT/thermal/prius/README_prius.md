@@ -113,7 +113,7 @@ python ../../thermal_viz.py <file.rth> <out_dir> [label] [clim_lo]   # 범용 CL
 | 파일 | 내용 |
 |---|---|
 | `transient_3d_cut.gif` | 3D 반단면 컷어웨이(외피 반쪽 clip + x=0 단면 slice) — 대표 뷰 |
-| `transient_dashboard.gif` | **3d_cut(좌) + 온도이력 곡선·현재시각 커서(우)** 합성 대시보드 |
+| `transient_dashboard.gif` | **종합 대시보드**: 상단[3d_cut 온도장 \| circuit_3d 회로] + 하단[온도이력 곡선·현재시각 커서], 세 뷰 시점동기 |
 | `transient_circuit_3d.gif` | 열등가회로 3D 오버레이 과도(노드 색=온도 시간전개) |
 | `transient_core.gif` | z=0 정단면, 전 부품 온도컬러(가림 없음) |
 | `transient_coilmag.gif` | 코일+자석 내부부품(스테이터/로터 반투명 고스트) |
