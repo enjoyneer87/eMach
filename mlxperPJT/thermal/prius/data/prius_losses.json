@@ -1,0 +1,19 @@
+{
+  "StrandedLoss": 2311.7241384546396,
+  "SolidLoss": 23.8080700858367,
+  "CoreLoss": 649.8965551818977,
+  "_variables": {
+    "speed_mech": "3000.0rpm",
+    "Ipeak": "250.0A",
+    "pole_pairs": "4.0",
+    "gamma": "60.0deg"
+  },
+  "CoreLoss_Stator": 584.9,
+  "CoreLoss_Rotor": 65.0,
+  "_model": "Prius_Model_24R2 2D full 360, depth 83.8mm, Ipeak250A/3000rpm/gamma60",
+  "_core_split_note": "스테이터90/로터10 추정(2D 필드계산기 EnterSurf 실패). 로터철손 열영향 미미. 정밀화: OutputPerObjectCoreLoss 재솔브",
+  "_end_winding_note": "P_end = StrandedLoss × (V_coilend/V_coilslot), 형상에서 산출(gmsh)",
+  "_V_coil_slot_cm3": 93.9,
+  "_V_coil_end_cm3": 42.2,
+  "P_copper_end": 1038.7
+}
