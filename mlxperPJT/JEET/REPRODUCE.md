@@ -241,9 +241,38 @@ from jeet_acloss_rbf import AcLossPipeline, loading_metrics, parse_mes_txt
     매끄럽고 공극쪽 바가 밝아 TS 패턴에 더 가깝다. 크기는 스트립이,
     형상은 2-D 가 낫다.
 
-    그림: `fig2_slot_je_kernel_dim.png` (4패널) / `.gif` (64프레임),
+    **Ref 와 SC 를 나란히 보면 스케일 의존성이 드러난다** (슬롯1, 32스텝,
+    주기 RMS 평균제곱 비 TS/모델, 1 = 완전 일치):
+
+    | 모델 | eta = h_c/delta | 1-D 2점 | 1-D 20스트립 | 2-D |
+    |---|---|---|---|---|
+    | Ref (k_r=1) | 0.75 | 14.46 | 2.65 | 2.83 |
+    | SC (k_r=2) | 1.50 | 8.84 | 3.41 | **1.39** |
+
+    delta 는 주파수만으로 정해지므로(둘 다 1066.7 Hz) **eta 는 도체
+    두께에 비례해 SC 가 Ref 의 정확히 2배**다. eta 가 커질수록 장이
+    실제로 2-D 가 되어 1-D 커널의 차원 한계가 커지고, 2-D 커널의 이점이
+    분명해진다(SC 에서 2-D 1.39 vs 스트립 3.41). 이는 스케일이 커질수록
+    보정 필요성이 커지는 것과 같은 방향이다.
+
+    공간 분포는 두 모델 모두 **2-D 가 TS 를 닮고 스트립은 반대**다 ---
+    스트립판은 스트립끼리 결합이 없어 세로 줄무늬가 생기고 최댓값이
+    슬롯바닥 쪽으로 간다.
+
+    ⚠ 슬롯 1 · 한 운전점 · 32스텝 기준이며, Ref 460 A 대 SC 920 A 라
+    eta 효과와 전류 효과가 섞여 있을 수 있다. 논문에 쓰기 전 다른
+    운전점으로 재현 확인 권장.
+
+    그림: `fig2_<model>_kernel_dim.png` (4패널),
+    `fig2_<model>_ts_vs_2d.png` / `.gif` (2패널, model = Ref|SC),
     샘플링 위치는 `fig2_kernel_sampling_map.png`
-    (`plot_kernel_sampling_map`).
+    (`plot_kernel_sampling_map`). 생성은
+    `run_kernel_dim_study.py --figures --model {Ref,SC}`.
+
+    **모델별 구리 치수를 반드시 넘길 것** --- `.mot` 의
+    Copper_Width/Height 는 Ref 3.711x1.686, HalfSC 1.5배, SC 2배다.
+    Ref 값을 하드코딩한 채 SC 를 돌리면 막대가 절반 크기로 그려진다
+    (실제로 겪음). `SOURCES` 테이블이 모델별로 들고 있다.
 
 21. **슬롯 외곽선은 MS-FEA 메시에서 뽑는다.** TS-FEA 의 `StatorAir`
     (슬롯 개구부)는 메시가 거칠어 경계가 톱니처럼 뜯겨 보인다(개구부
