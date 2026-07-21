@@ -38,9 +38,12 @@ SLOT, FREQ, SIGMA, MU0 = 1, 1066.67, 4.709e7, 4e-7 * np.pi
 SC = os.path.join(F, "Magnetic_SC_OP920A_36deg_OnLoadTorque.txt")
 SC_HY = os.path.join(F, "Magnetic_SC_Hybrid_OP920A_36deg_"
                         "OnLoadTorque.txt")
-# model -> (TS-FEA, MS-FEA, 파일태그, 전기주파수)
-SOURCES = {"Ref": (TS, HY, "Ref", 1066.67),
-           "SC": (SC, SC_HY, "SC", 1066.67)}
+# model -> (TS-FEA, MS-FEA, 파일태그, 전기주파수, 구리폭, 구리높이)
+# 구리 치수는 .mot 의 Copper_Width/Copper_Height 이며 스케일 변형체마다
+# 다르다 --- SC 는 Ref 의 정확히 2배(k_r=2), HalfSC 는 1.5배. Ref 값을
+# 그대로 쓰면 SC 막대가 실제보다 작게 그려진다(실제로 겪음).
+SOURCES = {"Ref": (TS, HY, "Ref", 1066.67, 3.711, 1.686),
+           "SC": (SC, SC_HY, "SC", 1066.67, 7.422, 3.372)}
 CU_H, CU_W = 1.686, 3.711            # [mm] .mot Copper_Height/Width
 NX, NY = 40, 26                      # 접선 x 반경
 EVERY = 4                            # 128블록 중 매 4번째만 (32스텝)
@@ -105,7 +108,7 @@ def figures(model='Ref'):
     ``model='Ref'`` 또는 ``'SC'`` --- SC 는 스케일 변형체에서도 TS 와
     2-D 가 비슷한지 확인하기 위한 것.
     """
-    ts, hy, tag, freq = SOURCES[model]
+    ts, hy, tag, freq, cu_w, cu_h = SOURCES[model]
     figdir = r"E:\KDH\Overleaf\JEET-2024_rev1"
     drive = os.path.join(r"J:\내 드라이브", "EveryMotor_JEET_data",
                          "results")
@@ -114,20 +117,20 @@ def figures(model='Ref'):
     plot_fig2_kernel_comparison(
         ts, hy, os.path.join(figdir, "fig", "fig2_%s_kernel_dim.png" % tag),
         slot_id=SLOT, freq_hz=freq, every=EVERY,
-        copper_w_mm=CU_W, copper_h_mm=CU_H,
+        copper_w_mm=cu_w, copper_h_mm=cu_h,
         out_json=os.path.join(drive, "fig2_%s_kernel_dim.json" % tag))
 
     # 2패널 TS vs 2-D (논문 후보)
     plot_fig2_kernel_comparison(
         ts, hy, os.path.join(figdir, "fig", "fig2_%s_ts_vs_2d.png" % tag),
         slot_id=SLOT, freq_hz=freq, every=EVERY,
-        copper_w_mm=CU_W, copper_h_mm=CU_H, panels=('ts', '2d'),
+        copper_w_mm=cu_w, copper_h_mm=cu_h, panels=('ts', '2d'),
         out_json=os.path.join(drive, "fig2_%s_ts_vs_2d.json" % tag))
 
     make_fig2_kernel_gif(
         ts, hy, os.path.join(drive, "fig2_%s_ts_vs_2d.gif" % tag),
         slot_id=SLOT, freq_hz=freq, every=2,
-        copper_w_mm=CU_W, copper_h_mm=CU_H, panels=('ts', '2d'))
+        copper_w_mm=cu_w, copper_h_mm=cu_h, panels=('ts', '2d'))
 
 
 if __name__ == '__main__':
