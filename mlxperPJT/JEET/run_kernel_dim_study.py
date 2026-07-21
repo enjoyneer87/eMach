@@ -32,8 +32,11 @@ TS = os.path.join(F, "Magnetic_Ref_ARCHIVE_460A_36deg_OnLoadTorque.txt")
 HY = os.path.join(F, "Magnetic_Ref_Hybrid_ARCHIVE_460A_36deg_full_"
                      "OnLoadTorque.txt")
 SLOT, FREQ, SIGMA, MU0 = 1, 1066.67, 4.709e7, 4e-7 * np.pi
-SC = os.path.join(F, "Magnetic_SC_ARCHIVE_920A_36deg_OnLoadTorque.txt")
-SC_HY = os.path.join(F, "Magnetic_SC_Hybrid_ARCHIVE_920A_36deg_"
+# SC 는 운전점별 ACLossCalcExport 폴더에서 뽑은 것을 쓴다 ---
+# 속도스윕 백업(FEResultsData_backup*)은 TS 0.7031 deg/step 128블록,
+# Hybrid 2.0 deg/step 47블록으로 회전 격자가 달라 짝지을 수 없다.
+SC = os.path.join(F, "Magnetic_SC_OP920A_36deg_OnLoadTorque.txt")
+SC_HY = os.path.join(F, "Magnetic_SC_Hybrid_OP920A_36deg_"
                         "OnLoadTorque.txt")
 # model -> (TS-FEA, MS-FEA, 파일태그, 전기주파수)
 SOURCES = {"Ref": (TS, HY, "Ref", 1066.67),

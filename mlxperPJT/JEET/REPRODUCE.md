@@ -270,6 +270,39 @@ from jeet_acloss_rbf import AcLossPipeline, loading_metrics, parse_mes_txt
     정량 주장을 하려면 스트립별 샘플링을 흉내 낸 판을 따로 만들어
     (i)과 (ii)를 분리해야 한다. **미착수.**
 
+23. **전 주기 필드는 `ACLossCalcExport_<model>_no_txt/` 의 운전점별
+    폴더에서 뽑을 것.** 여기엔 `FullFEA_Speed_<rpm>RPM_<A>A_<deg>deg/`
+    와 `Hybrid_...` 가 **짝으로** 있어 조건이 정확히 맞는다.
+
+    `<model>.mot` 옆의 `FEResultsData_backup*/Speed_*RPM/` 은 속도
+    스윕 백업이라 **짝이 맞지 않는다** --- SC 에서 실제로 TS 는
+    0.7031 deg/step 128블록, Hybrid 는 2.0 deg/step 47블록이 나와
+    0 deg 외에는 겹치는 회전자 위치가 하나도 없었다(그대로 zip 하면
+    다른 위치를 비교하게 된다). 올바른 소스로 바꾸니 128/128 매칭.
+
+    ```
+    python run_field_export.py --model SC --no-solve --tag SC_OP920A_36deg \
+      --mes-path "...\\ACLossCalcExport_SC_no_txt\\FullFEA_Speed_16000RPM_920.0A_36.0deg\\FEResultsData\\OnLoadTorque_result_1.mes"
+    ```
+
+24. **헤더의 `Rotate Step` 은 누적각이 아니라 스텝당 증분이다.**
+    모든 블록에서 같은 값이라(예: -0.7031) 누적각으로 오해하면 파일이
+    1도도 안 되는 구간만 훑은 것처럼 보인다. 누적각 = (블록번호-1) x
+    증분. Ref 는 128 x 0.7031 = 89.29 deg 로 8극 기준 **정확히 한
+    전기주기**다. `block_angles()` / `match_blocks_by_angle()` 이 이를
+    처리하며, 블록 수가 같다는 보장이 없으므로 **위치가 아니라 각도로**
+    짝지을 것.
+
+25. **SC 원시 export 폴더는 119개뿐이었다** ---
+    `FullFEA_Speed_16000RPM_460.1A_90.0deg` 가 없다(Hybrid 는 있음).
+    JSON 에는 그 점이 `460.05A ..._rerun` 인필로 기록돼 있으나 그
+    `backup_dir`(`D:\KDH\simVary\...`)는 **삭제되어 복사할 원본이 없다.**
+    손실 스칼라는 JSON 에 남아 있어 89점 데이터셋 자체는 온전하다.
+    폴더 세트를 120으로 맞추려면 재해석이 필요하며
+    `run_infill_export_folder.py` 가 그 일만 한다 ---
+    **JSON 은 건드리지 않는다**(검증된 수치를 폴더 채우자고 덮어쓰면
+    안 된다).
+
 ## 검증된 교차 확인
 
 | 항목 | 독립 경로 A | 독립 경로 B | 일치 |
