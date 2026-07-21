@@ -11,7 +11,7 @@
   "CoreLoss_Stator": 584.9,
   "CoreLoss_Rotor": 65.0,
   "_model": "Prius_Model_24R2 2D full 360, depth 83.8mm, Ipeak250A/3000rpm/gamma60",
-  "_core_split_note": "스테이터90/로터10 추정(2D 필드계산기 EnterSurf 실패). 로터철손 열영향 미미. 정밀화: OutputPerObjectCoreLoss 재솔브",
+  "_core_split_note": "스테이터90/로터10 추정. per-object 정밀분리 3회 시도 모두 실패 (2D CoreLoss: report CoreLoss(obj) 미지원, 필드계산기 EnterVol/EnterSurf nan). IPM 저속(3000rpm) 로터철손 작아 열영향 미미. 정밀화는 Maxwell GUI 에서 OutputPerObjectCoreLoss 후 Fields Overlays 또는 리포트로 확인 권장",
   "_end_winding_note": "P_end = StrandedLoss × (V_coilend/V_coilslot), 형상에서 산출(gmsh)",
   "_V_coil_slot_cm3": 93.9,
   "_V_coil_end_cm3": 42.2,
