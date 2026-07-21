@@ -4,6 +4,10 @@ IcepakFEA 워크샵 모터와 **다른 실제 Prius**(OD 269mm / 스택 83.8mm /
 Maxwell 전자계 손실 → 형상 → MAPDL 하이브리드 열해석 → 시각화 → **Fluent CFD 대조**까지
 전 과정을 코드로 재현·보존.
 
+> **산출물 위치**: 코드는 이 Git(eMach)에, **이미지·GIF·데이터는 Google Drive** 에 보관.
+> → [`DATA_LOCATION.md`](DATA_LOCATION.md) 참조
+> (Drive 폴더 [Prius_thermal_viz](https://drive.google.com/drive/folders/1Kmimyt69kD5a-YhUGLPhj54NR1JdD2tg))
+
 ## 소스 파일
 - **Maxwell 손실**: `Prius_Model_24R2.aedt` (Maxwell 2D Transient, full 360, depth 83.8mm,
   250A/3000rpm/gamma60). 19R2 원본 → 24R2 재저장으로 v261 마이그레이션.
