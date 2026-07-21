@@ -1347,6 +1347,9 @@ def make_fig2_slot_gif(ts_path: str, hybrid_path: str, out_gif: str,
         ax2.clear()
         _draw_slot_contour(ax2, rec['frame'], rec['je_hy'], vlim,
                           show_airgap_label=True, **kw_of(rec))
+        # ax.clear() 가 라벨도 지우므로 매 프레임 다시 붙인다
+        ax1.set_xlabel('(a) TS-FEA', fontsize=9)
+        ax2.set_xlabel('(b) Hybrid (reference)', fontsize=9)
         suptitle.set_text('slot %d   step %d/%d   rotate %.2f deg'
                           % (slot_id, i + 1, n, rec['rotate_deg']))
         step_max.append({
@@ -2056,6 +2059,8 @@ def make_fig_b_slot_gif(ts_path: str, hybrid_path: str, out_gif: str,
         _draw_slot_contour(ax1, rec['f_ts'], rec['b_ts'], vmax, **kw_of(rec))
         ax2.clear()
         _draw_slot_contour(ax2, rec['f_hy'], rec['b_hy'], vmax, **kw_of(rec))
+        ax1.set_xlabel('(a) TS-FEA', fontsize=9)
+        ax2.set_xlabel('(b) MS-FEA (Hybrid)', fontsize=9)
         suptitle.set_text('slot %d   step %d/%d   rotate %.2f deg'
                           % (slot_id, i + 1, n, rec['rotate_deg']))
         step_max.append({
