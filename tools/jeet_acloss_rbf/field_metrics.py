@@ -615,6 +615,104 @@ def hybrid_je_at_points(p_source: dict, query_xy: np.ndarray,
     return out
 
 
+def conductor_je_2d(p_source: dict, code: int, freq_hz: float,
+                    width_mm: float, height_mm: float,
+                    i_net_a: Optional[float] = None,
+                    sigma: float = 4.709e7, mu0: float = 4e-7 * np.pi,
+                    nx: int = 40, ny: int = 26) -> dict:
+    """도체 단면 하나를 **2-D** 확산 방정식으로 풀어 유도 Je 를 구한다.
+
+    ``hybrid_je_at_points`` 의 1-D 커널(반경 방향만)과 달리 접선 방향까지
+    포함한다. 여기(excitation)는 동일하게 **와전류가 없는 MS-FEA 의
+    벡터 퍼텐셜** ``a_wbm`` 을 막대 경계에 Dirichlet 조건으로 주므로,
+    1-D 대 2-D 를 같은 입력·같은 기준에서 비교할 수 있다:
+
+        (lap - j w mu sigma) A = -mu sigma E0,    A|_bd = A_MS|_bd
+        J_z = sigma(-j w A + E0)
+
+    ``E0`` (= V/l, 균일 구동 전계)는 순전류 ``i_net_a`` 를 맞추도록
+    결정한다. 선형이므로 동차해와 특수해를 각각 풀어 중첩한다.
+    반환 ``je`` 는 층 평균을 뺀 **유도 성분**이라 TS-FEA 의 ``Je`` 열과
+    같은 정의다(``_layer_je`` 주석 참조).
+
+    이 함수의 요점(실측): 같은 MS-FEA 여기를 주어도 1-D 는 손실 대리
+    지표에서 TS-FEA 보다 약 14배 낮은 반면, 2-D 는 거의 일치한다 --- 즉
+    하이브리드의 크기 과소평가는 여기 자계가 틀려서가 아니라 **커널이
+    1-D 라서** 생긴다. 자세한 수치는 REPRODUCE.md 주의사항 20.
+
+    Returns ``{'je': (nx,ny) 복소 유도 전류밀도 [A/m^2], 'xy_local',
+    'e0'}``.
+    """
+    import scipy.sparse as _sp
+    import scipy.sparse.linalg as _spl
+    from scipy.interpolate import griddata as _griddata
+
+    m = p_source['reg'] == code
+    if not m.any():
+        raise ValueError('region code %r 없음' % code)
+    x, y = p_source['x_mm'][m], p_source['y_mm'][m]
+    ang = np.arctan2(y.mean(), x.mean())
+    c, s = np.cos(-ang), np.sin(-ang)
+    R = np.array([[c, -s], [s, c]])                 # 전역 -> 로컬
+    r_c = float(np.hypot(x.mean(), y.mean()))
+
+    xs = np.linspace(-width_mm / 2, width_mm / 2, nx)
+    ys = np.linspace(-height_mm / 2, height_mm / 2, ny)
+    XX, YY = np.meshgrid(xs, ys, indexing='ij')
+    loc = np.column_stack([(XX + r_c).ravel(), YY.ravel()])
+    glob = loc @ R                                   # 로컬 -> 전역
+
+    near = np.hypot(p_source['x_mm'] - glob[:, 0].mean(),
+                    p_source['y_mm'] - glob[:, 1].mean()) < 6.0
+    pts = np.column_stack([p_source['x_mm'][near], p_source['y_mm'][near]])
+    a_bc = _griddata(pts, p_source['a_wbm'][near], glob, method='linear')
+    if np.isnan(a_bc).any():
+        a_bc = np.where(np.isnan(a_bc),
+                        _griddata(pts, p_source['a_wbm'][near], glob,
+                                  method='nearest'), a_bc)
+    a_bc = a_bc.reshape(nx, ny)
+
+    dx = (xs[1] - xs[0]) * 1e-3
+    dy = (ys[1] - ys[0]) * 1e-3
+    omega = 2.0 * np.pi * freq_hz
+    k2 = 1j * omega * mu0 * sigma
+    n = nx * ny
+    idx = np.arange(n).reshape(nx, ny)
+    rows, cols, vals = [], [], []
+    rhs_h = np.zeros(n, dtype=complex)
+    rhs_p = np.zeros(n, dtype=complex)
+    for i in range(nx):
+        for j in range(ny):
+            q = idx[i, j]
+            if i in (0, nx - 1) or j in (0, ny - 1):
+                rows.append(q)
+                cols.append(q)
+                vals.append(1.0)
+                rhs_h[q] = a_bc[i, j]
+                continue
+            rows += [q] * 5
+            cols += [q, idx[i - 1, j], idx[i + 1, j],
+                     idx[i, j - 1], idx[i, j + 1]]
+            vals += [-2 / dx ** 2 - 2 / dy ** 2 - k2,
+                     1 / dx ** 2, 1 / dx ** 2, 1 / dy ** 2, 1 / dy ** 2]
+            rhs_p[q] = -mu0 * sigma
+    M = _sp.csr_matrix((vals, (rows, cols)), shape=(n, n), dtype=complex)
+    lu = _spl.splu(M.tocsc())
+    a_h = lu.solve(rhs_h).reshape(nx, ny)
+    a_p = lu.solve(rhs_p).reshape(nx, ny)
+
+    if i_net_a is None:
+        jv = p_source.get('jval', {}).get(code)
+        i_net_a = (0.0 if jv is None
+                   else float(jv) * width_mm * height_mm * 1e-6)
+    cell = dx * dy
+    s1 = (-1j * omega * sigma * a_h).sum() * cell
+    s2 = (sigma * (1.0 - 1j * omega * a_p)).sum() * cell
+    e0 = (i_net_a - s1) / s2
+    j_tot = sigma * (-1j * omega * (a_h + e0 * a_p) + e0)
+    return {'je': j_tot - j_tot.mean(), 'xy_local': (XX, YY), 'e0': e0}
+
+
 def compare_models(paths: Dict[str, str],
                    out_json: Optional[str] = None) -> dict:
     """모델별 지표를 모아 비율까지 계산한다 (Ref 기준)."""

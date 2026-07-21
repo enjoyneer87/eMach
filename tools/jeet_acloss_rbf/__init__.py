@@ -17,6 +17,7 @@ from .manuscript_figs import (
     plot_cost_accuracy,
     plot_transfer_ablation,
     plot_flux_torque_scaling,
+    slot_reference_geometry,
     plot_fig2_slot_comparison,
     plot_fig2_slot_rms,
     make_fig2_slot_gif,
@@ -34,6 +35,7 @@ from .field_metrics import (
     compare_models,
     hybrid_je_reference,
     hybrid_je_at_points,
+    conductor_je_2d,
     slot_conductor_codes,
 )
 from .form_study import operating_beta_band, region_mask, run_form_study
@@ -59,6 +61,7 @@ __all__ = [
     "plot_cost_accuracy",
     "plot_transfer_ablation",
     "plot_flux_torque_scaling",
+    "slot_reference_geometry",
     "plot_fig2_slot_comparison",
     "plot_fig2_slot_rms",
     "make_fig2_slot_gif",
@@ -75,6 +78,7 @@ __all__ = [
     "compare_models",
     "hybrid_je_reference",
     "hybrid_je_at_points",
+    "conductor_je_2d",
     "slot_conductor_codes",
     # 보정 형태 비교 · 비용-정확도
     "operating_beta_band",

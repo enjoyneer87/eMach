@@ -986,6 +986,12 @@ def plot_flux_torque_scaling_tps(comparison_mat: str, out_path: str,
 
 # ── Fig 2: single-slot eddy-current-density contour (TS-FEA vs Hybrid) ──
 
+# svjour3 twocolumn 의 \columnwidth = 238.96 pt = 3.31 in.
+# 캔버스 폭을 실제 인쇄 폭에 맞춰야 선언한 pt 가 그대로 인쇄된다
+# (안 맞추면 \includegraphics 축소 배율만큼 글자가 작아진다).
+_COLW_IN = 3.31
+
+
 _AIRGAP_R2 = {
     # 1차 회전 후 로컬 +x = 반경 바깥쪽(슬롯 바닥), -x = 반경 안쪽(공극).
     # 이 표는 공극이 화면의 어느 쪽에 오는지에 따른 2차 회전이다.
@@ -1009,7 +1015,8 @@ def _is_slot_filler(name: str) -> bool:
 
 
 def _slot_frame(p: dict, slot_id: int, airgap_side: str = 'bottom',
-                domain: str = 'conductors', margin_mm: float = 1.5):
+                domain: str = 'conductors', margin_mm: float = 1.5,
+                R_override: Optional[np.ndarray] = None):
     """한 슬롯을 로컬(회전) 좌표로 변환하고 삼각분할·화살표 위치를 만든다.
 
     Fig 9(``plot_motor_geometry_dxf``)와 동일한 1차 회전 관례 위에,
@@ -1035,11 +1042,15 @@ def _slot_frame(p: dict, slot_id: int, airgap_side: str = 'bottom',
     if not cond_mask.any():
         raise ValueError('slot %d: no conductor elements matched' % slot_id)
 
-    xc, yc = p['x_mm'][cond_mask], p['y_mm'][cond_mask]
-    ang = float(np.degrees(np.arctan2(yc.mean(), xc.mean())))
-    th = np.radians(-ang)
-    R1 = np.array([[np.cos(th), -np.sin(th)], [np.sin(th), np.cos(th)]])
-    R = _AIRGAP_R2[airgap_side] @ R1
+    if R_override is not None:
+        R = R_override
+    else:
+        xc, yc = p['x_mm'][cond_mask], p['y_mm'][cond_mask]
+        ang = float(np.degrees(np.arctan2(yc.mean(), xc.mean())))
+        th = np.radians(-ang)
+        R1 = np.array([[np.cos(th), -np.sin(th)],
+                       [np.sin(th), np.cos(th)]])
+        R = _AIRGAP_R2[airgap_side] @ R1
 
     if domain == 'conductors':
         mask = cond_mask
@@ -1223,22 +1234,23 @@ def plot_fig2_slot_comparison(ts_path: str, hybrid_path: str,
                                signed=False,
                                thickness_mm=copper_height_mm) / 1e6
 
-    geom = slot_reference_geometry(p_ts, slot_id, airgap_side)
+    geom = slot_reference_geometry(p_ts, slot_id, airgap_side,
+                                   p_outline=p_hy)
     # 최댓값으로 자르면 공극 코너의 단일 핫스폿(738)이 스케일을 독점해
     # 나머지가 전부 검게 뭉갠다. 분위수로 잘라 상단은 포화시키고
     # (extend='both') 본체 구조가 보이게 한다.
     vlim = float(np.percentile(np.concatenate([je_ts, je_hy]),
                                vlim_percentile))
 
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(4.2, 2.6),
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(_COLW_IN, 2.6),
                                   layout='constrained')
     kw = {'cmap': 'plasma', 'vmin': 0.0,
           'outline': geom['outline'], 'extent': geom['extent']}
     cf = _draw_slot_contour(ax1, f_ts, je_ts, vlim, **kw)
     _draw_slot_contour(ax2, f_ts, je_hy, vlim, **kw)
     if show_titles:
-        ax1.set_title('(a) TS-FEA', fontsize=9)
-        ax2.set_title('(b) Hybrid (reference)', fontsize=9)
+        ax1.set_title('(a)', fontsize=9)
+        ax2.set_title('(b)', fontsize=9)
     cb = fig.colorbar(cf, ax=(ax1, ax2), shrink=0.85)
     cb.set_label(r'$|J_e|$ [A/mm$^2$]', fontsize=9)
 
@@ -1295,7 +1307,8 @@ def make_fig2_slot_gif(ts_path: str, hybrid_path: str, out_gif: str,
         je_hy = hybrid_je_at_points(p_hy, xy_ts, freq_hz, slot_id=slot_id,
                                     signed=False,
                                     thickness_mm=copper_height_mm) / 1e6
-        geom = slot_reference_geometry(p_ts, slot_id, airgap_side)
+        geom = slot_reference_geometry(p_ts, slot_id, airgap_side,
+                                       p_outline=p_hy)
         frames.append({'step': step_ts, 'rotate_deg': p_ts['rotate_deg'],
                        'frame': f_ts, 'je_ts': je_ts, 'je_hy': je_hy,
                        'geom': geom})
@@ -1306,7 +1319,7 @@ def make_fig2_slot_gif(ts_path: str, hybrid_path: str, out_gif: str,
                             + [f['je_hy'] for f in frames])
     vlim = float(np.percentile(np.abs(all_je), 99.5))
 
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(4.2, 2.6),
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(_COLW_IN, 2.6),
                                   layout='constrained')
 
     def kw_of(rec):
@@ -1366,7 +1379,8 @@ def make_fig2_slot_gif(ts_path: str, hybrid_path: str, out_gif: str,
 
 
 def slot_reference_geometry(p: dict, slot_id: int = 1,
-                            airgap_side: str = 'bottom') -> dict:
+                            airgap_side: str = 'bottom',
+                            p_outline: Optional[dict] = None) -> dict:
     """Je 그림과 B 그림이 **공유할** 슬롯 외곽선·축범위를 만든다.
 
     슬롯 내부 전체 도메인(도체+함침+웨지+공기)의 경계선과 bbox 를 돌려
@@ -1375,10 +1389,20 @@ def slot_reference_geometry(p: dict, slot_id: int = 1,
 
     DXF 대신 메시에서 뽑는 이유는 ``_boundary_segments`` 참조 (좌표계
     정합 문제가 없다).
+
+    ``p_outline`` 을 주면 외곽선만 그 데이터셋에서 뽑되 **회전 프레임은
+    ``p`` 것을 그대로 쓴다**(두 그림의 정합 유지). TS-FEA 의 슬롯 개구부
+    는 ``StatorAir`` 메시가 거칠어 경계가 톱니처럼 뜯겨 보이므로, 개구부
+    형상이 매끈한 MS-FEA 메시를 외곽선 소스로 넘기는 용도다.
     """
     f_slot = _slot_frame(p, slot_id, airgap_side, domain='slot')
-    return {'outline': _boundary_segments(f_slot['triang']),
-            'extent': f_slot['bbox'], 'frame': f_slot}
+    if p_outline is None:
+        return {'outline': _boundary_segments(f_slot['triang']),
+                'extent': f_slot['bbox'], 'frame': f_slot}
+    f_out = _slot_frame(p_outline, slot_id, airgap_side, domain='slot',
+                        R_override=f_slot['R'])
+    return {'outline': _boundary_segments(f_out['triang']),
+            'extent': f_out['bbox'], 'frame': f_slot}
 
 
 def plot_fig2_slot_rms(ts_path: str, hybrid_path: str, out_path: str,
@@ -1425,25 +1449,26 @@ def plot_fig2_slot_rms(ts_path: str, hybrid_path: str, out_path: str,
                                   thickness_mm=copper_height_mm) / 1e6
         sq_hy += (amp / np.sqrt(2.0)) ** 2
         n += 1
-        p_last = p_ts
+        p_last, p_ms_last = p_ts, p_hy
     rms_ts = np.sqrt(sq_ts / n)
     rms_hy = np.sqrt(sq_hy / n)
     print('블록 %d개 누적 완료' % n)
 
     f_ts = _slot_frame(p_last, slot_id, airgap_side)
-    geom = slot_reference_geometry(p_last, slot_id, airgap_side)
+    geom = slot_reference_geometry(p_last, slot_id, airgap_side,
+                                   p_outline=p_ms_last)
     vlim = float(np.percentile(np.concatenate([rms_ts, rms_hy]),
                                vlim_percentile))
 
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(4.2, 2.6),
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(_COLW_IN, 2.6),
                                   layout='constrained')
     kw = {'cmap': 'plasma', 'vmin': 0.0,
           'outline': geom['outline'], 'extent': geom['extent']}
     cf = _draw_slot_contour(ax1, f_ts, rms_ts, vlim, **kw)
     _draw_slot_contour(ax2, f_ts, rms_hy, vlim, **kw)
     if show_titles:
-        ax1.set_title('(a) TS-FEA', fontsize=9)
-        ax2.set_title('(b) Hybrid (reference)', fontsize=9)
+        ax1.set_title('(a)', fontsize=9)
+        ax2.set_title('(b)', fontsize=9)
     cb = fig.colorbar(cf, ax=(ax1, ax2), shrink=0.85)
     cb.set_label(r'$J_{e,\mathrm{rms}}$ [A/mm$^2$]', fontsize=9)
 
@@ -1521,17 +1546,18 @@ def plot_fig_b_slot_comparison(ts_path: str, hybrid_path: str,
     vmax = float(max(b_ts.max(), b_hy.max()))
 
     # Je 그림과 같은 축척·외곽선 (같은 슬롯임이 보이도록)
-    geom = slot_reference_geometry(p_ts, slot_id, airgap_side)
+    geom = slot_reference_geometry(p_ts, slot_id, airgap_side,
+                                   p_outline=p_hy)
 
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(4.2, 2.6),
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(_COLW_IN, 2.6),
                                   layout='constrained')
     kw = {'cmap': 'viridis', 'vmin': 0.0,
           'outline': geom['outline'], 'extent': geom['extent']}
     cf = _draw_slot_contour(ax1, f_ts, b_ts, vmax, **kw)
     _draw_slot_contour(ax2, f_hy, b_hy, vmax, **kw)
     if show_titles:
-        ax1.set_title('(a) TS-FEA', fontsize=9)
-        ax2.set_title('(b) MS-FEA (Hybrid)', fontsize=9)
+        ax1.set_title('(a)', fontsize=9)
+        ax2.set_title('(b)', fontsize=9)
     cb = fig.colorbar(cf, ax=(ax1, ax2), shrink=0.85)
     cb.set_label(r'$|B|$ [T]', fontsize=9)
 
@@ -1576,7 +1602,8 @@ def make_fig_b_slot_gif(ts_path: str, hybrid_path: str, out_gif: str,
                                     iter_mes_blocks(hybrid_path)):
         f_ts, b_ts = _slot_b_panel(p_ts, slot_id, airgap_side)
         f_hy, b_hy = _slot_b_panel(p_hy, slot_id, airgap_side)
-        geom = slot_reference_geometry(p_ts, slot_id, airgap_side)
+        geom = slot_reference_geometry(p_ts, slot_id, airgap_side,
+                                       p_outline=p_hy)
         frames.append({'rotate_deg': p_ts['rotate_deg'],
                        'f_ts': f_ts, 'b_ts': b_ts,
                        'f_hy': f_hy, 'b_hy': b_hy, 'geom': geom})
@@ -1587,7 +1614,7 @@ def make_fig_b_slot_gif(ts_path: str, hybrid_path: str, out_gif: str,
                            + [f['b_hy'] for f in frames])
     vmax = float(np.percentile(all_b, 99.5))
 
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(4.2, 2.6),
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(_COLW_IN, 2.6),
                                   layout='constrained')
 
     def kw_of(rec):
