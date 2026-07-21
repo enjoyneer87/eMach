@@ -365,9 +365,8 @@ class ThermalViz:
 
     def full_dashboard_gif(self, nodes, edges, node_T_fn, label="",
                            name="transient_dashboard"):
-        """종합 대시보드 GIF: 3d_cut + circuit_3d + 온도이력(커서)을 한 프레임에.
-        상단 [3d_cut | circuit_3d], 하단 [부품 온도이력 곡선·현재시각 커서].
-        세 렌더 함수를 매 프레임 합치는 형태."""
+        """종합 대시보드 GIF: 좌[3d_cut 온도장 + 회로 오버레이] + 우[온도이력 곡선·커서].
+        3d_cut 뷰 자체에 회로를 얹어 한 장면으로 만들고 이력곡선을 우측에 결합."""
         import matplotlib; matplotlib.use("Agg")
         import matplotlib.pyplot as plt
         roles = [r for r in ("coil", "magnet", "rotor", "stator") if r in self._sub]
@@ -377,47 +376,37 @@ class ThermalViz:
         frames = []
         for i in range(self.nsets):
             T = self._T(i); ts = self.times[i]
-            pl = self._render_cut3d_frame(T)
-            pl.add_text(f"t={ts:5.0f}s  half-section  {label}",
-                        font_size=12, color="black")
+            pl = self._render_cut3d_circuit(T, nodes, edges, node_T_fn(T), label,
+                                            title_extra=f"  t={ts:.0f}s")
             left = pl.screenshot(return_img=True); pl.close()
-            pc = self._render_circuit(nodes, edges, node_T_fn(T), label,
-                                      title_extra=f"  t={ts:.0f}s")
-            circ = pc.screenshot(return_img=True); pc.close()
-            top = self._hstack(left, circ)
-            fig, ax = plt.subplots(figsize=(top.shape[1] / 150.0, 3.6), dpi=150)
+            fig, ax = plt.subplots(figsize=(6.4, max(4.0, left.shape[0] / 150.0)),
+                                   dpi=150)
             self._draw_history(ax, hist, roles, cursor_i=i)
             ax.set_title(f"component temperatures   t={ts:.0f}s",
                          color="#333333", fontsize=11)
             ax.set_xlim(0, self.times[-1]); ax.set_ylim(*ylim)
             fig.tight_layout(); fig.canvas.draw()
-            bottom = np.asarray(fig.canvas.buffer_rgba())[..., :3]
+            right = np.asarray(fig.canvas.buffer_rgba())[..., :3]
             plt.close(fig)
-            frames.append(self._vstack(top, bottom))
+            frames.append(self._hstack(left, right))
         return self._save_gif(name, frames)
 
     # ── 열등가회로 3D 오버레이 ───────────────────────────────────────────
-    def _render_circuit(self, nodes, edges, node_T, label, title_extra=""):
-        """회로 오버레이 1프레임 렌더 → Plotter 반환(PNG/GIF 공유).
+    def _add_circuit(self, p, nodes, edges, node_T, tube_color="#b9b8ad"):
+        """주어진 Plotter 에 회로 요소(튜브=엣지 저항, 색구=노드 온도, 라벨) 추가.
 
-        nodes {name:(x,y,z)} 노드 위치, edges [(a,b)] 연결(열저항),
-        node_T {name:T}|None 노드 온도(색; None→회색). 색 정규화는 self.clim 고정.
-        구·튜브 크기는 형상 반경 self.R 비례 → 단위/스케일 무관.
+        nodes {name:(x,y,z)} 위치, edges [(a,b)] 연결, node_T {name:T}|None 온도.
+        색 정규화는 self.clim 고정, 구·튜브 크기는 형상 반경 self.R 비례.
         """
         import matplotlib.cm as cm
         import matplotlib.colors as mcolors
         pv = self.pv
         R = self.R if self.R else 0.1
         r_tube, r_node, off = 0.017 * R, 0.085 * R, 0.11 * R
-        surf = self.solid.extract_surface()
-        p = pv.Plotter(off_screen=True, window_size=(1400, 1050))
-        p.set_background("white")
-        p.add_mesh(surf, color="#c9c2ae", opacity=0.16, lighting=True,
-                   smooth_shading=True, ambient=0.5)
         for a, b in edges:
             if a in nodes and b in nodes:
                 p.add_mesh(pv.Line(nodes[a], nodes[b]).tube(radius=r_tube),
-                           color="#b9b8ad", opacity=0.9)
+                           color=tube_color, opacity=0.9)
         norm = mcolors.Normalize(self.clim[0], self.clim[1])
         cmap = cm.get_cmap(CMAP)
 
@@ -429,12 +418,40 @@ class ThermalViz:
                        smooth_shading=True, ambient=0.45, diffuse=0.6)
         pts = np.array([nodes[k] for k in nodes]) + np.array([off, off * 0.8, 0.0])
         labels = [(f"{k} {node_T[k]:.1f}" if has(k) else k) for k in nodes]
-        p.add_point_labels(pts, labels, font_size=14, text_color="black",
+        p.add_point_labels(pts, labels, font_size=13, text_color="black",
                            shape_color="white", shape_opacity=0.78,
                            always_visible=True, show_points=False)
+
+    def _render_circuit(self, nodes, edges, node_T, label, title_extra=""):
+        """회로 오버레이(반투명 형상+회로) 1프레임 → Plotter. PNG/GIF 공유."""
+        pv = self.pv
+        surf = self.solid.extract_surface()
+        p = pv.Plotter(off_screen=True, window_size=(1400, 1050))
+        p.set_background("white")
+        p.add_mesh(surf, color="#c9c2ae", opacity=0.16, lighting=True,
+                   smooth_shading=True, ambient=0.5)
+        self._add_circuit(p, nodes, edges, node_T)
         p.add_text(f"{label} - thermal circuit overlay{title_extra}",
                    font_size=12, color="black")
         p.view_vector((1, -0.35, 0.45), viewup=(0, 1, 0)); p.camera.zoom(1.2)
+        return p
+
+    def _render_cut3d_circuit(self, T, nodes, edges, node_T, label, title_extra=""):
+        """3d_cut 반단면 온도장 + 회로 오버레이를 한 장면에(대시보드 좌패널)."""
+        self.ext_half.point_data["Temperature (degC)"] = T[self.epid]
+        self.solid.point_data["Temperature (degC)"] = T[self.opid]
+        sl = self.solid.slice(normal="x")
+        p = self.pv.Plotter(off_screen=True, window_size=(1200, 1000))
+        p.set_background("white")
+        p.add_mesh(self.ext_half, scalars="Temperature (degC)", cmap=CMAP,
+                   clim=self.clim, n_colors=14, lighting=True, ambient=0.6,
+                   diffuse=0.4, specular=0.0, scalar_bar_args=_sb())
+        p.add_mesh(sl, scalars="Temperature (degC)", cmap=CMAP, clim=self.clim,
+                   n_colors=14, lighting=False, show_scalar_bar=False)
+        self._add_circuit(p, nodes, edges, node_T, tube_color="#5c5b52")
+        p.add_text(f"half-section + circuit  {label}{title_extra}",
+                   font_size=12, color="black")
+        p.view_vector((1, -0.42, 0.40), viewup=(0, 1, 0)); p.camera.zoom(1.0)
         return p
 
     def circuit_3d_png(self, nodes, edges, node_T=None, label="", fname="circuit_3d.png"):

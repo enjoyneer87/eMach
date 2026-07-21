@@ -113,7 +113,7 @@ python ../../thermal_viz.py <file.rth> <out_dir> [label] [clim_lo]   # 범용 CL
 | 파일 | 내용 |
 |---|---|
 | `transient_3d_cut.gif` | 3D 반단면 컷어웨이(외피 반쪽 clip + x=0 단면 slice) — 대표 뷰 |
-| `transient_dashboard.gif` | **종합 대시보드**: 상단[3d_cut 온도장 \| circuit_3d 회로] + 하단[온도이력 곡선·현재시각 커서], 세 뷰 시점동기 |
+| `transient_dashboard.gif` | **종합 대시보드**: 좌[3d_cut 온도장 **+ 열등가회로 직접 오버레이**] + 우[온도이력 곡선·현재시각 커서], 시점동기 |
 | `transient_circuit_3d.gif` | 열등가회로 3D 오버레이 과도(노드 색=온도 시간전개) |
 | `transient_core.gif` | z=0 정단면, 전 부품 온도컬러(가림 없음) |
 | `transient_coilmag.gif` | 코일+자석 내부부품(스테이터/로터 반투명 고스트) |
@@ -138,7 +138,8 @@ python ../../thermal_viz.py <file.rth> <out_dir> [label] [clim_lo]   # 범용 CL
 - **circuit_3d**: 노드 위치는 형상 반경 `tv.R`·스택반길이에 스케일, 노드 온도는 실제
   부품 최고온에서 도출(`node_T_fn(T)`) → 어떤 형상에도 자동 적응. PNG(최종)와
   과도 GIF 공용 렌더(`_render_circuit`).
-- **dashboard**: 기존 3d_cut 프레임 렌더 + 이력곡선(`_draw_history`, 현재시각 세로
-  커서·현재값 점)을 매 프레임 좌우 결합(`_hstack`, PIL 높이맞춤) → 필드와 곡선을
-  동시에 보는 직관적 뷰.
+- **dashboard**: 좌패널은 3d_cut 온도장에 회로를 **직접 오버레이**(`_render_cut3d_circuit`
+  = 3d_cut 장면 + `_add_circuit`), 우패널은 이력곡선(`_draw_history`, 현재시각 세로
+  커서·현재값 점). 매 프레임 좌우 결합(`_hstack`, PIL 높이맞춤) → 필드·회로·곡선을
+  한눈에. 회로 그리기는 `_add_circuit` 로 PNG/GIF/대시보드가 공유.
 - 재료번호 규약(MAPDL): 1 stator 2 magnet 3 coil 4 shaft 5 rotor.
