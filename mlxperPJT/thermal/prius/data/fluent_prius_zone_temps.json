@@ -1,0 +1,62 @@
+{
+  "stator": {
+    "min": 40.4,
+    "mean": 65.0,
+    "max": 76.2,
+    "cells": 63912
+  },
+  "airgap": {
+    "min": 70.3,
+    "mean": 72.0,
+    "max": 74.7,
+    "cells": 10428
+  },
+  "shaft": {
+    "min": 46.1,
+    "mean": 59.4,
+    "max": 68.4,
+    "cells": 2918
+  },
+  "rotor": {
+    "min": 65.7,
+    "mean": 69.6,
+    "max": 70.2,
+    "cells": 26233
+  },
+  "frame": {
+    "min": 35.4,
+    "mean": 39.0,
+    "max": 43.5,
+    "cells": 62276
+  },
+  "magnet": {
+    "min": 67.8,
+    "mean": 69.3,
+    "max": 70.0,
+    "cells": 3930
+  },
+  "insulation": {
+    "min": 58.8,
+    "mean": 69.5,
+    "max": 77.1,
+    "cells": 44071
+  },
+  "coil": {
+    "min": 71.3,
+    "mean": 84.6,
+    "max": 88.3,
+    "cells": 39475
+  },
+  "fluid_jacket": {
+    "min": 26.8,
+    "mean": 33.1,
+    "max": 41.9,
+    "cells": 66530
+  },
+  "cover": {
+    "min": 37.1,
+    "mean": 39.4,
+    "max": 46.0,
+    "cells": 7153
+  }
+}
