@@ -18,7 +18,8 @@ matplotlib.use("Agg")
 
 from jeet_acloss_rbf.pipeline import AcLossPipeline
 from jeet_acloss_rbf.manuscript_figs import (plot_form_convergence,
-                                             plot_cost_accuracy)
+                                             plot_cost_accuracy,
+                                             plot_transfer_ablation)
 from jeet_acloss_rbf.cost_accuracy import sweep_cost_accuracy
 
 FIGDIR = r"E:\KDH\Overleaf\JEET-2024_rev1\fig"
@@ -43,7 +44,14 @@ def main():
                               show_titles=False, placement="structured")
         print("Fig7:", out)
 
-    # ── Fig 8: 비용--정확도 파레토 ────────────────────────────────────
+    # ── Fig 8: (n_base, n_spd8) 절제 히트맵 (구조 배치) ───────────────
+    for scale in ("HalfSC", "SC"):
+        out = os.path.join(FIGDIR, f"transfer_ablation_{scale}.pdf")
+        plot_transfer_ablation(pl, out, scale, placement="structured",
+                               show_titles=False)
+        print("Fig8:", out)
+
+    # ── 보조: 비용--정확도 파레토 (본문 수치 근거, 그림은 미수록) ─────
     if a.reuse_sweep and os.path.exists(SWEEP_JSON):
         with open(SWEEP_JSON, encoding="utf-8") as fh:
             sweep = json.load(fh)

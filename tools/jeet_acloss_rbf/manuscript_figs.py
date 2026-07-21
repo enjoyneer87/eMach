@@ -535,6 +535,70 @@ def plot_form_convergence(pipeline, out_path: str,
     return out_path
 
 
+def plot_transfer_ablation(pipeline, out_path: str, scale: str,
+                           n_base_list=(8, 10, 12, 16, 20, 24),
+                           n_spd_list=(0, 1, 2, 3, 4),
+                           n_seeds: int = 10,
+                           placement: str = 'structured',
+                           adopted=(24, 3),
+                           show_titles: bool = True) -> str:
+    """wMAE heat map of the transfer plan over (n_base, n_spd8).
+
+    Rows are 16-kRPM base-kernel points, columns are own calibration points
+    at 8 kRPM.  ``placement='structured'`` uses the deterministic maximin +
+    kappa-span rule, so each cell is a single run rather than a seed mean.
+    The adopted cell is outlined.
+    """
+    from matplotlib.colors import LogNorm
+    from matplotlib.patches import Rectangle
+
+    plt = _journal_rc()
+    grid = pipeline.transfer_ablation_grid(
+        scale, list(n_base_list), list(n_spd_list),
+        n_seeds=n_seeds, placement=placement)
+    G = np.clip(np.asarray(grid['wmae_pct'], float), None, 1e3)
+
+    fig, ax = plt.subplots(figsize=(3.1, 2.5), layout='constrained')
+    vmin = max(np.nanmin(G), 1e-2)
+    im = ax.imshow(G, cmap='RdYlGn_r', aspect='auto', origin='lower',
+                   norm=LogNorm(vmin=vmin, vmax=np.nanmax(G)))
+
+    for i in range(G.shape[0]):
+        for j in range(G.shape[1]):
+            v = G[i, j]
+            if not np.isfinite(v):
+                continue
+            ax.text(j, i, f'{v:.0f}' if v >= 100 else f'{v:.1f}',
+                    ha='center', va='center', fontsize=5.6,
+                    color='white' if v > 10 * vmin else '#222222')
+
+    if adopted is not None:
+        try:
+            ai = list(n_base_list).index(adopted[0])
+            aj = list(n_spd_list).index(adopted[1])
+            ax.add_patch(Rectangle((aj - 0.5, ai - 0.5), 1, 1, fill=False,
+                                   edgecolor='#1a1a1a', lw=1.6))
+        except ValueError:
+            pass
+
+    ax.set_xticks(range(len(n_spd_list)))
+    ax.set_xticklabels([str(v) for v in n_spd_list])
+    ax.set_yticks(range(len(n_base_list)))
+    ax.set_yticklabels([str(v) for v in n_base_list])
+    ax.set_xlabel(r'$n_{spd8}$ (own 8-kRPM points)')
+    ax.set_ylabel(r'$n_{base}$ (16-kRPM base points)')
+    if show_titles:
+        ax.set_title(f'{scale} ({placement})', fontsize=8)
+    cb = fig.colorbar(im, ax=ax, pad=0.02)
+    cb.set_label('wMAE [%]', fontsize=6.5)
+    cb.ax.tick_params(labelsize=5.8)
+
+    os.makedirs(os.path.dirname(os.path.abspath(out_path)), exist_ok=True)
+    fig.savefig(out_path)
+    plt.close(fig)
+    return out_path
+
+
 def plot_cost_accuracy(sweep, out_path: str, scale: str,
                        show_titles: bool = True,
                        annotate_adopted: bool = True) -> str:
