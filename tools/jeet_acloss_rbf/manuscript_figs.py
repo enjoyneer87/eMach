@@ -1759,6 +1759,138 @@ def make_fig2_kernel_gif(ts_path: str, hybrid_path: str, out_gif: str,
             'every': every}
 
 
+def plot_kernel_sampling_map(hybrid_path: str, out_path: str,
+                             slot_id: int = 1, step: int = 70,
+                             airgap_side: str = 'bottom',
+                             copper_w_mm: float = 3.711,
+                             copper_h_mm: float = 1.686,
+                             n_strips: int = 20,
+                             face_frac: float = 0.2,
+                             nx: int = 40, ny: int = 26) -> dict:
+    """세 커널이 **B 를 어디서 뽑는지** 를 그림으로 보여준다 (진단용).
+
+    (a) ``hybrid_je_at_points`` --- 막대당 안/바깥 반경면의 얇은 띠
+        (두께의 ``face_frac``) 요소들을 평균해 **경계 2점**을 만든다.
+        띠에 든 요소는 옅게, 그 평균 위치는 진한 마커로 표시한다.
+    (b) ``conductor_je_strips`` --- 접선 방향 ``n_strips`` 개 스트립마다
+        안/바깥 두 점을 보간해 뽑는다 (막대당 2*N 점).
+    (c) ``conductor_je_2d`` --- 격자 **둘레 전체**에 벡터 퍼텐셜을 준다
+        (네 면 모두 --- 좌/우 접선면 포함).
+
+    (a)->(b) 는 샘플링 밀도의 차이, (b)->(c) 는 커널 차원수의 차이를
+    가른다. 왜 (c)만 B 의 반경 성분을 쓸 수 있는지도 이 그림에서 보인다.
+    """
+    from .field_metrics import (parse_mes_txt, slot_conductor_codes,
+                                _conductor_layers)
+
+    plt = _journal_rc()
+    p = parse_mes_txt(hybrid_path, block=step)
+    f = _slot_frame(p, slot_id, airgap_side, domain='slot')
+    R = f['R']
+    geom = slot_reference_geometry(p, slot_id, airgap_side)
+    codes = sorted(slot_conductor_codes(p, slot_id),
+                   key=lambda c: np.hypot(p['x_mm'][p['reg'] == c],
+                                          p['y_mm'][p['reg'] == c]).mean())
+    layers = _conductor_layers(p, codes, 4e-7 * np.pi,
+                               face_frac=face_frac)
+    r_all = np.hypot(p['x_mm'], p['y_mm'])
+
+    fig, axs = plt.subplots(1, 3, figsize=(_COLW_IN * 2.0, 3.0),
+                            layout='constrained')
+    counts = {}
+    for ax in axs:
+        from matplotlib.collections import LineCollection
+        ax.add_collection(LineCollection(geom['outline'], colors='0.55',
+                                         linewidths=0.6))
+
+    def to_local(gx, gy):
+        pr = np.column_stack([np.ravel(gx), np.ravel(gy)]) @ R.T
+        return pr[:, 0], pr[:, 1]
+
+    # ---- (a) 막대당 경계 2점 (얇은 띠 평균) ----
+    n_a = 0
+    for lay in layers:
+        m = p['reg'] == lay['code']
+        rr = r_all[m]
+        span = lay['r_hi'] - lay['r_lo']
+        for sel, col in ((rr <= lay['r_lo'] + face_frac * span, '#1f77b4'),
+                         (rr >= lay['r_hi'] - face_frac * span, '#d62728')):
+            gx, gy = p['x_mm'][m][sel], p['y_mm'][m][sel]
+            lx, ly = to_local(gx, gy)
+            axs[0].plot(lx, ly, '.', ms=1.2, color=col, alpha=0.45)
+            axs[0].plot(lx.mean(), ly.mean(), 'o', ms=3.5, color=col,
+                        mec='k', mew=0.4)
+            n_a += 1
+
+    # ---- (b) 스트립별 2점 ----
+    n_b = 0
+    for lay in layers:
+        m = p['reg'] == lay['code']
+        ang = np.arctan2(p['y_mm'][m].mean(), p['x_mm'][m].mean())
+        c, s = np.cos(-ang), np.sin(-ang)
+        Rb = np.array([[c, -s], [s, c]])
+        r_c = float(np.hypot(p['x_mm'][m].mean(), p['y_mm'][m].mean()))
+        tt = np.linspace(-copper_w_mm / 2, copper_w_mm / 2, n_strips)
+        for sgn, col in ((-1, '#1f77b4'), (+1, '#d62728')):
+            q = np.column_stack([np.full(n_strips,
+                                         r_c + sgn * copper_h_mm / 2),
+                                 tt]) @ Rb
+            lx, ly = to_local(q[:, 0], q[:, 1])
+            axs[1].plot(lx, ly, '.', ms=2.2, color=col)
+            n_b += n_strips
+
+    # ---- (c) 격자 둘레 전체 ----
+    n_c = 0
+    for lay in layers:
+        m = p['reg'] == lay['code']
+        ang = np.arctan2(p['y_mm'][m].mean(), p['x_mm'][m].mean())
+        c, s = np.cos(-ang), np.sin(-ang)
+        Rb = np.array([[c, -s], [s, c]])
+        r_c = float(np.hypot(p['x_mm'][m].mean(), p['y_mm'][m].mean()))
+        rr_off = np.linspace(-copper_h_mm / 2, copper_h_mm / 2, ny)
+        tt_off = np.linspace(-copper_w_mm / 2, copper_w_mm / 2, nx)
+        RR, TT = np.meshgrid(rr_off, tt_off, indexing='ij')
+        edge = np.zeros(RR.shape, bool)
+        edge[0, :] = edge[-1, :] = True
+        edge[:, 0] = edge[:, -1] = True
+        q = np.column_stack([(RR[edge] + r_c).ravel(),
+                             TT[edge].ravel()]) @ Rb
+        lx, ly = to_local(q[:, 0], q[:, 1])
+        # 반경면(파랑/빨강)과 접선면(초록)을 구분해 칠한다
+        radial_face = np.zeros(RR.shape, bool)
+        radial_face[0, :] = radial_face[-1, :] = True
+        tang_face = edge & ~radial_face
+        for msk, col in ((radial_face, '#1f77b4'), (tang_face, '#2ca02c')):
+            qq = np.column_stack([(RR[msk] + r_c).ravel(),
+                                  TT[msk].ravel()]) @ Rb
+            ux, uy = to_local(qq[:, 0], qq[:, 1])
+            axs[2].plot(ux, uy, '.', ms=1.8, color=col)
+        n_c += int(edge.sum())
+
+    counts = {'a_2point': n_a, 'b_strips': n_b, 'c_perimeter': n_c}
+    titles = ('(a) 2-point / bar\n(%d pts)' % n_a,
+              '(b) %d strips / bar\n(%d pts)' % (n_strips, n_b),
+              '(c) full perimeter\n(%d pts)' % n_c)
+    x0, x1v, y0, y1v = geom['extent']
+    for ax, t in zip(axs, titles):
+        ax.set_title(t, fontsize=8)
+        ax.set_aspect('equal')
+        ax.set_xticks([])
+        ax.set_yticks([])
+        pad = 0.12 * (x1v - x0)
+        ax.set_xlim(x0 - pad, x1v + pad)
+        ax.set_ylim(y0 - pad, y1v + pad)
+    fig.suptitle('boundary sampling used by each kernel'
+                 '   (blue/red = radial faces, green = tangential faces)',
+                 fontsize=7.5)
+
+    os.makedirs(os.path.dirname(os.path.abspath(out_path)), exist_ok=True)
+    fig.savefig(out_path)
+    plt.close(fig)
+    print('샘플링 위치 그림 저장:', out_path)
+    return counts
+
+
 def _slot_b_panel(p: dict, slot_id: int, airgap_side: str):
     """슬롯 내부 전체 메시 프레임과 그 위의 |B| 를 함께 만든다."""
     frame = _slot_frame(p, slot_id, airgap_side, domain='slot')
