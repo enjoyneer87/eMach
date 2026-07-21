@@ -10,7 +10,9 @@ Consolidates the session scripts into reusable functions:
   (bulge arcs are honored via ezdxf path flattening, mirroring the MATLAB
   ``DXFtool/readDXF.m`` bulge handling)
 
-All plots use the shared journal style (Times New Roman, STIX math).
+All plots use the shared journal style: sans-serif lettering at
+8--12 pt, matching the Springer figure requirements (Helvetica/Arial,
+2--3 mm lettering, minimal size variance within an illustration).
 """
 import os
 from pathlib import Path
@@ -19,15 +21,34 @@ from typing import Dict, List, Optional, Sequence, Tuple
 import numpy as np
 
 
+# Springer 그림 규격: 글자는 Helvetica/Arial 계열 sans-serif, 인쇄 시
+# 8--12 pt (2--3 mm), 한 그림 안에서 크기 편차 최소화. 선화 1200 dpi /
+# 하프톤 300 / 혼합 600. 벡터(PDF)로 내보내므로 dpi 는 산점도처럼
+# 래스터화되는 요소에만 걸린다.
+FS_MIN, FS_MAX = 8.0, 12.0
+
+# 치수 라벨이 도면 선 위에 놓일 때 가독성 확보용 흰 배경
+_LBL_BOX = {'fc': 'white', 'ec': 'none', 'alpha': 0.85,
+            'pad': 0.4}
+
+
+def _fs(pt: float) -> float:
+    """요청 글자 크기를 저널 허용 범위로 클램프한다."""
+    return float(min(FS_MAX, max(FS_MIN, pt)))
+
+
 def _journal_rc():
     import matplotlib.pyplot as plt
     plt.rcParams.update({
-        'font.family': 'serif',
-        'font.serif': ['Times New Roman', 'Times', 'DejaVu Serif'],
-        'font.size': 8, 'axes.titlesize': 8, 'axes.labelsize': 7.5,
-        'xtick.labelsize': 6.5, 'ytick.labelsize': 6.5,
-        'axes.linewidth': 0.6, 'savefig.bbox': 'tight',
-        'savefig.pad_inches': 0.03, 'mathtext.fontset': 'stix',
+        'font.family': 'sans-serif',
+        'font.sans-serif': ['Arial', 'Helvetica', 'DejaVu Sans'],
+        'font.size': 9, 'axes.titlesize': 9, 'axes.labelsize': 9,
+        'xtick.labelsize': 8, 'ytick.labelsize': 8,
+        'legend.fontsize': 8,
+        'axes.linewidth': 0.7, 'savefig.bbox': 'tight',
+        'savefig.pad_inches': 0.03,
+        'savefig.dpi': 600,               # 혼합 아트 기준
+        'mathtext.fontset': 'dejavusans',  # 본문 sans 와 정합
     })
     return plt
 
@@ -122,7 +143,7 @@ def plot_field_panels(
         h_b = ax.scatter(d['x_mm'], d['y_mm'], c=d['b_T'], s=point_size,
                          marker='.', cmap='jet', vmin=0, vmax=b_max,
                          rasterized=True, linewidths=0)
-        ax.set_title(f'({chr(97 + col)}) {title}\n$|B|$', fontsize=7.5)
+        ax.set_title(f'({chr(97 + col)}) {title}\n$|B|$', fontsize=10.9)
 
         ax2 = axes[1, col]
         h_a = ax2.scatter(d['x_mm'], d['y_mm'], c=d['a_Wbm'], s=point_size,
@@ -130,13 +151,13 @@ def plot_field_panels(
                           vmin=-a_lim[col], vmax=a_lim[col],
                           rasterized=True, linewidths=0)
         ax2.set_title(f'({chr(97 + n + col)}) {title}\nMVP $A$',
-                      fontsize=7.5)
+                      fontsize=10.9)
         last_of_pair = (col % 2 == 1) if share_a_pairs else True
         if last_of_pair:
             lo = col - 1 if share_a_pairs else col
             cb = fig.colorbar(h_a, ax=list(axes[1, lo:col + 1]), shrink=0.8)
-            cb.set_label('A [Wb/m]', fontsize=6.5)
-            cb.ax.tick_params(labelsize=6)
+            cb.set_label('A [Wb/m]', fontsize=9.4)
+            cb.ax.tick_params(labelsize=8.7)
 
         for a in (ax, ax2):
             a.set_aspect('equal')
@@ -144,8 +165,8 @@ def plot_field_panels(
             a.set_yticks([])
 
     cb = fig.colorbar(h_b, ax=list(axes[0, :]), shrink=0.8)
-    cb.set_label('|B| [T]', fontsize=6.5)
-    cb.ax.tick_params(labelsize=6)
+    cb.set_label('|B| [T]', fontsize=9.4)
+    cb.ax.tick_params(labelsize=8.7)
 
     os.makedirs(os.path.dirname(os.path.abspath(out_path)), exist_ok=True)
     fig.savefig(out_path, dpi=raster_dpi)
@@ -196,21 +217,21 @@ def plot_af_map_dq(dataset, model, out_path: str,
         ct = ax.contour(ID, IQ, AF, levels=contour_levels,
                         cmap='plasma', vmin=vmin, vmax=vmax,
                         linewidths=0.8)
-        ax.clabel(ct, fmt='%.2f', fontsize=5.5)
+        ax.clabel(ct, fmt='%.2f', fontsize=8)
         sc = ax.scatter(id_v, iq_v, c=af_v, cmap='plasma', s=14,
                         edgecolors='k', linewidths=0.3,
                         vmin=vmin, vmax=vmax, zorder=3)
         # square dq plane: same A-per-inch on both current axes
         ax.set_aspect('equal', adjustable='box')
-        ax.set_title(f'{spd / 1000:.0f} kRPM', fontsize=8)
+        ax.set_title(f'{spd / 1000:.0f} kRPM', fontsize=11.6)
         ax.set_xlabel('$i_d$ [A, pk]')
         if ax is axes[0]:
             ax.set_ylabel('$i_q$ [A, pk]')
         ax.grid(True, ls=':', lw=0.4, color='#cccccc')
         ax.set_axisbelow(True)
     cb = fig.colorbar(sc, ax=list(axes), shrink=0.85)
-    cb.set_label('AF [-]', fontsize=7)
-    cb.ax.tick_params(labelsize=6.5)
+    cb.set_label('AF [-]', fontsize=10.2)
+    cb.ax.tick_params(labelsize=9.4)
 
     os.makedirs(os.path.dirname(os.path.abspath(out_path)), exist_ok=True)
     fig.savefig(out_path)
@@ -252,15 +273,15 @@ def plot_af_surface_3d(dataset, model, out_path: str) -> str:
                                vmax=vmax, alpha=0.75, linewidth=0,
                                rstride=1, cstride=1)
         ax.scatter(id_v, iq_v, af_v, c='k', s=6, depthshade=False)
-        ax.set_title(f'{spd / 1000:.0f} kRPM', fontsize=8, pad=0)
-        ax.set_xlabel('$i_d$ [A]', fontsize=6, labelpad=-4)
-        ax.set_ylabel('$i_q$ [A]', fontsize=6, labelpad=-4)
-        ax.set_zlabel('AF', fontsize=6, labelpad=-4)
-        ax.tick_params(labelsize=5, pad=-2)
+        ax.set_title(f'{spd / 1000:.0f} kRPM', fontsize=11.6, pad=0)
+        ax.set_xlabel('$i_d$ [A]', fontsize=8.7, labelpad=-4)
+        ax.set_ylabel('$i_q$ [A]', fontsize=8.7, labelpad=-4)
+        ax.set_zlabel('AF', fontsize=8.7, labelpad=-4)
+        ax.tick_params(labelsize=8, pad=-2)
         ax.view_init(28, -50)
     cb = fig.colorbar(surf, ax=fig.axes, shrink=0.7)
-    cb.set_label('AF [-]', fontsize=7)
-    cb.ax.tick_params(labelsize=6.5)
+    cb.set_label('AF [-]', fontsize=10.2)
+    cb.ax.tick_params(labelsize=9.4)
 
     os.makedirs(os.path.dirname(os.path.abspath(out_path)), exist_ok=True)
     fig.savefig(out_path)
@@ -339,7 +360,8 @@ def plot_motor_geometry_dxf(
     h_c = pr[:, 1].max() - pr[:, 1].min()      # tangential width
 
     # figure
-    fig, ax = plt.subplots(figsize=(5.4, 4.3))
+    # 0.95*columnwidth = 3.14 in 로 배치되므로 캔버스도 같게 잡는다.
+    fig, ax = plt.subplots(figsize=(3.14, 2.50))
     fig.subplots_adjust(left=0.02, right=0.98, top=0.98, bottom=0.02)
 
     def draw(axis, lw_steel=0.7):
@@ -369,13 +391,13 @@ def plot_motor_geometry_dxf(
                                 'color': 'black',
                                 'shrinkA': 0, 'shrinkB': 0})
         ax.text((x_from + x_to) / 2, y_dim - 1.0, label,
-                ha='center', va='top', fontsize=7.5)
+                ha='center', va='top', fontsize=10.9)
 
     hdim(0.0, r_rotor, -7.0, rf'$D_r/2 = {r_rotor:.1f}$')
     hdim(0.0, r_out, -15.0, rf'$D_s/2 = {r_out:.0f}$')
 
     # slot inset
-    axins = ax.inset_axes([0.00, 0.56, 0.46, 0.44])
+    axins = ax.inset_axes([0.00, 0.46, 0.60, 0.54])
     draw(axins, lw_steel=0.8)
     sx = [p['pts'][:, 0] for p in slot_conds]
     sy = [p['pts'][:, 1] for p in slot_conds]
@@ -399,8 +421,12 @@ def plot_motor_geometry_dxf(
     axins.annotate('', xy=(x1v, yy), xytext=(x0, yy),
                    arrowprops={'arrowstyle': '<->', 'lw': 0.7,
                                'color': 'black'})
-    axins.text((x0 + x1v) / 2, yy - 0.25, rf'$w_c={w_c:.1f}$',
-               ha='center', va='top', fontsize=7)
+    axins.annotate(rf'$w_c={w_c:.1f}$', xy=((x0 + x1v) / 2, yy),
+                   xytext=(0.62, 0.04), textcoords='axes fraction',
+                   fontsize=10.2, ha='left', va='bottom',
+                   bbox=_LBL_BOX,
+                   arrowprops={'arrowstyle': '-', 'lw': 0.5,
+                               'color': '0.4'})
     xx = x0 - 0.9
     axins.annotate('', xy=(xx, y1v), xytext=(xx, y0),
                    arrowprops={'arrowstyle': '<->', 'lw': 0.7,
@@ -408,10 +434,9 @@ def plot_motor_geometry_dxf(
     # 리더선 끝만 데이터 좌표로 두고 글자는 축 비율로 배치해, 라벨이
     # 길어져도(예: h -> h_c) 인셋 밖으로 잘리지 않게 한다.
     axins.annotate(rf'$h_c={h_c:.1f}$', xy=(xx, (y0 + y1v) / 2),
-                   xytext=(0.29, 0.97), textcoords='axes fraction',
-                   fontsize=7, ha='left', va='top',
-                   bbox={'fc': 'white', 'ec': 'none', 'alpha': 0.85,
-                         'pad': 0.4},
+                   xytext=(0.36, 0.97), textcoords='axes fraction',
+                   fontsize=10.2, ha='left', va='top',
+                   bbox=_LBL_BOX,
                    arrowprops={'arrowstyle': '-', 'lw': 0.5,
                                'color': '0.4'})
     a_sl = np.radians(slot_ang)
@@ -419,12 +444,13 @@ def plot_motor_geometry_dxf(
     gym = 0.5 * (r_rotor + r_bore) * np.sin(a_sl)
     if x_lo < gxm < x_hi and y_lo < gym < y_hi:
         axins.annotate(rf'$l_g={g_air:.1f}$', xy=(gxm, gym),
-                       xytext=(gxm - 3.4, gym - 2.8), fontsize=7,
-                       ha='center', va='top',
+                       xytext=(0.02, 0.06), textcoords='axes fraction',
+                       fontsize=10.2, ha='left', va='bottom',
+                       bbox=_LBL_BOX,
                        arrowprops={'arrowstyle': '->', 'lw': 0.6,
                                    'color': 'black'})
-    axins.text(0.97, 0.04, 'unit: mm', transform=axins.transAxes,
-               ha='right', va='bottom', fontsize=6.5, style='italic')
+    ax.text(0.99, 0.01, 'unit: mm', transform=ax.transAxes,
+            ha='right', va='bottom', fontsize=9.4, style='italic')
 
     os.makedirs(os.path.dirname(os.path.abspath(out_path)), exist_ok=True)
     fig.savefig(out_path)
@@ -462,8 +488,10 @@ def plot_form_convergence(pipeline, out_path: str,
     kr_by = {'Ref': 1.0, 'HalfSC': 1.5, 'SC': 2.0}
     base_speed = pipeline.cfg['base_speed']
 
+    # 캔버스 폭 = 논문에서의 인쇄 폭(0.31*textwidth = 2.12 in). 배율 1이
+    # 되어야 rcParams 의 pt 값이 인쇄 크기와 일치한다.
     fig, axes = plt.subplots(1, len(scales),
-                             figsize=(2.35 * len(scales), 2.35),
+                             figsize=(2.12 * len(scales), 2.12),
                              layout='constrained', sharey=True)
     if len(scales) == 1:
         axes = [axes]
@@ -524,12 +552,12 @@ def plot_form_convergence(pipeline, out_path: str,
         ax.set_xlabel(r'$n_{base}$ (16-kRPM base points)')
         if k == 0:
             ax.set_ylabel(r'wMAE [%] (log)')
-            ax.legend(fontsize=6.0, frameon=False, loc='lower left')
+            ax.legend(fontsize=8.7, frameon=False, loc='lower left')
         if show_titles:
             tag = chr(ord('a') + k)
             ax.set_title(f'({tag}) {scale} '
                          f'($k_r{{=}}{kr_by.get(scale, 1):g}$, '
-                         f'{ns}/speed)', fontsize=8)
+                         f'{ns}/speed)', fontsize=11.6)
         ax.grid(True, which='both', ls=':', lw=0.4, color='#dddddd')
         ax.set_axisbelow(True)
 
@@ -573,7 +601,7 @@ def plot_transfer_ablation(pipeline, out_path: str, scale: str,
             if not np.isfinite(v):
                 continue
             ax.text(j, i, f'{v:.0f}' if v >= 100 else f'{v:.1f}',
-                    ha='center', va='center', fontsize=5.6,
+                    ha='center', va='center', fontsize=8.1,
                     color='white' if v > 10 * vmin else '#222222')
 
     if adopted is not None:
@@ -592,10 +620,10 @@ def plot_transfer_ablation(pipeline, out_path: str, scale: str,
     ax.set_xlabel(r'$n_{spd8}$ (own 8-kRPM points)')
     ax.set_ylabel(r'$n_{base}$ (16-kRPM base points)')
     if show_titles:
-        ax.set_title(f'{scale} ({placement})', fontsize=8)
+        ax.set_title(f'{scale} ({placement})', fontsize=11.6)
     cb = fig.colorbar(im, ax=ax, pad=0.02)
-    cb.set_label('wMAE [%]', fontsize=6.5)
-    cb.ax.tick_params(labelsize=5.8)
+    cb.set_label('wMAE [%]', fontsize=9.4)
+    cb.ax.tick_params(labelsize=8.4)
 
     os.makedirs(os.path.dirname(os.path.abspath(out_path)), exist_ok=True)
     fig.savefig(out_path)
@@ -627,7 +655,7 @@ def plot_cost_accuracy(sweep, out_path: str, scale: str,
                                     label='Transfer, structured'),
     }
 
-    fig, ax = plt.subplots(figsize=(3.2, 2.5), layout='constrained')
+    fig, ax = plt.subplots(figsize=(3.08, 2.5), layout='constrained')
     for name, front in e['pareto_by_variant'].items():
         if not front:
             continue
@@ -646,15 +674,15 @@ def plot_cost_accuracy(sweep, out_path: str, scale: str,
                         f"{pick['wmae']:.2f}%",
                         xy=(pick['budget'], pick['wmae']),
                         xytext=(-52, -1), textcoords='offset points',
-                        fontsize=6.0, ha='right', va='center',
+                        fontsize=8.7, ha='right', va='center',
                         arrowprops=dict(arrowstyle='->', lw=0.7,
                                         color='#444444'))
     ax.set_yscale('log')
     ax.set_xlabel('own TS-FEA points (cost)')
     ax.set_ylabel(r'wMAE [%] (log)')
-    ax.legend(fontsize=5.8, frameon=False, loc='upper right')
+    ax.legend(fontsize=8.4, frameon=False, loc='upper right')
     if show_titles:
-        ax.set_title(f"{scale} ($k_r{{=}}{e['k_r']:g}$)", fontsize=8)
+        ax.set_title(f"{scale} ($k_r{{=}}{e['k_r']:g}$)", fontsize=11.6)
     ax.grid(True, which='both', ls=':', lw=0.4, color='#dddddd')
     ax.set_axisbelow(True)
 
@@ -759,34 +787,34 @@ def plot_flux_torque_scaling(ref_fluxmap_mat: str, sc_satmap_mat: str,
                colors='#5a7ea3', linewidths=0.7, linestyles='solid')
     ax.contour(sid, siq, lam_q_s, levels=lv_q,
                colors='#f0a860', linewidths=0.7, linestyles='dashed')
-    ax.clabel(c1, fmt='%.2f', fontsize=5)
+    ax.clabel(c1, fmt='%.2f', fontsize=8)
     ax.set_title(r'(a) $\lambda_d$ (dark), $\lambda_q$ (light) [Vs]',
-                 fontsize=7.5)
+                 fontsize=10.9)
 
     ax = axes[1]
     lv_t = np.linspace(200, np.nanmax(t_sc), 8)
     c1 = ax.contour(sid, siq, t_sc, levels=lv_t, **kw_sc)
     ax.contour(sid, siq, t_s, levels=lv_t, **kw_s)
-    ax.clabel(c1, fmt='%.0f', fontsize=5)
-    ax.set_title('(b) electromagnetic torque [Nm]', fontsize=7.5)
+    ax.clabel(c1, fmt='%.0f', fontsize=8)
+    ax.set_title('(b) electromagnetic torque [Nm]', fontsize=10.9)
 
     ax = axes[2]
     pm = ax.pcolormesh(sid, siq, err_t, cmap='YlOrRd', vmin=0,
                        vmax=max(1.0, np.nanpercentile(err_t, 99.5)),
                        shading='auto')
     cb = fig.colorbar(pm, ax=ax, shrink=0.85)
-    cb.set_label(r'$|\Delta T| / T_{max}$ [%]', fontsize=6.5)
-    cb.ax.tick_params(labelsize=6)
+    cb.set_label(r'$|\Delta T| / T_{max}$ [%]', fontsize=9.4)
+    cb.ax.tick_params(labelsize=8.7)
     ax.set_title(f"(c) torque deviation "
                  f"(mean {metrics['torque_norm_mean_pct']:.2f}%"
-                 f" of $T_{{max}}$)", fontsize=7.5)
+                 f" of $T_{{max}}$)", fontsize=10.9)
 
     from matplotlib.lines import Line2D
     axes[0].legend(handles=[
         Line2D([], [], color='#1a3a5c', lw=0.9, label='SC, FEA'),
         Line2D([], [], color='#e65100', lw=0.9, ls='--',
                label=r'Ref, scaled ($k_r{=}2$)')],
-        fontsize=5.8, frameon=False, loc='upper left')
+        fontsize=8.4, frameon=False, loc='upper left')
     for ax in axes:
         ax.set_aspect('equal', adjustable='box')
         ax.set_xlabel('$i_d$ [A, pk]')
@@ -911,29 +939,29 @@ def plot_flux_torque_scaling_tps(comparison_mat: str, out_path: str,
                colors='#5a7ea3', linewidths=0.7, linestyles='solid')
     ax.contour(ID, IQ, lam_q_s, levels=lv_q,
                colors='#f0a860', linewidths=0.7, linestyles='dashed')
-    ax.clabel(c1, fmt='%.2f', fontsize=5)
+    ax.clabel(c1, fmt='%.2f', fontsize=8)
     ax.scatter(sc['Id_pk'], sc['Iq_pk'], s=4, c='#1a3a5c', marker='o',
                zorder=5, linewidths=0)
     ax.set_title(r'(a) $\lambda_d$ (dark), $\lambda_q$ (light) [Vs]',
-                 fontsize=7.5)
+                 fontsize=10.9)
 
     ax = axes[1]
     lv_t = np.linspace(200, np.nanmax(t_c), 8)
     c1 = ax.contour(ID, IQ, t_c, levels=lv_t, **kw_sc)
     ax.contour(ID, IQ, t_s, levels=lv_t, **kw_s)
-    ax.clabel(c1, fmt='%.0f', fontsize=5)
-    ax.set_title('(b) electromagnetic torque [Nm]', fontsize=7.5)
+    ax.clabel(c1, fmt='%.0f', fontsize=8)
+    ax.set_title('(b) electromagnetic torque [Nm]', fontsize=10.9)
 
     ax = axes[2]
     pm = ax.pcolormesh(ID, IQ, err_t, cmap='YlOrRd', vmin=0,
                        vmax=max(1.0, np.nanpercentile(err_t, 99.5)),
                        shading='auto')
     cb = fig.colorbar(pm, ax=ax, shrink=0.85)
-    cb.set_label(r'$|\Delta T_{em}| / T_{em,max}$ [%]', fontsize=6.5)
-    cb.ax.tick_params(labelsize=6)
+    cb.set_label(r'$|\Delta T_{em}| / T_{em,max}$ [%]', fontsize=9.4)
+    cb.ax.tick_params(labelsize=8.7)
     ax.set_title(f"(c) torque deviation "
                  f"(mean {metrics['torque_norm_mean_pct']:.2f}%"
-                 f" of $T_{{em,max}}$)", fontsize=7.5)
+                 f" of $T_{{em,max}}$)", fontsize=10.9)
 
     from matplotlib.lines import Line2D
     axes[0].legend(handles=[
@@ -941,7 +969,7 @@ def plot_flux_torque_scaling_tps(comparison_mat: str, out_path: str,
                label='SC, FEA build nodes (TPS)'),
         Line2D([], [], color='#e65100', lw=0.9, ls='--',
                label=r'Ref, scaled ($k_r{=}2$, TPS)')],
-        fontsize=5.5, frameon=False, loc='upper left')
+        fontsize=8, frameon=False, loc='upper left')
     for ax in axes:
         ax.set_aspect('equal', adjustable='box')
         ax.set_xlabel('$i_d$ [A, pk]')
