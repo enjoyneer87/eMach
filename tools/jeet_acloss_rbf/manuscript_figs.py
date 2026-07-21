@@ -399,23 +399,27 @@ def plot_motor_geometry_dxf(
     axins.annotate('', xy=(x1v, yy), xytext=(x0, yy),
                    arrowprops={'arrowstyle': '<->', 'lw': 0.7,
                                'color': 'black'})
-    axins.text((x0 + x1v) / 2, yy - 0.25, rf'$w={w_c:.1f}$',
+    axins.text((x0 + x1v) / 2, yy - 0.25, rf'$w_c={w_c:.1f}$',
                ha='center', va='top', fontsize=7)
     xx = x0 - 0.9
     axins.annotate('', xy=(xx, y1v), xytext=(xx, y0),
                    arrowprops={'arrowstyle': '<->', 'lw': 0.7,
                                'color': 'black'})
-    axins.annotate(rf'$h={h_c:.1f}$', xy=(xx, (y0 + y1v) / 2),
-                   xytext=(x0 - 3.4, y1v + 1.7), fontsize=7,
-                   ha='center', va='bottom',
+    # 리더선 끝만 데이터 좌표로 두고 글자는 축 비율로 배치해, 라벨이
+    # 길어져도(예: h -> h_c) 인셋 밖으로 잘리지 않게 한다.
+    axins.annotate(rf'$h_c={h_c:.1f}$', xy=(xx, (y0 + y1v) / 2),
+                   xytext=(0.29, 0.97), textcoords='axes fraction',
+                   fontsize=7, ha='left', va='top',
+                   bbox={'fc': 'white', 'ec': 'none', 'alpha': 0.85,
+                         'pad': 0.4},
                    arrowprops={'arrowstyle': '-', 'lw': 0.5,
                                'color': '0.4'})
     a_sl = np.radians(slot_ang)
     gxm = 0.5 * (r_rotor + r_bore) * np.cos(a_sl)
     gym = 0.5 * (r_rotor + r_bore) * np.sin(a_sl)
     if x_lo < gxm < x_hi and y_lo < gym < y_hi:
-        axins.annotate(rf'$g={g_air:.1f}$', xy=(gxm, gym),
-                       xytext=(gxm - 4.0, gym - 2.8), fontsize=7,
+        axins.annotate(rf'$l_g={g_air:.1f}$', xy=(gxm, gym),
+                       xytext=(gxm - 3.4, gym - 2.8), fontsize=7,
                        ha='center', va='top',
                        arrowprops={'arrowstyle': '->', 'lw': 0.6,
                                    'color': 'black'})
