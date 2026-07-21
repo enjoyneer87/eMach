@@ -95,3 +95,44 @@ HTC 3000)로 교체 (`08_mapdl_waterjacket.py`, PRIUS_LOAD=low/high).
 - 로터/자석은 MAPDL이 ~13-20°C 높음: 공극을 순수 전도(0.75mm)로만 봐서 회전유동
   대류를 미반영. 개선: 공극 유효전도율 상향 또는 하우징+워터재킷 실기하 추가.
 - 유효 재킷 HTC(3000)는 Fluent 결과 역산 보정값. 실제는 프레임 전도+재킷 대류.
+
+---
+
+## 표준 시각화 패키지 (thermal_viz)
+
+어떤 GIF/PNG를 뽑을지 **규격화**해 재현성 확보. `mlxperPJT/thermal/thermal_viz.py`
+(재사용 패키지) + `scripts/render_prius_viz.py`(Prius 드라이버).
+
+```
+python scripts/render_prius_viz.py all      # 워터재킷 저/고부하 표준세트 일괄
+python ../../thermal_viz.py <file.rth> <out_dir> [label] [clim_lo]   # 범용 CLI
+```
+
+### 표준 출력 세트
+**GIF (과도)**
+| 파일 | 내용 |
+|---|---|
+| `transient_3d_cut.gif` | 3D 반단면 컷어웨이(외피 반쪽 clip + x=0 단면 slice) — 대표 뷰 |
+| `transient_core.gif` | z=0 정단면, 전 부품 온도컬러(가림 없음) |
+| `transient_coilmag.gif` | 코일+자석 내부부품(스테이터/로터 반투명 고스트) |
+| `transient_coil_z0.gif` | 코일 z=0 슬라이스 |
+
+**PNG (최종 t)**
+| 파일 | 내용 |
+|---|---|
+| `contour_iso.png` / `contour_z0.png` | 3D iso 표면 / z=0 반경단면 |
+| `cut_3d.png` | 3D 반단면 컷어웨이(마지막 프레임) |
+| `coil_only.png` / `magnet_only.png` | 코일 / 자석(+로터 고스트) 단독 |
+| `component_history.png` | 부품별 온도 시간이력 |
+| `circuit_3d.png` | 열등가회로 3D 오버레이(반투명 형상+튜브 저항+색구 노드) |
+
+### 핵심 기법 (재현 노트)
+- **3d_cut**: 볼륨 clip 은 VTK 크래시 → 외피(surface) 반쪽 clip + 단면 slice 조합.
+  `ext.clip(normal=(1,0,0), invert=True)` + `solid.slice(normal="x")`,
+  `view_vector((1,-0.45,0.35))`.
+- **z_trim**: Prius 메시는 미터 단위, 샤프트가 축방향 돌출(±0.1m) → 활성부(±0.045m)로
+  트림해 깔끔한 반단면. 셀 중심 기준 마스킹 + 원본 grid 인덱스를 `gid` point_data로
+  실어 이중추출에도 온도매핑 보존.
+- **circuit_3d**: 노드 위치는 형상 반경 `tv.R`·스택반길이에 스케일, 노드 온도는 실제
+  부품 최고온에서 도출 → 어떤 형상에도 자동 적응.
+- 재료번호 규약(MAPDL): 1 stator 2 magnet 3 coil 4 shaft 5 rotor.
