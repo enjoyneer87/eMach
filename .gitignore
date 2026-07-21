@@ -184,3 +184,8 @@ Class/pyMotorGeo/_tmp_real_mes/
 
 # acloss_ref_methods: per-element FEA extracts (~4 MB each, regeneratable)
 mlxperPJT/JEET/acloss_ref_methods/elhajji_b_data/Hybrid_Speed_*.json
+
+# full-cycle (128-Solution-block) .mes text exports (200-350 MB each) --
+# regenerable via run_field_export.py --no-solve --mes-path <archived .mes>
+# (see REPRODUCE.md). Data lives in Drive, not in this repo.
+mlxperPJT/JEET/map_exports/e10/fields/*_ARCHIVE_*.txt

@@ -14,6 +14,7 @@ All plots use the shared journal style: sans-serif lettering at
 8--12 pt, matching the Springer figure requirements (Helvetica/Arial,
 2--3 mm lettering, minimal size variance within an illustration).
 """
+import json
 import os
 from pathlib import Path
 from typing import Dict, List, Optional, Sequence, Tuple
@@ -981,3 +982,268 @@ def plot_flux_torque_scaling_tps(comparison_mat: str, out_path: str,
     fig.savefig(out_path)
     plt.close(fig)
     return metrics
+
+
+# ── Fig 2: single-slot eddy-current-density contour (TS-FEA vs Hybrid) ──
+
+_AIRGAP_R2 = {
+    # 1차 회전 후 로컬 +x = 반경 바깥쪽(슬롯 바닥), -x = 반경 안쪽(공극).
+    # 이 표는 공극이 화면의 어느 쪽에 오는지에 따른 2차 회전이다.
+    'left':   np.array([[1.0, 0.0], [0.0, 1.0]]),
+    'right':  np.array([[-1.0, 0.0], [0.0, -1.0]]),
+    'top':    np.array([[0.0, 1.0], [-1.0, 0.0]]),
+    'bottom': np.array([[0.0, -1.0], [1.0, 0.0]]),
+}
+
+
+def _slot_frame(p: dict, slot_id: int, airgap_side: str = 'bottom'):
+    """한 슬롯을 로컬(회전) 좌표로 변환하고 삼각분할·화살표 위치를 만든다.
+
+    Fig 9(``plot_motor_geometry_dxf``)와 동일한 1차 회전 관례 위에,
+    ``airgap_side`` 로 공극이 화면의 어느 쪽에 오는지 고른다
+    ('left','right','top','bottom').
+    """
+    import matplotlib.tri as mtri
+    from .field_metrics import slot_conductor_codes
+
+    if airgap_side not in _AIRGAP_R2:
+        raise ValueError("airgap_side must be one of %s"
+                         % sorted(_AIRGAP_R2))
+
+    codes = slot_conductor_codes(p, slot_id)
+    mask = np.isin(p['reg'], list(codes))
+    if not mask.any():
+        raise ValueError('slot %d: no conductor elements matched' % slot_id)
+    x, y = p['x_mm'][mask], p['y_mm'][mask]
+
+    ang = float(np.degrees(np.arctan2(y.mean(), x.mean())))
+    th = np.radians(-ang)
+    R1 = np.array([[np.cos(th), -np.sin(th)], [np.sin(th), np.cos(th)]])
+    R = _AIRGAP_R2[airgap_side] @ R1
+
+    tri = p['tri'][mask]
+    node_ids = np.unique(tri.ravel())
+    id_map = {nid: i for i, nid in enumerate(node_ids)}
+    tri_local = np.vectorize(id_map.get)(tri)
+    nd_pr = p['node_xy'][node_ids] @ R.T
+    triang = mtri.Triangulation(nd_pr[:, 0], nd_pr[:, 1], tri_local)
+
+    pr = np.column_stack([x, y]) @ R.T
+    x0, x1v = float(pr[:, 0].min()), float(pr[:, 0].max())
+    y0, y1v = float(pr[:, 1].min()), float(pr[:, 1].max())
+    anchor = {'left': (x0, 0.5 * (y0 + y1v)),
+             'right': (x1v, 0.5 * (y0 + y1v)),
+             'top': (0.5 * (x0 + x1v), y1v),
+             'bottom': (0.5 * (x0 + x1v), y0)}[airgap_side]
+
+    return {'triang': triang, 'mask': mask, 'R': R,
+            'bbox': (x0, x1v, y0, y1v), 'anchor': anchor,
+            'airgap_side': airgap_side}
+
+
+def _node_average(tri_local, n_nodes, elem_values):
+    """요소값을 그 요소가 공유하는 절점에 평균해 절점값으로 만든다."""
+    node_val = np.zeros(n_nodes)
+    node_cnt = np.zeros(n_nodes)
+    for k in range(3):
+        np.add.at(node_val, tri_local[:, k], elem_values)
+        np.add.at(node_cnt, tri_local[:, k], 1)
+    return node_val / np.maximum(node_cnt, 1)
+
+
+def _draw_slot_contour(ax, frame: dict, je_element: np.ndarray,
+                       vlim: float, cmap: str = 'plasma',
+                       n_levels: int = 21, show_airgap_label: bool = True):
+    """``_slot_frame`` 결과 위에 매끄러운 등고선(tricontourf)을 그린다."""
+    triang = frame['triang']
+    n_nodes = triang.x.size
+    node_je = _node_average(triang.triangles, n_nodes,
+                            je_element[frame['mask']])
+    levels = np.linspace(-vlim, vlim, n_levels)
+    cf = ax.tricontourf(triang, node_je, levels=levels, cmap=cmap,
+                        extend='both')
+    ax.tricontour(triang, node_je, levels=levels, colors='k',
+                 linewidths=0.15, alpha=0.35)
+
+    x0, x1v, y0, y1v = frame['bbox']
+    ax.set_aspect('equal')
+    ax.set_xticks([])
+    ax.set_yticks([])
+    side = frame['airgap_side']
+    if side in ('top', 'bottom'):
+        pad_main, pad_arrow = 0.15 * (x1v - x0), 0.18 * (y1v - y0)
+        ax.set_xlim(x0 - pad_main, x1v + pad_main)
+        lo = y0 - pad_arrow if side == 'bottom' else y0
+        hi = y1v + pad_arrow if side == 'top' else y1v
+        ax.set_ylim(lo, hi)
+    else:
+        pad_main, pad_arrow = 0.15 * (y1v - y0), 0.35 * (x1v - x0)
+        ax.set_ylim(y0 - pad_main, y1v + pad_main)
+        lo = x0 - pad_arrow if side == 'left' else x0
+        hi = x1v + pad_arrow if side == 'right' else x1v
+        ax.set_xlim(lo, hi)
+
+    if show_airgap_label:
+        ax0, ay0 = frame['anchor']
+        d = {'left': (-1, 0), 'right': (1, 0),
+            'top': (0, 1), 'bottom': (0, -1)}[side]
+        scale = 0.12 * max(x1v - x0, y1v - y0)
+        tip = (ax0 + d[0] * scale, ay0 + d[1] * scale)
+        ax.annotate('', xy=tip, xytext=(ax0, ay0),
+                   arrowprops={'arrowstyle': '-|>', 'lw': 1.3,
+                               'color': 'black'})
+        ha = 'center' if d[0] == 0 else ('right' if d[0] < 0 else 'left')
+        va = 'center' if d[1] == 0 else ('top' if d[1] < 0 else 'bottom')
+        ax.text(tip[0] + d[0] * 0.15 * scale, tip[1] + d[1] * 0.15 * scale,
+               'airgap', fontsize=7.5, ha=ha, va=va)
+    return cf
+
+
+def plot_fig2_slot_comparison(ts_path: str, hybrid_path: str,
+                              out_path: str, slot_id: int = 1,
+                              step: int = 70,
+                              freq_hz: float = 1066.67,
+                              airgap_side: str = 'bottom',
+                              show_titles: bool = False) -> dict:
+    """Fig 2: 단일 슬롯의 TS-FEA 실측 Je vs Hybrid 참고 재구성 Je (정적).
+
+    ``ts_path`` 는 전 주기 export(다중 Solution 블록) TS-FEA 텍스트,
+    ``hybrid_path`` 는 대응하는 Hybrid(MS-FEA) 전 주기 export 텍스트.
+    ``step`` 은 1-based 블록 번호(둘 다 같은 회전각으로 동기화돼 있어야
+    한다). 두 패널 모두 ``airgap_side`` 방향에 공극 화살표를 붙인다.
+
+    Returns dict with the per-element field data actually plotted (for
+    JSON export alongside the figure).
+    """
+    from .field_metrics import parse_mes_txt, hybrid_je_reference
+
+    plt = _journal_rc()
+    p_ts = parse_mes_txt(ts_path, block=step)
+    p_hy = parse_mes_txt(hybrid_path, block=step)
+
+    je_ts = p_ts['je_am2'] / 1e6                      # A/mm2, signed
+    je_hy = hybrid_je_reference(p_hy, freq_hz, signed=True) / 1e6
+
+    f_ts = _slot_frame(p_ts, slot_id, airgap_side)
+    f_hy = _slot_frame(p_hy, slot_id, airgap_side)
+    vlim = max(np.abs(je_ts[f_ts['mask']]).max(),
+              np.abs(je_hy[f_hy['mask']]).max())
+
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(4.2, 2.6),
+                                  layout='constrained')
+    cf = _draw_slot_contour(ax1, f_ts, je_ts, vlim)
+    _draw_slot_contour(ax2, f_hy, je_hy, vlim, show_airgap_label=False)
+    if show_titles:
+        ax1.set_title('(a) TS-FEA', fontsize=9)
+        ax2.set_title('(b) Hybrid (reference)', fontsize=9)
+    cb = fig.colorbar(cf, ax=(ax1, ax2), shrink=0.85)
+    cb.set_label(r'$J_e$ [A/mm$^2$]', fontsize=9)
+
+    os.makedirs(os.path.dirname(os.path.abspath(out_path)), exist_ok=True)
+    fig.savefig(out_path)
+    plt.close(fig)
+
+    m_ts, m_hy = f_ts['mask'], f_hy['mask']
+    return {
+        'slot_id': slot_id, 'step': step, 'freq_hz': freq_hz,
+        'airgap_side': airgap_side, 'vlim_A_mm2': float(vlim),
+        'rotate_deg': p_ts.get('rotate_deg'),
+        'ts_fea': {'x_mm': p_ts['x_mm'][m_ts].tolist(),
+                   'y_mm': p_ts['y_mm'][m_ts].tolist(),
+                   'je_A_mm2': je_ts[m_ts].tolist()},
+        'hybrid_reference': {'x_mm': p_hy['x_mm'][m_hy].tolist(),
+                             'y_mm': p_hy['y_mm'][m_hy].tolist(),
+                             'je_A_mm2': je_hy[m_hy].tolist()},
+    }
+
+
+def make_fig2_slot_gif(ts_path: str, hybrid_path: str, out_gif: str,
+                       slot_id: int = 1, freq_hz: float = 1066.67,
+                       airgap_side: str = 'bottom', fps: int = 10,
+                       out_json: Optional[str] = None) -> dict:
+    """Fig 2 소재의 128스텝 동기 애니메이션(TS-FEA 실측 vs Hybrid 참고).
+
+    ``ts_path``/``hybrid_path`` 는 같은 회전각 격자로 export 된 전 주기
+    데이터여야 한다(둘 다 Rotate Step 값이 스텝별로 일치하는지는 호출
+    전에 확인해 둘 것). 매 스텝 색상 스케일은 전 스텝 공통(99.5th
+    percentile)으로 고정한다.
+
+    ``out_json`` 이 주어지면 스텝별 |Je| 최댓값 등 요약 시계열을 저장한다
+    (원시 프레임 전체를 JSON 에 담기엔 너무 커서, 그림의 재현에 필요한
+    것은 이 함수 자체이고 JSON 은 스텝 선택 근거 요약임을 명시).
+    """
+    from .field_metrics import iter_mes_blocks, hybrid_je_reference
+    from matplotlib.animation import PillowWriter
+
+    plt = _journal_rc()
+
+    def collect(path, is_hybrid):
+        out = []
+        for step, p in iter_mes_blocks(path):
+            je = (hybrid_je_reference(p, freq_hz, signed=True)
+                  if is_hybrid else p['je_am2']) / 1e6
+            frame = _slot_frame(p, slot_id, airgap_side)
+            out.append({'step': step, 'rotate_deg': p['rotate_deg'],
+                       'frame': frame, 'je': je})
+        return out
+
+    print('TS-FEA 파싱 중 ...')
+    ts_frames = collect(ts_path, False)
+    print('Hybrid 파싱 중 ...')
+    hy_frames = collect(hybrid_path, True)
+    n = min(len(ts_frames), len(hy_frames))
+    print('동기화 프레임 %d개' % n)
+
+    all_je = np.concatenate(
+        [f['je'][f['frame']['mask']] for f in ts_frames]
+        + [f['je'][f['frame']['mask']] for f in hy_frames])
+    vlim = float(np.percentile(np.abs(all_je), 99.5))
+
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(4.2, 2.6),
+                                  layout='constrained')
+    cf = _draw_slot_contour(ax1, ts_frames[0]['frame'], ts_frames[0]['je'],
+                            vlim)
+    _draw_slot_contour(ax2, hy_frames[0]['frame'], hy_frames[0]['je'], vlim,
+                       show_airgap_label=False)
+    ax1.set_title('TS-FEA', fontsize=9)
+    ax2.set_title('Hybrid (reference)', fontsize=9)
+    cb = fig.colorbar(cf, ax=(ax1, ax2), shrink=0.85)
+    cb.set_label(r'$J_e$ [A/mm$^2$]', fontsize=9)
+    suptitle = fig.suptitle('', fontsize=8)
+
+    step_max = []
+
+    def update(i):
+        for ax, rec in ((ax1, ts_frames[i]), (ax2, hy_frames[i])):
+            ax.clear()
+            _draw_slot_contour(ax, rec['frame'], rec['je'], vlim,
+                              show_airgap_label=(ax is ax1))
+        suptitle.set_text('slot %d   step %d/%d   rotate %.2f deg'
+                          % (slot_id, i + 1, n, ts_frames[i]['rotate_deg']))
+        step_max.append({
+            'step': i + 1, 'rotate_deg': ts_frames[i]['rotate_deg'],
+            'ts_fea_max_A_mm2': float(np.abs(
+                ts_frames[i]['je'][ts_frames[i]['frame']['mask']]).max()),
+            'hybrid_ref_max_A_mm2': float(np.abs(
+                hy_frames[i]['je'][hy_frames[i]['frame']['mask']]).max()),
+        })
+
+    os.makedirs(os.path.dirname(os.path.abspath(out_gif)), exist_ok=True)
+    writer = PillowWriter(fps=fps)
+    with writer.saving(fig, out_gif, dpi=110):
+        for i in range(n):
+            update(i)
+            writer.grab_frame()
+    plt.close(fig)
+    print('GIF 저장:', out_gif)
+
+    summary = {'slot_id': slot_id, 'freq_hz': freq_hz,
+              'airgap_side': airgap_side, 'n_frames': n,
+              'vlim_A_mm2': vlim, 'per_step': step_max}
+    if out_json:
+        os.makedirs(os.path.dirname(os.path.abspath(out_json)),
+                   exist_ok=True)
+        with open(out_json, 'w', encoding='utf-8') as fh:
+            json.dump(summary, fh, ensure_ascii=False, indent=1)
+        print('요약 JSON 저장:', out_json)
+    return summary

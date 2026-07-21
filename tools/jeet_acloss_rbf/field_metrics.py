@@ -23,8 +23,9 @@ from typing import Dict, Optional
 
 import numpy as np
 
-__all__ = ["parse_mes_txt", "region_summary", "loading_metrics",
-           "compare_models"]
+__all__ = ["parse_mes_txt", "iter_mes_blocks", "region_summary",
+           "loading_metrics", "compare_models", "hybrid_je_reference",
+           "slot_conductor_codes"]
 
 _AIRGAP_RE = re.compile(r"^a\d+$", re.I)
 # Motor-CAD 명명은 Turn_<층>_<슬롯> 이다. 첫 인덱스가 반경방향 층으로,
@@ -32,6 +33,31 @@ _AIRGAP_RE = re.compile(r"^a\d+$", re.I)
 # 슬롯들은 반경이 동일하고 상(phase)만 다르다.
 _TURN_RE = re.compile(r"^Turn_(\d+)_(\d+)$", re.I)
 _LAYER_GROUP = 1
+# 실시간 COM export 는 대신 'ArmatureSlot<슬롯문자><층번호>' 를 쓴다
+# (아카이브된 .mes 는 Turn_<층>_<슬롯>). 층 순서도 반대다: 여기서는
+# 문자가 층이고 숫자가 슬롯이며, 실측 확인 결과 문자 A(최대 r, 슬롯
+# 바닥) -> F(최소 r, 슬롯 개구부)로 Turn_ 표기의 층6->층1과 반대 순.
+_TURN_RE2 = re.compile(r"^ArmatureSlot([A-Za-z]+)(\d+)$", re.I)
+
+
+def _is_conductor_region(name: str) -> bool:
+    return bool(_TURN_RE.match(name) or _TURN_RE2.match(name))
+
+
+def slot_conductor_codes(p: dict, slot_id: int):
+    """지정 슬롯(slot_id) 하나의 도체 RegCode 집합을 두 명명 규칙 모두에서 찾는다.
+
+    아카이브 .mes(``Turn_<층>_<슬롯>``)와 실시간 COM export
+    (``ArmatureSlot<층문자><슬롯>``) 양쪽 다 두 번째 그룹이 슬롯번호이다.
+    """
+    codes = set()
+    for code, name in p['names'].items():
+        for rx in (_TURN_RE, _TURN_RE2):
+            m = rx.match(name)
+            if m and int(m.group(2)) == slot_id:
+                codes.add(code)
+                break
+    return codes
 
 
 def _rows(lines, start, n):
@@ -50,56 +76,72 @@ def _rows(lines, start, n):
     return out, i
 
 
-def parse_mes_txt(path: str) -> dict:
-    """세 표를 모두 읽어 요소 중심좌표·면적까지 계산해 돌려준다."""
-    with open(path, encoding='utf-8', errors='ignore') as fh:
-        lines = fh.readlines()
+def _locate_blocks(lines):
+    """파일 전체를 한 번 훑어 Solution 블록별 표 위치를 색인한다.
 
-    # get_magnetic_data 는 회전 스텝마다 Solution 블록을 하나씩 이어 쓴다
-    # (전 주기 export 시 128개). 각 표는 *처음* 나온 것만 취해 Solution 1
-    # (Rotate Step 0) 을 읽는다 --- 덮어쓰면 마지막 스텝을 읽게 되어 다른
-    # 회전자 위치의 값이 조용히 섞인다.
-    idx: Dict[str, tuple] = {}
-    n_solution = 0
+    반환: [{'rotate_deg':.., 'tables': {'ElementsTable': (start,n), ...}}, ...]
+    RegionsTable 은 보통 최초 블록에만 있으므로 전역으로 한 번만 찾는다.
+    """
+    blocks = []
+    cur = None
+    regions_tbl = None
     for i, ln in enumerate(lines):
-        if re.match(r"^\s*\d+\s+Solution\s+\d+", ln):
-            n_solution += 1
-        m = re.match(r"^\s*\d+\s+(\d+)\s+(\w+Table)", ln)
-        if m and m.group(2) not in idx:
-            idx[m.group(2)] = (i + 1, int(m.group(1)))
+        m = re.match(r"^\s*\d+\s+Solution\s+\d+(.*)$", ln)
+        if m:
+            if cur is not None:
+                blocks.append(cur)
+            deg_m = re.search(r"Rotate Step\s*(-?[0-9.]+)", m.group(1))
+            cur = {'rotate_deg': float(deg_m.group(1)) if deg_m else 0.0,
+                   'tables': {}}
+            continue
+        mt = re.match(r"^\s*\d+\s+(\d+)\s+(\w+Table)", ln)
+        if mt:
+            n, name = int(mt.group(1)), mt.group(2)
+            if cur is not None and name not in cur['tables']:
+                cur['tables'][name] = (i + 1, n)
+            if name == 'RegionsTable' and regions_tbl is None:
+                regions_tbl = (i + 1, n)
+    if cur is not None:
+        blocks.append(cur)
+    return blocks, regions_tbl
 
-    el_start, n_el = idx['ElementsTable']
-    nd_start, n_nd = idx['NodesTable']
-    elems, _ = _rows(lines, el_start, n_el)
-    nodes, _ = _rows(lines, nd_start, n_nd)
 
-    E = np.asarray(elems, float)
-    N = np.asarray(nodes, float)
-
-    # 지역 이름 (RegionsTable 은 이름이 문자열이라 따로 처리)
+def _parse_regions(lines, regions_tbl):
     names: Dict[int, str] = {}
     jval: Dict[int, float] = {}
     sigma: Dict[int, float] = {}
-    if 'RegionsTable' in idx:
-        rs, n_rg = idx['RegionsTable']
-        got = 0
-        for ln in lines[rs:]:
-            parts = [s.strip() for s in ln.split(',')]
-            if len(parts) < 11:
-                continue
-            try:
-                code = int(float(parts[0]))
-            except ValueError:
-                continue
-            names[code] = parts[10]
-            try:
-                jval[code] = float(parts[3])
-                sigma[code] = float(parts[8])
-            except ValueError:
-                pass
-            got += 1
-            if got >= n_rg:
-                break
+    if not regions_tbl:
+        return names, jval, sigma
+    rs, n_rg = regions_tbl
+    got = 0
+    for ln in lines[rs:]:
+        parts = [s.strip() for s in ln.split(',')]
+        if len(parts) < 11:
+            continue
+        try:
+            code = int(float(parts[0]))
+        except ValueError:
+            continue
+        names[code] = parts[10]
+        try:
+            jval[code] = float(parts[3])
+            sigma[code] = float(parts[8])
+        except ValueError:
+            pass
+        got += 1
+        if got >= n_rg:
+            break
+    return names, jval, sigma
+
+
+def _build_block_dict(lines, block, names, jval, sigma, path,
+                      n_solution_blocks):
+    el_start, n_el = block['tables']['ElementsTable']
+    nd_start, n_nd = block['tables']['NodesTable']
+    elems, _ = _rows(lines, el_start, n_el)
+    nodes, _ = _rows(lines, nd_start, n_nd)
+    E = np.asarray(elems, float)
+    N = np.asarray(nodes, float)
 
     node_xy = np.full((int(N[:, 0].max()) + 1, 2), np.nan)
     node_xy[N[:, 0].astype(int)] = N[:, 1:3]
@@ -111,14 +153,49 @@ def parse_mes_txt(path: str) -> dict:
         (P[:, 1, 0] - P[:, 0, 0]) * (P[:, 2, 1] - P[:, 0, 1])
         - (P[:, 2, 0] - P[:, 0, 0]) * (P[:, 1, 1] - P[:, 0, 1]))
 
+    has_je = E.shape[1] > 9
     return {
         'reg': E[:, 4].astype(int), 'bx': E[:, 5], 'by': E[:, 6],
         'a_wbm': E[:, 7], 'j_am2': E[:, 8],
+        'je_am2': E[:, 9] if has_je else np.zeros(len(E)),
         'x_mm': cx, 'y_mm': cy, 'area_mm2': area,
         'b_T': np.hypot(E[:, 5], E[:, 6]),
         'names': names, 'jval': jval, 'sigma': sigma, 'path': path,
-        'n_solution_blocks': n_solution,     # >1 이면 전 주기 export
+        'n_solution_blocks': n_solution_blocks,
+        'rotate_deg': block['rotate_deg'],
+        'tri': tri, 'node_xy': node_xy,          # 메시 연결정보(등고선용)
     }
+
+
+def parse_mes_txt(path: str, block: int = 1) -> dict:
+    """세 표를 모두 읽어 요소 중심좌표·면적까지 계산해 돌려준다.
+
+    ``block`` (1-based) 로 특정 Solution 블록을 선택한다. 전 주기 export
+    (128 블록)에서 블록 1 = Rotate Step 0 은 와전류가 아직 발달하지 않아
+    Je 가 항상 0이다 --- 실제 유도 전류 분포가 필요하면 block>=2 를 쓸 것.
+    """
+    with open(path, encoding='utf-8', errors='ignore') as fh:
+        lines = fh.readlines()
+    blocks, regions_tbl = _locate_blocks(lines)
+    names, jval, sigma = _parse_regions(lines, regions_tbl)
+    return _build_block_dict(lines, blocks[block - 1], names, jval, sigma,
+                             path, len(blocks))
+
+
+def iter_mes_blocks(path: str):
+    """전 주기 export 의 Solution 블록을 순서대로 순회한다.
+
+    ``for step, p in iter_mes_blocks(path):`` 형태로 쓰며, ``p`` 는
+    ``parse_mes_txt`` 와 동일한 구조(1-based ``step`` 이 곧 블록 번호).
+    큰 파일(전 주기 export 시 수백 MB)을 한 번만 읽고 블록별로 지연 파싱한다.
+    """
+    with open(path, encoding='utf-8', errors='ignore') as fh:
+        lines = fh.readlines()
+    blocks, regions_tbl = _locate_blocks(lines)
+    names, jval, sigma = _parse_regions(lines, regions_tbl)
+    for i, blk in enumerate(blocks):
+        yield i + 1, _build_block_dict(lines, blk, names, jval, sigma,
+                                       path, len(blocks))
 
 
 def _wstat(v, w):
@@ -233,7 +310,8 @@ def maxwell_torque(p: dict, l_stack_mm: float = 150.0,
         return {'torque_Nm': float('nan')}
 
     if n_sectors is None:
-        st = [c for c, n in p['names'].items() if n.strip().lower() == 'stator']
+        st = [c for c, n in p['names'].items()
+              if n.strip().lower() == 'stator']
         span = 360.0
         if st:
             ms = p['reg'] == st[0]
@@ -332,6 +410,68 @@ def winding_losses(mot: dict, i_rms_a: Optional[float] = None) -> dict:
             'p_active_kW': f * r_a / 1e3 if r_a else float('nan'),
             'p_end_kW': f * r_e / 1e3 if r_e else float('nan'),
             'p_total_kW': f * r_t / 1e3 if r_t else float('nan')}
+
+
+def hybrid_je_reference(p: dict, freq_hz: float, sigma: float = 4.709e7,
+                        mu0: float = 4e-7 * np.pi,
+                        signed: bool = False) -> np.ndarray:
+    """Hybrid(MS-FEA) 요소별 B 로부터 \"참고용\" 근접 와전류밀도 Je 를 재구성.
+
+    **주의**: TS-FEA 의 Je 는 실제로 풀린 값이고, 이 함수가 만드는 값은
+    Hybrid 방법이 가정하는 1-D Dowell/Ferreira 근접 확산해(Appendix,
+    eq. diffusion/P_rect)를 각 도체에 적용해 \"만약 국소적으로 이
+    닫힌형 해가 성립한다면\"이라는 가정 하에 역산한 근사값이다 --- 실제
+    FEA 출력이 아니라 이론적 참고선(reference)이다.
+
+    각 도체(층)의 두 경계면(도체 내 r 최소/최대 요소)에서 측정된 MS-FEA
+    B 를 그 경계의 접선 H 로 삼아 1-D 확산 방정식의 경계값 문제를 풀고
+    (Appendix 식 (diffusion)의 일반해에 두 면 경계조건을 대입),
+
+        H(x) = [H0 sinh(k(t-x)) + Ht sinh(kx)] / sinh(kt)
+        J(x) = dH/dx,   k = (1+j)/delta,  delta = 1/sqrt(0.5 w mu0 sigma)
+
+    도체 내 각 요소의 국소 좌표 x(0=안쪽 경계, t=바깥쪽 경계, t=도체
+    반경방향 두께)에서 J(x) 를 평가해 요소별로 돌려준다. Hybrid 는
+    도체 내부 전류밀도가 균일하다고 가정하므로(이 배열의 DC 성분),
+    반환값은 그 위에 얹히는 유도(induced) 성분만을 뜻하며 TS-FEA 의
+    Je 열과 같은 정의로 비교할 수 있다.
+
+    ``signed=False``(기본): 크기 |J(x)| 반환(총손실 비교용).
+    ``signed=True``: 등고선 시각화(Fig 2 style)용으로 특정 기준 위상
+    (t=0, 즉 Re[J(x)])에서의 부호 있는 값을 반환 --- 위상 기준이 임의라는
+    점에서 이 자체가 "참고용" 재구성임을 다시 한 번 유의할 것.
+    """
+    reg, x, y = p['reg'], p['x_mm'], p['y_mm']
+    r = np.hypot(x, y)
+    bt = np.hypot(p['bx'], p['by'])          # 국소 |B| (경계 접선 성분 근사)
+
+    omega = 2.0 * np.pi * freq_hz
+    delta = 1.0 / np.sqrt(0.5 * omega * mu0 * sigma)          # [m]
+    k = (1.0 + 1.0j) / delta
+
+    je = np.zeros(len(reg))
+    for code, name in p['names'].items():
+        if not _is_conductor_region(name):
+            continue
+        m = reg == code
+        if m.sum() < 3:
+            continue
+        rr = r[m]
+        i_lo, i_hi = np.argmin(rr), np.argmax(rr)
+        t = (rr.max() - rr.min()) * 1e-3                       # [m]
+        if t <= 0:
+            continue
+        h0 = bt[m][i_lo] / mu0                                  # H = B/mu0
+        ht = bt[m][i_hi] / mu0
+        xl = (rr - rr.min()) * 1e-3                             # [m], 0..t
+
+        skt = np.sinh(k * t)
+        h_of_x = (h0 * np.sinh(k * (t - xl)) + ht * np.sinh(k * xl)) / skt
+        # dH/dx (해석적 미분)
+        j_of_x = k * (-h0 * np.cosh(k * (t - xl))
+                      + ht * np.cosh(k * xl)) / skt
+        je[m] = j_of_x.real if signed else np.abs(j_of_x)
+    return je
 
 
 def compare_models(paths: Dict[str, str],

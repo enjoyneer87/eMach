@@ -14,6 +14,7 @@ from jeet_acloss_rbf import AcLossPipeline, loading_metrics, parse_mes_txt
 
 | 논문 | 내용 | 실행 스크립트 | 패키지 함수 | 산출 JSON |
 |---|---|---|---|---|
+| Fig 2 | 슬롯 내 전류 쏠림(TS-FEA vs Hybrid 참고) | `run_fig2_slot.py` | `plot_fig2_slot_comparison`, `make_fig2_slot_gif` | `fig2_slot_je_static_data.json`, GIF·요약은 Drive (`fig2_slot_je_MANIFEST.md` 참조) |
 | Fig 7 | 스칼라 vs 멱지수 수렴 | `run_manuscript_figs78.py` | `plot_form_convergence` | --- |
 | Fig 8 | 전달 플랜 절제 히트맵 | `run_manuscript_figs78.py` | `plot_transfer_ablation` | --- |
 | Fig 9 | 모터 단면 기하 | `run_geometry_fig.py` | `plot_motor_geometry_dxf` | `geometry_dims_e10.json` |
@@ -61,11 +62,37 @@ from jeet_acloss_rbf import AcLossPipeline, loading_metrics, parse_mes_txt
    그 경로도 `sys.path` 에 넣어야 import 된다.
 
 7. **전 주기 export 는 Solution 블록이 128개 이어 붙는다** (파일 364 MB).
-   `parse_mes_txt` 는 각 표의 **처음** 등장만 취해 Solution 1
-   (Rotate Step 0) 을 읽는다 — 마지막을 취하면 다른 회전자 위치의 값이
-   조용히 섞여 층별 |B| 가 최대 25% 어긋난다(실제로 겪음).
-   반환 dict 의 `n_solution_blocks` 로 확인할 수 있고, 보관 시에는 첫
-   블록만 남기면 2--3 MB 로 줄어 Ref/SC 추출본과 크기가 맞는다.
+   `parse_mes_txt(path)` (인자 없이) 는 각 표의 **처음** 등장만 취해
+   Solution 1 (Rotate Step 0) 을 읽는다 — 마지막을 취하면 다른 회전자
+   위치의 값이 조용히 섞여 층별 |B| 가 최대 25% 어긋난다(실제로 겪음).
+   특정 스텝이 필요하면 `parse_mes_txt(path, block=k)`, 전체를 훑으려면
+   `iter_mes_blocks(path)` 를 쓸 것. 반환 dict 의 `n_solution_blocks` 로
+   블록 수를 확인할 수 있고, 단일 스텝만 보관할 때는 첫 블록만 남기면
+   2--3 MB 로 줄어 Ref/SC 추출본과 크기가 맞는다.
+
+8. **`Je`(와전류밀도)는 Rotate Step 0(블록 1)에서 항상 0이다.** 아직
+   와전류가 발달하지 않은 시작 스냅샷이기 때문 --- 버그가 아니다. 실제
+   유도 전류 분포가 필요하면(전류 쏠림 시각화 등) `block>=2` 를 쓸 것.
+   전역 최댓값 스텝은 모델·운전점마다 다르므로(이 사례는 128 중
+   step 70) 몇 개만 샘플링하지 말고 전체를 스캔해 확인할 것 --- 10점
+   샘플링으로 고른 "최댓값"이 실제 전역 최댓값을 놓친 적이 있다.
+
+9. **`run_field_export.py` 의 자동 태그는 모델·속도·위상만으로 만들어져
+   전류값과 --step 번호를 반영하지 않으면 서로 다른 진단 실행이 같은
+   파일명으로 충돌해 캐노니컬 추출본을 조용히 덮어쓴다**(실제로 두 번
+   겪음 --- 처음은 solution 종류 누락, 이번엔 step 번호 누락으로 Table 4
+   가 참조하는 `Magnetic_Ref_16k_36deg_OnLoadTorque.txt` 가 덮어써졌다가
+   `git checkout --` 으로 복구함). 지금은 전류·step 이 태그에 포함되도록
+   고쳤지만, 캐노니컬 파일을 건드릴 가능성이 있는 진단 실행은 항상
+   `--tag` 로 명시적인 이름을 줄 것.
+
+10. **Hybrid(MS-FEA) 도체 영역은 아카이브 .mes 와 명명 규칙이 다르다.**
+    아카이브: `Turn_<층>_<슬롯>`. 실시간 COM export: `ArmatureSlot<층
+    문자><슬롯숫자>`(문자가 층, 숫자가 슬롯 --- 반대로 착각하기 쉽다).
+    `slot_conductor_codes()` 가 두 규칙을 모두 인식하므로 대부분은 이
+    함수만 쓰면 되지만, 새 명명 변형을 만나면 반경(r) 기준으로 어느
+    쪽이 층/슬롯인지 먼저 검증할 것(문자·숫자 각각으로 그룹핑해 반경
+    분산이 0에 가까운 쪽이 "층").
 
 ## 검증된 교차 확인
 
@@ -76,6 +103,7 @@ from jeet_acloss_rbf import AcLossPipeline, loading_metrics, parse_mes_txt
 | Ref $T_{em}$ | Motor-CAD `AvTorqueMS` 807.05 Nm | 공극 Maxwell 적분 817.66 Nm | 1.3% |
 | SC $T_{em}$ | Motor-CAD 3284.29 Nm | 공극 Maxwell 적분 3267.88 Nm | 0.5% |
 | $\vec{B}$ 보존 | Ref 층별 $|B|$ | SC 층별 $|B|$ | 0.1% |
+| 슬롯 번호 대응(Turn_ vs ArmatureSlot) | TS-FEA 슬롯1 각도 −3.75° | Hybrid 슬롯1 각도 −3.79° | 물리적으로 같은 슬롯 |
 
 ## 미완
 

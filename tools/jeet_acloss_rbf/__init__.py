@@ -17,15 +17,20 @@ from .manuscript_figs import (
     plot_cost_accuracy,
     plot_transfer_ablation,
     plot_flux_torque_scaling,
+    plot_fig2_slot_comparison,
+    make_fig2_slot_gif,
 )
 from .field_metrics import (
     parse_mes_txt,
+    iter_mes_blocks,
     region_summary,
     loading_metrics,
     maxwell_torque,
     read_mot,
     winding_losses,
     compare_models,
+    hybrid_je_reference,
+    slot_conductor_codes,
 )
 from .form_study import operating_beta_band, region_mask, run_form_study
 from .cost_accuracy import sweep_cost_accuracy, pareto_front
@@ -50,14 +55,19 @@ __all__ = [
     "plot_cost_accuracy",
     "plot_transfer_ablation",
     "plot_flux_torque_scaling",
+    "plot_fig2_slot_comparison",
+    "make_fig2_slot_gif",
     # 부하 지표 (.mes / .mot 직접 파싱)
     "parse_mes_txt",
+    "iter_mes_blocks",
     "region_summary",
     "loading_metrics",
     "maxwell_torque",
     "read_mot",
     "winding_losses",
     "compare_models",
+    "hybrid_je_reference",
+    "slot_conductor_codes",
     # 보정 형태 비교 · 비용-정확도
     "operating_beta_band",
     "region_mask",
