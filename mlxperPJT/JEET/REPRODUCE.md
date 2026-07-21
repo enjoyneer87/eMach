@@ -55,6 +55,18 @@ from jeet_acloss_rbf import AcLossPipeline, loading_metrics, parse_mes_txt
 5. **LAB 저항 재빌드는 자기 해석과 별개**이며 오래 걸린다.
    `do_magnetic_calculation()` 은 `Resistance_MotorLAB` 을 갱신하지 않는다.
 
+6. **`.mes` 는 바이너리다.** 텍스트 표를 얻으려면 COM 세션에서
+   `prepare_fea_export_session` + `get_magnetic_data` 를 거쳐야 한다
+   (`run_field_export.py`). `pyMCAD` 는 `tools/motorCAD` 아래 있으므로
+   그 경로도 `sys.path` 에 넣어야 import 된다.
+
+7. **전 주기 export 는 Solution 블록이 128개 이어 붙는다** (파일 364 MB).
+   `parse_mes_txt` 는 각 표의 **처음** 등장만 취해 Solution 1
+   (Rotate Step 0) 을 읽는다 — 마지막을 취하면 다른 회전자 위치의 값이
+   조용히 섞여 층별 |B| 가 최대 25% 어긋난다(실제로 겪음).
+   반환 dict 의 `n_solution_blocks` 로 확인할 수 있고, 보관 시에는 첫
+   블록만 남기면 2--3 MB 로 줄어 Ref/SC 추출본과 크기가 맞는다.
+
 ## 검증된 교차 확인
 
 | 항목 | 독립 경로 A | 독립 경로 B | 일치 |

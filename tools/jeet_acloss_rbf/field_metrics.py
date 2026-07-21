@@ -55,10 +55,17 @@ def parse_mes_txt(path: str) -> dict:
     with open(path, encoding='utf-8', errors='ignore') as fh:
         lines = fh.readlines()
 
-    idx = {}
+    # get_magnetic_data 는 회전 스텝마다 Solution 블록을 하나씩 이어 쓴다
+    # (전 주기 export 시 128개). 각 표는 *처음* 나온 것만 취해 Solution 1
+    # (Rotate Step 0) 을 읽는다 --- 덮어쓰면 마지막 스텝을 읽게 되어 다른
+    # 회전자 위치의 값이 조용히 섞인다.
+    idx: Dict[str, tuple] = {}
+    n_solution = 0
     for i, ln in enumerate(lines):
+        if re.match(r"^\s*\d+\s+Solution\s+\d+", ln):
+            n_solution += 1
         m = re.match(r"^\s*\d+\s+(\d+)\s+(\w+Table)", ln)
-        if m:
+        if m and m.group(2) not in idx:
             idx[m.group(2)] = (i + 1, int(m.group(1)))
 
     el_start, n_el = idx['ElementsTable']
@@ -110,6 +117,7 @@ def parse_mes_txt(path: str) -> dict:
         'x_mm': cx, 'y_mm': cy, 'area_mm2': area,
         'b_T': np.hypot(E[:, 5], E[:, 6]),
         'names': names, 'jval': jval, 'sigma': sigma, 'path': path,
+        'n_solution_blocks': n_solution,     # >1 이면 전 주기 export
     }
 
 
