@@ -1088,10 +1088,29 @@ def _node_average(tri_local, n_nodes, elem_values):
     return node_val / np.maximum(node_cnt, 1)
 
 
+def _boundary_segments(triang) -> np.ndarray:
+    """삼각분할의 **외곽 경계** 선분들을 뽑는다 (N, 2, 2).
+
+    삼각형 하나에만 속한 변이 곧 경계다. DXF 를 따로 읽어 정합시킬 필요가
+    없다 --- 메시 자체가 이미 필드 데이터와 같은 좌표계에 있으므로
+    회전·원점 정합 오차가 원천적으로 생기지 않는다.
+    """
+    tris = triang.triangles
+    e = np.vstack([tris[:, [0, 1]], tris[:, [1, 2]], tris[:, [2, 0]]])
+    e = np.sort(e, axis=1)
+    uniq, cnt = np.unique(e, axis=0, return_counts=True)
+    b = uniq[cnt == 1]
+    return np.stack([np.column_stack([triang.x[b[:, 0]], triang.y[b[:, 0]]]),
+                     np.column_stack([triang.x[b[:, 1]], triang.y[b[:, 1]]])],
+                    axis=1)
+
+
 def _draw_slot_contour(ax, frame: dict, je_values: np.ndarray,
                        vlim: float, cmap: str = 'plasma',
                        n_levels: int = 21, show_airgap_label: bool = True,
-                       vmin: Optional[float] = None):
+                       vmin: Optional[float] = None,
+                       outline: Optional[np.ndarray] = None,
+                       extent: Optional[tuple] = None):
     """``_slot_frame`` 결과 위에 매끄러운 등고선(tricontourf)을 그린다.
 
     ``je_values`` 는 이미 ``frame['mask']`` 로 선택된(즉 도메인 요소 개수와
@@ -1101,6 +1120,11 @@ def _draw_slot_contour(ax, frame: dict, je_values: np.ndarray,
 
     ``vmin`` 생략 시 ``-vlim``(부호 있는 Je 용 발산 스케일), 0 을 주면
     크기값(|B| 등) 용 순차 스케일이 된다.
+
+    ``outline`` 은 ``_boundary_segments`` 가 만든 슬롯 외곽선(선분 배열),
+    ``extent`` 는 축 범위 계산에 쓸 bbox 다. 둘을 슬롯 도메인 기준으로
+    넘기면 Je 그림(도체만)과 B 그림(슬롯 전체)이 **같은 축척**으로 그려져
+    같은 슬롯임이 눈에 보인다.
     """
     triang = frame['triang']
     n_nodes = triang.x.size
@@ -1111,7 +1135,12 @@ def _draw_slot_contour(ax, frame: dict, je_values: np.ndarray,
     ax.tricontour(triang, node_je, levels=levels, colors='k',
                  linewidths=0.15, alpha=0.35)
 
-    x0, x1v, y0, y1v = frame['bbox']
+    if outline is not None and len(outline):
+        from matplotlib.collections import LineCollection
+        ax.add_collection(LineCollection(outline, colors='0.25',
+                                         linewidths=0.6, zorder=5))
+
+    x0, x1v, y0, y1v = extent if extent is not None else frame['bbox']
     ax.set_aspect('equal')
     ax.set_xticks([])
     ax.set_yticks([])
@@ -1130,7 +1159,14 @@ def _draw_slot_contour(ax, frame: dict, je_values: np.ndarray,
         ax.set_xlim(lo, hi)
 
     if show_airgap_label:
-        ax0, ay0 = frame['anchor']
+        if extent is not None:
+            # 공유 extent 를 쓸 땐 화살표도 그 경계에 붙어야 한다
+            ax0, ay0 = {'left': (x0, 0.5 * (y0 + y1v)),
+                        'right': (x1v, 0.5 * (y0 + y1v)),
+                        'top': (0.5 * (x0 + x1v), y1v),
+                        'bottom': (0.5 * (x0 + x1v), y0)}[frame['airgap_side']]
+        else:
+            ax0, ay0 = frame['anchor']
         d = {'left': (-1, 0), 'right': (1, 0),
             'top': (0, 1), 'bottom': (0, -1)}[side]
         scale = 0.12 * max(x1v - x0, y1v - y0)
@@ -1150,7 +1186,8 @@ def plot_fig2_slot_comparison(ts_path: str, hybrid_path: str,
                               step: int = 70,
                               freq_hz: float = 1066.67,
                               airgap_side: str = 'bottom',
-                              show_titles: bool = False) -> dict:
+                              show_titles: bool = False,
+                              vlim_percentile: float = 98.0) -> dict:
     """Fig 2: 단일 슬롯의 TS-FEA 실측 Je vs Hybrid 참고 재구성 Je (정적).
 
     두 패널 모두 **TS-FEA 의 도체 메시(형상·삼각분할)** 를 도메인으로
@@ -1174,23 +1211,33 @@ def plot_fig2_slot_comparison(ts_path: str, hybrid_path: str,
 
     f_ts = _slot_frame(p_ts, slot_id, airgap_side)      # 유일한 도메인
     m_ts = f_ts['mask']
-    je_ts = p_ts['je_am2'][m_ts] / 1e6                  # A/mm2, signed
+    je_ts = np.abs(p_ts['je_am2'][m_ts]) / 1e6          # A/mm2, 크기
 
     xy_ts = np.column_stack([p_ts['x_mm'][m_ts], p_ts['y_mm'][m_ts]])
+    # signed=False --- 재구성값의 위상 기준은 임의라 Re[J] 를 그리면 그
+    # 임의 위상에서의 단면(여기서는 |J| 의 1/8~1/10)만 보여 실제보다
+    # 훨씬 평탄해진다. 두 패널 모두 크기로 비교한다 (REPRODUCE.md 14).
     je_hy = hybrid_je_at_points(p_hy, xy_ts, freq_hz, slot_id=slot_id,
-                               signed=True) / 1e6
+                               signed=False) / 1e6
 
-    vlim = max(np.abs(je_ts).max(), np.abs(je_hy).max())
+    geom = slot_reference_geometry(p_ts, slot_id, airgap_side)
+    # 최댓값으로 자르면 공극 코너의 단일 핫스폿(738)이 스케일을 독점해
+    # 나머지가 전부 검게 뭉갠다. 분위수로 잘라 상단은 포화시키고
+    # (extend='both') 본체 구조가 보이게 한다.
+    vlim = float(np.percentile(np.concatenate([je_ts, je_hy]),
+                               vlim_percentile))
 
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(4.2, 2.6),
                                   layout='constrained')
-    cf = _draw_slot_contour(ax1, f_ts, je_ts, vlim)
-    _draw_slot_contour(ax2, f_ts, je_hy, vlim)
+    kw = {'cmap': 'plasma', 'vmin': 0.0,
+          'outline': geom['outline'], 'extent': geom['extent']}
+    cf = _draw_slot_contour(ax1, f_ts, je_ts, vlim, **kw)
+    _draw_slot_contour(ax2, f_ts, je_hy, vlim, **kw)
     if show_titles:
         ax1.set_title('(a) TS-FEA', fontsize=9)
         ax2.set_title('(b) Hybrid (reference)', fontsize=9)
     cb = fig.colorbar(cf, ax=(ax1, ax2), shrink=0.85)
-    cb.set_label(r'$J_e$ [A/mm$^2$]', fontsize=9)
+    cb.set_label(r'$|J_e|$ [A/mm$^2$]', fontsize=9)
 
     os.makedirs(os.path.dirname(os.path.abspath(out_path)), exist_ok=True)
     fig.savefig(out_path)
@@ -1200,7 +1247,10 @@ def plot_fig2_slot_comparison(ts_path: str, hybrid_path: str,
         'slot_id': slot_id, 'step': step, 'freq_hz': freq_hz,
         'airgap_side': airgap_side, 'vlim_A_mm2': float(vlim),
         'rotate_deg': p_ts.get('rotate_deg'),
-        'domain': 'TS-FEA conductor mesh (both panels)',
+        'quantity': 'magnitude |Je| (reconstruction phase reference is'
+                    ' arbitrary, so Re[J] is not comparable)',
+        'domain': 'TS-FEA conductor mesh (both panels); slot outline and'
+                  ' axis extent shared with the |B| figure',
         'x_mm': xy_ts[:, 0].tolist(), 'y_mm': xy_ts[:, 1].tolist(),
         'ts_fea': {'je_A_mm2': je_ts.tolist()},
         'hybrid_reference': {'je_A_mm2': je_hy.tolist()},
@@ -1236,12 +1286,14 @@ def make_fig2_slot_gif(ts_path: str, hybrid_path: str, out_gif: str,
                                                 iter_mes_blocks(hybrid_path)):
         f_ts = _slot_frame(p_ts, slot_id, airgap_side)
         m_ts = f_ts['mask']
-        je_ts = p_ts['je_am2'][m_ts] / 1e6
+        je_ts = np.abs(p_ts['je_am2'][m_ts]) / 1e6
         xy_ts = np.column_stack([p_ts['x_mm'][m_ts], p_ts['y_mm'][m_ts]])
         je_hy = hybrid_je_at_points(p_hy, xy_ts, freq_hz, slot_id=slot_id,
-                                    signed=True) / 1e6
+                                    signed=False) / 1e6
+        geom = slot_reference_geometry(p_ts, slot_id, airgap_side)
         frames.append({'step': step_ts, 'rotate_deg': p_ts['rotate_deg'],
-                       'frame': f_ts, 'je_ts': je_ts, 'je_hy': je_hy})
+                       'frame': f_ts, 'je_ts': je_ts, 'je_hy': je_hy,
+                       'geom': geom})
     n = len(frames)
     print('동기화 프레임 %d개' % n)
 
@@ -1251,13 +1303,20 @@ def make_fig2_slot_gif(ts_path: str, hybrid_path: str, out_gif: str,
 
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(4.2, 2.6),
                                   layout='constrained')
+
+    def kw_of(rec):
+        return {'cmap': 'inferno', 'vmin': 0.0,
+                'outline': rec['geom']['outline'],
+                'extent': rec['geom']['extent']}
+
     cf = _draw_slot_contour(ax1, frames[0]['frame'], frames[0]['je_ts'],
-                            vlim)
-    _draw_slot_contour(ax2, frames[0]['frame'], frames[0]['je_hy'], vlim)
+                            vlim, **kw_of(frames[0]))
+    _draw_slot_contour(ax2, frames[0]['frame'], frames[0]['je_hy'], vlim,
+                       **kw_of(frames[0]))
     ax1.set_title('TS-FEA', fontsize=9)
     ax2.set_title('Hybrid (reference, on TS-FEA mesh)', fontsize=9)
     cb = fig.colorbar(cf, ax=(ax1, ax2), shrink=0.85)
-    cb.set_label(r'$J_e$ [A/mm$^2$]', fontsize=9)
+    cb.set_label(r'$|J_e|$ [A/mm$^2$]', fontsize=9)
     suptitle = fig.suptitle('', fontsize=8)
 
     step_max = []
@@ -1266,10 +1325,10 @@ def make_fig2_slot_gif(ts_path: str, hybrid_path: str, out_gif: str,
         rec = frames[i]
         ax1.clear()
         _draw_slot_contour(ax1, rec['frame'], rec['je_ts'], vlim,
-                          show_airgap_label=True)
+                          show_airgap_label=True, **kw_of(rec))
         ax2.clear()
         _draw_slot_contour(ax2, rec['frame'], rec['je_hy'], vlim,
-                          show_airgap_label=True)
+                          show_airgap_label=True, **kw_of(rec))
         suptitle.set_text('slot %d   step %d/%d   rotate %.2f deg'
                           % (slot_id, i + 1, n, rec['rotate_deg']))
         step_max.append({
@@ -1299,6 +1358,22 @@ def make_fig2_slot_gif(ts_path: str, hybrid_path: str, out_gif: str,
             json.dump(summary, fh, ensure_ascii=False, indent=1)
         print('요약 JSON 저장:', out_json)
     return summary
+
+
+def slot_reference_geometry(p: dict, slot_id: int = 1,
+                            airgap_side: str = 'bottom') -> dict:
+    """Je 그림과 B 그림이 **공유할** 슬롯 외곽선·축범위를 만든다.
+
+    슬롯 내부 전체 도메인(도체+함침+웨지+공기)의 경계선과 bbox 를 돌려
+    준다. Je 그림은 도체만 색칠하지만 이 외곽선과 bbox 를 함께 쓰면 두
+    그림이 같은 축척·같은 형상으로 그려져 같은 슬롯임이 드러난다.
+
+    DXF 대신 메시에서 뽑는 이유는 ``_boundary_segments`` 참조 (좌표계
+    정합 문제가 없다).
+    """
+    f_slot = _slot_frame(p, slot_id, airgap_side, domain='slot')
+    return {'outline': _boundary_segments(f_slot['triang']),
+            'extent': f_slot['bbox'], 'frame': f_slot}
 
 
 def _slot_b_panel(p: dict, slot_id: int, airgap_side: str):
@@ -1337,10 +1412,15 @@ def plot_fig_b_slot_comparison(ts_path: str, hybrid_path: str,
     f_hy, b_hy = _slot_b_panel(p_hy, slot_id, airgap_side)
     vmax = float(max(b_ts.max(), b_hy.max()))
 
+    # Je 그림과 같은 축척·외곽선 (같은 슬롯임이 보이도록)
+    geom = slot_reference_geometry(p_ts, slot_id, airgap_side)
+
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(4.2, 2.6),
                                   layout='constrained')
-    cf = _draw_slot_contour(ax1, f_ts, b_ts, vmax, cmap='viridis', vmin=0.0)
-    _draw_slot_contour(ax2, f_hy, b_hy, vmax, cmap='viridis', vmin=0.0)
+    kw = {'cmap': 'viridis', 'vmin': 0.0,
+          'outline': geom['outline'], 'extent': geom['extent']}
+    cf = _draw_slot_contour(ax1, f_ts, b_ts, vmax, **kw)
+    _draw_slot_contour(ax2, f_hy, b_hy, vmax, **kw)
     if show_titles:
         ax1.set_title('(a) TS-FEA', fontsize=9)
         ax2.set_title('(b) MS-FEA (Hybrid)', fontsize=9)
@@ -1388,9 +1468,10 @@ def make_fig_b_slot_gif(ts_path: str, hybrid_path: str, out_gif: str,
                                     iter_mes_blocks(hybrid_path)):
         f_ts, b_ts = _slot_b_panel(p_ts, slot_id, airgap_side)
         f_hy, b_hy = _slot_b_panel(p_hy, slot_id, airgap_side)
+        geom = slot_reference_geometry(p_ts, slot_id, airgap_side)
         frames.append({'rotate_deg': p_ts['rotate_deg'],
                        'f_ts': f_ts, 'b_ts': b_ts,
-                       'f_hy': f_hy, 'b_hy': b_hy})
+                       'f_hy': f_hy, 'b_hy': b_hy, 'geom': geom})
     n = len(frames)
     print('동기화 프레임 %d개' % n)
 
@@ -1400,10 +1481,16 @@ def make_fig_b_slot_gif(ts_path: str, hybrid_path: str, out_gif: str,
 
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(4.2, 2.6),
                                   layout='constrained')
+
+    def kw_of(rec):
+        return {'cmap': 'viridis', 'vmin': 0.0,
+                'outline': rec['geom']['outline'],
+                'extent': rec['geom']['extent']}
+
     cf = _draw_slot_contour(ax1, frames[0]['f_ts'], frames[0]['b_ts'], vmax,
-                            cmap='viridis', vmin=0.0)
+                            **kw_of(frames[0]))
     _draw_slot_contour(ax2, frames[0]['f_hy'], frames[0]['b_hy'], vmax,
-                       cmap='viridis', vmin=0.0)
+                       **kw_of(frames[0]))
     ax1.set_title('TS-FEA', fontsize=9)
     ax2.set_title('MS-FEA (Hybrid)', fontsize=9)
     cb = fig.colorbar(cf, ax=(ax1, ax2), shrink=0.85)
@@ -1415,11 +1502,9 @@ def make_fig_b_slot_gif(ts_path: str, hybrid_path: str, out_gif: str,
     def update(i):
         rec = frames[i]
         ax1.clear()
-        _draw_slot_contour(ax1, rec['f_ts'], rec['b_ts'], vmax,
-                          cmap='viridis', vmin=0.0)
+        _draw_slot_contour(ax1, rec['f_ts'], rec['b_ts'], vmax, **kw_of(rec))
         ax2.clear()
-        _draw_slot_contour(ax2, rec['f_hy'], rec['b_hy'], vmax,
-                          cmap='viridis', vmin=0.0)
+        _draw_slot_contour(ax2, rec['f_hy'], rec['b_hy'], vmax, **kw_of(rec))
         suptitle.set_text('slot %d   step %d/%d   rotate %.2f deg'
                           % (slot_id, i + 1, n, rec['rotate_deg']))
         step_max.append({
