@@ -19,6 +19,7 @@ from jeet_acloss_rbf import AcLossPipeline, loading_metrics, parse_mes_txt
 | Fig 7 | 스칼라 vs 멱지수 수렴 | `run_manuscript_figs78.py` | `plot_form_convergence` | --- |
 | Fig 8 | 전달 플랜 절제 히트맵 | `run_manuscript_figs78.py` | `plot_transfer_ablation` | --- |
 | Fig 9 | 모터 단면 기하 | `run_geometry_fig.py` | `plot_motor_geometry_dxf` | `geometry_dims_e10.json` |
+| Fig 11 | 필드 수준 스케일링 검증 (mm 축, `A/k_r` 공통 스케일) | `run_fig11_mvp_field.py` | `plot_field_panels` (`k_r=`, `show_axes=`) | --- |
 | Fig 13 | 보정 검증 parity/box | 노트북 `JEET_AF_Pipeline.ipynb` | `AcLossPipeline.make_validation_figure` | --- |
 | Table 2 | 보정 형태 비교 | `run_form_study.py` | `run_form_study` | `form_study.json` |
 | Table 3 | 주요 치수 | `run_geometry_fig.py` | `plot_motor_geometry_dxf` (반환값) | `geometry_dims_e10.json` |

@@ -112,6 +112,8 @@ def plot_field_panels(
     share_a_pairs: bool = True,
     point_size: float = 0.35,
     raster_dpi: int = 600,
+    k_r: Optional[Sequence[float]] = None,
+    show_axes: bool = True,
 ) -> str:
     """2xN journal figure from field .npz files.
 
@@ -121,17 +123,37 @@ def plot_field_panels(
     Hybrid-vs-FullFEA pairs of the same model).
     Saving to .pdf keeps text vector and rasterizes the point clouds at
     ``raster_dpi``.
+
+    k_r : per-column radial scale factor. When given, row 2 plots
+        ``A / k_r`` on a **single shared** diverging scale instead of
+        per-pair scales. Because SCL-M predicts ``A -> k_a k_r A``, the
+        normalised panels must look identical across models — the figure
+        then *shows* the scaling law rather than asking the reader to
+        compare two colourbar ranges (seminar-2: "Ref/SC 구분이 어렵다").
+    show_axes : draw the mm axis box with ticks. The stored coordinates are
+        already in mm, and the tick box also conveys the k_r size ratio
+        directly (seminar-2 / journal reviewer: "add x-y dimensions").
     """
     plt = _journal_rc()
     D = [(np.load(p), t) for p, t in cases]
     n = len(D)
+    if k_r is not None and len(k_r) != n:
+        raise ValueError(f"k_r must have one entry per case (got {len(k_r)} for {n})")
 
     b_max = max(np.percentile(d['b_T'], 99.5) for d, _ in D)
-    a_lim = [np.percentile(np.abs(d['a_Wbm']), 99.5) for d, _ in D]
-    if share_a_pairs:
-        for i in range(0, n - 1, 2):
-            m = max(a_lim[i], a_lim[i + 1])
-            a_lim[i] = a_lim[i + 1] = m
+
+    # row-2 values: raw A, or A/k_r on a single common scale
+    a_vals = [d['a_Wbm'] if k_r is None else d['a_Wbm'] / float(k_r[i])
+              for i, (d, _) in enumerate(D)]
+    if k_r is None:
+        a_lim = [np.percentile(np.abs(v), 99.5) for v in a_vals]
+        if share_a_pairs:
+            for i in range(0, n - 1, 2):
+                m = max(a_lim[i], a_lim[i + 1])
+                a_lim[i] = a_lim[i + 1] = m
+    else:
+        m = max(np.percentile(np.abs(v), 99.5) for v in a_vals)
+        a_lim = [m] * n
 
     fig, axes = plt.subplots(2, n, figsize=(1.9 * n, 4.4),
                              layout='constrained')
@@ -147,27 +169,46 @@ def plot_field_panels(
         ax.set_title(f'({chr(97 + col)}) {title}\n$|B|$', fontsize=10.9)
 
         ax2 = axes[1, col]
-        h_a = ax2.scatter(d['x_mm'], d['y_mm'], c=d['a_Wbm'], s=point_size,
+        h_a = ax2.scatter(d['x_mm'], d['y_mm'], c=a_vals[col], s=point_size,
                           marker='.', cmap='RdBu_r',
                           vmin=-a_lim[col], vmax=a_lim[col],
                           rasterized=True, linewidths=0)
-        ax2.set_title(f'({chr(97 + n + col)}) {title}\nMVP $A$',
+        a_title = 'MVP $A/k_r$' if k_r is not None else 'MVP $A$'
+        ax2.set_title(f'({chr(97 + n + col)}) {title}\n{a_title}',
                       fontsize=10.9)
-        last_of_pair = (col % 2 == 1) if share_a_pairs else True
-        if last_of_pair:
-            lo = col - 1 if share_a_pairs else col
-            cb = fig.colorbar(h_a, ax=list(axes[1, lo:col + 1]), shrink=0.8)
-            cb.set_label('A [Wb/m]', fontsize=9.4)
-            cb.ax.tick_params(labelsize=8.7)
+        if k_r is None:
+            last_of_pair = (col % 2 == 1) if share_a_pairs else True
+            if last_of_pair:
+                lo = col - 1 if share_a_pairs else col
+                cb = fig.colorbar(h_a, ax=list(axes[1, lo:col + 1]), shrink=0.8)
+                cb.set_label('A [Wb/m]', fontsize=9.4)
+                cb.ax.tick_params(labelsize=8.7)
 
         for a in (ax, ax2):
             a.set_aspect('equal')
-            a.set_xticks([])
-            a.set_yticks([])
+            if show_axes:
+                a.tick_params(labelsize=7.6, length=2.2, pad=1.5)
+                for sp in a.spines.values():
+                    sp.set_visible(True)
+            else:
+                a.set_xticks([])
+                a.set_yticks([])
+        if show_axes:
+            # 축 라벨은 좌측 열에만 — 반복 표기로 지면 낭비하지 않는다
+            axes[1, col].set_xlabel('x [mm]', fontsize=8.2, labelpad=1.5)
+            if col == 0:
+                for r in (0, 1):
+                    axes[r, 0].set_ylabel('y [mm]', fontsize=8.2, labelpad=1.5)
 
     cb = fig.colorbar(h_b, ax=list(axes[0, :]), shrink=0.8)
     cb.set_label('|B| [T]', fontsize=9.4)
     cb.ax.tick_params(labelsize=8.7)
+
+    if k_r is not None:
+        # 전 열 공통 스케일이므로 컬러바도 하나 — 색이 같다는 것 자체가 근거다
+        cb = fig.colorbar(h_a, ax=list(axes[1, :]), shrink=0.8)
+        cb.set_label(r'$A/k_r$ [Wb/m]', fontsize=9.4)
+        cb.ax.tick_params(labelsize=8.7)
 
     os.makedirs(os.path.dirname(os.path.abspath(out_path)), exist_ok=True)
     fig.savefig(out_path, dpi=raster_dpi)
