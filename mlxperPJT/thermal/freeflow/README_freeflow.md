@@ -115,6 +115,46 @@ FreeFlow가 압도적으로 큰 건 **입자기반 자유표면 유동**을 GPU�
 이미지·GIF·데이터는 Google Drive `Prius_thermal_viz/freeflow/` (코드는 이 Git).
 `viz/`, `data/` 폴더 내용을 rclone 으로 동기화: `rclone copy freeflow gdrive:Prius_thermal_viz/freeflow`.
 
-## 추후 (커플드)
-MAPDL 솔리드 온도 → FreeFlow **온도장 활성화** 재솔브(벽면 온도 경계) → 오일 흡열.
-Rocky/FreeFlow 스크립팅(v261) 필요.
+## 커플드 (1-way solid→fluid): MAPDL 벽온도 → FreeFlow 오일 온도장
+MAPDL 하이브리드 솔리드 온도를 FreeFlow 벽 온도경계로 주입해 오일이 흡열하는
+1-way 커플드 해석. FreeFlow Python API(`FreeFlow.exe --headless --script`) 사용.
+
+| # | 스크립트 | 역할 |
+|---|---|---|
+| 11 | `11_freeflow_thermal_setup.py` | 열모델 ON + 벽4개 prescribed_temperature(MAPDL결과) + ATF열물성 → 새 프로젝트 저장 |
+| 12 | `12_freeflow_thermal_solve.py` | **Fluid Inlet 오일온도 70°C** + 밀도 ATF교정 + 솔브(45분 안전상한) |
+| 13 | `13_freeflow_thermal_viz.py` | 오일 SPH 온도장(형상 오버레이) + 온도이력 |
+
+### 벽 온도경계 매핑 (MAPDL v2 하이브리드 → FreeFlow 벽)
+| FreeFlow 벽 | 온도 | 근거(MAPDL) |
+|---|---|---|
+| Stator | 84.4°C | JACKET 회로노드(스테이터OD 자켓오일 접촉) |
+| Winding | 91.9°C | SPRAY 회로노드(엔드턴 스프레이 접촉) |
+| Rotating | 80°C | 로터 스플래시존(OIL 70~로터 85.5 사이) |
+| Housing | 76°C | 외피 박판(OIL~JACKET 사이 근사) |
+
+### API 제약·트러블슈팅 (재현 노트, 중요)
+- **모든 벽 초기 `adiabatic`, T=0** 이 온도 0K로 남던 1차 원인. → `prescribed_temperature`.
+- **근본원인은 Fluid Inlet**: `RAFluidInlet.GetTemperature()==0.0` — 주입 오일이 0°C라
+  벽만 데워도 벌크가 안 데워짐. `SetTemperature(70.0)` 로 해결(오일 70.0~70.15°C 정상 확인).
+- **Rocky 결과셋은 all-or-nothing**: cp/k/density/벽BC/InletT 등 물리설정을 하나라도
+  바꾸면 기존 결과 전체 무효화(`This operation would invalidate the results`). 즉 **완료된
+  8s 유동에 이어붙이기(resume/extend) 불가 → t=0부터 재계산**. 반드시 `DeleteResults()` 선행.
+- **초기 오일온도(기존 채워진 오일의 t=0 온도) 설정 API는 스크립트로 미발견**(GUI 전용 추정)
+  → Inlet 주입온도로만 제어. 검증구간에선 유입오일이 지배적이라 무방.
+- 원본 `Project.freeflow`(유동전용 8s 결과)는 **보존**, 열해석은 `Project_thermal.freeflow`.
+
+### 검증 결과 (짧은 구간, `data/ff_coupled_validation.json`)
+전체 8s 재계산은 유동전용도 5.1h라 부담 → 짧은 검증구간(t=0부터, 벽시계 45분 상한)으로
+설정·메커니즘 검증. **벽시계 2716s에 물리시간 1.63s(164스텝) 도달**.
+
+| 오일 온도 | 값 |
+|---|---|
+| 주입(inlet) | 70.0°C |
+| 평균(t=1.63s) | **70.80°C** (+0.80) |
+| 최대(t=1.63s) | **72.17°C** (+2.17, 뜨거운 벽 근처) |
+
+오일이 주입 70°C에서 뜨거운 벽(자켓 84/스프레이 92°C) 근처부터 매끄럽게 단조 승온
+(`viz/mapdl/ff_thermal_oil_iso.png`, `ff_thermal_oil_history.png`) — **1-way 커플드
+메커니즘 검증 성공.** 전체 8s 정식 커플드(quasi-steady 오일승온까지)는 GPU 수시간
+점유라 별도 협의. (2-way 커플드는 System Coupling 모듈 필요 — 추후.)
