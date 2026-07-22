@@ -18,12 +18,16 @@ eMach/
 └── Class/              모터 설계 클래스
 ```
 
-## 현재 주 작업 — 모터 열해석 (2026-07-21 기준)
+## 현재 주 작업 — 모터 열해석 (2026-07-22 기준)
 
-→ **`mlxperPJT/thermal/HANDOFF_20260721.md`** 가 전체 핸드오프다. 먼저 읽을 것.
+→ **최신 핸드오프: `mlxperPJT/thermal/HANDOFF_20260722.md`** (FreeFlow/e10 + Fluent
+스프레이). 그 전신은 `HANDOFF_20260721.md`(Prius/JAC279 배경). **다른 로컬은 이어받기
+전에 최신 핸드오프부터 읽을 것.** 활성 브랜치 **`freeflow-e10-model`**.
 
-JAC279 방식 하이브리드 열해석(3D FEM 능동부 + 열등가회로 냉각계)을 PyMAPDL 로
-재현. **대상은 실제 Toyota Prius 모터**(OD 269 / 적층 83.8mm / 8극48슬롯 V-IPM).
+JAC279 방식 하이브리드 열해석(3D FEM 능동부 + 열등가회로 냉각계)을 PyMAPDL 로 재현.
+1단계 대상은 실제 **Toyota Prius**(OD 269 / 적층 83.8mm / 8극48슬롯 V-IPM), 2단계는
+**FreeFlow 오일냉각 모터 = e10**(OD198 / 스택150 / 48슬롯8극 더블V IPM, 자석·샤프트 포함
+v2 메시 + 오일냉각 회로 + FreeFlow 1-way 커플드).
 
 - ✅ **MAPDL ↔ Fluent 교차검증 통과** — 코일 온도 1°C 이내 일치
   (저부하 88.3/88.3, 고부하 250A 119.2/118.2°C). 로터·자석은 MAPDL이 13~20°C 높은데
