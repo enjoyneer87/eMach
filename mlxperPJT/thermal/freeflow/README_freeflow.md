@@ -112,8 +112,8 @@ FreeFlow가 압도적으로 큰 건 **입자기반 자유표면 유동**을 GPU�
 때문(FEM 정상상태 전도와 근본적으로 다른 계산량). 향후 온도장까지 풀면 더 늘어남.
 
 ## 산출물 위치
-이미지·GIF·데이터는 Google Drive `Prius_thermal_viz/freeflow/` (코드는 이 Git).
-`viz/`, `data/` 폴더 내용을 rclone 으로 동기화: `rclone copy freeflow gdrive:Prius_thermal_viz/freeflow`.
+이미지·GIF·데이터는 Google Drive `Prius_thermal_viz/e10/` (모델기준) (코드는 이 Git).
+`viz/`, `data/` 폴더 내용을 rclone 으로 동기화: `rclone copy freeflow/viz gdrive:Prius_thermal_viz/e10/viz` (로컬 freeflow/=e10 분석, gdrive는 모델명 e10).
 
 ## 커플드 (1-way solid→fluid): MAPDL 벽온도 → FreeFlow 오일 온도장
 MAPDL 하이브리드 솔리드 온도를 FreeFlow 벽 온도경계로 주입해 오일이 흡열하는

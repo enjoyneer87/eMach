@@ -193,3 +193,8 @@ fluent-*.trn
 *.trn
 
 mlxperPJT/thermal/freeflow/viz/
+
+# 옛 Prius MAPDL 개발 viz -> Google Drive (Prius_thermal_viz/prius/legacy_mapdl_viz)
+mlxperPJT/thermal/viz_real/
+mlxperPJT/thermal/viz_real_aniso/
+mlxperPJT/thermal/viz_ring/
