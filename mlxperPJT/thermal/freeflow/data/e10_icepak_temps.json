@@ -1,0 +1,23 @@
+{
+  "_model": "e10 Icepak (endtip-fixed, SteadyState conduction+HTC)",
+  "_setup": "SolveNet",
+  "_cooling": {
+    "oil_T": 70.0,
+    "htc_jacket": 1000.0,
+    "htc_spray": 2000.0
+  },
+  "_loss_W": {
+    "coil": 3350,
+    "stator": 585,
+    "rotor": 65,
+    "magnet": 24
+  },
+  "_vs_mapdl": {
+    "winding": 152.2,
+    "stator": 126.0,
+    "magnet": 86.9,
+    "rotor": 86.9,
+    "shaft": 84.9
+  },
+  "per_part": {}
+}

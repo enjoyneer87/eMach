@@ -1,0 +1,82 @@
+{
+  "_note": "FreeFlow 6.53s resolved-flow HTC back-out vs MAPDL circuit assumptions. Order-of-magnitude cross-check; SPH near-wall resolution + transient(6.53s) caveats.",
+  "oil_props": {
+    "rho": 825.0,
+    "cp": 2000.0,
+    "k": 0.135,
+    "mu": 0.01,
+    "Pr": 148.1
+  },
+  "per_region": {
+    "Stator": {
+      "assumed_htc": 1000.0,
+      "nearwall_V": 0.449,
+      "nearwall_Toil": 70.79,
+      "wall_T": 84.4,
+      "Tbulk": 71.64,
+      "n_band": 1297,
+      "h_velocity_corr": {
+        "Dh3mm": {
+          "Re": 111.0,
+          "Nu": 4.4,
+          "h": 196.2
+        },
+        "Dh6mm": {
+          "Re": 222.0,
+          "Nu": 4.4,
+          "h": 98.1
+        },
+        "Dh10mm": {
+          "Re": 370.1,
+          "Nu": 4.4,
+          "h": 58.9
+        }
+      },
+      "T_profile_0to3mm": [
+        null,
+        70.97,
+        70.59,
+        70.67,
+        70.72,
+        70.68
+      ],
+      "q_grad_Wm2": 2450.3,
+      "h_grad": 192.1
+    },
+    "Winding": {
+      "assumed_htc": 2000.0,
+      "nearwall_V": 0.533,
+      "nearwall_Toil": 70.97,
+      "wall_T": 91.9,
+      "Tbulk": 71.64,
+      "n_band": 3466,
+      "h_velocity_corr": {
+        "Dh3mm": {
+          "Re": 131.9,
+          "Nu": 4.4,
+          "h": 196.2
+        },
+        "Dh6mm": {
+          "Re": 263.9,
+          "Nu": 4.4,
+          "h": 98.1
+        },
+        "Dh10mm": {
+          "Re": 439.8,
+          "Nu": 4.4,
+          "h": 58.9
+        }
+      },
+      "T_profile_0to3mm": [
+        null,
+        71.28,
+        70.64,
+        70.51,
+        70.4,
+        70.46
+      ],
+      "q_grad_Wm2": 3767.9,
+      "h_grad": 186.0
+    }
+  }
+}

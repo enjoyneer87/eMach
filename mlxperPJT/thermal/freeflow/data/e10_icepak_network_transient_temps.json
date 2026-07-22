@@ -1,0 +1,45 @@
+{
+  "_model": "e10 Icepak COUPLED oil-network + Transient (self-consistent, MAPDL mirror)",
+  "_type": "Transient",
+  "_network": "OilCircuit: OIL src 70C, JACKET/SPRAY internal nodes w/ C, 577 face-nodes (R_conv=1/hA per face), R_flow=1/G",
+  "_time": {
+    "stop": "900s",
+    "step": "45s",
+    "IC_C": 70.0
+  },
+  "_circuit_const": {
+    "HTC_jkt": 1000.0,
+    "HTC_spray": 2000.0,
+    "G_flow_jkt": 132.0,
+    "G_flow_spray": 88.0,
+    "C_jkt": 330.0,
+    "C_spray": 248.0
+  },
+  "_vs_mapdl": {
+    "winding": 152.2,
+    "stator": 126.0,
+    "magnet": 86.9,
+    "rotor": 86.9,
+    "shaft": 84.9,
+    "oil_JACKET": 84.4,
+    "oil_SPRAY": 91.9
+  },
+  "per_part_max": {
+    "coil": {
+      "max": 0.0
+    },
+    "stator": {
+      "max": 0.0
+    },
+    "rotor": {
+      "max": 0.0
+    },
+    "magnet": {
+      "max": 0.0
+    },
+    "shaft": {
+      "max": 0.0
+    }
+  },
+  "_extract": "get_temperature_extremum Max/Volume @ SolveTrans : Transient t=900s"
+}
