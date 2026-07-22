@@ -25,4 +25,21 @@ Prius 형상(IcepakFEA STEP, 45° 섹터, 20볼륨)을 Icepak 으로 임포트�
 - 물리적 HTC 워터재킷으로 마무리하려면 **실제 유동 CHT(유체 재킷+inlet/outlet)** 또는
   Region 아키텍처 조정 필요(대화형 튜닝 권장).
 
+## 3-way 비교 결과 (250A 고부하, `viz/comparison/threeway_250A.png`)
+| 부품 | Fluent CFD | MAPDL 하이브리드 | Icepak(전도+고정온도) |
+|---|---|---|---|
+| Coil | 118 | 119 | **176** |
+| Stator | 100 | 116 | **160** |
+| Rotor | 90 | 110 | **160**※ |
+| Magnet | 89 | 109 | 80 |
+
+- **Fluent↔MAPDL은 코일 1°C 이내 교차검증**(신뢰쌍). Icepak은 coil/stator/rotor에서
+  계통적으로 높음 — **냉각 경계가 더 제한적**이기 때문: Fluent/MAPDL은 분산 워터재킷
+  대류인 반면, Icepak은 발산 우회로 **프레임 OD 한 면만 40°C 고정 + 순수 전도**.
+  안쪽으로 갈수록 전도저항이 쌓여 과대예측. **경향(coil>stator>rotor≈magnet)은 일치.**
+- ※ Icepak rotor **max 160은 국부 핫스팟 아티팩트**(과열 endwdg 격리객체와 접한 노드).
+  로터 벌크 평균은 76°C — 물리적으로는 Fluent(90)/MAPDL(110) 수준. max만 오염.
+- **결론**: Icepak 전도-only 모델(발산 우회)은 정성적 경향 확인용. 정량 검증은 이미
+  완료된 Fluent↔MAPDL 쌍이 담당. 물리 워터재킷 CHT는 대화형 후속작업으로 분리.
+
 ⚠️ 산출물(png/json)은 Google Drive. 재사용은 상위 `thermal_viz.py` 규약 따름.
