@@ -166,7 +166,7 @@ class ThermalViz:
         for i in range(self.nsets):
             T = self._T(i); mx = self._maxes(T)
             self.solid.point_data["Temperature (degC)"] = T[self.opid]
-            sl = self.solid.slice(normal="z", origin=(0, 0, 0))
+            sl = self.solid.slice(normal="z", origin=self.solid.center)
             pl = self.pv.Plotter(off_screen=True, window_size=(950, 950)); pl.set_background("white")
             pl.add_mesh(sl, scalars="Temperature (degC)", cmap=CMAP, clim=self.clim, n_colors=16,
                         lighting=False, scalar_bar_args=_sb())
@@ -204,7 +204,7 @@ class ThermalViz:
         frames = []
         for i in range(self.nsets):
             T = self._T(i); coil.point_data["Temperature (degC)"] = T[cpid]
-            sl = coil.slice(normal="z", origin=(0, 0, 0))
+            sl = coil.slice(normal="z", origin=coil.center)
             pl = self.pv.Plotter(off_screen=True, window_size=(950, 950)); pl.set_background("white")
             pl.add_mesh(sl, scalars="Temperature (degC)", cmap=CMAP, clim=self.clim, n_colors=16,
                         lighting=False, scalar_bar_args=_sb())

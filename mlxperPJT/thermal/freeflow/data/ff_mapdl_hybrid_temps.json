@@ -1,0 +1,56 @@
+{
+  "_model": "JAC279-hybrid FEM+oil-circuit",
+  "_loss_source": "Prius-estimate",
+  "_timing": {
+    "solve_time_s": 801.0,
+    "nsets": 22
+  },
+  "_oil": {
+    "T": 70.0,
+    "mdot": 0.11,
+    "htc_jkt": 1000.0,
+    "htc_spray": 2000.0
+  },
+  "circuit_T": {
+    "OIL": 70.0,
+    "JACKET": 84.4,
+    "SPRAY": 91.9,
+    "GAP_S": 122.3,
+    "GAP_R": 87.0,
+    "SHF": 70.3
+  },
+  "losses_W": {
+    "copper": 3350.0,
+    "stator_iron": 585.0,
+    "rotor_iron": 65.0,
+    "magnet": 24.0
+  },
+  "per_part": {
+    "stator": {
+      "max": 126.03896954045541,
+      "min": 103.41171769876274,
+      "mean": 115.66573818417295
+    },
+    "magnet": {
+      "max": 86.87922945948048,
+      "min": 83.293216834232,
+      "mean": 86.1773726621235
+    },
+    "winding": {
+      "max": 152.19958429224215,
+      "min": 74.94602942713136,
+      "mean": 114.02758762022403
+    },
+    "shaft": {
+      "max": 84.86770566681759,
+      "min": 82.08532884818877,
+      "mean": 83.84827887906815
+    },
+    "rotor": {
+      "max": 86.90018425995974,
+      "min": 82.01221741005999,
+      "mean": 85.47179431109072
+    }
+  },
+  "rth": "C:\\Users\\moa\\AppData\\Local\\Temp\\claude\\d--KDH-NvidiaNemo\\298544ad-ddbc-4058-ba12-169c3e37aff3\\scratchpad\\ff_hybrid_v2_run2\\file.rth"
+}
