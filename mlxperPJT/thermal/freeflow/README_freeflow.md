@@ -124,6 +124,7 @@ MAPDL 하이브리드 솔리드 온도를 FreeFlow 벽 온도경계로 주입해
 | 11 | `11_freeflow_thermal_setup.py` | 열모델 ON + 벽4개 prescribed_temperature(MAPDL결과) + ATF열물성 → 새 프로젝트 저장 |
 | 12 | `12_freeflow_thermal_solve.py` | **Fluid Inlet 오일온도 70°C** + 밀도 ATF교정 + 솔브(45분 안전상한) |
 | 13 | `13_freeflow_thermal_viz.py` | 오일 SPH 온도장(형상 오버레이) + 온도이력 |
+| 14 | `14_freeflow_thermal_gif.py` | 오일 온도장 transient GIF(`ff_thermal_oil_transient.gif`) |
 
 ### 벽 온도경계 매핑 (MAPDL v2 하이브리드 → FreeFlow 벽)
 | FreeFlow 벽 | 온도 | 근거(MAPDL) |
@@ -155,6 +156,19 @@ MAPDL 하이브리드 솔리드 온도를 FreeFlow 벽 온도경계로 주입해
 | 최대(t=1.63s) | **72.17°C** (+2.17, 뜨거운 벽 근처) |
 
 오일이 주입 70°C에서 뜨거운 벽(자켓 84/스프레이 92°C) 근처부터 매끄럽게 단조 승온
-(`viz/mapdl/ff_thermal_oil_iso.png`, `ff_thermal_oil_history.png`) — **1-way 커플드
-메커니즘 검증 성공.** 전체 8s 정식 커플드(quasi-steady 오일승온까지)는 GPU 수시간
-점유라 별도 협의. (2-way 커플드는 System Coupling 모듈 필요 — 추후.)
+(`viz/mapdl/ff_thermal_oil_iso.png`, `ff_thermal_oil_history.png`,
+`ff_thermal_oil_transient.gif`) — **1-way 커플드 메커니즘 검증 성공.** 전체 8s 정식
+커플드(quasi-steady 오일승온까지)는 GPU 수시간 점유라 별도 협의.
+
+### FreeFlow 자체 CHT 가능여부 (조사결과)
+**FreeFlow 단독으로는 완전한 CHT(고체 3D전도+유체) 불가.** 근거(API 조사):
+- 벽(RAWall)은 **표면 삼각망**, 체적 솔리드 메시 없음 → 고체 내부 3D 전도 불가.
+- 벽 열경계 **3종뿐**: `adiabatic`/`prescribed_temperature`/`cfd_coupled_temperature`.
+  **열원(손실)·열유속 경계 없음** → 구리손·철손을 FreeFlow 벽에 주입 불가(그래서 우리는
+  고정온도를 씀). 벽은 `BoundaryMass`(lumped)+재료 k/cp/ρ 지정은 되나 표면/lumped 수준.
+- `GetCFDCoupling`: `SetupOneWay/TwoWayFluent`·`SetupOneWayLBM` = **Fluent/LBM 유체커플링**
+  (고체전도 아님). `ConvertToSystemCouplingWall`/`ImportSystemCouplingWall` = **Ansys
+  System Coupling**.
+- **정식 2-way CHT 경로 = FreeFlow(오일) ↔ System Coupling ↔ Mechanical/MAPDL(손실 포함
+  고체전도)**. 고체는 여전히 외부 솔버가 담당, 계면서 온도↔열유속 교환. 우리의 1-way는
+  그 단방향 근사. (2-way 자동화는 System Coupling 셋업 — 추후.)
