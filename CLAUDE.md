@@ -36,6 +36,9 @@ v2 메시 + 오일냉각 회로 + FreeFlow 1-way 커플드).
 - ⏳ **Icepak 3-way 비교 미완** — 발산 원인까지 규명(유체 Region이 HTC벽을 단락),
   고정온도 경계로 수렴(coil 176°C). 냉각 경계 다듬고 마무리하면 됨.
 - 🚨 **viz 21MB Google Drive 업로드가 도중에 끊겼다.** 검증 전 `git rm` 금지 — 핸드오프 §5b.
+- 🐞 **[모델링 오류·미수정] FreeFlow/Icepak 중력이 수직취부 기준**(축방향 -Z, ≈9.81)으로
+  들어가 있음 — e10 실제는 **수평(가로) 취부**. FreeFlow 8초 resume·신규 solve·e10 Icepak
+  재솔브 전에 **중력을 모터 축에 수직인 반경방향으로 수정**할 것 (핸드오프 20260722 §10-4).
 
 ⚠️ 모터가 둘이다: `Electric_Motor_IcepakFEA_AEDT_3D_part1`(Ansys 워크샵 템플릿)과
 Prius 는 **서로 다른 모터**다. 초기 커밋 결과를 Prius 결과로 읽지 말 것.

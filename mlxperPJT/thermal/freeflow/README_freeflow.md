@@ -96,10 +96,10 @@ e10 손실 → MAPDL 열해석 → (추후) FreeFlow 온도장 재솔브 커플�
 - **SPRAY**: 엔드턴 오일 스프레이(HTC≈2000) — 스택 밖 권선 돌출부 직접 냉각.
 - **GAP_S/GAP_R**: 공극(공기전도 G=k·A/g), 로터↔스테이터 약결합.
 - **SHF**: 샤프트 단면→베어링/오일. 로터·자석·샤프트는 메시 컨포멀(FEM 직접전도).
-FreeFlow SPH 뷰(`viz/ff_oil_iso.png`)의 나선채널+엔드턴 분사가 이 회로 토폴로지의 근거.
+FreeFlow SPH 뷰(`viz/legacy/ff_oil_iso.png`)의 나선채널+엔드턴 분사가 이 회로 토폴로지의 근거.
 
 ## 계산시간 비교 (Icepak / FreeFlow / MAPDL)
-서로 다른 물리·스코프라 직접비교보다는 **계산 스케일 참고용**(`viz/timing_comparison.png`).
+서로 다른 물리·스코프라 직접비교보다는 **계산 스케일 참고용**(`viz/comparison/timing_comparison.png`).
 
 | 방법 | 솔브시간 | 스코프 |
 |---|---|---|
@@ -111,9 +111,21 @@ FreeFlow SPH 뷰(`viz/ff_oil_iso.png`)의 나선채널+엔드턴 분사가 이 �
 FreeFlow가 압도적으로 큰 건 **입자기반 자유표면 유동**을 GPU로 explicit 시간적분하기
 때문(FEM 정상상태 전도와 근본적으로 다른 계산량). 향후 온도장까지 풀면 더 늘어남.
 
-## 산출물 위치
+## 산출물 위치 & viz 폴더 구조 (툴별 — Prius 구조 미러)
 이미지·GIF·데이터는 Google Drive `Prius_thermal_viz/e10/` (모델기준) (코드는 이 Git).
-`viz/`, `data/` 폴더 내용을 rclone 으로 동기화: `rclone copy freeflow/viz gdrive:Prius_thermal_viz/e10/viz` (로컬 freeflow/=e10 분석, gdrive는 모델명 e10).
+로컬 `freeflow/`는 e10 분석 코드 루트(이름은 freeflow지만 e10 모터), gdrive는 모델명 `e10`.
+
+**viz/ 는 해석 툴별 서브폴더로 정리** (Prius `prius/viz/` 미러):
+```
+freeflow/viz/   (= gdrive:e10/viz/,  전부 .gitignore → gdrive만 관리)
+├── mapdl/       MAPDL JAC279 하이브리드 대시보드 (transient_dashboard.gif 등 표준세트)
+├── freeflow/    FreeFlow 1-way 오일 온도장 (ff_thermal_oil_*, 가로·스프레이앞)
+├── icepak/      Icepak 결과 (e10_icepak_*; 재솔브 후 온도장)
+├── comparison/  툴 교차비교 (timing_comparison + MAPDL↔FreeFlow↔Icepak 3-way)
+└── legacy/      옛 개발 viz 백업 (ff_oil_*, ff_geom_*, 세로버전 등 — 삭제 안 함)
+```
+동기화: `rclone copy freeflow/viz gdrive:Prius_thermal_viz/e10/viz`
+(MAPDL 대시보드 로컬로: `rclone copy gdrive:Prius_thermal_viz/e10/viz/mapdl freeflow/viz/mapdl`)
 
 ## 커플드 (1-way solid→fluid): MAPDL 벽온도 → FreeFlow 오일 온도장
 MAPDL 하이브리드 솔리드 온도를 FreeFlow 벽 온도경계로 주입해 오일이 흡열하는
@@ -156,7 +168,7 @@ MAPDL 하이브리드 솔리드 온도를 FreeFlow 벽 온도경계로 주입해
 | 최대(t=1.63s) | **72.17°C** (+2.17, 뜨거운 벽 근처) |
 
 오일이 주입 70°C에서 뜨거운 벽(자켓 84/스프레이 92°C) 근처부터 매끄럽게 단조 승온
-(`viz/mapdl/ff_thermal_oil_iso.png`, `ff_thermal_oil_history.png`,
+(`viz/freeflow/ff_thermal_oil_iso.png`, `ff_thermal_oil_history.png`,
 `ff_thermal_oil_transient.gif`) — **1-way 커플드 메커니즘 검증 성공.** 전체 8s 정식
 커플드(quasi-steady 오일승온까지)는 GPU 수시간 점유라 별도 협의.
 

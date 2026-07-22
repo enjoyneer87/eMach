@@ -1,22 +1,36 @@
 # -*- coding: utf-8 -*-
 """FreeFlow 커플드(1-way solid->fluid) 검증솔브 결과 - 오일 SPH 온도장 시각화.
-기존 06_oil_static_viz.py 패턴 재사용(형상 오버레이 + SPH 입자 컬러)."""
-import os, glob, traceback
+기존 06_oil_static_viz.py 패턴 재사용(형상 오버레이 + SPH 입자 컬러).
+
+ORIENT: 표시 방향. "horizontal"(기본) = 모터 축(Z)을 가로로 눕혀 실제 취부처럼 표시하고
+        스프레이(오일 유입, z_min) 단이 카메라 앞으로 오게 함. "vertical" = 원래 Z 수직.
+출력: freeflow/viz/ (mapdl 폴더는 MAPDL 결과 전용이므로 여기서 분리)."""
+import os, glob, tempfile, traceback
 import numpy as np, h5py
 
 GEO = r"D:\KDH\simVary\simFreeFlow\20251226\FreeFlow\FreeFlowProject\Geometry"
 SIM = r"D:\KDH\simVary\simFreeFlow\20251226\FreeFlow\FreeFlowProject\Project_thermal.freeflow.files\simulation"
-OUT = r"D:\KDH\NvidiaNemo\eMach\mlxperPJT\thermal\freeflow\viz\mapdl"
-LOG = r"C:\Users\moa\AppData\Local\Temp\claude\d--KDH-NvidiaNemo\298544ad-ddbc-4058-ba12-169c3e37aff3\scratchpad\ff_thermal_viz.txt"
+OUT = r"D:\KDH\NvidiaNemo\eMach\mlxperPJT\thermal\freeflow\viz\freeflow"  # 툴별 서브폴더
+ORIENT = os.environ.get("FF_ORIENT", "horizontal")   # "horizontal" | "vertical"
+LOG = os.environ.get("FF_LOG", os.path.join(tempfile.gettempdir(), "ff_thermal_viz.txt"))
 log = open(LOG, "w", encoding="utf-8")
 def P(*a): log.write(" ".join(str(x) for x in a) + "\n"); log.flush()
+
+# 모터 축(Z)을 X축(가로)으로 눕히는 회전. -90deg면 z_min(스프레이 유입단)이 +X=카메라
+# 앞쪽으로 온다. geo(pyvista)·cloud 모두 동일 적용.
+_ROT_Y = -90.0 if ORIENT == "horizontal" else 0.0
+def _orient(mesh):
+    if _ROT_Y:
+        mesh.rotate_y(_ROT_Y, point=(0.0, 0.0, 0.0), inplace=True)
+    return mesh
 
 try:
     import pyvista as pv
     pv.OFF_SCREEN = True
     geo = {}
     for n in ("Housing", "Stator", "Winding", "Rotating"):
-        geo[n] = pv.read(os.path.join(GEO, n + ".stl"))
+        geo[n] = _orient(pv.read(os.path.join(GEO, n + ".stl")))
+    P(f"orientation={ORIENT} (rotate_y={_ROT_Y}deg, spray-front)")
 
     sphs = sorted(s for s in glob.glob(os.path.join(SIM, "*.sph"))
                   if not s.endswith("rocky_simulation.sph"))
@@ -35,7 +49,7 @@ try:
     P(f"n particles={len(xyz)} T min/mean/max={temp.min():.2f}/{temp.mean():.2f}/{temp.max():.2f} "
       f"|v| min/mean/max={vmag.min():.2f}/{vmag.mean():.2f}/{vmag.max():.2f}")
 
-    cloud = pv.PolyData(xyz)
+    cloud = _orient(pv.PolyData(xyz))
     cloud["Temperature"] = temp
     clim = [float(np.percentile(temp, 1)), float(np.percentile(temp, 99))]
     sb = dict(title="Oil SPH Temperature (deg)", title_font_size=14, label_font_size=12,
@@ -48,10 +62,11 @@ try:
         pl.add_mesh(geo["Rotating"], color="#1baf7a", opacity=0.35, lighting=True)
         pl.add_mesh(cloud, scalars="Temperature", cmap="inferno", clim=clim, point_size=3.5,
                     render_points_as_spheres=True, scalar_bar_args=sb)
-        pl.add_text("FreeFlow 오일 온도장 (1-way 커플드 검증, MAPDL 벽BC)",
+        pl.add_text("FreeFlow oil temperature (1-way coupled, MAPDL wall BC)",
                     font_size=11, color="black")
         pl.view_isometric() if view == "iso" else pl.view_xz()
-        pl.camera.zoom(1.25); pl.screenshot(os.path.join(OUT, fn)); pl.close()
+        pl.reset_camera(); pl.camera.zoom(1.25)
+        pl.screenshot(os.path.join(OUT, fn)); pl.close()
         P("saved", fn)
 
     # 시간이력: 각 스텝의 평균/최대 온도 (초기 스텝엔 temperature 필드 없을 수 있음)
