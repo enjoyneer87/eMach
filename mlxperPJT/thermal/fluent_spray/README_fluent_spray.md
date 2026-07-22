@@ -35,16 +35,35 @@ pyfluent 0.40 + Fluent v261, 실제 Prius CHT 메시에서 API 실행 검증:
 - `define models eulerian-wall-film yes` (TUI)
 - `cell_zone_conditions.solid[z].sources.enable/terms` (발열원)
 
-## ⚠️ 메시 제약 (중요 — 미해결)
-스프레이엔 **공기 캐비티(유체존) + 엔드턴 노출면**이 있는 볼륨메시 필요.
-- **gmsh → meshio(ansys writer) → Fluent(.msh)** 경로 시도 → Fluent 리더가 거부
-  (바이너리·ASCII 모두 "Error reading msh"; meshio Fluent writer가 존/면-존 헤더를
-  완전히 못 씀). **이 경로는 막힘.**
-- Prius 기존 CHT 메시(`PriusMotor_250A.cas.h5`)는 **재킷냉각**이라 스프레이용 공기
-  캐비티가 없음(유체존=fluid_jacket 하나) → 스프레이 방울이 날아갈 공간 부재.
-- **권장 경로**: 캐비티 메시는 **Fluent Meshing**(watertight geometry / wrap) 또는
-  ANSYS Meshing 으로 생성 → 유체존(공기)+고체존(코일/철심)+명명경계(엔드턴 hot 면,
-  노즐, 드레인) 구성 후 위 레시피 적용.
+## ⚠️ 메시 생성 (헤드리스 파일변환 6종 실패 → GUI 권장)
+스프레이엔 **공기 캐비티(유체존) + 엔드턴 노출면(고체)** 볼륨메시 필요. e10 스케일
+스프레이 챔버 형상을 **gmsh로 구축 완료**(`geometry/build_spray_chamber.py`: 공기
+캐비티 실린더 + 엔드턴 링 고체, 2볼륨 컨포멀, 명명경계 nozzle/drain/housing/
+winding_surf). 이 gmsh 메시를 **Fluent로 넣는 파일변환을 6가지 시도 → 전부 실패**:
+
+| 경로 | 결과 |
+|---|---|
+| gmsh→meshio(ansys)→Fluent .msh (binary/ASCII) | Fluent 리더 거부 ("Error reading msh") |
+| gmsh→CGNS→Fluent `read_mesh` | **Fluent 서버 크래시** (비호환 CGNS) |
+| gmsh→meshio→Nastran | meshio export 실패(AssertionError) |
+| gmsh→meshio→Abaqus(.inp)→Fluent import | import TUI 오류 |
+| Fluent Meshing STL TUI (`/file/import/stl-cad`) | 메뉴 경로 부재 |
+| Fluent Meshing **watertight 워크플로우 API** | 초기화·태스크나열 OK, Import Geometry의
+  datamodel 인자("File Names")를 헤드리스에서 못 넘김 |
+
+→ **결론: 이 메시 단계는 실무 표준대로 Fluent Meshing GUI(대화형)에서 수행 권장.**
+헤드리스 pyfluent 파일변환은 이 환경에서 신뢰성 있게 안 됨(포맷 브릿지 한계).
+
+### GUI로 메시 완성하는 법 (준비된 자산으로 즉시 가능)
+1. Fluent Meshing 실행 → Watertight Geometry Workflow.
+2. **Import Geometry**: `geometry/spray_chamber_multisolid.stl` (4 named solid:
+   nozzle/drain/housing/winding_surf 자동 인식) 또는 `geometry/*.stl` 4개 개별 import.
+3. Generate Surface Mesh → Describe Geometry(**fluid+solid**) → Create/Update Regions
+   (유체=공기캐비티, 고체=엔드턴 링 자동 검출) → Generate Volume Mesh.
+4. Switch to Solution → `oil_spray_cht_recipe.py` 적용(발열원·오일·DPM·EWF·CHT) → 솔브.
+
+(참고 스크립트: `_fluent_meshing_watertight.py` — 워크플로우 태스크 순서. Import
+Geometry 인자만 GUI/버전맞는 datamodel로 넘기면 이후 자동화 가능.)
 
 ## e10 적용 계획 (메시 확보 시)
 1. e10 형상(스테이터+권선 STL, 로터/자석/샤프트) + 엔드턴 주위 **공기 캐비티** 정의.
