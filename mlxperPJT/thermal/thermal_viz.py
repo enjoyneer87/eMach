@@ -160,16 +160,42 @@ class ThermalViz:
         p = os.path.join(self.out, "cut_3d.png"); pl.screenshot(p); pl.close()
         return p
 
+    # ── 재료 경계선 오버레이 (등온이어도 자석/샤프트 형상 가시) ──────────
+    _OUTLINE = {"magnet": ("#0a0a0a", 2.4), "shaft": ("#2a2a2a", 1.6),
+                "coil": ("#4a4a4a", 0.7), "rotor": ("#6a6a6a", 0.7)}
+    def _add_mat_outlines(self, pl, origin, roles=("magnet", "shaft", "coil", "rotor")):
+        """z-슬라이스 위에 부품별 재료 경계선을 얇게 오버레이한다. 자석·로터가
+        등온(같은 색)이어도 형상이 보이도록. (Prius는 중심≈0이라 동일 동작)"""
+        for role in roles:
+            if role not in self._sub:
+                continue
+            sm, _ = self._sub[role]
+            try:
+                sl = sm.slice(normal="z", origin=origin)
+                if sl.n_points == 0:
+                    continue
+                edges = sl.extract_feature_edges(
+                    boundary_edges=True, feature_edges=False,
+                    non_manifold_edges=False, manifold_edges=False)
+                if edges.n_points == 0:
+                    continue
+                col, lw = self._OUTLINE.get(role, ("#333333", 1.0))
+                pl.add_mesh(edges, color=col, line_width=lw)
+            except Exception:
+                pass
+
     # ── ② z=0 정단면, 전 부품 ────────────────────────────────────────────
     def core_gif(self):
         frames = []
+        origin = self.solid.center
         for i in range(self.nsets):
             T = self._T(i); mx = self._maxes(T)
             self.solid.point_data["Temperature (degC)"] = T[self.opid]
-            sl = self.solid.slice(normal="z", origin=self.solid.center)
+            sl = self.solid.slice(normal="z", origin=origin)
             pl = self.pv.Plotter(off_screen=True, window_size=(950, 950)); pl.set_background("white")
             pl.add_mesh(sl, scalars="Temperature (degC)", cmap=CMAP, clim=self.clim, n_colors=16,
                         lighting=False, scalar_bar_args=_sb())
+            self._add_mat_outlines(pl, origin)
             pl.add_text(f"t={self.times[i]:5.0f}s  "
                         + "  ".join(f"{r[:4]} {mx[r]:.0f}" for r in ("stator", "coil", "rotor", "magnet") if r in mx)
                         + f"C  {self.label}", font_size=11, color="black")
@@ -227,6 +253,8 @@ class ThermalViz:
             if lit: kw.update(smooth_shading=True, ambient=0.6, diffuse=0.4)
             else: kw.update(lighting=False)
             pl.add_mesh(mesh, **kw)
+            if view == "xy":
+                self._add_mat_outlines(pl, self.solid.center)
             pl.add_text(f"{self.label} @{self.times[-1]:.0f}s", font_size=11, color="black")
             pl.view_xy() if view == "xy" else pl.view_isometric()
             pl.camera.zoom(1.15); p = os.path.join(self.out, fn); pl.screenshot(p); pl.close()
