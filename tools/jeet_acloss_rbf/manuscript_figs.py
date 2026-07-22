@@ -210,8 +210,37 @@ def plot_field_panels(
         cb.set_label(r'$A/k_r$ [Wb/m]', fontsize=9.4)
         cb.ax.tick_params(labelsize=8.7)
 
+    # ── 상단 그룹 헤더: 같은 k_r 열을 모델 단위로 묶어 표시 ──
+    # 세미나2 "좌4=KR1/우4=KR2 (상단 KR 라벨)". k_r 이 주어질 때만.
+    if k_r is not None and n >= 2:
+        fig.draw_without_rendering()
+        try:
+            rnd = fig.canvas.get_renderer()
+        except Exception:
+            rnd = None
+        c = 0
+        while c < n:
+            c2 = c
+            while c2 + 1 < n and float(k_r[c2 + 1]) == float(k_r[c]):
+                c2 += 1
+            pos = [axes[0, cc].get_position() for cc in range(c, c2 + 1)]
+            xc = 0.5 * (pos[0].x0 + pos[-1].x1)
+            if rnd is not None:
+                ytop = max(axes[0, cc].title.get_window_extent(rnd).ymax
+                           for cc in range(c, c2 + 1)) / fig.bbox.height
+            else:
+                ytop = max(p.y1 for p in pos) + 0.09
+            prefix = os.path.commonprefix(
+                [D[cc][1] for cc in range(c, c2 + 1)]).strip(' —-').strip()
+            lbl = ((prefix + '  ') if prefix else '') \
+                + f'($k_r{{=}}{float(k_r[c]):g}$)'
+            fig.text(xc, min(ytop + 0.012, 0.998), lbl, ha='center',
+                     va='bottom', fontsize=12, fontweight='bold')
+            c = c2 + 1
+
     os.makedirs(os.path.dirname(os.path.abspath(out_path)), exist_ok=True)
-    fig.savefig(out_path, dpi=raster_dpi)
+    fig.savefig(out_path, dpi=raster_dpi,
+                bbox_inches='tight' if k_r is not None else None)
     plt.close(fig)
     return out_path
 
@@ -971,39 +1000,46 @@ def plot_flux_torque_scaling_tps(comparison_mat: str, out_path: str,
     kw_sc = dict(colors='#1a3a5c', linewidths=0.9, linestyles='solid')
     kw_s = dict(colors='#e65100', linewidths=0.9, linestyles='dashed')
 
+    # (a) d-axis flux linkage --- own panel so solid(SC)/dashed(scaled)
+    # is the only distinction (no dark/light overlay to resolve in B&W).
     ax = axes[0]
     lv_d = np.round(np.linspace(np.nanmin(lam_d_c),
-                                np.nanmax(lam_d_c), 7), 2)
-    lv_q = np.round(np.linspace(0.05, np.nanmax(lam_q_c), 6), 2)
+                                np.nanmax(lam_d_c), 8), 2)
     c1 = ax.contour(ID, IQ, lam_d_c, levels=lv_d, **kw_sc)
     ax.contour(ID, IQ, lam_d_s, levels=lv_d, **kw_s)
-    ax.contour(ID, IQ, lam_q_c, levels=lv_q,
-               colors='#5a7ea3', linewidths=0.7, linestyles='solid')
-    ax.contour(ID, IQ, lam_q_s, levels=lv_q,
-               colors='#f0a860', linewidths=0.7, linestyles='dashed')
     ax.clabel(c1, fmt='%.2f', fontsize=8)
     ax.scatter(sc['Id_pk'], sc['Iq_pk'], s=4, c='#1a3a5c', marker='o',
                zorder=5, linewidths=0)
-    ax.set_title(r'(a) $\lambda_d$ (dark), $\lambda_q$ (light) [Vs]',
-                 fontsize=10.9)
+    ax.set_title(r'(a) $\lambda_d$ [Vs]', fontsize=10.9)
 
+    # (b) q-axis flux linkage
     ax = axes[1]
-    lv_t = np.linspace(200, np.nanmax(t_c), 8)
-    c1 = ax.contour(ID, IQ, t_c, levels=lv_t, **kw_sc)
-    ax.contour(ID, IQ, t_s, levels=lv_t, **kw_s)
-    ax.clabel(c1, fmt='%.0f', fontsize=8)
-    ax.set_title('(b) electromagnetic torque [Nm]', fontsize=10.9)
+    lv_q = np.round(np.linspace(np.nanmin(lam_q_c),
+                                np.nanmax(lam_q_c), 8), 2)
+    c1 = ax.contour(ID, IQ, lam_q_c, levels=lv_q, **kw_sc)
+    ax.contour(ID, IQ, lam_q_s, levels=lv_q, **kw_s)
+    ax.clabel(c1, fmt='%.2f', fontsize=8)
+    ax.scatter(sc['Id_pk'], sc['Iq_pk'], s=4, c='#1a3a5c', marker='o',
+               zorder=5, linewidths=0)
+    ax.set_title(r'(b) $\lambda_q$ [Vs]', fontsize=10.9)
 
+    # (c) electromagnetic torque (contours) over its deviation (color):
+    # the two torque surfaces coincide (lines overlap) while the color
+    # shows the residual --- torque agreement and its error in one panel.
     ax = axes[2]
     pm = ax.pcolormesh(ID, IQ, err_t, cmap='YlOrRd', vmin=0,
                        vmax=max(1.0, np.nanpercentile(err_t, 99.5)),
-                       shading='auto')
+                       shading='auto', zorder=0)
     cb = fig.colorbar(pm, ax=ax, shrink=0.85)
-    cb.set_label(r'$|\Delta T_{em}| / T_{em,max}$ [%]', fontsize=9.4)
+    cb.set_label(r'$|\Delta T_{em}| / T_{em,max}$ [%]', fontsize=9.0)
     cb.ax.tick_params(labelsize=8.7)
-    ax.set_title(f"(c) torque deviation "
-                 f"(mean {metrics['torque_norm_mean_pct']:.2f}%"
-                 f" of $T_{{em,max}}$)", fontsize=10.9)
+    lv_t = np.linspace(200, np.nanmax(t_c), 8)
+    c1 = ax.contour(ID, IQ, t_c, levels=lv_t, colors='#08306b',
+                    linewidths=0.9, linestyles='solid', zorder=3)
+    ax.contour(ID, IQ, t_s, levels=lv_t, colors='#08306b',
+               linewidths=0.9, linestyles='dashed', zorder=3)
+    ax.clabel(c1, fmt='%.0f', fontsize=7.5)
+    ax.set_title(r"(c) $T_{em}$ [Nm] & deviation", fontsize=10.9)
 
     from matplotlib.lines import Line2D
     axes[0].legend(handles=[
@@ -1015,6 +1051,7 @@ def plot_flux_torque_scaling_tps(comparison_mat: str, out_path: str,
     for ax in axes:
         ax.set_aspect('equal', adjustable='box')
         ax.set_xlabel('$i_d$ [A, pk]')
+    for ax in (axes[0], axes[1]):
         ax.grid(True, ls=':', lw=0.4, color='#dddddd')
         ax.set_axisbelow(True)
     axes[0].set_ylabel('$i_q$ [A, pk]')
@@ -1023,6 +1060,79 @@ def plot_flux_torque_scaling_tps(comparison_mat: str, out_path: str,
     fig.savefig(out_path)
     plt.close(fig)
     return metrics
+
+
+def plot_eddy_factors(out_path: str, h_c_ref_mm: float = 3.711,
+                      k_r: float = 2.0, pole_pairs: int = 4,
+                      speed_max_rpm: float = 20000.0,
+                      sigma: float = 1.0 / 1.724e-8) -> dict:
+    """Appendix Fig.: dimensionless skin/proximity resistance factors vs speed.
+
+    Rebuilt on the manuscript convention ``eta = h_c/delta`` (eq:g_kernel),
+    replacing the legacy porosity argument ``xi = (h_c/delta) sqrt(b_c/b)`` so
+    the figure supports the body claim that hairpins sit in the transition
+    regime ``eta ~ 2--4``.  Two panels share the layout: left axis = resistance
+    factor ``F(eta)`` for the Ref (``k_r=1``, solid) and the scaled variant
+    (``k_r``, dashed); right (red) axis = the scaled/Ref ratio.
+
+    Skin  ``F_skin(eta) = (eta/2)(sinh eta + sin eta)/(cosh eta - cos eta)``
+          --> 1 at DC, ~eta/2 at high speed.
+    Prox  ``F_prox(eta) = eta (sinh eta - sin eta)/(cosh eta + cos eta)``
+          --> eta^4/6 at DC (the dimensionless kernel of g(gamma_w, eta)),
+          so the scaled/Ref ratio starts at k_r^4 and relaxes toward k_r.
+    """
+    mu0 = 4.0 * np.pi * 1e-7
+    plt = _journal_rc()
+
+    spd = np.linspace(50.0, speed_max_rpm, 400)   # 50 RPM floor avoids 0/0
+    f_e = spd / 60.0 * pole_pairs
+    delta = 1.0 / np.sqrt(np.pi * f_e * mu0 * sigma)      # skin depth [m]
+    hc = h_c_ref_mm * 1e-3
+    eta_ref = hc / delta
+    eta_scl = (k_r * hc) / delta
+
+    def f_skin(e):
+        return 0.5 * e * (np.sinh(e) + np.sin(e)) / (np.cosh(e) - np.cos(e))
+
+    def f_prox(e):
+        return e * (np.sinh(e) - np.sin(e)) / (np.cosh(e) + np.cos(e))
+
+    panels = [('a', 'skin', r'$F_\mathrm{skin}(\eta)$', f_skin),
+              ('b', 'proximity', r'$F_\mathrm{prox}(\eta)$', f_prox)]
+    # canvas ≈ svjour3 \textwidth so a figure* spans two columns at scale 1.
+    fig, axes = plt.subplots(1, 2, figsize=(6.9, 2.85), layout='constrained')
+    out = {}
+    for ax, (tag, name, ylab, fun) in zip(axes, panels):
+        f_ref, f_scl = fun(eta_ref), fun(eta_scl)
+        ax.plot(spd / 1e3, f_ref, color='#1a3a5c', lw=1.3, ls='-',
+                label=rf'Ref ($k_r{{=}}1$, $\eta\!\leq\!{eta_ref[-1]:.1f}$)')
+        ax.plot(spd / 1e3, f_scl, color='#1a3a5c', lw=1.3, ls='--',
+                label=(rf'scaled ($k_r{{=}}{k_r:g}$, '
+                       rf'$\eta\!\leq\!{eta_scl[-1]:.1f}$)'))
+        ax.set_xlabel('Rotational speed [kRPM]')
+        ax.set_ylabel(f'Resistance factor {ylab}')
+        ax.set_xlim(0, speed_max_rpm / 1e3)
+        ax.set_ylim(bottom=0)
+        ax.grid(True, ls=':', lw=0.4, color='#dddddd')
+        ax.set_axisbelow(True)
+        ax.set_title(f'({tag}) {name} effect', fontsize=10.9)
+        ax.legend(fontsize=7.6, frameon=False, loc='upper left')
+
+        axr = ax.twinx()
+        ratio = f_scl / f_ref
+        axr.plot(spd / 1e3, ratio, color='#c62828', lw=1.5, ls='-')
+        axr.set_ylabel('scaled / Ref ratio', color='#c62828')
+        axr.tick_params(axis='y', colors='#c62828')
+        axr.spines['right'].set_color('#c62828')
+        out[name] = {'ratio_dc': float(ratio[0]),
+                     'ratio_top': float(ratio[-1]),
+                     'eta_ref_top': float(eta_ref[-1]),
+                     'eta_scl_top': float(eta_scl[-1])}
+
+    os.makedirs(os.path.dirname(os.path.abspath(out_path)), exist_ok=True)
+    fig.savefig(out_path)
+    plt.close(fig)
+    return out
 
 
 # ── Fig 2: single-slot eddy-current-density contour (TS-FEA vs Hybrid) ──
