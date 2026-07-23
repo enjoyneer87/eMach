@@ -22,11 +22,13 @@ from jeet_acloss_rbf import AcLossPipeline, loading_metrics, parse_mes_txt
 | Fig 11 | 필드 수준 스케일링 검증 (mm 축, `A/k_r` 공통 스케일) | `run_fig11_mvp_field.py` | `plot_field_panels` (`k_r=`, `show_axes=`) | --- |
 | Fig 13 | 보정 검증 parity/box | 노트북 `JEET_AF_Pipeline.ipynb` | `AcLossPipeline.make_validation_figure` | --- |
 | Table 2 | 보정 형태 비교 | `run_form_study.py` | `run_form_study` | `form_study.json` |
+| Table 2 주의 | — | `run_form_study.py:31`이 `HalfSC seed=3`으로 **오버라이드** (파이프라인 기본 9와 다름 — 격자 정규화 후 대표 시드). 평탄 배분 `27=18+3×3`은 `form_study.py:213`의 예산 역산 `n_base=B−ns·n_other`. 채택 플랜(24+3)과 다른 별도 실험임 | | |
 | Table 3 | 주요 치수 | `run_geometry_fig.py` | `plot_motor_geometry_dxf` (반환값) | `geometry_dims_e10.json` |
 | Table 4 | Ref/SC 부하 지표 | `run_loading_metrics.py` | `loading_metrics`, `read_mot`, `winding_losses` | `loading_metrics_6turn.json` |
 | Table 4 | $T_{em}$ 검증 | `run_torque_check.py` | `maxwell_torque` + Motor-CAD COM | `torque_check_6turn.json` |
 | Table 5 | 비용·정확도 | (실측 시간 + `metrics`) | `AcLossPipeline.metrics` | --- |
 | §4.2 | 예산-정확도 파레토 | `run_cost_accuracy.py` | `sweep_cost_accuracy` | `cost_accuracy.json` |
+| §4.2 보완 | **HalfSC 무-TS-FEA 제로샷** (SC/Ref 상사 사상만으로 보정) | `run_halfsc_zeroshot.py` | `AcLossPipeline.build_model` + 상사 좌표변환 | `map_exports/e10/HalfSC/halfsc_zeroshot_eval.json` |
 
 ## 원자료 위치
 
