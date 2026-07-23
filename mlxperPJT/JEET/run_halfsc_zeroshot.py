@@ -86,6 +86,28 @@ def main() -> int:
     hi = ds.speeds_k > 8.5
     pred_E = h_ac * np.where(hi, af_C, af_D)
 
+    # F. 제로샷 + 16k 자체 3점 앵커 (κ-스팬 결정론 배치, 논문의 +3 패턴)
+    #    16k 대역에서 혼합 제로샷 AF 를 형상으로 두고, 자체 3점의 실측 AF 로
+    #    레벨 f_c·스프레드 p_c 를 로그공간 회귀 보정:
+    #        AF_F(16k,I,b) = f_c · AF_zs(16k,I,b)^{p_c}
+    idx16 = np.where(hi)[0]
+    af_true_16 = ds.af_arr[idx16]
+    af_zs_16 = af_C[idx16]
+    # κ-스팬: log(AF_zs) 의 min / median / max 3점 (간격 최대화)
+    order = np.argsort(af_zs_16)
+    pick = [order[0], order[len(order) // 2], order[-1]]
+    anchor_idx = idx16[pick]
+    x = np.log(np.clip(af_zs_16[pick], 1e-3, None))
+    y = np.log(np.clip(af_true_16[pick], 1e-3, None))
+    p_c, logf_c = np.polyfit(x, y, 1)          # y = p_c·x + log f_c
+    f_c = float(np.exp(logf_c))
+    af_F = np.where(
+        hi, f_c * np.clip(af_C, 1e-3, None) ** p_c, af_D)
+    pred_F = h_ac * af_F
+    print(f"\n[F] 16k 앵커 3점(κ-스팬): "
+          f"{[(round(ds.irms_arr[i],1), round(ds.phase_arr[i],1)) for i in anchor_idx]}"
+          f"  → f_c={f_c:.4f}, p_c={p_c:.4f}")
+
     res = {}
     for tag, pred, note in (
         ("A_uncorrected", pred_A, "AF=1"),
@@ -96,6 +118,8 @@ def main() -> int:
          "Ref 좌표 4.5~36k — 16k 초과 고대역은 f/p 다항 외삽(참고용)"),
         ("E_zeroshot_mixed", pred_E,
          "TS-FEA 0점 최적 조합: 2~8k Ref 사상 + 16k SC 사상 — max 오차 한 자리수"),
+        ("F_zeroshot_plus3", pred_F,
+         "자체 TS-FEA 3점(16k, κ-스팬)만 추가 — 제로샷 형상 + 레벨/스프레드 재앵커"),
     ):
         res[tag] = {"note": note,
                     "overall": err_stats(f_ac, pred),
