@@ -1,0 +1,40 @@
+{
+  "_model": "V1 Icepak: homog winding k5(스테이터 컨포멀)+대류벽(MAPDL 오일노드 ref)+transient",
+  "_note": "동적오일회로 Network는 solver-input 실패(전도-only)로 폐기 → MAPDL과 동일 Robin(HTC) BC로 재현. τ_oil≈2.5s≪900s라 준정상 등가.",
+  "_vs_mapdl_at900s": {
+    "winding": 152.2,
+    "stator": 126.0,
+    "magnet": 86.9,
+    "rotor": 86.9,
+    "shaft": 84.9
+  },
+  "_v1b_steady": {
+    "winding": 136.5,
+    "stator": 133.7,
+    "rotor": 128.7,
+    "magnet": 105.5,
+    "shaft": 91.5
+  },
+  "at_900s": {
+    "winding": {
+      "max": 136.5,
+      "t": "900s"
+    },
+    "stator": {
+      "max": 133.7,
+      "t": "900s"
+    },
+    "rotor": {
+      "max": 128.7,
+      "t": "900s"
+    },
+    "shaft": {
+      "max": 90.0,
+      "t": "900s"
+    },
+    "magnet": {
+      "max": 105.4,
+      "t": "900s"
+    }
+  }
+}

@@ -34,7 +34,7 @@ v2 메시 + 오일냉각 회로 + FreeFlow 1-way 커플드).
   에어갭을 순수 전도로 봐서 회전 유동 강화가 빠진 것 — 알려진 한계, 버그 아님.
 - ✅ 표준 viz 패키지 `thermal_viz.py` + `prius/scripts/render_prius_viz.py`
 - ✅ **Prius Icepak 3-way 비교 완료** (`prius/icepak/`, `viz/comparison/`): Fluent118/MAPDL119/Icepak176(coil, 발산우회 고정온도라 계통적 高).
-- ✅ **e10 Icepak 마무리** — 근본원인 확정: **다물체 계면 비컨포멀 접촉저항**(stator→housing ΔT1049°C)으로 슬롯쪽(coil/stator) 폭주. 로터쪽은 MAPDL 일치. **정량은 MAPDL winding 152°C 확정**. 상세 → `mlxperPJT/thermal/icepak_e10/README_icepak_e10.md`.
+- ✅ **e10 Icepak ↔ MAPDL 교차검증 완료** — 권선 폭주(다물체 비컨포멀 접촉)를 **네이티브 균질 컨포멀 권선(밴드-스테이터 카브)+대류벽 오일회로**(Network는 solver-input 실패)로 해결: **Icepak V1 136.5°C ≈ MAPDL 152°C (10%)**. discrete 구리바(Maxwell import)는 함침 carve해도 비컨포멀 폭주(2376°C, 비물리) → 균질화 필요 입증. 상세 → `mlxperPJT/thermal/icepak_e10/README_icepak_e10.md`, 비교도 `freeflow/viz/comparison/e10_mapdl_icepak_3way.png`.
 - 🚨 **viz 21MB Google Drive 업로드가 도중에 끊겼다.** 검증 전 `git rm` 금지 — 핸드오프 §5b.
 - 🐞 **[모델링 오류·미수정] FreeFlow/Icepak 중력이 수직취부 기준**(축방향 -Z, ≈9.81)으로
   들어가 있음 — e10 실제는 **수평(가로) 취부**. FreeFlow 8초 resume·신규 solve·e10 Icepak

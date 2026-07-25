@@ -1,0 +1,22 @@
+{
+  "_model": "V2 Icepak: discrete 구리바 k387(엔드턴 클립, active바)+함침k0.13+대류벽 오일회로, STEADY",
+  "_note": "전체하이핀은 메시불가(엔드턴 39264facet) → z±75 클립. 슬롯내 discrete 구리+함침 전도 검증.",
+  "_basis": "STEADY(포화)=transient@900s 등가",
+  "at_900s": {
+    "coil": {
+      "max": 2376.5
+    },
+    "stator": {
+      "max": 4726.6
+    },
+    "rotor": {
+      "max": 2498.2
+    },
+    "shaft": {
+      "max": 152.5
+    },
+    "magnet": {
+      "max": 645.5
+    }
+  }
+}
