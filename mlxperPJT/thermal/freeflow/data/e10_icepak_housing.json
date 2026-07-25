@@ -1,0 +1,33 @@
+{
+  "_model": "하우징(oil jacket, Al링 r99-110, 외면84.4C) + 코일등방387·함침0.13. SteadyState.",
+  "_vs_mapdl": {
+    "winding": 152.2,
+    "stator": 126.0,
+    "magnet": 86.9,
+    "rotor": 86.9
+  },
+  "housing": {
+    "max": 284.09,
+    "mean": 136.54
+  },
+  "stator": {
+    "max": 4117.86,
+    "mean": 1185.17
+  },
+  "rotor": {
+    "max": 4120.02,
+    "mean": 87.16
+  },
+  "shaft": {
+    "max": 70.3,
+    "mean": 70.3
+  },
+  "magnet": {
+    "max": 1622.09,
+    "mean": 94.45
+  },
+  "coil": {
+    "max": 4094.46,
+    "mean": 2058.58
+  }
+}

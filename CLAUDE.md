@@ -33,8 +33,8 @@ v2 메시 + 오일냉각 회로 + FreeFlow 1-way 커플드).
   (저부하 88.3/88.3, 고부하 250A 119.2/118.2°C). 로터·자석은 MAPDL이 13~20°C 높은데
   에어갭을 순수 전도로 봐서 회전 유동 강화가 빠진 것 — 알려진 한계, 버그 아님.
 - ✅ 표준 viz 패키지 `thermal_viz.py` + `prius/scripts/render_prius_viz.py`
-- ⏳ **Icepak 3-way 비교 미완** — 발산 원인까지 규명(유체 Region이 HTC벽을 단락),
-  고정온도 경계로 수렴(coil 176°C). 냉각 경계 다듬고 마무리하면 됨.
+- ✅ **Prius Icepak 3-way 비교 완료** (`prius/icepak/`, `viz/comparison/`): Fluent118/MAPDL119/Icepak176(coil, 발산우회 고정온도라 계통적 高).
+- ✅ **e10 Icepak 마무리** — 근본원인 확정: **다물체 계면 비컨포멀 접촉저항**(stator→housing ΔT1049°C)으로 슬롯쪽(coil/stator) 폭주. 로터쪽은 MAPDL 일치. **정량은 MAPDL winding 152°C 확정**. 상세 → `mlxperPJT/thermal/icepak_e10/README_icepak_e10.md`.
 - 🚨 **viz 21MB Google Drive 업로드가 도중에 끊겼다.** 검증 전 `git rm` 금지 — 핸드오프 §5b.
 - 🐞 **[모델링 오류·미수정] FreeFlow/Icepak 중력이 수직취부 기준**(축방향 -Z, ≈9.81)으로
   들어가 있음 — e10 실제는 **수평(가로) 취부**. FreeFlow 8초 resume·신규 solve·e10 Icepak

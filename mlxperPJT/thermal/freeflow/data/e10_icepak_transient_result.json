@@ -1,0 +1,58 @@
+{
+  "_model": "e10 Icepak TRANSIENT 함침모델(elan-UP142 k0.13)+코일k387. IC70 dt45s→900s.",
+  "_note": "transient끼리 비교(steady 1196은 미도달 포화값). 단시간운전 실제.",
+  "_mapdl_transient_900s": {
+    "winding": 152.2,
+    "stator": 126.0,
+    "magnet": 86.9,
+    "rotor": 86.9
+  },
+  "_at_900s": {
+    "coil_max": 3080.45,
+    "stator_mean": 1196.27,
+    "rotor_mean": 91.45,
+    "magnet_mean": 84.68
+  },
+  "history": {
+    "time_s": [
+      45,
+      135,
+      270,
+      450,
+      675,
+      900
+    ],
+    "coil_max": [
+      null,
+      null,
+      null,
+      3080.42,
+      null,
+      3080.45
+    ],
+    "stator_mean": [
+      null,
+      null,
+      null,
+      1196.26,
+      null,
+      1196.27
+    ],
+    "rotor_mean": [
+      null,
+      null,
+      null,
+      91.44,
+      null,
+      91.45
+    ],
+    "magnet_mean": [
+      null,
+      null,
+      null,
+      84.67,
+      null,
+      84.68
+    ]
+  }
+}

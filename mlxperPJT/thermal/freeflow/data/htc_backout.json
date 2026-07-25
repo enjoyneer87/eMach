@@ -10,73 +10,73 @@
   "per_region": {
     "Stator": {
       "assumed_htc": 1000.0,
-      "nearwall_V": 0.449,
-      "nearwall_Toil": 70.79,
+      "nearwall_V": 0.397,
+      "nearwall_Toil": 70.86,
       "wall_T": 84.4,
-      "Tbulk": 71.64,
-      "n_band": 1297,
+      "Tbulk": 71.77,
+      "n_band": 1175,
       "h_velocity_corr": {
         "Dh3mm": {
-          "Re": 111.0,
+          "Re": 98.3,
           "Nu": 4.4,
           "h": 196.2
         },
         "Dh6mm": {
-          "Re": 222.0,
+          "Re": 196.7,
           "Nu": 4.4,
           "h": 98.1
         },
         "Dh10mm": {
-          "Re": 370.1,
+          "Re": 327.8,
           "Nu": 4.4,
           "h": 58.9
         }
       },
       "T_profile_0to3mm": [
         null,
-        70.97,
-        70.59,
-        70.67,
-        70.72,
-        70.68
+        70.99,
+        70.74,
+        70.83,
+        70.82,
+        70.74
       ],
-      "q_grad_Wm2": 2450.3,
-      "h_grad": 192.1
+      "q_grad_Wm2": 2436.3,
+      "h_grad": 192.8
     },
     "Winding": {
       "assumed_htc": 2000.0,
-      "nearwall_V": 0.533,
-      "nearwall_Toil": 70.97,
+      "nearwall_V": 0.515,
+      "nearwall_Toil": 71.06,
       "wall_T": 91.9,
-      "Tbulk": 71.64,
-      "n_band": 3466,
+      "Tbulk": 71.77,
+      "n_band": 3593,
       "h_velocity_corr": {
         "Dh3mm": {
-          "Re": 131.9,
+          "Re": 127.4,
           "Nu": 4.4,
           "h": 196.2
         },
         "Dh6mm": {
-          "Re": 263.9,
+          "Re": 254.9,
           "Nu": 4.4,
           "h": 98.1
         },
         "Dh10mm": {
-          "Re": 439.8,
+          "Re": 424.8,
           "Nu": 4.4,
           "h": 58.9
         }
       },
       "T_profile_0to3mm": [
         null,
-        71.28,
+        71.33,
+        70.58,
         70.64,
-        70.51,
-        70.4,
-        70.46
+        70.57,
+        70.45
       ],
-      "q_grad_Wm2": 3767.9,
-      "h_grad": 186.0
+      "q_grad_Wm2": 3751.0,
+      "h_grad": 186.3
     }
   }
 }
