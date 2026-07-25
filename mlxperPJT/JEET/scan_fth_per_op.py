@@ -15,6 +15,7 @@ HalfSC 표 하나로 Ref/SC 의 f_theta 도 좌표 재척도로 얻는다 (f_the
 from __future__ import annotations
 
 import glob
+import gzip
 import json
 import os
 import re
@@ -40,8 +41,9 @@ _DIR_RE = re.compile(
 
 
 def fth_of_file(path: str) -> dict:
-    """선택 블록들에서 도체 평균장 기반 f_theta."""
-    with open(path, encoding="utf-8", errors="ignore") as fh:
+    """선택 블록들에서 도체 평균장 기반 f_theta (.txt 또는 .txt.gz)."""
+    op = gzip.open if path.endswith(".gz") else open
+    with op(path, "rt", encoding="utf-8", errors="ignore") as fh:
         lines = fh.readlines()
     blocks, regions_tbl = _locate_blocks(lines)
     S_t = S_r = 0.0
@@ -79,12 +81,18 @@ def fth_of_file(path: str) -> dict:
 
 def main() -> int:
     limit = None
+    root, out_path = ROOT, OUT
     if "--limit" in sys.argv:
         limit = int(sys.argv[sys.argv.index("--limit") + 1])
-    dirs = sorted(glob.glob(os.path.join(ROOT, "Hybrid_Speed_*")))
+    if "--root" in sys.argv:
+        root = sys.argv[sys.argv.index("--root") + 1]
+    if "--out" in sys.argv:
+        out_path = sys.argv[sys.argv.index("--out") + 1]
+    globals()["OUT"] = out_path
+    dirs = sorted(glob.glob(os.path.join(root, "Hybrid_Speed_*")))
     if limit:
         dirs = dirs[:limit]
-    print(f"Hybrid 폴더 {len(dirs)}개 스캔 (블록 {BLOCK_PICK})")
+    print(f"Hybrid 폴더 {len(dirs)}개 스캔 (블록 {BLOCK_PICK})  root={root}")
     out, t0 = {}, time.time()
     for i, d in enumerate(dirs):
         m = _DIR_RE.search(os.path.basename(d))
@@ -92,6 +100,8 @@ def main() -> int:
             continue
         spd, irms, ph = int(m.group(1)), float(m.group(2)), float(m.group(3))
         f = os.path.join(d, "FEA_data.txt")
+        if not os.path.exists(f):
+            f = os.path.join(d, "FEA_data.txt.gz")
         if not os.path.exists(f):
             print(f"  누락: {os.path.basename(d)}")
             continue

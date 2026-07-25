@@ -94,10 +94,14 @@ def load_skinprox(scale, json_rel):
     return lut
 
 
-def split_dataset(ds, lut, t_r_m, t_t_m, f_theta, tag):
-    """단일 g 데이터셋 -> 성분별 분모 데이터셋 (hybrid/AF 치환)."""
-    R = R_of_speed(ds.speeds_k * 1000.0, t_r_m, t_t_m, f_theta)
+def split_dataset(ds, lut, t_r_m, t_t_m, f_theta, tag, fth_fn=None):
+    """단일 g 데이터셋 -> 성분별 분모 데이터셋 (hybrid/AF 치환).
+
+    fth_fn(irms, phase) 가 주어지면 운전점별 f_theta 를 쓰고 (per-OP 모드),
+    없으면 상수 f_theta 를 쓴다 (§12.5 근사 모드).
+    """
     pts, miss, tolbad = [], 0, 0.0
+    fth_used = []
     for i, p in enumerate(ds.points):
         key = (round(p.speed_rpm), round(p.current_rms, 1),
                round(p.phase_deg, 1))
@@ -105,16 +109,59 @@ def split_dataset(ds, lut, t_r_m, t_t_m, f_theta, tag):
             miss += 1
             pts.append(p)
             continue
+        fth = f_theta if fth_fn is None else fth_fn(p.current_rms,
+                                                    p.phase_deg)
+        fth_used.append(fth)
+        R = float(R_of_speed([p.speed_rpm], t_r_m, t_t_m, fth)[0])
         skin, prox = lut[key]
         tolbad = max(tolbad, abs(skin + prox - p.hybrid_ac_kW)
                      / max(p.hybrid_ac_kW, 1e-9))
-        h_split = skin + prox / R[i]
+        h_split = skin + prox / R
         pts.append(replace(p, hybrid_ac_kW=h_split,
                            AF=p.fea_ac_kW / h_split))
     if miss:
         print(f"  [{tag}] 경고: 레코드 매칭 실패 {miss}점 (원본 유지)")
-    print(f"  [{tag}] skin+prox 대 hybrid 총량 최대 상대편차 {tolbad:.2e}")
+    note = (f"f_th {np.min(fth_used):.3f}~{np.max(fth_used):.3f}"
+            if fth_fn is not None and fth_used else f"f_th={f_theta:.3f} 상수")
+    print(f"  [{tag}] skin+prox 정합 {tolbad:.1e}  ({note})")
     return AcLossDataset(points=pts)
+
+
+def load_fth_table(fth_json_path, tag=""):
+    """per-OP f_theta JSON -> ((I,b) 셀 -> 속도 평균 f_theta) 조회 함수.
+
+    표는 해당 모델 **자체 전류 좌표**로 키가 잡혀 있다 (백필 Hybrid export
+    를 자체 기하에서 스캔한 것 -- 상사 가정 불필요).
+    """
+    d = json.load(open(fth_json_path, encoding="utf-8"))
+    combos = {}
+    for v in d.values():
+        combos.setdefault((v["irms_A"], v["phase_deg"]),
+                          []).append(v["f_theta"])
+    keys = np.array(list(combos.keys()))
+    vals = np.array([float(np.mean(v)) for v in combos.values()])
+    spread = float(np.mean([np.std(v) for v in combos.values()]))
+    print(f"  [{tag}] f_theta 표 {len(vals)}셀, 속도 간 산포 {spread:.4f},"
+          f"  I {keys[:, 0].min():g}~{keys[:, 0].max():g} A")
+
+    def fn(irms, phase):
+        d2 = ((keys[:, 0] - irms) / 100.0) ** 2 + ((keys[:, 1] - phase)
+                                                   / 18.0) ** 2
+        return float(vals[int(np.argmin(d2))])
+
+    return fn
+
+
+def make_halfsc_fth(fn_ref, fn_sc):
+    """HalfSC(I,b) 의 f_theta = 자체 표가 없으므로 상사 대응 셀의 평균.
+
+    HalfSC (I, b) ~ Ref (I/1.5, b) ~ SC (4I/3, b). Ref/SC 자체 표가 모두
+    측정값이므로 두 값의 평균을 쓰고, 그 차가 곧 구현 비상사성 오차 척도.
+    """
+    def fn(irms, phase):
+        return 0.5 * (fn_ref(irms / K_H, phase)
+                      + fn_sc(irms * K_S / K_H, phase))
+    return fn
 
 
 def err_stats(f_ac, pred):
@@ -198,32 +245,68 @@ def main() -> int:
 
     # ── 데이터셋 변환 + 주입 ────────────────────────────────────────
     pl1 = AcLossPipeline()                       # 단일 g (원본)
-    pl2 = AcLossPipeline()                       # 성분별 분모
+    pl2 = AcLossPipeline()                       # 성분별, f_theta 상수
+    pl3 = None                                   # 성분별, per-OP f_theta
+    fth_json = os.path.join(E10, "HalfSC", "fth_per_op.json")
+    luts = {}
     print("\n데이터셋 변환:")
     for m in ("Ref", "HalfSC", "SC"):
         ds = pl1.load_dataset(m)
-        lut = load_skinprox(m, pl1.cfg["json"][m])
+        luts[m] = load_skinprox(m, pl1.cfg["json"][m])
         pl2._datasets[m] = split_dataset(
-            ds, lut, geo[m]["t_r_m"], geo[m]["t_t_m"], fth[m], m)
+            ds, luts[m], geo[m]["t_r_m"], geo[m]["t_t_m"], fth[m], m)
+    fth_ref_json = os.path.join(E10, "Ref", "fth_per_op_Ref.json")
+    fth_sc_json = os.path.join(E10, "SC", "fth_per_op_SC.json")
+    if os.path.exists(fth_ref_json) and os.path.exists(fth_sc_json):
+        pl3 = AcLossPipeline()
+        print("per-OP f_theta (모델별 자체 표, 백필 Hybrid export):")
+        fn_ref = load_fth_table(fth_ref_json, "Ref")
+        fn_sc = load_fth_table(fth_sc_json, "SC")
+        fns = {"Ref": fn_ref, "SC": fn_sc,
+               "HalfSC": make_halfsc_fth(fn_ref, fn_sc)}
+        # 교차 검증 1: 8블록 아카이브 실측과 표 대응 셀
+        print(f"  [QA] Ref(460,36) 표 {fn_ref(460, 36):.4f}"
+              f" vs 아카이브 0.7255 | SC(920,36) 표 {fn_sc(920, 36):.4f}"
+              f" vs 0.7485")
+        # 교차 검증 2: Ref-SC 상사 대응 셀 전수 편차 (구현 비상사성 척도)
+        dif = []
+        for irms in (115.1, 230.0, 345.0, 460.0):
+            for ph in (0.0, 18.0, 36.0, 54.0, 72.0, 90.0):
+                dif.append(abs(fn_ref(irms, ph) - fn_sc(2 * irms, ph)))
+        print(f"  [QA] Ref vs SC(2I) 대응 24셀 |dF_th|:"
+              f" 평균 {np.mean(dif):.4f}, 최대 {np.max(dif):.4f}")
+        for m in ("Ref", "HalfSC", "SC"):
+            pl3._datasets[m] = split_dataset(
+                pl1.load_dataset(m), luts[m], geo[m]["t_r_m"],
+                geo[m]["t_t_m"], None, m, fth_fn=fns[m])
+    else:
+        print("per-OP f_theta 표 미비 --- 2세계만 비교")
 
     # ── 사다리 비교 ────────────────────────────────────────────────
     res1 = ladder(pl1, "단일 g 분모 (현행)")
-    res2 = ladder(pl2, "성분별 커널 분모 (가설)")
+    res2 = ladder(pl2, "성분별 분모 (f_theta 상수)")
+    res3 = ladder(pl3, "성분별 분모 (per-OP f_theta)") if pl3 else None
 
-    print("\n요약 (wMAE%, 단일 -> 성분별):")
+    print("\n요약 (wMAE%): 단일 / 성분별-상수 / 성분별-perOP")
     for tag in ("A_uncorrected", "B_own27", "C_zeroshot_SC",
                 "E_zeroshot_mixed", "F_zeroshot_plus3"):
-        a, b = res1[tag]["wmae_pct"], res2[tag]["wmae_pct"]
-        print(f"  {tag:<18} {a:6.2f} -> {b:6.2f}  ({b - a:+.2f})")
+        row = f"  {tag:<18} {res1[tag]['wmae_pct']:6.2f}" \
+              f" {res2[tag]['wmae_pct']:6.2f}"
+        if res3:
+            row += f" {res3[tag]['wmae_pct']:6.2f}"
+        print(row)
 
-    out = {"single_g": res1, "component_split": res2,
-           "_meta": {"f_theta": fth,
+    out = {"single_g": res1, "component_split_constfth": res2,
+           "component_split_perop": res3,
+           "_meta": {"f_theta_snapshot": fth,
                      "geometry_mm": {m: {"t_r": geo[m]["t_r_mm"],
                                          "t_t": geo[m]["t_t_mm"]}
                                      for m in geo},
                      "sigma": SIGMA,
-                     "note": "R 기본파 기준·f_theta 모델당 상수 (MS 스냅샷). "
-                             "(I,beta) 의존 미반영 = 근사 한계."}}
+                     "note": "R 기본파 기준. per-OP 모드: Ref/SC 는 백필 "
+                             "Hybrid export 에서 잰 자체 f_theta(I,b) 표, "
+                             "HalfSC 는 상사 대응 셀(Ref I/1.5, SC 4I/3) "
+                             "평균 -- 두 표의 차가 곧 구현 비상사성."}}
     json.dump(out, open(OUT, "w", encoding="utf-8"),
               ensure_ascii=False, indent=1)
     print(f"\n저장: {OUT}")

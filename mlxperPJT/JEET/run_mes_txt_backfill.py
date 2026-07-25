@@ -123,13 +123,16 @@ def validate():
     return 0 if same else 2
 
 
-def backfill(model: str, limit=None, mode_filter=None):
+def backfill(model: str, limit=None, mode_filter=None,
+             shard: int = 0, nshards: int = 1):
     mot, root = MODELS[model]
     ops = sorted([d for d in root.iterdir() if d.is_dir()
                   and (d.name.startswith("Hybrid_")
                        or d.name.startswith("FullFEA_"))])
     if mode_filter:
         ops = [d for d in ops if d.name.startswith(mode_filter)]
+    if nshards > 1:
+        ops = ops[shard::nshards]        # 병렬 COM 세션용 분할 (.gz 스킵으로 멱등)
     if limit:
         ops = ops[:limit]
     stage_root = STAGE / model
@@ -185,12 +188,14 @@ def main():
     ap.add_argument("--model", choices=sorted(MODELS))
     ap.add_argument("--limit", type=int)
     ap.add_argument("--mode", choices=["Hybrid", "FullFEA"])
+    ap.add_argument("--shard", type=int, default=0)
+    ap.add_argument("--nshards", type=int, default=1)
     a = ap.parse_args()
     if a.validate:
         return validate()
     if not a.model:
         ap.error("--model 또는 --validate 필요")
-    return backfill(a.model, a.limit, a.mode)
+    return backfill(a.model, a.limit, a.mode, a.shard, a.nshards)
 
 
 if __name__ == "__main__":
