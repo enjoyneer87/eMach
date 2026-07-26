@@ -15,8 +15,12 @@ if str(parent_dir) not in sys.path:
 
 from geometry_bridge import GeometryBridge
 from pyleecan_bridge import (
+    build_export_bundle_from_machine_json,
     build_export_bundle_from_analysis,
     build_machine_and_dims_from_dxf,
+    is_geometry_payload_json,
+    is_pyleecan_machine_json,
+    validate_pyleecan_machine_json_for_gui,
 )
 from pyleecan_subprocess_bridge import (
     default_pyleecan_python,
@@ -50,10 +54,47 @@ with col1:
         st.stop()
         
     tmp_path = None
+    input_kind = "unknown"
+    local_bundle_preview = None
+    local_machine_json_preview = None
     try:
         tmp_path = _write_uploaded_to_temp(uploaded_file)
-        data = GeometryBridge.convert_to_payload(tmp_path)
-        st.success("도면 파싱 및 Payload 로드 성공!")
+
+        if uploaded_file.name.lower().endswith(".json"):
+            with open(tmp_path, "r", encoding="utf-8-sig") as f:
+                raw_json = json.load(f)
+
+            if is_pyleecan_machine_json(raw_json):
+                input_kind = "pyleecan_machine_json"
+                local_bundle_preview = build_export_bundle_from_machine_json(
+                    machine_json=raw_json,
+                    source_name=uploaded_file.name,
+                )
+                local_machine_json_preview = raw_json
+                # machine JSON은 엔티티 기반 시각화 대상이 아니므로 빈 payload로 처리
+                data = {
+                    "contract_version": "machine-json",
+                    "unit": "mm",
+                    "entities": [],
+                    "provenance": {"source_file": uploaded_file.name},
+                }
+                st.success("Pyleecan Machine JSON 로드 성공!")
+            else:
+                data = GeometryBridge.convert_to_payload(tmp_path)
+                if isinstance(data, dict) and isinstance(data.get("dims"), dict):
+                    input_kind = "bundle_json"
+                    local_bundle_preview = data
+                    st.success("Pyleecan Bundle JSON 로드 성공!")
+                elif is_geometry_payload_json(data):
+                    input_kind = "geometry_payload_json"
+                    st.success("GeometryPayload JSON 로드 성공!")
+                else:
+                    input_kind = "json_unknown"
+                    st.warning("JSON 형식을 인식하지 못했습니다. GeometryPayload/Pyleecan bundle/Machine JSON만 지원합니다.")
+        else:
+            data = GeometryBridge.convert_to_payload(tmp_path)
+            input_kind = "dxf"
+            st.success("도면 파싱 및 Payload 로드 성공!")
     except Exception as e:
         st.error(f"파싱 에러: {e}")
         st.stop()
@@ -65,6 +106,7 @@ with col1:
     version = data.get("contract_version", "unknown")
     st.write(f"- **Contract Version**: `{version}`")
     st.write(f"- **Unit**: `{data.get('unit', 'unknown')}`")
+    st.write(f"- **Input Type**: `{input_kind}`")
     
     entities = data.get("entities", [])
     st.write(f"- **Total Entities**: `{len(entities)}`")
@@ -88,8 +130,38 @@ with col1:
         mime="application/json",
     )
 
+    if local_bundle_preview is not None:
+        preview_name = f"{Path(uploaded_file.name).stem}_pyleecan_bundle.json"
+        preview_json = json.dumps(local_bundle_preview, ensure_ascii=False, indent=2)
+        st.download_button(
+            "Download Pyleecan Bundle (for bridge)",
+            data=preview_json,
+            file_name=preview_name,
+            mime="application/json",
+        )
+
+    if local_machine_json_preview is not None:
+        machine_preview_name = f"{Path(uploaded_file.name).stem}_pyleecan_machine_gui.json"
+        machine_preview_json = json.dumps(local_machine_json_preview, ensure_ascii=False, indent=2)
+        st.download_button(
+            "Download Pyleecan Machine JSON (for GUI)",
+            data=machine_preview_json,
+            file_name=machine_preview_name,
+            mime="application/json",
+        )
+
+        local_validation = validate_pyleecan_machine_json_for_gui(local_machine_json_preview)
+        if local_validation.get("ok"):
+            st.success("GUI import용 Machine JSON 최소 구조 검증 통과")
+        else:
+            st.warning("GUI import용 Machine JSON 검증 이슈가 있습니다.")
+        for err in local_validation.get("errors", []):
+            st.write(f"- error: {err}")
+        for warn in local_validation.get("warnings", []):
+            st.write(f"- warning: {warn}")
+
     if uploaded_file.name.lower().endswith(".dxf") or uploaded_file.name.lower().endswith(".json"):
-        st.caption("외부 pyleecan env는 JSON-only 모드로 실행됩니다. DXF는 UI env에서 먼저 Bundle JSON으로 변환됩니다.")
+        st.caption("외부 pyleecan env는 JSON-only 모드로 실행됩니다. 내부 브릿지용은 Bundle JSON, GUI Import용은 Machine JSON을 사용하세요.")
 
         machine_name = st.text_input(
             "Machine Name",
@@ -115,7 +187,7 @@ with col1:
                 tmp_input_path = _write_uploaded_to_temp(uploaded_file)
                 bridge_input_path = tmp_input_path
 
-                # JSON-only: DXF는 UI env에서 먼저 분석 후 bundle JSON으로 변환한다.
+                # JSON-only: DXF/기계 JSON은 UI env에서 먼저 bundle JSON으로 변환한다.
                 if uploaded_file.name.lower().endswith(".dxf"):
                     machine_from_dxf, dims, analysis_result = build_machine_and_dims_from_dxf(
                         dxf_path=tmp_input_path,
@@ -134,6 +206,26 @@ with col1:
                         tmp_bundle_file.write(json.dumps(bundle, ensure_ascii=False).encode("utf-8"))
                         tmp_bundle_path = tmp_bundle_file.name
                     bridge_input_path = tmp_bundle_path
+                elif input_kind == "pyleecan_machine_json":
+                    with open(tmp_input_path, "r", encoding="utf-8-sig") as f:
+                        machine_json = json.load(f)
+                    bundle = build_export_bundle_from_machine_json(
+                        machine_json=machine_json,
+                        source_name=uploaded_file.name,
+                        stack_length_mm=float(stack_length_mm),
+                    )
+                    with tempfile.NamedTemporaryFile(delete=False, suffix=".json") as tmp_bundle_file:
+                        tmp_bundle_file.write(json.dumps(bundle, ensure_ascii=False).encode("utf-8"))
+                        tmp_bundle_path = tmp_bundle_file.name
+                    bridge_input_path = tmp_bundle_path
+                elif input_kind == "geometry_payload_json":
+                    raise ValueError(
+                        "GeometryPayload JSON은 pyleecan bundle 입력이 아닙니다. DXF 또는 Pyleecan bundle/machine JSON을 사용해 주세요."
+                    )
+                elif input_kind == "json_unknown":
+                    raise ValueError(
+                        "지원하지 않는 JSON 형식입니다. GeometryPayload/Pyleecan bundle/Machine JSON만 지원합니다."
+                    )
 
                 external_result = run_external_pyleecan_bridge(
                     input_path=bridge_input_path,
@@ -142,6 +234,7 @@ with col1:
                     machine_name=machine_name,
                     stack_length_mm=float(stack_length_mm),
                     pyleecan_python=pyleecan_python,
+                    export_machine_json=True,
                 )
                 st.session_state["pyleecan_external_result"] = external_result
 
@@ -176,11 +269,36 @@ with col1:
                 )
                 bundle_name = f"{Path(uploaded_file.name).stem}_pyleecan_bundle.json"
                 st.download_button(
-                    "Download Pyleecan Bundle",
+                    "Download Pyleecan Bundle (for bridge)",
                     data=bundle_json,
                     file_name=bundle_name,
                     mime="application/json",
                 )
+
+                machine_json_payload = ext.get("machine_json")
+                if isinstance(machine_json_payload, dict):
+                    machine_json_text = json.dumps(machine_json_payload, ensure_ascii=False, indent=2)
+                    machine_json_name = f"{Path(uploaded_file.name).stem}_pyleecan_machine_gui.json"
+                    st.download_button(
+                        "Download Pyleecan Machine JSON (for GUI)",
+                        data=machine_json_text,
+                        file_name=machine_json_name,
+                        mime="application/json",
+                    )
+
+                    validation = ext.get("machine_json_validation") or {}
+                    if validation.get("ok"):
+                        st.success("Runner 생성 Machine JSON은 GUI import 최소 검증을 통과했습니다.")
+                    else:
+                        st.warning("Runner 생성 Machine JSON 검증에서 이슈가 감지되었습니다.")
+                    for err in validation.get("errors", []):
+                        st.write(f"- error: {err}")
+                    for warn in validation.get("warnings", []):
+                        st.write(f"- warning: {warn}")
+
+                for warn in ext.get("warnings", []):
+                    st.warning(warn)
+
                 st.info(f"Pyleecan Machine 생성됨: {ext.get('machine_class', 'unknown')}")
             else:
                 st.warning(
@@ -213,20 +331,20 @@ with col2:
     
     for ent in entities:
         ent_type = ent.get("entity_type", "unknown").lower()
-        pts = ent.get("points", [])
+        pts = ent.get("render_points") or ent.get("points", [])
         layer = ent.get("layer", "default")
         color = layer_colors.get(layer, layer_colors["default"])
         
         label = layer if layer not in drawn_layers else None
         drawn_layers.add(layer)
         
-        # 1. LINE 및 POLYLINE (연속 선분)
-        if ent_type in ['line', 'lwpolyline', 'polyline'] and pts:
+        # 1. LINE/POLYLINE/ARC/CIRCLE 모두 샘플 포인트 우선 렌더링
+        if ent_type in ['line', 'lwpolyline', 'polyline', 'arc', 'circle'] and pts:
             # 점 데이터를 풀어서 플로팅
             xs, ys = zip(*pts)
             ax.plot(xs, ys, color=color, linewidth=1.5, label=label)
             
-        # 2. ARC (호)
+        # 2. ARC (fallback: 샘플 포인트가 없을 때)
         elif ent_type == 'arc' and ent.get("center") and ent.get("radius"):
             # pyMotorGeo의 notebook 6번/9번 셀 플로팅 방식과 동일하게 패치
             cx, cy = ent.get("center")
@@ -236,7 +354,7 @@ with col2:
             # Matplotlib Arc는 width=2*r, height=2*r를 받음
             ax.add_patch(Arc((cx, cy), 2*r, 2*r, theta1=sa, theta2=ea, color=color, linewidth=1.5, label=label))
             
-        # 3. CIRCLE (닫힌 원)
+        # 3. CIRCLE (fallback: 샘플 포인트가 없을 때)
         elif ent_type == 'circle' and ent.get("center") and ent.get("radius"):
             cx, cy = ent.get("center")
             r = ent.get("radius")

@@ -4,6 +4,12 @@
 **목표:** Motor-CAD `.h5` 데이터 → PyVista/VTK 변환 어댑터 완성  
 **키워드:** `h5py` `pyvista` `UnstructuredGrid` `stpyvista` `Streamlit` `PhysicsNeMo` `MeshGraphNet`
 
+> [!important]
+> 현재 실행은 상세 일별 목록 전체가 아니라 리베이스된 실행 기준으로 진행합니다.
+> - 실행 기준: [[Phase1_Month1_DataAdapter_Baseline_KO]]
+> - 핵심: 필수 8개 항목 + Gate A/B/C 통과 중심
+> - 학습 고도화/배포 문서화는 Month 2+ 백로그로 이관
+
 ---
 
 ## ✅ 월간 완료 기준

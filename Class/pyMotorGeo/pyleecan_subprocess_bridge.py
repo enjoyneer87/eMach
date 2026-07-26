@@ -20,6 +20,7 @@ def run_external_pyleecan_bridge(
     stack_length_mm: float,
     pyleecan_python: str | None = None,
     timeout_sec: int = 240,
+    export_machine_json: bool = False,
 ) -> dict:
     runner_path = Path(__file__).resolve().parent / "pyleecan_env_runner.py"
     py_exe = pyleecan_python or default_pyleecan_python()
@@ -45,6 +46,8 @@ def run_external_pyleecan_bridge(
             "JSON-only mode: input_type must be 'json'. Convert DXF to bundle JSON in UI env first."
         )
     cmd.extend(["--bundle-json", str(input_path)])
+    if export_machine_json:
+        cmd.append("--export-machine-json")
 
     try:
         proc = subprocess.run(

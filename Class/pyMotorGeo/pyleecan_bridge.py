@@ -47,7 +47,7 @@ for electromagnetics, thermal, and mechanical analysis.
 
 import math
 import numpy as np
-from typing import Dict, Optional, Tuple
+from typing import Any, Dict, Optional, Tuple
 
 # pyleecan은 선택적 import
 _HAS_PYLEECAN = False
@@ -387,6 +387,389 @@ def dims_to_summary(dims: Dict) -> str:
 def check_pyleecan_available() -> bool:
     """pyleecan이 설치되어 있는지 확인."""
     return _HAS_PYLEECAN
+
+
+def is_geometry_payload_json(payload: dict) -> bool:
+    """입력 JSON이 GeometryPayload(v1 유사)인지 판별."""
+    if not isinstance(payload, dict):
+        return False
+    entities = payload.get("entities")
+    return isinstance(entities, list) and payload.get("contract_version") is not None
+
+
+def is_pyleecan_machine_json(payload: dict) -> bool:
+    """입력 JSON이 pyleecan Machine 직렬화 포맷인지 판별."""
+    if not isinstance(payload, dict):
+        return False
+    cls_name = str(payload.get("__class__", ""))
+    if not cls_name.startswith("Machine"):
+        return False
+    return isinstance(payload.get("rotor"), dict) and isinstance(payload.get("stator"), dict)
+
+
+def _to_float(value: Any) -> Optional[float]:
+    try:
+        if value is None:
+            return None
+        return float(value)
+    except Exception:
+        return None
+
+
+def _to_int(value: Any) -> Optional[int]:
+    try:
+        if value is None:
+            return None
+        return int(value)
+    except Exception:
+        return None
+
+
+def _m_to_mm(value: Any) -> Optional[float]:
+    num = _to_float(value)
+    if num is None:
+        return None
+    return num * 1e3
+
+
+def _topology_from_machine_class(class_name: str) -> str:
+    mapping = {
+        "MachineIPMSM": "IPM",
+        "MachineSIPMSM": "SPM",
+        "MachineSPMSM": "SPM",
+        "MachineSyRM": "SynRM",
+    }
+    return mapping.get(class_name, "UNKNOWN")
+
+
+def _extract_pole_count(machine_json: dict) -> Optional[int]:
+    rotor = machine_json.get("rotor", {})
+    holes = rotor.get("hole")
+    if isinstance(holes, list) and holes:
+        for hole in holes:
+            if isinstance(hole, dict) and hole.get("Zh") is not None:
+                poles = _to_int(hole.get("Zh"))
+                if poles and poles > 0:
+                    return poles
+
+    slot = rotor.get("slot")
+    if isinstance(slot, dict):
+        poles = _to_int(slot.get("Zs"))
+        if poles and poles > 0:
+            return poles
+    return None
+
+
+def _extract_slot_count(machine_json: dict) -> Optional[int]:
+    stator = machine_json.get("stator", {})
+    slot = stator.get("slot")
+    if isinstance(slot, dict):
+        slots = _to_int(slot.get("Zs"))
+        if slots and slots > 0:
+            return slots
+    return None
+
+
+def _extract_rotor_hole_pack(machine_json: dict) -> list:
+    rotor = machine_json.get("rotor", {})
+    holes = rotor.get("hole")
+    if not isinstance(holes, list):
+        return []
+
+    numeric_keys = ("W0", "W1", "W2", "W3", "W4", "H0", "H1", "H2", "H3")
+    pack = []
+    for idx, hole in enumerate(holes):
+        if not isinstance(hole, dict):
+            continue
+        item = {
+            "index": idx,
+            "class": hole.get("__class__"),
+            "Zh": _to_int(hole.get("Zh")),
+        }
+        for key in numeric_keys:
+            raw_val = _to_float(hole.get(key))
+            if raw_val is None:
+                continue
+            item[key] = raw_val
+            if abs(raw_val) <= 1.0:
+                item[f"{key}_mm"] = raw_val * 1e3
+        pack.append(item)
+    return pack
+
+
+def _extract_slot_pack(machine_json: dict) -> dict:
+    stator = machine_json.get("stator", {})
+    slot = stator.get("slot", {})
+    if not isinstance(slot, dict):
+        return {}
+
+    out = {
+        "class": slot.get("__class__"),
+        "Zs": _to_int(slot.get("Zs")),
+    }
+    for key in ("H0", "H1", "H2", "H3", "W0", "W1", "W2", "W3", "W4"):
+        val = _to_float(slot.get(key))
+        if val is None:
+            continue
+        out[key] = val
+        if abs(val) <= 1.0:
+            out[f"{key}_mm"] = val * 1e3
+    return out
+
+
+def _extract_material_brief(mat: dict) -> dict:
+    if not isinstance(mat, dict):
+        return {}
+
+    mag = mat.get("mag", {}) if isinstance(mat.get("mag"), dict) else {}
+    elec = mat.get("elec", {}) if isinstance(mat.get("elec"), dict) else {}
+    struct = mat.get("struct", {}) if isinstance(mat.get("struct"), dict) else {}
+
+    bh_value = None
+    bh_curve = mag.get("BH_curve")
+    if isinstance(bh_curve, dict):
+        value = bh_curve.get("value")
+        if isinstance(value, list):
+            bh_value = value
+
+    return {
+        "name": mat.get("name"),
+        "desc": mat.get("desc"),
+        "rho_ohm_m": _to_float(elec.get("rho")),
+        "mur_lin": _to_float(mag.get("mur_lin")),
+        "Brm20_T": _to_float(mag.get("Brm20")),
+        "Wlam_mm": (_to_float(mag.get("Wlam")) or 0.0) * 1e3,
+        "density_kg_m3": _to_float(struct.get("rho")),
+        "BH_curve": bh_value,
+    }
+
+
+def _extract_winding_pack(machine_json: dict) -> dict:
+    stator = machine_json.get("stator", {})
+    winding = stator.get("winding")
+    if not isinstance(winding, dict):
+        return {}
+
+    out = {
+        "class": winding.get("__class__"),
+        "Lewout_mm": _m_to_mm(winding.get("Lewout")),
+        "Nlayer": _to_int(winding.get("Nlayer")),
+        "Npcp": _to_int(winding.get("Npcp")),
+        "Ntcoil": _to_int(winding.get("Ntcoil")),
+        "coil_pitch": _to_int(winding.get("coil_pitch")),
+        "p": _to_int(winding.get("p")),
+        "qs": _to_int(winding.get("qs")),
+    }
+
+    conductor = winding.get("conductor")
+    if isinstance(conductor, dict):
+        out["conductor"] = {
+            "class": conductor.get("__class__"),
+            "Nwppc": _to_int(conductor.get("Nwppc")),
+            "Wins_cond_mm": _m_to_mm(conductor.get("Wins_cond")),
+            "Wins_wire_mm": _m_to_mm(conductor.get("Wins_wire")),
+            "Wwire_mm": _m_to_mm(conductor.get("Wwire")),
+            "cond_mat": _extract_material_brief(conductor.get("cond_mat")),
+            "ins_mat": _extract_material_brief(conductor.get("ins_mat")),
+        }
+
+    return out
+
+
+def extract_dims_from_pyleecan_machine_json(
+    machine_json: dict,
+    stack_length_mm: Optional[float] = None,
+) -> dict:
+    """pyleecan Machine JSON에서 dims 요약을 생성 (m -> mm 변환)."""
+    if not is_pyleecan_machine_json(machine_json):
+        raise ValueError("Invalid pyleecan machine JSON payload")
+
+    rotor = machine_json.get("rotor", {})
+    stator = machine_json.get("stator", {})
+    winding = stator.get("winding") if isinstance(stator.get("winding"), dict) else {}
+
+    n_poles = _extract_pole_count(machine_json)
+    n_slots = _extract_slot_count(machine_json)
+    p_pair = _to_int(winding.get("p")) if isinstance(winding, dict) else None
+    if p_pair is None and n_poles:
+        p_pair = n_poles // 2
+
+    rotor_rint = _m_to_mm(rotor.get("Rint"))
+    rotor_rext = _m_to_mm(rotor.get("Rext"))
+    stator_rint = _m_to_mm(stator.get("Rint"))
+    stator_rext = _m_to_mm(stator.get("Rext"))
+
+    airgap = None
+    if rotor_rext is not None and stator_rint is not None:
+        airgap = stator_rint - rotor_rext
+
+    pole_pitch_deg = 360.0 / n_poles if n_poles else None
+    slot_pitch_deg = 360.0 / n_slots if n_slots else None
+
+    holes = rotor.get("hole") if isinstance(rotor.get("hole"), list) else []
+    first_hole = holes[0] if holes and isinstance(holes[0], dict) else {}
+    magnet_thickness_mm = None
+    magnet_arc_deg = None
+    if isinstance(first_hole, dict):
+        h2 = _to_float(first_hole.get("H2"))
+        if h2 is not None:
+            magnet_thickness_mm = h2 * 1e3 if abs(h2) <= 1.0 else h2
+        w0 = _to_float(first_hole.get("W0"))
+        if w0 is not None:
+            magnet_arc_deg = w0
+
+    inferred_stack = _m_to_mm(stator.get("L1"))
+    if inferred_stack is None:
+        inferred_stack = _m_to_mm(rotor.get("L1"))
+    final_stack = float(stack_length_mm) if stack_length_mm is not None else (inferred_stack or 100.0)
+
+    class_name = str(machine_json.get("__class__", ""))
+    dims = {
+        "rotor_Rint_mm": rotor_rint,
+        "rotor_Rext_mm": rotor_rext,
+        "stator_Rint_mm": stator_rint,
+        "stator_Rext_mm": stator_rext,
+        "airgap_mm": airgap,
+        "n_poles": n_poles,
+        "n_slots": n_slots,
+        "p": p_pair,
+        "pole_pitch_deg": pole_pitch_deg,
+        "slot_pitch_deg": slot_pitch_deg,
+        "magnet_thickness_mm": magnet_thickness_mm,
+        "magnet_arc_deg": magnet_arc_deg,
+        "stack_length_mm": final_stack,
+        "topology": _topology_from_machine_class(class_name),
+    }
+
+    # 다른 경로와의 호환을 위한 별칭 키
+    if rotor_rint is not None:
+        dims["r_shaft_mm"] = rotor_rint
+    if rotor_rext is not None:
+        dims["r_rotor_outer_mm"] = rotor_rext
+    if stator_rint is not None:
+        dims["r_stator_inner_mm"] = stator_rint
+    if stator_rext is not None:
+        dims["r_stator_outer_mm"] = stator_rext
+
+    return {k: v for k, v in dims.items() if v is not None}
+
+
+def build_export_bundle_from_machine_json(
+    machine_json: dict,
+    source_name: str = "machine.json",
+    stack_length_mm: Optional[float] = None,
+) -> dict:
+    """pyleecan Machine JSON을 app/runner 공용 bundle 포맷으로 변환."""
+    dims = extract_dims_from_pyleecan_machine_json(
+        machine_json=machine_json,
+        stack_length_mm=stack_length_mm,
+    )
+
+    rotor = machine_json.get("rotor", {}) if isinstance(machine_json.get("rotor"), dict) else {}
+    stator = machine_json.get("stator", {}) if isinstance(machine_json.get("stator"), dict) else {}
+
+    warnings = []
+    if "n_poles" not in dims:
+        warnings.append("n_poles missing from machine JSON")
+    if "n_slots" not in dims:
+        warnings.append("n_slots missing from machine JSON")
+
+    return {
+        "bridge_version": "v1",
+        "source": {
+            "filename": source_name,
+            "pipeline": "machine_json_import",
+            "machine_json_class": machine_json.get("__class__"),
+            "machine_json_version": machine_json.get("__version__"),
+        },
+        "dims": dims,
+        "faces": {
+            "rotor_count": 0,
+            "stator_count": 0,
+            "rotor_labels": [],
+            "stator_labels": [],
+        },
+        "machine": {
+            "pyleecan_available": bool(_HAS_PYLEECAN),
+            "machine_class": machine_json.get("__class__"),
+            "machine_name": machine_json.get("name"),
+            "from_machine_json": True,
+        },
+        "rotor_holes": _extract_rotor_hole_pack(machine_json),
+        "slot_config": _extract_slot_pack(machine_json),
+        "winding_config": _extract_winding_pack(machine_json),
+        "materials": {
+            "rotor": _extract_material_brief(rotor.get("mat_type")),
+            "stator": _extract_material_brief(stator.get("mat_type")),
+        },
+        "warnings": warnings,
+    }
+
+
+def validate_pyleecan_machine_json_for_gui(machine_json: dict) -> dict:
+    """GUI import 관점의 최소 구조/단위 sanity 검증."""
+    errors = []
+    warnings = []
+
+    if not isinstance(machine_json, dict):
+        return {
+            "ok": False,
+            "errors": ["machine_json payload must be a dict"],
+            "warnings": [],
+        }
+
+    required_root = ("__class__", "rotor", "stator", "shaft")
+    for key in required_root:
+        if key not in machine_json:
+            errors.append(f"missing root key: {key}")
+
+    rotor = machine_json.get("rotor") if isinstance(machine_json.get("rotor"), dict) else None
+    stator = machine_json.get("stator") if isinstance(machine_json.get("stator"), dict) else None
+
+    if rotor is None:
+        errors.append("rotor must be an object")
+    if stator is None:
+        errors.append("stator must be an object")
+
+    if stator is not None:
+        if not isinstance(stator.get("slot"), dict):
+            errors.append("stator.slot must be an object")
+        if not isinstance(stator.get("winding"), dict):
+            warnings.append("stator.winding is missing or not an object")
+
+    def _sanity_meter(val, name):
+        num = _to_float(val)
+        if num is None:
+            errors.append(f"{name} missing or invalid")
+            return None
+        if num <= 0:
+            errors.append(f"{name} must be > 0")
+            return None
+        if num > 2:
+            warnings.append(f"{name}={num} looks too large for meter unit")
+        return num
+
+    if rotor is not None and stator is not None:
+        rint = _sanity_meter(rotor.get("Rint"), "rotor.Rint")
+        rext = _sanity_meter(rotor.get("Rext"), "rotor.Rext")
+        sint = _sanity_meter(stator.get("Rint"), "stator.Rint")
+        sext = _sanity_meter(stator.get("Rext"), "stator.Rext")
+        l1 = _sanity_meter(stator.get("L1"), "stator.L1")
+
+        if rint is not None and rext is not None and not (rint < rext):
+            errors.append("rotor.Rint must be smaller than rotor.Rext")
+        if sint is not None and sext is not None and not (sint < sext):
+            errors.append("stator.Rint must be smaller than stator.Rext")
+        if rext is not None and sint is not None and not (rext < sint):
+            warnings.append("rotor.Rext should be smaller than stator.Rint")
+        if l1 is not None and l1 < 1e-4:
+            warnings.append("stator.L1 is very small; check meter/mm unit conversion")
+
+    return {
+        "ok": len(errors) == 0,
+        "errors": errors,
+        "warnings": warnings,
+    }
 
 
 # ═══════════════════════════════════════════════════════════════

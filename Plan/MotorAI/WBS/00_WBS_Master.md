@@ -2,7 +2,18 @@
 
 **프로젝트:** Web-native 모터 물리 AI 솔루션  
 **기간:** 2026-04-01 ~ 2027-03-31 (12개월)  
-**전략:** CAD 교환 안정화 + SciML(MGN) 데이터/학습 파이프라인 병행 → 시각화/솔버 확장
+**전략:** 제품 필수 경로 우선(입력/변환/시각화) + SciML 경로 분리 운영 + 게이트 기반 확장
+
+---
+
+## 🚦 2026Q2 실행 베이스라인
+
+- Phase 1 Month 1은 과적재 계획 대신 **필수 8개 완료 항목**으로 축소 운영
+- Gate A/B/C를 통과한 경우에만 Month 2 기능 확장 착수
+- MGN 학습 고도화, Docker 문서화, 대규모 E2E는 Month 2+ 백로그로 이관
+
+실행 기준 문서:
+- [[Phase1_Month1_DataAdapter_Baseline_KO]]
 
 ---
 
@@ -20,6 +31,7 @@
 
 ### Phase 1: 기반 구축 (Apr ~ Jun 2026)
 - [[Phase1_Month1_DataAdapter]] - `.h5` → VTK 어댑터 구축 ⭐ 상세 일별 WBS
+- [[Phase1_Month1_DataAdapter_Baseline_KO]] - Month 1 실행 기준(필수 8개 + 게이트)
 - [[Phase1_Month2_Streamlit]] - Streamlit 3D 대시보드
 - [[Phase1_Month3_BabylonJS]] - Babylon.js 입문 & 3D 렌더링
 - [[01_ExecutionPlan_CADInterchange_and_UML_KO]] - CAD 교환 우선 + UML 기반 실행계획

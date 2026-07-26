@@ -18,7 +18,7 @@
 | Item | Evidence |
 |---|---|
 | smoke test | 8/8 pass |
-| commit hash | e79bb616 |
+| commit hash | 145c5dea |
 | report file | C:/Users/user/AppData/Local/Temp/emach_overnight_runner/reports/rc_readiness_latest.json |
 | notion row | done |
 
