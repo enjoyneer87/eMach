@@ -90,6 +90,34 @@ def volpe_of(path):
     return volpe
 
 
+def field_level_delta(sp, vp):
+    """요소 수준 비교 — 실해석 필드를 스케일 메시 요소중심에 최근접 보간.
+
+    스케일 메시는 상사 변환된 유효 HalfSC 이산화이므로(형상 동일), 남는
+    차이는 (i) MS 구현 비상사성 + (ii) 최근접-요소 보간 오차 O(h) 뿐이다.
+    주기 RMS |B| 로 비교한다 (B 는 요소 상수량).
+
+    반환: 통계 dict + (지도 저장용) 스케일 메시 요소 좌표/Δ 배열.
+    """
+    from scipy.spatial import cKDTree
+    ms, BXs, BYs = load_series(sp)
+    mv, BXv, BYv = load_series(vp)
+    brms_s = np.sqrt(np.mean(BXs**2 + BYs**2, axis=0))
+    brms_v = np.sqrt(np.mean(BXv**2 + BYv**2, axis=0))
+    tree = cKDTree(np.column_stack([mv["x"], mv["y"]]))
+    d, j = tree.query(np.column_stack([ms["x"], ms["y"]]), k=1)
+    dv = brms_s - brms_v[j]
+    rel = np.abs(dv) / np.maximum(brms_v[j], 1e-4)
+    stats = {
+        "n_elem": int(len(dv)),
+        "match_dist_mm_p95": float(np.percentile(d, 95)),
+        "dBrms_T_rms": float(np.sqrt(np.mean(dv**2))),
+        "dBrms_rel_mean": float(rel.mean()),
+        "dBrms_rel_p95": float(np.percentile(rel, 95)),
+    }
+    return stats, ms, dv, brms_v[j]
+
+
 def main() -> int:
     rows = []
     t0 = time.time()
@@ -115,6 +143,7 @@ def main() -> int:
             fth_v = fth_of_file(vp)["f_theta"]
             vol_s = volpe_of(sp)
             vol_v = volpe_of(vp)
+            fld, _, _, _ = field_level_delta(sp, vp)
             rows.append({
                 "current_A": float(cur), "phase_deg": float(ph),
                 "solved_src": tag,
@@ -125,17 +154,23 @@ def main() -> int:
                 "f_theta_scaled": fth_s, "f_theta_solved": fth_v,
                 "volpe_scaled_W": vol_s, "volpe_solved_W": vol_v,
                 "volpe_rel": float(abs(vol_s - vol_v) / max(vol_v, 1e-9)),
+                "field_level": fld,
             })
             print(f"  {cur}A/{ph} [{tag}]: amp1_t 평균차"
                   f" {e_t.mean()*100:.2f}%  ΣB² {e_b2*100:.2f}%"
                   f"  f_th {fth_s:.4f}/{fth_v:.4f}"
                   f"  Volpe {vol_s/1e3:.2f}/{vol_v/1e3:.2f} kW"
-                  f" ({(vol_s/vol_v-1)*100:+.2f}%)", flush=True)
+                  f" ({(vol_s/vol_v-1)*100:+.2f}%)"
+                  f"  ΔBrms rel {fld['dBrms_rel_mean']*100:.2f}%"
+                  f"/p95 {fld['dBrms_rel_p95']*100:.2f}%", flush=True)
     if rows:
         agg = {}
         for k in ("amp1_tan_meanrel", "sumB2_rel", "volpe_rel"):
             v = np.array([r[k] for r in rows])
             agg[k] = {"mean": float(v.mean()), "max": float(v.max())}
+        v = np.array([r["field_level"]["dBrms_rel_mean"] for r in rows])
+        agg["field_dBrms_rel"] = {"mean": float(v.mean()),
+                                  "max": float(v.max())}
         json.dump({"rows": rows, "aggregate": agg,
                    "_meta": {"scale": 0.75, "source": "SC 16k Hybrid",
                              "f_e_for_loss": F_E_16K,
