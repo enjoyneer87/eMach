@@ -59,11 +59,19 @@ def solved_path(cur: str, ph: str):
     return None, None
 
 
-def per_conductor_spectra(path):
-    """도체별 조화 진폭 (36 x NH) — run_meshb 의 load_series 재사용."""
+def analyze_file(path):
+    """파일 1회 파싱으로 전 지표 산출 (재파싱 6회 -> 1회 최적화).
+
+    반환 dict: amp1_r/amp1_t (도체별 기본파), b2sum (도체별 조화합),
+    volpe_W (기계 근접손실), f_theta, brms (요소별 주기 RMS |B|), meta.
+    """
+    from mesh_b_vs_mcad import POLE_PAIRS as _PP
     meta, BX, BY = load_series(path)
     n = BX.shape[0]
+    f_m = np.arange(1, n // 2 + 1) * F_E_16K
     out_r, out_t, b2sum = [], [], []
+    volpe = 0.0
+    S_t = S_r = 0.0
     for c in meta["codes"]:
         m = meta["reg"] == c
         wgt = meta["area"][m]
@@ -80,42 +88,38 @@ def per_conductor_spectra(path):
         out_r.append(np.sqrt(b2_r[0]))          # 기본파 실효 진폭(도체 평균장)
         out_t.append(np.sqrt(b2_t[0]))
         b2sum.append(float(b2_r.sum() + b2_t.sum()))
-    return (np.array(out_r), np.array(out_t), np.array(b2sum),
-            meta, BX, BY)
+        volpe += prox_g2_volpe_prime(f_m, b2_t, b2_r, W_C, H_C)
+        # f_theta: 도체 평균장 시계열 에너지 분율 (scan_fth 관습)
+        br_c = wn @ b_rad
+        bt_c = wn @ b_tan
+        S_r += float(np.sum(br_c**2))
+        S_t += float(np.sum(bt_c**2))
+    brms = np.sqrt(np.mean(BX**2 + BY**2, axis=0))
+    return {"amp1_r": np.array(out_r), "amp1_t": np.array(out_t),
+            "b2sum": np.array(b2sum), "volpe_W": volpe * SECTORS,
+            "f_theta": S_t / (S_t + S_r), "brms": brms, "meta": meta}
 
 
-def volpe_of(path):
-    from run_meshb_hybrid_all import losses_of_op
-    _, _, _, volpe, _, _ = losses_of_op(path, W_C, H_C, F_E_16K)
-    return volpe
-
-
-def field_level_delta(sp, vp):
+def field_level_delta(a_s, a_v):
     """요소 수준 비교 — 실해석 필드를 스케일 메시 요소중심에 최근접 보간.
 
     스케일 메시는 상사 변환된 유효 HalfSC 이산화이므로(형상 동일), 남는
     차이는 (i) MS 구현 비상사성 + (ii) 최근접-요소 보간 오차 O(h) 뿐이다.
-    주기 RMS |B| 로 비교한다 (B 는 요소 상수량).
-
-    반환: 통계 dict + (지도 저장용) 스케일 메시 요소 좌표/Δ 배열.
+    주기 RMS |B| 로 비교한다 (B 는 요소 상수량). 입력은 analyze_file 산출.
     """
     from scipy.spatial import cKDTree
-    ms, BXs, BYs = load_series(sp)
-    mv, BXv, BYv = load_series(vp)
-    brms_s = np.sqrt(np.mean(BXs**2 + BYs**2, axis=0))
-    brms_v = np.sqrt(np.mean(BXv**2 + BYv**2, axis=0))
+    ms, mv = a_s["meta"], a_v["meta"]
     tree = cKDTree(np.column_stack([mv["x"], mv["y"]]))
     d, j = tree.query(np.column_stack([ms["x"], ms["y"]]), k=1)
-    dv = brms_s - brms_v[j]
-    rel = np.abs(dv) / np.maximum(brms_v[j], 1e-4)
-    stats = {
+    dv = a_s["brms"] - a_v["brms"][j]
+    rel = np.abs(dv) / np.maximum(a_v["brms"][j], 1e-4)
+    return {
         "n_elem": int(len(dv)),
         "match_dist_mm_p95": float(np.percentile(d, 95)),
         "dBrms_T_rms": float(np.sqrt(np.mean(dv**2))),
         "dBrms_rel_mean": float(rel.mean()),
         "dBrms_rel_p95": float(np.percentile(rel, 95)),
     }
-    return stats, ms, dv, brms_v[j]
 
 
 def main() -> int:
@@ -130,20 +134,16 @@ def main() -> int:
                 print(f"  {cur}A/{ph}: 소스 미비 (scaled"
                       f" {os.path.exists(sp)}, solved {tag})", flush=True)
                 continue
-            r_s, t_s, b2_s, *_ = per_conductor_spectra(sp)
-            r_v, t_v, b2_v, *_ = per_conductor_spectra(vp)
-            # 도체 순서: codes 정렬이 메시마다 다를 수 있어 반경 정렬로 재대응
-            # (load_series 는 code 순 -> 도체 위치 (슬롯,층) 매칭은 반경+각도)
-            def order_key(meta_arrs):
-                return None
+            a_s = analyze_file(sp)
+            a_v = analyze_file(vp)
+            r_s, t_s, b2_s = a_s["amp1_r"], a_s["amp1_t"], a_s["b2sum"]
+            r_v, t_v, b2_v = a_v["amp1_r"], a_v["amp1_t"], a_v["b2sum"]
             e_r = np.abs(r_s - r_v) / np.maximum(np.abs(r_v), 1e-6)
             e_t = np.abs(t_s - t_v) / np.maximum(np.abs(t_v), 1e-6)
             e_b2 = abs(b2_s.sum() - b2_v.sum()) / max(b2_v.sum(), 1e-12)
-            fth_s = fth_of_file(sp)["f_theta"]
-            fth_v = fth_of_file(vp)["f_theta"]
-            vol_s = volpe_of(sp)
-            vol_v = volpe_of(vp)
-            fld, _, _, _ = field_level_delta(sp, vp)
+            fth_s, fth_v = a_s["f_theta"], a_v["f_theta"]
+            vol_s, vol_v = a_s["volpe_W"], a_v["volpe_W"]
+            fld = field_level_delta(a_s, a_v)
             rows.append({
                 "current_A": float(cur), "phase_deg": float(ph),
                 "solved_src": tag,
