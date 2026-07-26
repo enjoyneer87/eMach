@@ -332,7 +332,7 @@ class AcLossPipeline:
                    label=f'Scalar separable (wMAE {wmae_sc:.1f}%)')
         ax.scatter(f_ac, corr_sep, c='#e65100', s=26, alpha=0.85, marker='o',
                    zorder=5,
-                   label=f'Exponent separable, {tag} (wMAE {wmae:.1f}%)')
+                   label=f'Proposed, {tag} (wMAE {wmae:.1f}%)')
         ax.set_xlabel('TS-FEA AC loss [kW]')
         ax.set_ylabel('Predicted AC loss [kW]')
         ax.set_xlim(lim)
@@ -342,10 +342,14 @@ class AcLossPipeline:
         ax.spines[['top', 'right']].set_visible(False)
         ax.legend(fontsize=6.3, frameon=False, loc='upper left')
 
+        import matplotlib as _mpl
+        _tick_kw = ('tick_labels'
+                    if tuple(int(v) for v in _mpl.__version__.split('.')[:2])
+                    >= (3, 9) else 'labels')
         bp = ax2.boxplot([ea, e3, e_sc, es],
-                         tick_labels=['Hybrid\n(uncorr.)', '3D TPS\nRBF',
-                                      'Scalar\nseparable',
-                                      'Exponent\nseparable'],
+                         **{_tick_kw: ['Hybrid\n(uncorr.)', '3D TPS\nRBF',
+                                       'Scalar\nseparable',
+                                       'Proposed']},
                          patch_artist=True, widths=0.45,
                          medianprops={'color': 'black', 'lw': 0.9},
                          flierprops={'marker': 'o', 'ms': 2.5, 'mfc': 'none',

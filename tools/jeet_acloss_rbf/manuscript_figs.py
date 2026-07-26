@@ -533,11 +533,12 @@ def plot_motor_geometry_dxf(
 
 def plot_form_convergence(pipeline, out_path: str,
                           scales=('Ref', 'HalfSC', 'SC'),
-                          n_base_list=(8, 10, 12, 16, 20, 24, 28),
+                          n_base_list=(8, 12, 16, 20, 24, 28),
                           n_spd_by_scale=None,
                           n_seeds: int = 10,
                           show_titles: bool = True,
-                          placement: str = 'random') -> str:
+                          placement: str = 'random',
+                          adopted_by_scale=None) -> str:
     """Scalar vs exponent separable convergence: full-map wMAE vs n_base.
 
     Own-sampling protocol (16-kRPM base kernel + n_spd calibration points
@@ -545,6 +546,11 @@ def plot_form_convergence(pipeline, out_path: str,
     the identical sample placement, so their gap isolates the contribution
     of the spread exponent p(w). Degenerate low-count regressions are
     capped at 10^3 for display.
+
+    Seminar-3: the swept grid is evenly spaced and the x ticks are exactly
+    the evaluated counts (marker = actual run); the adopted base-kernel
+    size (Ref 22 / variants 24) is starred on the exponent curve under the
+    same own-sampling protocol.
     """
     import contextlib
     import io
@@ -557,6 +563,7 @@ def plot_form_convergence(pipeline, out_path: str,
         n_seeds = 1
     ns_by = n_spd_by_scale or {'Ref': 4, 'HalfSC': 3, 'SC': 4}
     kr_by = {'Ref': 1.0, 'HalfSC': 1.5, 'SC': 2.0}
+    adopted_by = adopted_by_scale or {'Ref': 22, 'HalfSC': 24, 'SC': 24}
     base_speed = pipeline.cfg['base_speed']
 
     # 캔버스 폭 = 논문에서의 인쇄 폭(0.31*textwidth = 2.12 in). 배율 1이
@@ -578,42 +585,56 @@ def plot_form_convergence(pipeline, out_path: str,
                     / (ds.f_ac_arr + 1e-12) * 100.0)
         hyb_w = float(np.sum(ds.f_ac_arr * eh) / np.sum(ds.f_ac_arr))
 
+        def eval_wmae(nb, expo):
+            vals = []
+            for seed in range(n_seeds):
+                try:
+                    with contextlib.redirect_stdout(io.StringIO()):
+                        if placement == 'structured':
+                            plan = RbfModelBuilder.plan_sampling_indices(
+                                ds, n_base=nb, n_spd=ns,
+                                base_speed=base_speed,
+                                placement='structured', seed=seed)
+                            m = RbfModelBuilder.build_separable_rbf(
+                                ds, base_speed=base_speed,
+                                exponent=expo, index_plan=plan)
+                        else:
+                            m = AcLossEvaluator.\
+                                rebuild_sep_model_with_subsampling(
+                                    ds, nb, ns, seed,
+                                    base_speed=base_speed,
+                                    exponent=expo)
+                except np.linalg.LinAlgError:
+                    continue
+                pred = ds.h_ac_arr * m.predict(
+                    ds.speeds_k * 1000.0, ds.irms_arr, ds.phase_arr)
+                e = np.abs((pred - ds.f_ac_arr)
+                           / (ds.f_ac_arr + 1e-12) * 100.0)
+                vals.append(float(np.sum(ds.f_ac_arr * e)
+                                  / np.sum(ds.f_ac_arr)))
+            return min(np.mean(vals), 1e3) if vals else np.nan
+
         for expo, sty in ((False, dict(color='#2e7d32', ls='--',
                                        marker='s',
                                        label=r'Scalar $f\cdot\kappa$')),
                           (True, dict(color='#e65100', ls='-',
                                       marker='o',
-                                      label=r'Exponent $f\cdot\kappa^{p}$'))):
-            ys = []
-            for nb in nbs:
-                vals = []
-                for seed in range(n_seeds):
-                    try:
-                        with contextlib.redirect_stdout(io.StringIO()):
-                            if placement == 'structured':
-                                plan = RbfModelBuilder.plan_sampling_indices(
-                                    ds, n_base=nb, n_spd=ns,
-                                    base_speed=base_speed,
-                                    placement='structured', seed=seed)
-                                m = RbfModelBuilder.build_separable_rbf(
-                                    ds, base_speed=base_speed,
-                                    exponent=expo, index_plan=plan)
-                            else:
-                                m = AcLossEvaluator.\
-                                    rebuild_sep_model_with_subsampling(
-                                        ds, nb, ns, seed,
-                                        base_speed=base_speed,
-                                        exponent=expo)
-                    except np.linalg.LinAlgError:
-                        continue
-                    pred = ds.h_ac_arr * m.predict(
-                        ds.speeds_k * 1000.0, ds.irms_arr, ds.phase_arr)
-                    e = np.abs((pred - ds.f_ac_arr)
-                               / (ds.f_ac_arr + 1e-12) * 100.0)
-                    vals.append(float(np.sum(ds.f_ac_arr * e)
-                                      / np.sum(ds.f_ac_arr)))
-                ys.append(min(np.mean(vals), 1e3) if vals else np.nan)
-            ax.plot(nbs, ys, lw=1.2, ms=3.2, **sty)
+                                      label=r'Proposed $f\cdot\kappa^{p}$'))):
+            ys = [eval_wmae(nb, expo) for nb in nbs]
+            ax.plot(nbs, ys, lw=1.2, ms=4.2, **sty)
+
+        # 채택 base-kernel 규모 별표 (동일 자체 샘플링 프로토콜의 지점 강조)
+        nb_a = min(int(adopted_by.get(scale, nbs[-1])), pool)
+        y_a = eval_wmae(nb_a, True)
+        if np.isfinite(y_a):
+            ax.plot([nb_a], [y_a], marker='*', ms=10, ls='none',
+                    color='#e65100', mec='#4d2600', mew=0.5, zorder=5,
+                    label=r'adopted $n_{base}$')
+            if nb_a not in nbs:
+                ax.annotate(f'{nb_a}', (nb_a, y_a), textcoords='offset points',
+                            xytext=(0, 6), ha='center', fontsize=7.8,
+                            color='#4d2600')
+        ax.set_xticks(list(nbs))
 
         ax.axhline(hyb_w, color='#888888', ls=':', lw=0.9,
                    label='Hybrid, uncorrected')
@@ -623,7 +644,9 @@ def plot_form_convergence(pipeline, out_path: str,
         ax.set_xlabel(r'$n_{base}$ (16-kRPM base points)')
         if k == 0:
             ax.set_ylabel(r'wMAE [%] (log)')
-            ax.legend(fontsize=8.7, frameon=False, loc='lower left')
+            ax.legend(fontsize=7.5, loc='upper right', frameon=True,
+                      framealpha=0.85, edgecolor='none',
+                      handlelength=1.7, labelspacing=0.3, borderpad=0.3)
         if show_titles:
             tag = chr(ord('a') + k)
             ax.set_title(f'({tag}) {scale} '
