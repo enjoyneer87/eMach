@@ -114,6 +114,8 @@ def plot_field_panels(
     raster_dpi: int = 600,
     k_r: Optional[Sequence[float]] = None,
     show_axes: bool = True,
+    compact_labels: bool = False,
+    group_labels: Optional[Sequence[str]] = None,
 ) -> str:
     """2xN journal figure from field .npz files.
 
@@ -133,6 +135,12 @@ def plot_field_panels(
     show_axes : draw the mm axis box with ticks. The stored coordinates are
         already in mm, and the tick box also conveys the k_r size ratio
         directly (seminar-2 / journal reviewer: "add x-y dimensions").
+    compact_labels : 그림 내부 텍스트 최소화 규칙(2026-07-26) — 열 제목은
+        상단 행 한 줄만, 하단 행은 (e)~(h) 태그만, 행 식별($|B|$,
+        MVP $A/k_r$)은 최좌측에 1회(회전 라벨). 절약된 공간만큼 패널이
+        커진다. 모델 식별은 ``group_labels`` 그룹 헤더가 담당.
+    group_labels : k_r 그룹 헤더 텍스트(그룹당 1개, 예: ["Ref", "SC"]).
+        미지정 시 패널 제목의 공통 접두어를 사용(기존 동작).
     """
     plt = _journal_rc()
     D = [(np.load(p), t) for p, t in cases]
@@ -155,8 +163,10 @@ def plot_field_panels(
         m = max(np.percentile(np.abs(v), 99.5) for v in a_vals)
         a_lim = [m] * n
 
-    fig, axes = plt.subplots(2, n, figsize=(1.9 * n, 4.4),
-                             layout='constrained')
+    fig, axes = plt.subplots(
+        2, n, figsize=((2.05 if compact_labels else 1.9) * n,
+                       3.35 if compact_labels else 4.4),
+        layout='constrained')
     if n == 1:
         axes = axes.reshape(2, 1)
 
@@ -166,7 +176,10 @@ def plot_field_panels(
         h_b = ax.scatter(d['x_mm'], d['y_mm'], c=d['b_T'], s=point_size,
                          marker='.', cmap='jet', vmin=0, vmax=b_max,
                          rasterized=True, linewidths=0)
-        ax.set_title(f'({chr(97 + col)}) {title}\n$|B|$', fontsize=10.9)
+        if compact_labels:
+            ax.set_title(f'({chr(97 + col)}) {title}', fontsize=10.9)
+        else:
+            ax.set_title(f'({chr(97 + col)}) {title}\n$|B|$', fontsize=10.9)
 
         ax2 = axes[1, col]
         h_a = ax2.scatter(d['x_mm'], d['y_mm'], c=a_vals[col], s=point_size,
@@ -174,8 +187,12 @@ def plot_field_panels(
                           vmin=-a_lim[col], vmax=a_lim[col],
                           rasterized=True, linewidths=0)
         a_title = 'MVP $A/k_r$' if k_r is not None else 'MVP $A$'
-        ax2.set_title(f'({chr(97 + n + col)}) {title}\n{a_title}',
-                      fontsize=10.9)
+        if compact_labels:
+            ax2.set_title(f'({chr(97 + n + col)})', loc='left',
+                          fontsize=9.8, pad=2)
+        else:
+            ax2.set_title(f'({chr(97 + n + col)}) {title}\n{a_title}',
+                          fontsize=10.9)
         if k_r is None:
             last_of_pair = (col % 2 == 1) if share_a_pairs else True
             if last_of_pair:
@@ -193,12 +210,24 @@ def plot_field_panels(
             else:
                 a.set_xticks([])
                 a.set_yticks([])
+        if show_axes and compact_labels:
+            # 상단 행은 눈금 숫자 생략(하단 행과 동일 축) — 행 간격 절약
+            ax.tick_params(labelbottom=False)
         if show_axes:
             # 축 라벨은 좌측 열에만 — 반복 표기로 지면 낭비하지 않는다
             axes[1, col].set_xlabel('x [mm]', fontsize=8.2, labelpad=1.5)
             if col == 0:
-                for r in (0, 1):
-                    axes[r, 0].set_ylabel('y [mm]', fontsize=8.2, labelpad=1.5)
+                if compact_labels:
+                    # 행 식별을 y라벨과 병합해 최좌측 1회만 표기
+                    a_name = 'MVP $A/k_r$' if k_r is not None else 'MVP $A$'
+                    axes[0, 0].set_ylabel('$|B|$\ny [mm]',
+                                          fontsize=9.4, labelpad=2)
+                    axes[1, 0].set_ylabel(a_name + '\ny [mm]',
+                                          fontsize=9.4, labelpad=2)
+                else:
+                    for r in (0, 1):
+                        axes[r, 0].set_ylabel('y [mm]', fontsize=8.2,
+                                              labelpad=1.5)
 
     cb = fig.colorbar(h_b, ax=list(axes[0, :]), shrink=0.8)
     cb.set_label('|B| [T]', fontsize=9.4)
@@ -212,13 +241,16 @@ def plot_field_panels(
 
     # ── 상단 그룹 헤더: 같은 k_r 열을 모델 단위로 묶어 표시 ──
     # 세미나2 "좌4=KR1/우4=KR2 (상단 KR 라벨)". k_r 이 주어질 때만.
-    if k_r is not None and n >= 2:
+    need_layout = (k_r is not None and n >= 2) or compact_labels
+    rnd = None
+    if need_layout:
         fig.draw_without_rendering()
         try:
             rnd = fig.canvas.get_renderer()
         except Exception:
             rnd = None
-        c = 0
+    if k_r is not None and n >= 2:
+        c, gi = 0, 0
         while c < n:
             c2 = c
             while c2 + 1 < n and float(k_r[c2 + 1]) == float(k_r[c]):
@@ -230,13 +262,19 @@ def plot_field_panels(
                            for cc in range(c, c2 + 1)) / fig.bbox.height
             else:
                 ytop = max(p.y1 for p in pos) + 0.09
-            prefix = os.path.commonprefix(
-                [D[cc][1] for cc in range(c, c2 + 1)]).strip(' —-').strip()
+            if group_labels is not None and gi < len(group_labels):
+                prefix = str(group_labels[gi])
+            else:
+                prefix = os.path.commonprefix(
+                    [D[cc][1] for cc in range(c, c2 + 1)]).strip(' —-').strip()
             lbl = ((prefix + '  ') if prefix else '') \
                 + f'($k_r{{=}}{float(k_r[c]):g}$)'
             fig.text(xc, min(ytop + 0.012, 0.998), lbl, ha='center',
                      va='bottom', fontsize=12, fontweight='bold')
             c = c2 + 1
+            gi += 1
+
+    # (compact 행 식별은 좌측 열 y라벨에 병합되어 별도 텍스트 불필요)
 
     os.makedirs(os.path.dirname(os.path.abspath(out_path)), exist_ok=True)
     fig.savefig(out_path, dpi=raster_dpi,

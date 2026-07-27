@@ -30,11 +30,12 @@ FIELDS = os.path.join(HERE, "map_exports", "e10", "fields")
 OUT = r"E:\KDH\Overleaf\JEET-2024_rev1\fig\Bfield_MVP_mesh.pdf"
 
 # (npz, 패널 제목, k_r)  — 열 순서 = Ref 쌍, SC 쌍
+# 모델(Ref/SC) 식별은 그룹 헤더가 담당, 열 제목은 기법만 (compact 규칙)
 CASES = [
-    ("fields_Ref_Hybrid_16k_36deg_OnLoadTorque.npz", "Ref — Hybrid", 1.0),
-    ("fields_Ref_16k_36deg_OnLoadTorque.npz",        "Ref — Full-FEA", 1.0),
-    ("fields_SC_Hybrid_16k_36deg_OnLoadTorque.npz",  "SC — Hybrid", 2.0),
-    ("fields_SC_16k_36deg_OnLoadTorque.npz",         "SC — Full-FEA", 2.0),
+    ("fields_Ref_Hybrid_16k_36deg_OnLoadTorque.npz", "Hybrid", 1.0),
+    ("fields_Ref_16k_36deg_OnLoadTorque.npz",        "Full-FEA", 1.0),
+    ("fields_SC_Hybrid_16k_36deg_OnLoadTorque.npz",  "Hybrid", 2.0),
+    ("fields_SC_16k_36deg_OnLoadTorque.npz",         "Full-FEA", 2.0),
 ]
 
 
@@ -52,6 +53,8 @@ def main() -> int:
         cases, OUT,
         k_r=k_r,          # A/k_r 공통 스케일
         show_axes=True,   # mm 눈금 박스
+        compact_labels=True,          # 행 식별 최좌측 1회, 열 제목 1줄
+        group_labels=["Ref", "SC"],   # 모델 식별 = 그룹 헤더 (유지)
     )
     print(f"저장: {out}")
     print(f"  크기: {os.path.getsize(out) / 1024:.0f} KB")
