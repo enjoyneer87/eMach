@@ -177,9 +177,8 @@ def plot_field_panels(
                          marker='.', cmap='jet', vmin=0, vmax=b_max,
                          rasterized=True, linewidths=0)
         if compact_labels:
-            # 열 식별(기법명)은 tex 캡션이 담당 — 그림엔 태그만
-            ax.set_title(f'({chr(97 + col)})', loc='left',
-                         fontsize=9.8, pad=2)
+            # 열 식별(기법명)은 tex 캡션이 담당 — 그림엔 태그만(중앙 정렬)
+            ax.set_title(f'({chr(97 + col)})', fontsize=9.8, pad=2)
         else:
             ax.set_title(f'({chr(97 + col)}) {title}\n$|B|$', fontsize=10.9)
 
@@ -190,8 +189,7 @@ def plot_field_panels(
                           rasterized=True, linewidths=0)
         a_title = 'MVP $A/k_r$' if k_r is not None else 'MVP $A$'
         if compact_labels:
-            ax2.set_title(f'({chr(97 + n + col)})', loc='left',
-                          fontsize=9.8, pad=2)
+            ax2.set_title(f'({chr(97 + n + col)})', fontsize=9.8, pad=2)
         else:
             ax2.set_title(f'({chr(97 + n + col)}) {title}\n{a_title}',
                           fontsize=10.9)
