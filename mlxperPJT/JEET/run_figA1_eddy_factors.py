@@ -70,6 +70,16 @@ def main() -> int:
             ax.plot(s, er**4 / 6, "--", color=ORANGE, lw=0.9,
                     label=r"small-$\eta$: $\eta^4/6$ ($\propto f^2$)")
             ax.plot(s, es**4 / 6, "--", color=ORANGE, lw=0.9)
+        # η = 1 경계 수직선 (η<1: 저항 지배 / η>1: 표피 깊이가 도체보다 얕음)
+        s1_ref = 16.0 / ETA_REF_16K ** 2          # η_Ref = 1  (≈3.77 kRPM)
+        s1_sc = s1_ref / 4.0                      # η_SC = 1   (≈0.94 kRPM)
+        for s1, lbl in ((s1_ref, r"$\eta_{Ref}{=}1$"),
+                        (s1_sc, r"$\eta_{SC}{=}1$")):
+            ax.axvline(s1, color=GREEN_D, lw=0.8, ls="--", alpha=0.8,
+                       zorder=1)
+            ax.annotate(lbl, xy=(s1, ylim[0]), xytext=(3, 3),
+                        textcoords="offset points", fontsize=6.0,
+                        color=GREEN_D, ha="left", va="bottom", rotation=90)
         # 사례 운전점 도트
         for e0, sk, lbl, off in ((ETA_REF_16K, 16, "Ref 16k", (-2, 7)),
                                  (ETA_REF_16K, 4, "SC 4k", (8, -11)),
