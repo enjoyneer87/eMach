@@ -217,17 +217,10 @@ def plot_field_panels(
             # 축 라벨은 좌측 열에만 — 반복 표기로 지면 낭비하지 않는다
             axes[1, col].set_xlabel('x [mm]', fontsize=8.2, labelpad=1.5)
             if col == 0:
-                if compact_labels:
-                    # 행 식별을 y라벨과 병합해 최좌측 1회만 표기
-                    a_name = 'MVP $A/k_r$' if k_r is not None else 'MVP $A$'
-                    axes[0, 0].set_ylabel('$|B|$\ny [mm]',
-                                          fontsize=9.4, labelpad=2)
-                    axes[1, 0].set_ylabel(a_name + '\ny [mm]',
-                                          fontsize=9.4, labelpad=2)
-                else:
-                    for r in (0, 1):
-                        axes[r, 0].set_ylabel('y [mm]', fontsize=8.2,
-                                              labelpad=1.5)
+                # 행 물리량 식별은 우측 컬러바 라벨(+캡션)이 담당 — y[mm]만
+                for r in (0, 1):
+                    axes[r, 0].set_ylabel('y [mm]', fontsize=8.2,
+                                          labelpad=1.5)
 
     cb = fig.colorbar(h_b, ax=list(axes[0, :]), shrink=0.8)
     cb.set_label('|B| [T]', fontsize=9.4)
