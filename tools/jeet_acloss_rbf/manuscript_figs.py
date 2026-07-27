@@ -177,7 +177,9 @@ def plot_field_panels(
                          marker='.', cmap='jet', vmin=0, vmax=b_max,
                          rasterized=True, linewidths=0)
         if compact_labels:
-            ax.set_title(f'({chr(97 + col)}) {title}', fontsize=10.9)
+            # 열 식별(기법명)은 tex 캡션이 담당 — 그림엔 태그만
+            ax.set_title(f'({chr(97 + col)})', loc='left',
+                         fontsize=9.8, pad=2)
         else:
             ax.set_title(f'({chr(97 + col)}) {title}\n$|B|$', fontsize=10.9)
 
