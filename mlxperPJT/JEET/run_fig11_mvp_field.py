@@ -31,11 +31,13 @@ OUT = r"E:\KDH\Overleaf\JEET-2024_rev1\fig\Bfield_MVP_mesh.pdf"
 
 # (npz, 패널 제목, k_r)  — 열 순서 = Ref 쌍, SC 쌍
 # 모델(Ref/SC) 식별은 그룹 헤더가 담당, 열 제목은 기법만 (compact 규칙)
+# SC 는 4 kRPM = Ref 16 kRPM 의 상사 대응 운전점 (ω ∝ 1/k_r²) — 두 열이
+# 진짜 상사쌍이 되어 A/k_r 공통 스케일 일치가 법칙의 직접 검증이 된다.
 CASES = [
     ("fields_Ref_Hybrid_16k_36deg_OnLoadTorque.npz", "Hybrid", 1.0),
     ("fields_Ref_16k_36deg_OnLoadTorque.npz",        "Full-FEA", 1.0),
-    ("fields_SC_Hybrid_16k_36deg_OnLoadTorque.npz",  "Hybrid", 2.0),
-    ("fields_SC_16k_36deg_OnLoadTorque.npz",         "Full-FEA", 2.0),
+    ("fields_SC_Hybrid_4k_36deg_OnLoadTorque.npz",   "Hybrid", 2.0),
+    ("fields_SC_4k_36deg_OnLoadTorque.npz",          "Full-FEA", 2.0),
 ]
 
 
