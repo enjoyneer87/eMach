@@ -33,7 +33,7 @@ contour(ax1, H.Speed, H.Shaft_Torque, H.Efficiency, cntrsEff, ...
     'EdgeColor','k', 'ShowText','on', 'LineWidth', 0.5);
 clim(ax1, effClim); colormap(ax1, jet(256));
 xlabel(ax1,'Speed [RPM]'); ylabel(ax1,'Torque [Nm]');
-title(ax1,'(a) Hybrid-based efficiency [%]', 'FontWeight','normal');
+title(ax1,'(a)', 'FontWeight','normal');
 grid(ax1,'on');
 
 %% (b) FullFEA 효율맵
@@ -45,7 +45,7 @@ contour(ax2, F.Speed, F.Shaft_Torque, F.Efficiency, cntrsEff, ...
 clim(ax2, effClim); colormap(ax2, jet(256));
 cb2 = colorbar(ax2); cb2.Label.String = 'Efficiency [%]';
 xlabel(ax2,'Speed [RPM]'); ylabel(ax2,'Torque [Nm]');
-title(ax2,'(b) TS-FEA(FullFEA)-based efficiency [%]', 'FontWeight','normal');
+title(ax2,'(b)', 'FontWeight','normal');
 grid(ax2,'on');
 
 %% (c) 오차맵 Δη
@@ -58,7 +58,7 @@ contour(ax3, F.Speed, F.Shaft_Torque, dEff, [-2:-0.5:-0.5 0.5:0.5:2 0], ...
 colormap(ax3, parula(256));
 cb3 = colorbar(ax3); cb3.Label.String = '\Delta\eta = \eta_{hyb} − \eta_{FEA} [%p]';
 xlabel(ax3,'Speed [RPM]'); ylabel(ax3,'Torque [Nm]');
-title(ax3,'(c) Efficiency error map', 'FontWeight','normal');
+title(ax3,'(c)', 'FontWeight','normal');
 grid(ax3,'on');
 fprintf('Δη: mean(|.|)=%.3f %%p, max(|.|)=%.3f %%p\n', ...
     mean(abs(dEff(:)),'omitnan'), max(abs(dEff(:)),[],'omitnan'));
@@ -83,7 +83,7 @@ plot(ax4, imaxPk*cosd(th), imaxPk*sind(th), 'b-', 'LineWidth', 1.2, ...
     'DisplayName', sprintf('I = %.0f A', imaxPk));
 axis(ax4, 'equal'); grid(ax4,'on');
 xlabel(ax4,'i_d [A]'); ylabel(ax4,'i_q [A]');
-title(ax4,'(d) dq current pairs of the map (FullFEA Lab)', 'FontWeight','normal');
+title(ax4,'(d)', 'FontWeight','normal');
 
 %% 저장
 outPng = fullfile(figDir, 'effmap_SC_compare.png');
