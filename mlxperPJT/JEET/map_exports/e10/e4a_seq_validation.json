@@ -1,0 +1,80 @@
+{
+ "rows": [
+  {
+   "n": 4,
+   "D_pct": null,
+   "wmae_held_pct": 1.74,
+   "wmae_unused_pct": 2.08
+  },
+  {
+   "n": 6,
+   "D_pct": 1.38,
+   "wmae_held_pct": 2.6,
+   "wmae_unused_pct": 2.26
+  },
+  {
+   "n": 8,
+   "D_pct": 0.51,
+   "wmae_held_pct": 2.18,
+   "wmae_unused_pct": 2.14
+  },
+  {
+   "n": 10,
+   "D_pct": 0.78,
+   "wmae_held_pct": 0.7,
+   "wmae_unused_pct": 1.47
+  },
+  {
+   "n": 12,
+   "D_pct": 0.26,
+   "wmae_held_pct": 0.44,
+   "wmae_unused_pct": 1.41
+  },
+  {
+   "n": 14,
+   "D_pct": 0.09,
+   "wmae_held_pct": 0.46,
+   "wmae_unused_pct": 1.4
+  },
+  {
+   "n": 16,
+   "D_pct": 0.03,
+   "wmae_held_pct": 0.43,
+   "wmae_unused_pct": 1.89
+  },
+  {
+   "n": 18,
+   "D_pct": 0.02,
+   "wmae_held_pct": 0.41,
+   "wmae_unused_pct": 1.92
+  },
+  {
+   "n": 20,
+   "D_pct": 0.05,
+   "wmae_held_pct": 0.43,
+   "wmae_unused_pct": 2.15
+  },
+  {
+   "n": 22,
+   "D_pct": 0.35,
+   "wmae_held_pct": 0.18,
+   "wmae_unused_pct": 1.96
+  },
+  {
+   "n": 24,
+   "D_pct": 0.29,
+   "wmae_held_pct": 0.15,
+   "wmae_unused_pct": null
+  }
+ ],
+ "af_range": [
+  0.862,
+  1.311
+ ],
+ "n_settle": 8,
+ "_meta": {
+  "machine": "e4a 48s8p 4cond",
+  "base_rpm": 14850,
+  "held_ring_A": 156.25
+ }
+}
