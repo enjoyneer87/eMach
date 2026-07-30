@@ -133,10 +133,17 @@ def op_line_losses(meta, BX, BY, f_e, w_c, h_c, n_lines, ratio):
         mm2 = (np.arange(1, len(b2t_msq) + 1)) ** 2
         acc["_harm_num"] += float(np.sum(mm2 * b2t_msq)) * wgt.sum()
         acc["_harm_den"] += float(b2t_msq[0]) * wgt.sum()
+        # 도체 합 스펙트럼 (커널이 b2에 선형이라 합으로 기계 총량 재구성 가능)
+        acc.setdefault("_b2t_sum", np.zeros(len(f_m)))
+        acc.setdefault("_b2r_sum", np.zeros(len(f_m)))
+        acc["_b2t_sum"] = acc["_b2t_sum"] + b2t_msq
+        acc["_b2r_sum"] = acc["_b2r_sum"] + b2r_msq
 
     out = {k: v * SECTORS for k, v in acc.items() if not k.startswith("_")}
     out["harm_weight_factor_tan"] = acc["_harm_num"] / max(acc["_harm_den"],
                                                            1e-30)
+    out["b2t_msq_sum"] = [float(f"{v:.6g}") for v in acc["_b2t_sum"]]
+    out["b2r_msq_sum"] = [float(f"{v:.6g}") for v in acc["_b2r_sum"]]
     return out
 
 
@@ -206,6 +213,8 @@ def main() -> int:
                     help="MCAD 요약 JSON 재지정 (kturn 포맷 호환)")
     ap.add_argument("--tag", default=None,
                     help="출력 파일 태그 재지정 (기본: model)")
+    ap.add_argument("--tier", type=float, default=None,
+                    help="이 전류 티어만 처리 [A] (허용오차 ±1)")
     ap.add_argument("--subtract-noload", action="store_true",
                     help="0.1A(≈무부하) 파형을 요소 정합해 공제 — 전기자 기여만 평가"
                          " (MCAD 내부가 no-load 공제라는 가설 검정)")
@@ -229,6 +238,8 @@ def main() -> int:
     for d in sorted(glob.glob(os.path.join(field_root, "Hybrid_Speed_*"))):
         m = _DIR_RE.search(os.path.basename(d))
         if m and (a.speed == 0 or int(m.group(1)) == a.speed):
+            if a.tier is not None and abs(float(m.group(2)) - a.tier) > 1.0:
+                continue
             dirs.append((d, int(m.group(1)), float(m.group(2)),
                          float(m.group(3))))
     if a.limit:

@@ -64,6 +64,12 @@ def get_mcad_machine_data(mcad) -> MotorCADGeo:
 
     # ── Lab 손실 파라미터 ──
     geo.NumberOfCuboids_LossModel_Lab = float(gv("NumberOfCuboids_LossModel_Lab"))
-    geo.ACConductorLossProportion_Lab = float(gv("ACConductorLossProportion_Lab"))
+    # 일부 모델(e4a 등)은 도체별 콜론 문자열("a : b : c : d") — 스케일링에서
+    # 무변경 통과 필드이므로 스칼라가 아니면 원문 그대로 보존한다.
+    _aclp = gv("ACConductorLossProportion_Lab")
+    try:
+        geo.ACConductorLossProportion_Lab = float(_aclp)
+    except (TypeError, ValueError):
+        geo.ACConductorLossProportion_Lab = _aclp
 
     return geo
