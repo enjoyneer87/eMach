@@ -2,7 +2,7 @@
 """Fig(workflow) 스윔레인 재작도 v3 — 편집 원본 소실분 대체.
 
 변경점 (세미나3 그림 단계):
-  - 우하단 성능 수치 갱신: wMAE 0.6--1.4% -> 0.6--1.2% (현행 본문·초록 정합)
+  - 우하단 성능 수치 갱신: wMAE 0.6--1.2% -> 0.5--1.2% (헤드라인 B-통일 정합, 2026-07-30)
   - 'Proposed' 라벨 통일: 방법 박스 "Proposed: Exponent Separable RBF"
   - 캡션 규칙: 그림 내부 텍스트는 박스 라벨(다이어그램 고유 요소)만.
 
@@ -48,7 +48,7 @@ BOXES = {
              " kernel @ $\\omega_{max}$",
              "#e65100", "#a03800", "white"),
     (2, 2): ("Calibrated AC Loss\n& Efficiency Map",
-             "wMAE 0.6–1.2%",
+             "wMAE 0.5–1.2%",
              "#2e7d32", "#1b4d1e", "white"),
 }
 
