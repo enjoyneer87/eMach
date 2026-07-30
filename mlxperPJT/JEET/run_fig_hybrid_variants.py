@@ -36,7 +36,8 @@ plt.rcParams.update({
 })
 
 SERIES = [  # (key, label, color, style, marker)
-    ("mcad_prox_W", "Production hybrid", "#111111", "-", "o"),
+    ("mcad_prox_W", "Hybrid analytical-FEA (Volpe et al.)", "#111111",
+     "-", "o"),
     ("line_msq_P24_cuboid6", "Line-sampled /24, cuboid-6", "#b71c1c",
      "--", "s"),
     ("full_P24_cuboid6", "Full-area /24, cuboid-6", "#e65100", ":", "d"),

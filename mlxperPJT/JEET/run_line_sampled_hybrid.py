@@ -140,6 +140,50 @@ def op_line_losses(meta, BX, BY, f_e, w_c, h_c, n_lines, ratio):
     return out
 
 
+SWEEP_CONFIGS = [(15, 1.0), (15, 1.12), (25, 1.0), (25, 1.12), (25, 1.25),
+                 (40, 1.0), (40, 1.12), (40, 1.25), (60, 1.12), (100, 1.12)]
+
+
+def op_sweep_losses(meta, BX, BY, f_e, w_c, h_c, configs):
+    """한 OP: (n_lines, ratio) 구성별 translim P24c6 [기계 W] — 파싱 1회 공유."""
+    import mesh_b_vs_mcad as _mb
+    n = BX.shape[0]
+    f_m = np.arange(1, n // 2 + 1) * f_e
+    f_t = 1.0 / (np.pi * 4e-7 * np.pi * _mb.SIGMA * h_c ** 2)
+    cap = np.sqrt(np.minimum(1.0, f_t / f_m))
+    acc = {f"n{nl}_r{r:g}": 0.0 for nl, r in configs}
+    for c in np.unique(meta["reg"]):
+        m = meta["reg"] == c
+        wgt = meta["area"][m]
+        x, y = meta["x"][m], meta["y"][m]
+        x0 = float(np.average(x, weights=wgt))
+        y0 = float(np.average(y, weights=wgt))
+        th = np.arctan2(y0, x0)
+        xi = (x - x0) * np.cos(th) + (y - y0) * np.sin(th)
+        b_rad = (np.cos(th) * BX[:, m] + np.sin(th) * BY[:, m]).T
+        b_tan = (-np.sin(th) * BX[:, m] + np.cos(th) * BY[:, m]).T
+        cplx_r = 2.0 * np.fft.rfft(b_rad, axis=1)[:, 1:] / n
+        cplx_t = 2.0 * np.fft.rfft(b_tan, axis=1)[:, 1:] / n
+        lo, hi = float(xi.min()), float(xi.max())
+        for nl, r in configs:
+            mids, wj = station_bands(nl, r)
+            edges = np.concatenate([[0.0], np.cumsum(wj)]) * (hi - lo) + lo
+            b2r = np.zeros(len(f_m))
+            b2t = np.zeros(len(f_m))
+            for j in range(nl):
+                centre = lo + mids[j] * (hi - lo)
+                d = np.abs(xi - centre)
+                band = d <= max((edges[j + 1] - edges[j]) * 0.6,
+                                np.partition(d, min(4, len(d) - 1))[
+                                    min(4, len(d) - 1)])
+                wl = wgt[band] / wgt[band].sum()
+                b2r += wj[j] * np.abs(wl @ cplx_r[band]) ** 2
+                b2t += wj[j] * np.abs(wl @ cplx_t[band]) ** 2
+            acc[f"n{nl}_r{r:g}"] += KERNELS["P24_cuboid6"](
+                f_m * cap, b2t, b2r, w_c, h_c)
+    return {k: v * SECTORS for k, v in acc.items()}
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--model", default="Ref", choices=sorted(DIMS))
@@ -149,6 +193,8 @@ def main() -> int:
     ap.add_argument("--limit", type=int)
     ap.add_argument("--temp", type=float, default=20.0,
                     help="구리 온도 [C] — MCAD 스윕(80C 등온)과 정합시키려면 80")
+    ap.add_argument("--sweep", action="store_true",
+                    help="(n_lines, ratio) 구성 스윕 — translim P24c6만, 파싱 공유")
     ap.add_argument("--subtract-noload", action="store_true",
                     help="0.1A(≈무부하) 파형을 요소 정합해 공제 — 전기자 기여만 평가"
                          " (MCAD 내부가 no-load 공제라는 가설 검정)")
@@ -198,6 +244,18 @@ def main() -> int:
         if a.subtract_noload and cur < 1.0:
             continue
         meta, BX, BY = load_series(f)
+        if a.sweep:
+            acc = op_sweep_losses(meta, BX, BY, f_e, w_c, h_c,
+                                  SWEEP_CONFIGS)
+            if cur not in refs:
+                refs[cur] = mcad_reference(Path(MCAD_JSON[a.model]), cur)
+            e = refs[cur].get((a.speed, ph), {})
+            rows.append({"speed_rpm": a.speed, "current_A": cur,
+                         "phase_deg": ph,
+                         "mcad_prox_W": e.get("prox_W"), **acc})
+            print(f"  [{i+1}/{len(dirs)}] {cur:g}A/{ph:g}deg sweep OK",
+                  flush=True)
+            continue
         if a.subtract_noload:
             tree, bx0, by0 = noload.get(ph) or noload[sorted(noload)[0]]
             _, idx = tree.query(np.column_stack([meta["x"], meta["y"]]))
@@ -223,6 +281,8 @@ def main() -> int:
     suf = f"_{a.temp:g}C" if abs(a.temp - 20.0) > 0.1 else ""
     if a.subtract_noload:
         suf += "_armOnly"
+    if a.sweep:
+        suf += "_sweep"
     out = os.path.join(HERE, "map_exports", "e10", a.model,
                        f"line_sampled_hybrid_{a.model}{suf}.json")
     json.dump({"rows": rows,
@@ -234,6 +294,17 @@ def main() -> int:
 
     # 요약: MCAD prox 대비 비율 (0.1 A 링 제외)
     sel = [r for r in rows if r["current_A"] > 1 and r["mcad_prox_W"]]
+    if sel and a.sweep:
+        mc = np.array([r["mcad_prox_W"] for r in sel])
+        print("\n=== 스윕: translim P24c6 / 해석-FEA 기준 (평균, [min~max], corr) ===")
+        for nl, r0 in SWEEP_CONFIGS:
+            k = f"n{nl}_r{r0:g}"
+            v = np.array([r[k] for r in sel])
+            rr = v / mc
+            corr = float(np.corrcoef(v, mc)[0, 1])
+            print(f"  {k:12s} {rr.mean():6.3f} [{rr.min():5.3f}~{rr.max():5.3f}]"
+                  f"  corr {corr:.4f}")
+        sel = []
     if sel:
         mc = np.array([r["mcad_prox_W"] for r in sel])
         print("\n=== MCAD prox 대비 비율 (평균 [min~max]) ===")
