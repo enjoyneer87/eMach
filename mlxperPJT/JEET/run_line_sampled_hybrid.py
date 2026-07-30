@@ -195,11 +195,27 @@ def main() -> int:
                     help="구리 온도 [C] — MCAD 스윕(80C 등온)과 정합시키려면 80")
     ap.add_argument("--sweep", action="store_true",
                     help="(n_lines, ratio) 구성 스윕 — translim P24c6만, 파싱 공유")
+    ap.add_argument("--fields-dir", default=None,
+                    help="필드 수출 루트 재지정 (기본: BACKFILL/<model>) — "
+                         "e4a 등 외부 기계용")
+    ap.add_argument("--w-mm", type=float, default=None,
+                    help="도체 반경 치수 재지정 [mm] (DIMS 첫 값 규약)")
+    ap.add_argument("--h-mm", type=float, default=None,
+                    help="도체 접선 치수 재지정 [mm] (DIMS 둘째 값 규약)")
+    ap.add_argument("--mcad-json", default=None,
+                    help="MCAD 요약 JSON 재지정 (kturn 포맷 호환)")
+    ap.add_argument("--tag", default=None,
+                    help="출력 파일 태그 재지정 (기본: model)")
     ap.add_argument("--subtract-noload", action="store_true",
                     help="0.1A(≈무부하) 파형을 요소 정합해 공제 — 전기자 기여만 평가"
                          " (MCAD 내부가 no-load 공제라는 가설 검정)")
     a = ap.parse_args()
     w_c, h_c = DIMS[a.model]
+    if a.w_mm:
+        w_c = a.w_mm * 1e-3
+    if a.h_mm:
+        h_c = a.h_mm * 1e-3
+    tag = a.tag or a.model
 
     if abs(a.temp - 20.0) > 0.1:
         import mesh_b_vs_mcad as _mb
@@ -208,9 +224,9 @@ def main() -> int:
         _mb._SIGMA_V *= scale
         print(f"σ(Cu) {a.temp:g}C 적용: x{scale:.4f}", flush=True)
 
+    field_root = a.fields_dir or os.path.join(BACKFILL, a.model)
     dirs = []
-    for d in sorted(glob.glob(os.path.join(BACKFILL, a.model,
-                                           "Hybrid_Speed_*"))):
+    for d in sorted(glob.glob(os.path.join(field_root, "Hybrid_Speed_*"))):
         m = _DIR_RE.search(os.path.basename(d))
         if m and (a.speed == 0 or int(m.group(1)) == a.speed):
             dirs.append((d, int(m.group(1)), float(m.group(2)),
@@ -241,6 +257,8 @@ def main() -> int:
 
     for i, (d, spd, cur, ph) in enumerate(dirs):
         f = os.path.join(d, "FEA_data.txt.gz")
+        if not os.path.exists(f):
+            f = os.path.join(d, "FEA_data.txt")
         if not os.path.exists(f):
             continue
         if a.subtract_noload and cur < 1.0:
@@ -276,7 +294,11 @@ def main() -> int:
             sk = calc_skin_loss(w_c, h_c, f_e, _mb.L_ACTIVE, cur)
         acc["skin_excess_W"] = sk["P_excess_W"] * 48 * 6
         if cur not in refs:
-            refs[cur] = mcad_reference(Path(MCAD_JSON[a.model]), cur)
+            try:
+                refs[cur] = mcad_reference(
+                    Path(a.mcad_json or MCAD_JSON[a.model]), cur)
+            except Exception:
+                refs[cur] = {}
         e = refs[cur].get((spd, ph), {})
         row = {"speed_rpm": spd, "current_A": cur, "phase_deg": ph,
                "mcad_prox_W": e.get("prox_W"),
@@ -296,8 +318,9 @@ def main() -> int:
         suf += "_armOnly"
     if a.sweep:
         suf += "_sweep"
-    out = os.path.join(HERE, "map_exports", "e10", a.model,
-                       f"line_sampled_hybrid_{a.model}{suf}.json")
+    out_dir = os.path.join(HERE, "map_exports", "e10", tag)
+    os.makedirs(out_dir, exist_ok=True)
+    out = os.path.join(out_dir, f"line_sampled_hybrid_{tag}{suf}.json")
     json.dump({"rows": rows,
                "_meta": {"speed": a.speed, "n_lines": a.n_lines,
                          "ratio": a.ratio, "temp_C": a.temp,
