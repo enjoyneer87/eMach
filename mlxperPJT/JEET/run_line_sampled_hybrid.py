@@ -212,63 +212,76 @@ def main() -> int:
     for d in sorted(glob.glob(os.path.join(BACKFILL, a.model,
                                            "Hybrid_Speed_*"))):
         m = _DIR_RE.search(os.path.basename(d))
-        if m and int(m.group(1)) == a.speed:
-            dirs.append((d, float(m.group(2)), float(m.group(3))))
+        if m and (a.speed == 0 or int(m.group(1)) == a.speed):
+            dirs.append((d, int(m.group(1)), float(m.group(2)),
+                         float(m.group(3))))
     if a.limit:
         dirs = dirs[:a.limit]
-    print(f"[{a.model}] {a.speed} RPM, OP {len(dirs)}개, "
-          f"표본선 {a.n_lines}개 (r={a.ratio})", flush=True)
+    print(f"[{a.model}] {'전속도' if a.speed == 0 else a.speed} RPM, "
+          f"OP {len(dirs)}개, 표본선 {a.n_lines}개 (r={a.ratio})", flush=True)
 
     from pathlib import Path
+    from volpe_hybrid_acloss import calc_skin_loss
+    import mesh_b_vs_mcad as _mb
     refs = {}
-    f_e = a.speed * POLE_PAIRS / 60.0
     rows, t0 = [], time.time()
 
-    noload = {}          # phase_deg -> (tree, BX0, BY0, n_steps)
+    noload = {}          # (spd, phase) -> (tree, BX0, BY0)
     if a.subtract_noload:
         from scipy.spatial import cKDTree
-        for d, cur, ph in dirs:
+        for d, spd, cur, ph in dirs:
             if cur < 1.0:
                 f0 = os.path.join(d, "FEA_data.txt.gz")
                 if os.path.exists(f0):
                     m0, bx0, by0 = load_series(f0)
                     tree = cKDTree(np.column_stack([m0["x"], m0["y"]]))
-                    noload[ph] = (tree, bx0, by0)
+                    noload[(spd, ph)] = (tree, bx0, by0)
         assert noload, "무부하(0.1A) 수출 없음"
-        print(f"무부하 기준 파형: {sorted(noload)} deg", flush=True)
+        print(f"무부하 기준 파형: {len(noload)}개", flush=True)
 
-    for i, (d, cur, ph) in enumerate(dirs):
+    for i, (d, spd, cur, ph) in enumerate(dirs):
         f = os.path.join(d, "FEA_data.txt.gz")
         if not os.path.exists(f):
             continue
         if a.subtract_noload and cur < 1.0:
             continue
+        f_e = spd * POLE_PAIRS / 60.0
         meta, BX, BY = load_series(f)
         if a.sweep:
             acc = op_sweep_losses(meta, BX, BY, f_e, w_c, h_c,
                                   SWEEP_CONFIGS)
             if cur not in refs:
                 refs[cur] = mcad_reference(Path(MCAD_JSON[a.model]), cur)
-            e = refs[cur].get((a.speed, ph), {})
-            rows.append({"speed_rpm": a.speed, "current_A": cur,
+            e = refs[cur].get((spd, ph), {})
+            rows.append({"speed_rpm": spd, "current_A": cur,
                          "phase_deg": ph,
                          "mcad_prox_W": e.get("prox_W"), **acc})
-            print(f"  [{i+1}/{len(dirs)}] {cur:g}A/{ph:g}deg sweep OK",
+            print(f"  [{i+1}/{len(dirs)}] {spd}/{cur:g}A/{ph:g}deg sweep OK",
                   flush=True)
             continue
         if a.subtract_noload:
-            tree, bx0, by0 = noload.get(ph) or noload[sorted(noload)[0]]
+            key = (spd, ph)
+            tree, bx0, by0 = noload.get(key) or noload[sorted(noload)[0]]
             _, idx = tree.query(np.column_stack([meta["x"], meta["y"]]))
             n_min = min(BX.shape[0], bx0.shape[0])
             BX = BX[:n_min] - bx0[:n_min][:, idx]
             BY = BY[:n_min] - by0[:n_min][:, idx]
         acc = op_line_losses(meta, BX, BY, f_e, w_c, h_c,
                              a.n_lines, a.ratio)
+        # skin 초과분 (병렬 1경로, 온도 반영 σ) — 공개 분모 총량용
+        try:
+            sk = calc_skin_loss(w_c, h_c, f_e, _mb.L_ACTIVE, cur,
+                                sigma=_mb.SIGMA)
+        except TypeError:
+            sk = calc_skin_loss(w_c, h_c, f_e, _mb.L_ACTIVE, cur)
+        acc["skin_excess_W"] = sk["P_excess_W"] * 48 * 6
         if cur not in refs:
             refs[cur] = mcad_reference(Path(MCAD_JSON[a.model]), cur)
-        e = refs[cur].get((a.speed, ph), {})
-        row = {"speed_rpm": a.speed, "current_A": cur, "phase_deg": ph,
-               "mcad_prox_W": e.get("prox_W"), **acc}
+        e = refs[cur].get((spd, ph), {})
+        row = {"speed_rpm": spd, "current_A": cur, "phase_deg": ph,
+               "mcad_prox_W": e.get("prox_W"),
+               "mcad_skin_W": e.get("skin_W"),
+               "ts_ac_W": e.get("ts_W"), **acc}
         rows.append(row)
         mc = e.get("prox_W") or float("nan")
         print(f"  [{i+1}/{len(dirs)}] {cur:g}A/{ph:g}deg  "

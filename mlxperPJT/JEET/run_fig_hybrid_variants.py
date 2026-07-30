@@ -44,7 +44,9 @@ SERIES = [  # (key, label, color, style, marker)
     ("line_msq_Volpe_G2p", "Line-sampled G$_2'$", "#1a3a5c", "--", "^"),
     ("full_Volpe_G2p", "Full-area $\\langle B^2\\rangle$ G$_2'$",
      "#2c6fad", ":", "v"),
-    ("full_P24_solid", "Full-area /24, solid", "#777777", "-.", "x"),
+    ("line_msq_P24c6_translim",
+     "Line-sampled /24 c6 + transition cap (emulation)", "#2e7d32",
+     "-", "s"),
 ]
 
 
