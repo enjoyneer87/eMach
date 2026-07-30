@@ -17,11 +17,14 @@ scriptDir = fileparts(mfilename('fullpath'));
 eMachRoot = fullfile(scriptDir, '..', '..');
 addpath(genpath(eMachRoot));
 
-refMot = 'D:\KangDH\Thesis\e10\refModel\e10Turn6V261.mot';
-% Lab48: SC Lab rebuilt on Ref's 6x8 saturation grid (grid mode,
-% SatModelPoints_MotorLAB=2) -> all 48 nodes grid-coincident with the
-% scaled-Ref table, zero interpolation in the Fig 11 comparison
-scMot  = 'D:\KangDH\Thesis\e10\SLFEA\e10Turn6V261SLFEA_Lab48.mot';
+% Lab30 (2026-07-30): both LABs rebuilt on the unified 30-point grid
+% (6 currents x 5 gammas, grid mode SatModelPoints_MotorLAB=2) so the
+% manuscript's "MS-FEA 30 points" and the saturation build coincide.
+% I_SC = 2 x I_Ref exactly -> all 30 nodes grid-coincident with the
+% scaled-Ref table, zero interpolation in the Fig 9 comparison.
+% (Lab48-era paths kept in git history; old mat archived as *_lab48.mat)
+refMot = 'D:\KangDH\Thesis\e10\refModel\e10Turn6V261_Lab30.mot';
+scMot  = 'D:\KangDH\Thesis\e10\SLFEA\e10Turn6V261SLFEA_Lab30.mot';
 outMat = fullfile(scriptDir, 'map_exports', 'e10', ...
                   'lab_scaling_comparison_e10.mat');
 

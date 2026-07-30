@@ -1,0 +1,8 @@
+{
+ "lam_d_rmse_mVs": 2.399009261841612,
+ "lam_q_rmse_mVs": 3.6232501397725345,
+ "lam_q_mape_pct": 0.47823003471451525,
+ "torque_mape_pct": 0.4057295855138335,
+ "torque_norm_mean_pct": 0.20939531944005116,
+ "torque_norm_max_pct": 0.6284366388364921
+}
