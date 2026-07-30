@@ -1,0 +1,28 @@
+{
+ "per_speed_denominator_ratio": {
+  "2000": [
+   0.937,
+   0.248
+  ],
+  "4000": [
+   0.779,
+   0.223
+  ],
+  "8000": [
+   0.659,
+   0.217
+  ],
+  "16000": [
+   0.468,
+   0.154
+  ]
+ },
+ "old": {
+  "uncorrected_wmae_pct": 26.27,
+  "adopted_wmae_pct": 1.24
+ },
+ "new": {
+  "uncorrected_wmae_pct": 52.9,
+  "adopted_wmae_pct": 2.94
+ }
+}
