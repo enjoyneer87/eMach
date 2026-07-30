@@ -32,8 +32,10 @@ import numpy as np                                          # noqa: E402
 from scipy.interpolate import RBFInterpolator               # noqa: E402
 
 REF_SRC = r"D:\KangDH\Thesis\e4a\newfam_results\kturn4\JEET_ACLoss_kturn4_Map_Summary.json"
-SC_SRC = r"D:\KangDH\Thesis\e4a\newfam_results\kturn20\JEET_ACLoss_kturn20_Map_Summary.json"
-OUT = os.path.join(HERE, "map_exports", "e10", "e4a_family_transfer.json")
+SC_SRC = (sys.argv[1] if len(sys.argv) > 1 else
+          r"D:\KangDH\Thesis\e4a\newfam_results\kturn20\JEET_ACLoss_kturn20_Map_Summary.json")
+OUT = (sys.argv[2] if len(sys.argv) > 2 else
+       os.path.join(HERE, "map_exports", "e10", "e4a_family_transfer.json"))
 K_R = 2.0
 REF_BASE, REF_IMAX, REF_HELD_I = 14850, 250.0, 156.25
 SC_BASE = 14850
@@ -280,8 +282,16 @@ def main() -> int:
               f"max {pc['max_abs_dev_pct']}%  (signed mean "
               f"{pc['mean_signed_dev_pct']}%)")
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
+
+    def _np(o):
+        if isinstance(o, np.integer):
+            return int(o)
+        if isinstance(o, np.floating):
+            return float(o)
+        return str(o)
+
     json.dump(res, open(OUT, "w", encoding="utf-8"),
-              ensure_ascii=False, indent=1)
+              ensure_ascii=False, indent=1, default=_np)
     print(f"\n저장: {OUT}")
     return 0
 
