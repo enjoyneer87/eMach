@@ -1,0 +1,54 @@
+{
+ "n_envelope": 32,
+ "n_valid_cells": 4760,
+ "profile": {
+  "af_pred_lowspeed_max": 2.2634697992709283,
+  "af_pred_fw_range": [
+   0.9073796556227485,
+   1.049679024632548
+  ],
+  "ratio_lab_lowspeed_max": 2.756560196648999,
+  "ratio_lab_fw_range": [
+   0.9462784111088222,
+   1.0443296908304842
+  ]
+ },
+ "corr_trajectory_ratio_vs_af": 0.9559,
+ "corr_fullmap_ratio_vs_af": 0.4117,
+ "traj_lab_denominator_diag_wmae_pct": 5.179,
+ "traj_lab_denominator_diag_mae_pct": 6.72,
+ "traj_pipeline_vs_ts": {
+  "2k": {
+   "irms": 660.1,
+   "beta": 74.7,
+   "p_ts": 4.36,
+   "p_cal": 4.45,
+   "err_pct": 2.07
+  },
+  "4k": {
+   "irms": 471.4,
+   "beta": 81.5,
+   "p_ts": 7.77,
+   "p_cal": 8.63,
+   "err_pct": 11.01
+  },
+  "8k": {
+   "irms": 407.1,
+   "beta": 85.6,
+   "p_ts": 20.88,
+   "p_cal": 21.63,
+   "err_pct": 3.61
+  },
+  "16k": {
+   "irms": 389.5,
+   "beta": 88.1,
+   "p_ts": 64.2,
+   "p_cal": 65.29,
+   "err_pct": 1.69
+  }
+ },
+ "traj_pipeline_err_max_pct": 11.01,
+ "traj_pipeline_wmae_pct": 2.86,
+ "traj_deta_uncorrected_mean_abs_pp": 0.368,
+ "fullmap_deta_mean_abs_pp": 0.621
+}
