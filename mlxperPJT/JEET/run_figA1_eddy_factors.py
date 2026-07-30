@@ -6,10 +6,12 @@
     곡선 하나가 "η 정보"와 "점근선" 역할을 겸한다.
   - (b)에 소각(f²) 점근 η⁴/6 병기 — 저속 멱법칙과 전환 이탈이 함께 보인다.
   - 상단 보조 x축 = η_Ref 눈금 (η_SC = 2 η_Ref).
-  - 사례 운전점 도트: Ref@16k(η=2.06), SC@4k(η=2.06), SC@16k(η=4.12).
+  - 사례 운전점 도트: Ref@20k(η=2.06), SC@5k(η=2.06), SC@20k(η=4.12).
   - 적축(우) = SC/Ref 비, 가이드라인 k_r⁴=16(저속)·k_r=2(고속 극한).
 
-η 앵커: 본문 수치 η_Ref(16 kRPM)=2.06 -> η_Ref(s)=2.06·√(s/16), η_SC=2η_Ref.
+η 앵커: η_Ref(20 kRPM)=2.06 (δ≈1.8 mm @20 kRPM·20°C, h_c=3.7 mm — 본문 §2.3과
+동일 근원) -> η_Ref(s)=2.06·√(s/20), η_SC=2η_Ref. (2026-07-30 수치 감사: 구버전은
+같은 δ를 16 kRPM에 잘못 귀속해 곡선 전체가 ~12% 높았음 — 앵커 속도 정정.)
 그림 내부 텍스트 규칙: 태그 (a),(b)만, 식별은 범례·캡션.
 """
 import sys
@@ -23,7 +25,7 @@ if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 OUT = r"E:\KDH\Overleaf\JEET-2024_rev1\fig\eddy_factors_eta.pdf"
-ETA_REF_16K = 2.06
+ETA_REF_20K = 2.06
 
 plt.rcParams.update({
     "font.family": "serif",
@@ -49,7 +51,7 @@ def etaK(e):
 
 def main() -> int:
     s = np.linspace(0.3, 20.0, 600)                    # kRPM
-    er = ETA_REF_16K * np.sqrt(s / 16.0)               # η_Ref(s)
+    er = ETA_REF_20K * np.sqrt(s / 20.0)               # η_Ref(s)
     es = 2.0 * er                                       # η_SC(s)
 
     fig, axs = plt.subplots(1, 2, figsize=(7.0, 2.7))
@@ -71,7 +73,7 @@ def main() -> int:
                     label=r"small-$\eta$: $\eta^4/6$ ($\propto f^2$)")
             ax.plot(s, es**4 / 6, "--", color=ORANGE, lw=0.9)
         # η = 1 경계 수직선 (η<1: 저항 지배 / η>1: 표피 깊이가 도체보다 얕음)
-        s1_ref = 16.0 / ETA_REF_16K ** 2          # η_Ref = 1  (≈3.77 kRPM)
+        s1_ref = 20.0 / ETA_REF_20K ** 2          # η_Ref = 1  (≈4.71 kRPM)
         s1_sc = s1_ref / 4.0                      # η_SC = 1   (≈0.94 kRPM)
         for s1, lbl in ((s1_ref, r"$\eta_{Ref}{=}1$"),
                         (s1_sc, r"$\eta_{SC}{=}1$")):
@@ -81,9 +83,9 @@ def main() -> int:
                         textcoords="offset points", fontsize=6.0,
                         color=GREEN_D, ha="left", va="bottom", rotation=90)
         # 사례 운전점 도트
-        for e0, sk, lbl, off in ((ETA_REF_16K, 16, "Ref 16k", (-2, 7)),
-                                 (ETA_REF_16K, 4, "SC 4k", (8, -11)),
-                                 (2 * ETA_REF_16K, 16, "SC 16k", (-14, 6))):
+        for e0, sk, lbl, off in ((ETA_REF_20K, 20, "Ref 20k", (-16, 5)),
+                                 (ETA_REF_20K, 5, "SC 5k", (8, -11)),
+                                 (2 * ETA_REF_20K, 20, "SC 20k", (-16, 5))):
             y0 = fn(np.array([e0]))[0]
             ax.plot([sk], [y0], "o", ms=7.5, mfc="none", mec="#111111",
                     mew=1.0, zorder=6)
@@ -120,9 +122,9 @@ def main() -> int:
         # 상단 보조축: η_Ref 눈금
         sec = ax.secondary_xaxis(
             "top",
-            functions=(lambda x: ETA_REF_16K * np.sqrt(np.maximum(x, 0)
-                                                       / 16.0),
-                       lambda e: 16.0 * (e / ETA_REF_16K) ** 2))
+            functions=(lambda x: ETA_REF_20K * np.sqrt(np.maximum(x, 0)
+                                                       / 20.0),
+                       lambda e: 20.0 * (e / ETA_REF_20K) ** 2))
         sec.set_xticks([0.5, 1.0, 1.5, 2.0])
         sec.set_xlabel(r"$\eta_{Ref}$  ($\eta_{SC}=2\,\eta_{Ref}$)",
                        fontsize=7.2)
