@@ -128,6 +128,9 @@ def main() -> int:
     ap.add_argument("--limit", type=int)
     ap.add_argument("--temp", type=float, default=20.0,
                     help="구리 온도 [C] — MCAD 스윕(80C 등온)과 정합시키려면 80")
+    ap.add_argument("--subtract-noload", action="store_true",
+                    help="0.1A(≈무부하) 파형을 요소 정합해 공제 — 전기자 기여만 평가"
+                         " (MCAD 내부가 no-load 공제라는 가설 검정)")
     a = ap.parse_args()
     w_c, h_c = DIMS[a.model]
 
@@ -153,11 +156,33 @@ def main() -> int:
     refs = {}
     f_e = a.speed * POLE_PAIRS / 60.0
     rows, t0 = [], time.time()
+
+    noload = {}          # phase_deg -> (tree, BX0, BY0, n_steps)
+    if a.subtract_noload:
+        from scipy.spatial import cKDTree
+        for d, cur, ph in dirs:
+            if cur < 1.0:
+                f0 = os.path.join(d, "FEA_data.txt.gz")
+                if os.path.exists(f0):
+                    m0, bx0, by0 = load_series(f0)
+                    tree = cKDTree(np.column_stack([m0["x"], m0["y"]]))
+                    noload[ph] = (tree, bx0, by0)
+        assert noload, "무부하(0.1A) 수출 없음"
+        print(f"무부하 기준 파형: {sorted(noload)} deg", flush=True)
+
     for i, (d, cur, ph) in enumerate(dirs):
         f = os.path.join(d, "FEA_data.txt.gz")
         if not os.path.exists(f):
             continue
+        if a.subtract_noload and cur < 1.0:
+            continue
         meta, BX, BY = load_series(f)
+        if a.subtract_noload:
+            tree, bx0, by0 = noload.get(ph) or noload[sorted(noload)[0]]
+            _, idx = tree.query(np.column_stack([meta["x"], meta["y"]]))
+            n_min = min(BX.shape[0], bx0.shape[0])
+            BX = BX[:n_min] - bx0[:n_min][:, idx]
+            BY = BY[:n_min] - by0[:n_min][:, idx]
         acc = op_line_losses(meta, BX, BY, f_e, w_c, h_c,
                              a.n_lines, a.ratio)
         if cur not in refs:
@@ -175,6 +200,8 @@ def main() -> int:
               flush=True)
 
     suf = f"_{a.temp:g}C" if abs(a.temp - 20.0) > 0.1 else ""
+    if a.subtract_noload:
+        suf += "_armOnly"
     out = os.path.join(HERE, "map_exports", "e10", a.model,
                        f"line_sampled_hybrid_{a.model}{suf}.json")
     json.dump({"rows": rows,

@@ -58,7 +58,9 @@ MCAD_JSON = {"Ref": os.path.join(E10, "Ref", "JEET_ACLoss_Ref_Map_Summary.json")
              "HalfSC": os.path.join(E10, "HalfSC", "JEET_ACLoss_HalfSC_Map_Summary.json"),
              "SC": os.path.join(E10, "SC", "JEET_ACLoss_SC_Map_Summary.json")}
 N_COND_MACHINE = 48 * 6                 # skin: 기계 전체 도체 수
-N_PARALLEL = 2                          # 병렬 회로 수 -> 도체 전류 = I/2
+N_PARALLEL = 1                          # 병렬 회로 수 (.mot ParallelPaths=1 실측,
+                                        # 저자 확인 2026-07-31 — 구값 2는 오류:
+                                        # skin_excess_W 열이 4배 과소였음)
 
 
 def load_series(path):
