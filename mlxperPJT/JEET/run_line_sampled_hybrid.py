@@ -115,8 +115,29 @@ def op_line_losses(meta, BX, BY, f_e, w_c, h_c, n_lines, ratio):
         for k, fn in KERNELS.items():
             acc[f"line_sq_{k}"] += fn(f_m, b2t_sq, b2r_sq, w_c, h_c)
             acc[f"line_msq_{k}"] += fn(f_m, b2t_msq, b2r_msq, w_c, h_c)
+        # 기본파 한정 변형 (m=1) — 고조파 m^2 가중 몫의 분해용
+        for k in ("P24_cuboid6", "G2_solid", "Volpe_G2p"):
+            acc.setdefault(f"line_msq_fund_{k}", 0.0)
+            acc[f"line_msq_fund_{k}"] += KERNELS[k](
+                f_m[:1], b2t_msq[:1], b2r_msq[:1], w_c, h_c)
+        # 전환-캡 /24 (Volpe 2019 III-C 재현): delta(f_t)=h_c 위에서 f^2 -> f_t*f
+        import mesh_b_vs_mcad as _mb
+        f_t = 1.0 / (np.pi * 4e-7 * np.pi * _mb.SIGMA * h_c ** 2)
+        cap = np.minimum(1.0, f_t / f_m)
+        acc.setdefault("line_msq_P24c6_translim", 0.0)
+        acc["line_msq_P24c6_translim"] += KERNELS["P24_cuboid6"](
+            f_m * np.sqrt(cap), b2t_msq, b2r_msq, w_c, h_c)
+        # 접선 고조파 함량 진단: sum(m^2 B_m^2)/(1 B_1^2) (도체 면적 가중 합산)
+        acc.setdefault("_harm_num", 0.0)
+        acc.setdefault("_harm_den", 0.0)
+        mm2 = (np.arange(1, len(b2t_msq) + 1)) ** 2
+        acc["_harm_num"] += float(np.sum(mm2 * b2t_msq)) * wgt.sum()
+        acc["_harm_den"] += float(b2t_msq[0]) * wgt.sum()
 
-    return {k: v * SECTORS for k, v in acc.items()}
+    out = {k: v * SECTORS for k, v in acc.items() if not k.startswith("_")}
+    out["harm_weight_factor_tan"] = acc["_harm_num"] / max(acc["_harm_den"],
+                                                           1e-30)
+    return out
 
 
 def main() -> int:
