@@ -1,0 +1,962 @@
+{
+ "16000|0.1|0": {
+  "speed_rpm": 16000,
+  "irms_A": 0.1,
+  "phase_deg": 0.0,
+  "f_theta": 0.1326549957176572,
+  "n_blocks": 8,
+  "n_total_blocks": 128
+ },
+ "16000|0.1|18": {
+  "speed_rpm": 16000,
+  "irms_A": 0.1,
+  "phase_deg": 18.0,
+  "f_theta": 0.13935992779035664,
+  "n_blocks": 8,
+  "n_total_blocks": 128
+ },
+ "16000|0.1|36": {
+  "speed_rpm": 16000,
+  "irms_A": 0.1,
+  "phase_deg": 36.0,
+  "f_theta": 0.1423867525859226,
+  "n_blocks": 8,
+  "n_total_blocks": 128
+ },
+ "16000|0.1|54": {
+  "speed_rpm": 16000,
+  "irms_A": 0.1,
+  "phase_deg": 54.0,
+  "f_theta": 0.14580582884232865,
+  "n_blocks": 8,
+  "n_total_blocks": 128
+ },
+ "16000|0.1|72": {
+  "speed_rpm": 16000,
+  "irms_A": 0.1,
+  "phase_deg": 72.0,
+  "f_theta": 0.148737129127809,
+  "n_blocks": 8,
+  "n_total_blocks": 128
+ },
+ "16000|0.1|90": {
+  "speed_rpm": 16000,
+  "irms_A": 0.1,
+  "phase_deg": 90.0,
+  "f_theta": 0.14805307793485806,
+  "n_blocks": 8,
+  "n_total_blocks": 128
+ },
+ "16000|115.1|0": {
+  "speed_rpm": 16000,
+  "irms_A": 115.1,
+  "phase_deg": 0.0,
+  "f_theta": 0.7126097602373673,
+  "n_blocks": 8,
+  "n_total_blocks": 128
+ },
+ "16000|115.1|18": {
+  "speed_rpm": 16000,
+  "irms_A": 115.1,
+  "phase_deg": 18.0,
+  "f_theta": 0.817813524633558,
+  "n_blocks": 8,
+  "n_total_blocks": 128
+ },
+ "16000|115.1|36": {
+  "speed_rpm": 16000,
+  "irms_A": 115.1,
+  "phase_deg": 36.0,
+  "f_theta": 0.9041503989128461,
+  "n_blocks": 8,
+  "n_total_blocks": 128
+ },
+ "16000|115.1|54": {
+  "speed_rpm": 16000,
+  "irms_A": 115.1,
+  "phase_deg": 54.0,
+  "f_theta": 0.9590011668775554,
+  "n_blocks": 8,
+  "n_total_blocks": 128
+ },
+ "16000|115.1|72": {
+  "speed_rpm": 16000,
+  "irms_A": 115.1,
+  "phase_deg": 72.0,
+  "f_theta": 0.9872764997138761,
+  "n_blocks": 8,
+  "n_total_blocks": 128
+ },
+ "16000|115.1|90": {
+  "speed_rpm": 16000,
+  "irms_A": 115.1,
+  "phase_deg": 90.0,
+  "f_theta": 0.9981153202737709,
+  "n_blocks": 8,
+  "n_total_blocks": 128
+ },
+ "16000|230|0": {
+  "speed_rpm": 16000,
+  "irms_A": 230.0,
+  "phase_deg": 0.0,
+  "f_theta": 0.5710956849027011,
+  "n_blocks": 8,
+  "n_total_blocks": 128
+ },
+ "16000|230|18": {
+  "speed_rpm": 16000,
+  "irms_A": 230.0,
+  "phase_deg": 18.0,
+  "f_theta": 0.705467742585246,
+  "n_blocks": 8,
+  "n_total_blocks": 128
+ },
+ "16000|230|36": {
+  "speed_rpm": 16000,
+  "irms_A": 230.0,
+  "phase_deg": 36.0,
+  "f_theta": 0.829992483525548,
+  "n_blocks": 8,
+  "n_total_blocks": 128
+ },
+ "16000|230|54": {
+  "speed_rpm": 16000,
+  "irms_A": 230.0,
+  "phase_deg": 54.0,
+  "f_theta": 0.9175780883589412,
+  "n_blocks": 8,
+  "n_total_blocks": 128
+ },
+ "16000|230|72": {
+  "speed_rpm": 16000,
+  "irms_A": 230.0,
+  "phase_deg": 72.0,
+  "f_theta": 0.9683742226659293,
+  "n_blocks": 8,
+  "n_total_blocks": 128
+ },
+ "16000|230|90": {
+  "speed_rpm": 16000,
+  "irms_A": 230.0,
+  "phase_deg": 90.0,
+  "f_theta": 0.9935622113959656,
+  "n_blocks": 8,
+  "n_total_blocks": 128
+ },
+ "16000|345|0": {
+  "speed_rpm": 16000,
+  "irms_A": 345.0,
+  "phase_deg": 0.0,
+  "f_theta": 0.4984965457350733,
+  "n_blocks": 8,
+  "n_total_blocks": 128
+ },
+ "16000|345|18": {
+  "speed_rpm": 16000,
+  "irms_A": 345.0,
+  "phase_deg": 18.0,
+  "f_theta": 0.6379160841593501,
+  "n_blocks": 8,
+  "n_total_blocks": 128
+ },
+ "16000|345|36": {
+  "speed_rpm": 16000,
+  "irms_A": 345.0,
+  "phase_deg": 36.0,
+  "f_theta": 0.776494913228684,
+  "n_blocks": 8,
+  "n_total_blocks": 128
+ },
+ "16000|345|54": {
+  "speed_rpm": 16000,
+  "irms_A": 345.0,
+  "phase_deg": 54.0,
+  "f_theta": 0.8853956604180643,
+  "n_blocks": 8,
+  "n_total_blocks": 128
+ },
+ "16000|345|72": {
+  "speed_rpm": 16000,
+  "irms_A": 345.0,
+  "phase_deg": 72.0,
+  "f_theta": 0.9598284009608663,
+  "n_blocks": 8,
+  "n_total_blocks": 128
+ },
+ "16000|345|90": {
+  "speed_rpm": 16000,
+  "irms_A": 345.0,
+  "phase_deg": 90.0,
+  "f_theta": 0.992933143675356,
+  "n_blocks": 8,
+  "n_total_blocks": 128
+ },
+ "16000|460|0": {
+  "speed_rpm": 16000,
+  "irms_A": 460.0,
+  "phase_deg": 0.0,
+  "f_theta": 0.45609006396801055,
+  "n_blocks": 8,
+  "n_total_blocks": 128
+ },
+ "16000|460|18": {
+  "speed_rpm": 16000,
+  "irms_A": 460.0,
+  "phase_deg": 18.0,
+  "f_theta": 0.5846337045499314,
+  "n_blocks": 8,
+  "n_total_blocks": 128
+ },
+ "16000|460|36": {
+  "speed_rpm": 16000,
+  "irms_A": 460.0,
+  "phase_deg": 36.0,
+  "f_theta": 0.7255495491076319,
+  "n_blocks": 8,
+  "n_total_blocks": 128
+ },
+ "16000|460|54": {
+  "speed_rpm": 16000,
+  "irms_A": 460.0,
+  "phase_deg": 54.0,
+  "f_theta": 0.8559615977626307,
+  "n_blocks": 8,
+  "n_total_blocks": 128
+ },
+ "16000|460|72": {
+  "speed_rpm": 16000,
+  "irms_A": 460.0,
+  "phase_deg": 72.0,
+  "f_theta": 0.9515698258274843,
+  "n_blocks": 8,
+  "n_total_blocks": 128
+ },
+ "16000|460|90": {
+  "speed_rpm": 16000,
+  "irms_A": 460.0,
+  "phase_deg": 90.0,
+  "f_theta": 0.9885540943438852,
+  "n_blocks": 8,
+  "n_total_blocks": 128
+ },
+ "2000|0.1|0": {
+  "speed_rpm": 2000,
+  "irms_A": 0.1,
+  "phase_deg": 0.0,
+  "f_theta": 0.12242816284425609,
+  "n_blocks": 1,
+  "n_total_blocks": 6
+ },
+ "2000|0.1|18": {
+  "speed_rpm": 2000,
+  "irms_A": 0.1,
+  "phase_deg": 18.0,
+  "f_theta": 0.13955974522721412,
+  "n_blocks": 8,
+  "n_total_blocks": 128
+ },
+ "2000|0.1|36": {
+  "speed_rpm": 2000,
+  "irms_A": 0.1,
+  "phase_deg": 36.0,
+  "f_theta": 0.1426680777260637,
+  "n_blocks": 8,
+  "n_total_blocks": 128
+ },
+ "2000|0.1|54": {
+  "speed_rpm": 2000,
+  "irms_A": 0.1,
+  "phase_deg": 54.0,
+  "f_theta": 0.14584804005148372,
+  "n_blocks": 8,
+  "n_total_blocks": 128
+ },
+ "2000|0.1|72": {
+  "speed_rpm": 2000,
+  "irms_A": 0.1,
+  "phase_deg": 72.0,
+  "f_theta": 0.14894049261084763,
+  "n_blocks": 8,
+  "n_total_blocks": 128
+ },
+ "2000|0.1|90": {
+  "speed_rpm": 2000,
+  "irms_A": 0.1,
+  "phase_deg": 90.0,
+  "f_theta": 0.14811947607802647,
+  "n_blocks": 8,
+  "n_total_blocks": 128
+ },
+ "2000|115.1|0": {
+  "speed_rpm": 2000,
+  "irms_A": 115.1,
+  "phase_deg": 0.0,
+  "f_theta": 0.7128273403205686,
+  "n_blocks": 8,
+  "n_total_blocks": 128
+ },
+ "2000|115.1|18": {
+  "speed_rpm": 2000,
+  "irms_A": 115.1,
+  "phase_deg": 18.0,
+  "f_theta": 0.8179196007391232,
+  "n_blocks": 8,
+  "n_total_blocks": 128
+ },
+ "2000|115.1|36": {
+  "speed_rpm": 2000,
+  "irms_A": 115.1,
+  "phase_deg": 36.0,
+  "f_theta": 0.904134463480927,
+  "n_blocks": 8,
+  "n_total_blocks": 128
+ },
+ "2000|115.1|54": {
+  "speed_rpm": 2000,
+  "irms_A": 115.1,
+  "phase_deg": 54.0,
+  "f_theta": 0.9589991549540543,
+  "n_blocks": 8,
+  "n_total_blocks": 128
+ },
+ "2000|115.1|72": {
+  "speed_rpm": 2000,
+  "irms_A": 115.1,
+  "phase_deg": 72.0,
+  "f_theta": 0.9872671303971349,
+  "n_blocks": 8,
+  "n_total_blocks": 128
+ },
+ "2000|115.1|90": {
+  "speed_rpm": 2000,
+  "irms_A": 115.1,
+  "phase_deg": 90.0,
+  "f_theta": 0.9981148453267819,
+  "n_blocks": 8,
+  "n_total_blocks": 128
+ },
+ "2000|230|0": {
+  "speed_rpm": 2000,
+  "irms_A": 230.0,
+  "phase_deg": 0.0,
+  "f_theta": 0.5712715897730956,
+  "n_blocks": 8,
+  "n_total_blocks": 128
+ },
+ "2000|230|18": {
+  "speed_rpm": 2000,
+  "irms_A": 230.0,
+  "phase_deg": 18.0,
+  "f_theta": 0.7055544279871454,
+  "n_blocks": 8,
+  "n_total_blocks": 128
+ },
+ "2000|230|36": {
+  "speed_rpm": 2000,
+  "irms_A": 230.0,
+  "phase_deg": 36.0,
+  "f_theta": 0.8299985199057781,
+  "n_blocks": 8,
+  "n_total_blocks": 128
+ },
+ "2000|230|54": {
+  "speed_rpm": 2000,
+  "irms_A": 230.0,
+  "phase_deg": 54.0,
+  "f_theta": 0.917557607582839,
+  "n_blocks": 8,
+  "n_total_blocks": 128
+ },
+ "2000|230|72": {
+  "speed_rpm": 2000,
+  "irms_A": 230.0,
+  "phase_deg": 72.0,
+  "f_theta": 0.9683564547721558,
+  "n_blocks": 8,
+  "n_total_blocks": 128
+ },
+ "2000|230|90": {
+  "speed_rpm": 2000,
+  "irms_A": 230.0,
+  "phase_deg": 90.0,
+  "f_theta": 0.9935856489405909,
+  "n_blocks": 8,
+  "n_total_blocks": 128
+ },
+ "2000|345|0": {
+  "speed_rpm": 2000,
+  "irms_A": 345.0,
+  "phase_deg": 0.0,
+  "f_theta": 0.49867395752054416,
+  "n_blocks": 8,
+  "n_total_blocks": 128
+ },
+ "2000|345|18": {
+  "speed_rpm": 2000,
+  "irms_A": 345.0,
+  "phase_deg": 18.0,
+  "f_theta": 0.637951319640013,
+  "n_blocks": 8,
+  "n_total_blocks": 128
+ },
+ "2000|345|36": {
+  "speed_rpm": 2000,
+  "irms_A": 345.0,
+  "phase_deg": 36.0,
+  "f_theta": 0.7766282253937354,
+  "n_blocks": 8,
+  "n_total_blocks": 128
+ },
+ "2000|345|54": {
+  "speed_rpm": 2000,
+  "irms_A": 345.0,
+  "phase_deg": 54.0,
+  "f_theta": 0.8854231838693966,
+  "n_blocks": 8,
+  "n_total_blocks": 128
+ },
+ "2000|345|72": {
+  "speed_rpm": 2000,
+  "irms_A": 345.0,
+  "phase_deg": 72.0,
+  "f_theta": 0.9598274572619373,
+  "n_blocks": 8,
+  "n_total_blocks": 128
+ },
+ "2000|345|90": {
+  "speed_rpm": 2000,
+  "irms_A": 345.0,
+  "phase_deg": 90.0,
+  "f_theta": 0.9929445357459151,
+  "n_blocks": 8,
+  "n_total_blocks": 128
+ },
+ "2000|460|0": {
+  "speed_rpm": 2000,
+  "irms_A": 460.0,
+  "phase_deg": 0.0,
+  "f_theta": 0.45611653214837994,
+  "n_blocks": 8,
+  "n_total_blocks": 128
+ },
+ "2000|460|18": {
+  "speed_rpm": 2000,
+  "irms_A": 460.0,
+  "phase_deg": 18.0,
+  "f_theta": 0.5847753213815219,
+  "n_blocks": 8,
+  "n_total_blocks": 128
+ },
+ "2000|460|36": {
+  "speed_rpm": 2000,
+  "irms_A": 460.0,
+  "phase_deg": 36.0,
+  "f_theta": 0.7256323736042426,
+  "n_blocks": 8,
+  "n_total_blocks": 128
+ },
+ "2000|460|54": {
+  "speed_rpm": 2000,
+  "irms_A": 460.0,
+  "phase_deg": 54.0,
+  "f_theta": 0.8560402600417533,
+  "n_blocks": 8,
+  "n_total_blocks": 128
+ },
+ "2000|460|72": {
+  "speed_rpm": 2000,
+  "irms_A": 460.0,
+  "phase_deg": 72.0,
+  "f_theta": 0.9515881950060064,
+  "n_blocks": 8,
+  "n_total_blocks": 128
+ },
+ "2000|460|90": {
+  "speed_rpm": 2000,
+  "irms_A": 460.0,
+  "phase_deg": 90.0,
+  "f_theta": 0.9885445212356845,
+  "n_blocks": 8,
+  "n_total_blocks": 128
+ },
+ "4000|0.1|0": {
+  "speed_rpm": 4000,
+  "irms_A": 0.1,
+  "phase_deg": 0.0,
+  "f_theta": 0.13255335829364465,
+  "n_blocks": 8,
+  "n_total_blocks": 128
+ },
+ "4000|0.1|18": {
+  "speed_rpm": 4000,
+  "irms_A": 0.1,
+  "phase_deg": 18.0,
+  "f_theta": 0.13955061770867752,
+  "n_blocks": 8,
+  "n_total_blocks": 128
+ },
+ "4000|0.1|36": {
+  "speed_rpm": 4000,
+  "irms_A": 0.1,
+  "phase_deg": 36.0,
+  "f_theta": 0.1426680777260637,
+  "n_blocks": 8,
+  "n_total_blocks": 128
+ },
+ "4000|0.1|54": {
+  "speed_rpm": 4000,
+  "irms_A": 0.1,
+  "phase_deg": 54.0,
+  "f_theta": 0.14578709256439584,
+  "n_blocks": 8,
+  "n_total_blocks": 128
+ },
+ "4000|0.1|72": {
+  "speed_rpm": 4000,
+  "irms_A": 0.1,
+  "phase_deg": 72.0,
+  "f_theta": 0.14896728866770031,
+  "n_blocks": 8,
+  "n_total_blocks": 128
+ },
+ "4000|0.1|90": {
+  "speed_rpm": 4000,
+  "irms_A": 0.1,
+  "phase_deg": 90.0,
+  "f_theta": 0.1483363020739856,
+  "n_blocks": 8,
+  "n_total_blocks": 128
+ },
+ "4000|115.1|0": {
+  "speed_rpm": 4000,
+  "irms_A": 115.1,
+  "phase_deg": 0.0,
+  "f_theta": 0.7127338571633003,
+  "n_blocks": 8,
+  "n_total_blocks": 128
+ },
+ "4000|115.1|18": {
+  "speed_rpm": 4000,
+  "irms_A": 115.1,
+  "phase_deg": 18.0,
+  "f_theta": 0.8179121305500537,
+  "n_blocks": 8,
+  "n_total_blocks": 128
+ },
+ "4000|115.1|36": {
+  "speed_rpm": 4000,
+  "irms_A": 115.1,
+  "phase_deg": 36.0,
+  "f_theta": 0.9041329603701609,
+  "n_blocks": 8,
+  "n_total_blocks": 128
+ },
+ "4000|115.1|54": {
+  "speed_rpm": 4000,
+  "irms_A": 115.1,
+  "phase_deg": 54.0,
+  "f_theta": 0.958994721912215,
+  "n_blocks": 8,
+  "n_total_blocks": 128
+ },
+ "4000|115.1|72": {
+  "speed_rpm": 4000,
+  "irms_A": 115.1,
+  "phase_deg": 72.0,
+  "f_theta": 0.9872737533609716,
+  "n_blocks": 8,
+  "n_total_blocks": 128
+ },
+ "4000|115.1|90": {
+  "speed_rpm": 4000,
+  "irms_A": 115.1,
+  "phase_deg": 90.0,
+  "f_theta": 0.9981170947435701,
+  "n_blocks": 8,
+  "n_total_blocks": 128
+ },
+ "4000|230|0": {
+  "speed_rpm": 4000,
+  "irms_A": 230.0,
+  "phase_deg": 0.0,
+  "f_theta": 0.5712495649682282,
+  "n_blocks": 8,
+  "n_total_blocks": 128
+ },
+ "4000|230|18": {
+  "speed_rpm": 4000,
+  "irms_A": 230.0,
+  "phase_deg": 18.0,
+  "f_theta": 0.7055454996690067,
+  "n_blocks": 8,
+  "n_total_blocks": 128
+ },
+ "4000|230|36": {
+  "speed_rpm": 4000,
+  "irms_A": 230.0,
+  "phase_deg": 36.0,
+  "f_theta": 0.83001300053698,
+  "n_blocks": 8,
+  "n_total_blocks": 128
+ },
+ "4000|230|54": {
+  "speed_rpm": 4000,
+  "irms_A": 230.0,
+  "phase_deg": 54.0,
+  "f_theta": 0.9175579173240402,
+  "n_blocks": 8,
+  "n_total_blocks": 128
+ },
+ "4000|230|72": {
+  "speed_rpm": 4000,
+  "irms_A": 230.0,
+  "phase_deg": 72.0,
+  "f_theta": 0.968357173205951,
+  "n_blocks": 8,
+  "n_total_blocks": 128
+ },
+ "4000|230|90": {
+  "speed_rpm": 4000,
+  "irms_A": 230.0,
+  "phase_deg": 90.0,
+  "f_theta": 0.9935783285344204,
+  "n_blocks": 8,
+  "n_total_blocks": 128
+ },
+ "4000|345|0": {
+  "speed_rpm": 4000,
+  "irms_A": 345.0,
+  "phase_deg": 0.0,
+  "f_theta": 0.4986543757085692,
+  "n_blocks": 8,
+  "n_total_blocks": 128
+ },
+ "4000|345|18": {
+  "speed_rpm": 4000,
+  "irms_A": 345.0,
+  "phase_deg": 18.0,
+  "f_theta": 0.6379382164405679,
+  "n_blocks": 8,
+  "n_total_blocks": 128
+ },
+ "4000|345|36": {
+  "speed_rpm": 4000,
+  "irms_A": 345.0,
+  "phase_deg": 36.0,
+  "f_theta": 0.7765824868708764,
+  "n_blocks": 8,
+  "n_total_blocks": 128
+ },
+ "4000|345|54": {
+  "speed_rpm": 4000,
+  "irms_A": 345.0,
+  "phase_deg": 54.0,
+  "f_theta": 0.8854165251175115,
+  "n_blocks": 8,
+  "n_total_blocks": 128
+ },
+ "4000|345|72": {
+  "speed_rpm": 4000,
+  "irms_A": 345.0,
+  "phase_deg": 72.0,
+  "f_theta": 0.9598295982248455,
+  "n_blocks": 8,
+  "n_total_blocks": 128
+ },
+ "4000|345|90": {
+  "speed_rpm": 4000,
+  "irms_A": 345.0,
+  "phase_deg": 90.0,
+  "f_theta": 0.9929398333253829,
+  "n_blocks": 8,
+  "n_total_blocks": 128
+ },
+ "4000|460|0": {
+  "speed_rpm": 4000,
+  "irms_A": 460.0,
+  "phase_deg": 0.0,
+  "f_theta": 0.45611847471989503,
+  "n_blocks": 8,
+  "n_total_blocks": 128
+ },
+ "4000|460|18": {
+  "speed_rpm": 4000,
+  "irms_A": 460.0,
+  "phase_deg": 18.0,
+  "f_theta": 0.5847553998363466,
+  "n_blocks": 8,
+  "n_total_blocks": 128
+ },
+ "4000|460|36": {
+  "speed_rpm": 4000,
+  "irms_A": 460.0,
+  "phase_deg": 36.0,
+  "f_theta": 0.7255913074648597,
+  "n_blocks": 8,
+  "n_total_blocks": 128
+ },
+ "4000|460|54": {
+  "speed_rpm": 4000,
+  "irms_A": 460.0,
+  "phase_deg": 54.0,
+  "f_theta": 0.8560257356700354,
+  "n_blocks": 8,
+  "n_total_blocks": 128
+ },
+ "4000|460|72": {
+  "speed_rpm": 4000,
+  "irms_A": 460.0,
+  "phase_deg": 72.0,
+  "f_theta": 0.9515900351426615,
+  "n_blocks": 8,
+  "n_total_blocks": 128
+ },
+ "4000|460|90": {
+  "speed_rpm": 4000,
+  "irms_A": 460.0,
+  "phase_deg": 90.0,
+  "f_theta": 0.9885436989715115,
+  "n_blocks": 8,
+  "n_total_blocks": 128
+ },
+ "8000|0.1|0": {
+  "speed_rpm": 8000,
+  "irms_A": 0.1,
+  "phase_deg": 0.0,
+  "f_theta": 0.1327431554058475,
+  "n_blocks": 8,
+  "n_total_blocks": 128
+ },
+ "8000|0.1|18": {
+  "speed_rpm": 8000,
+  "irms_A": 0.1,
+  "phase_deg": 18.0,
+  "f_theta": 0.13978079647905364,
+  "n_blocks": 8,
+  "n_total_blocks": 128
+ },
+ "8000|0.1|36": {
+  "speed_rpm": 8000,
+  "irms_A": 0.1,
+  "phase_deg": 36.0,
+  "f_theta": 0.14272644475172916,
+  "n_blocks": 8,
+  "n_total_blocks": 128
+ },
+ "8000|0.1|54": {
+  "speed_rpm": 8000,
+  "irms_A": 0.1,
+  "phase_deg": 54.0,
+  "f_theta": 0.14582379509315113,
+  "n_blocks": 8,
+  "n_total_blocks": 128
+ },
+ "8000|0.1|72": {
+  "speed_rpm": 8000,
+  "irms_A": 0.1,
+  "phase_deg": 72.0,
+  "f_theta": 0.14887795460380307,
+  "n_blocks": 8,
+  "n_total_blocks": 128
+ },
+ "8000|0.1|90": {
+  "speed_rpm": 8000,
+  "irms_A": 0.1,
+  "phase_deg": 90.0,
+  "f_theta": 0.14853327096232719,
+  "n_blocks": 8,
+  "n_total_blocks": 128
+ },
+ "8000|115.1|0": {
+  "speed_rpm": 8000,
+  "irms_A": 115.1,
+  "phase_deg": 0.0,
+  "f_theta": 0.7126922711120419,
+  "n_blocks": 8,
+  "n_total_blocks": 128
+ },
+ "8000|115.1|18": {
+  "speed_rpm": 8000,
+  "irms_A": 115.1,
+  "phase_deg": 18.0,
+  "f_theta": 0.8178924146193026,
+  "n_blocks": 8,
+  "n_total_blocks": 128
+ },
+ "8000|115.1|36": {
+  "speed_rpm": 8000,
+  "irms_A": 115.1,
+  "phase_deg": 36.0,
+  "f_theta": 0.904128492724935,
+  "n_blocks": 8,
+  "n_total_blocks": 128
+ },
+ "8000|115.1|54": {
+  "speed_rpm": 8000,
+  "irms_A": 115.1,
+  "phase_deg": 54.0,
+  "f_theta": 0.9589996862630737,
+  "n_blocks": 8,
+  "n_total_blocks": 128
+ },
+ "8000|115.1|72": {
+  "speed_rpm": 8000,
+  "irms_A": 115.1,
+  "phase_deg": 72.0,
+  "f_theta": 0.9872758454205808,
+  "n_blocks": 8,
+  "n_total_blocks": 128
+ },
+ "8000|115.1|90": {
+  "speed_rpm": 8000,
+  "irms_A": 115.1,
+  "phase_deg": 90.0,
+  "f_theta": 0.9981111417399097,
+  "n_blocks": 8,
+  "n_total_blocks": 128
+ },
+ "8000|230|0": {
+  "speed_rpm": 8000,
+  "irms_A": 230.0,
+  "phase_deg": 0.0,
+  "f_theta": 0.5711848272588901,
+  "n_blocks": 8,
+  "n_total_blocks": 128
+ },
+ "8000|230|18": {
+  "speed_rpm": 8000,
+  "irms_A": 230.0,
+  "phase_deg": 18.0,
+  "f_theta": 0.705520193404263,
+  "n_blocks": 8,
+  "n_total_blocks": 128
+ },
+ "8000|230|36": {
+  "speed_rpm": 8000,
+  "irms_A": 230.0,
+  "phase_deg": 36.0,
+  "f_theta": 0.8300060659046404,
+  "n_blocks": 8,
+  "n_total_blocks": 128
+ },
+ "8000|230|54": {
+  "speed_rpm": 8000,
+  "irms_A": 230.0,
+  "phase_deg": 54.0,
+  "f_theta": 0.9175623515690415,
+  "n_blocks": 8,
+  "n_total_blocks": 128
+ },
+ "8000|230|72": {
+  "speed_rpm": 8000,
+  "irms_A": 230.0,
+  "phase_deg": 72.0,
+  "f_theta": 0.9683622568140925,
+  "n_blocks": 8,
+  "n_total_blocks": 128
+ },
+ "8000|230|90": {
+  "speed_rpm": 8000,
+  "irms_A": 230.0,
+  "phase_deg": 90.0,
+  "f_theta": 0.9935693189398404,
+  "n_blocks": 8,
+  "n_total_blocks": 128
+ },
+ "8000|345|0": {
+  "speed_rpm": 8000,
+  "irms_A": 345.0,
+  "phase_deg": 0.0,
+  "f_theta": 0.498581717632597,
+  "n_blocks": 8,
+  "n_total_blocks": 128
+ },
+ "8000|345|18": {
+  "speed_rpm": 8000,
+  "irms_A": 345.0,
+  "phase_deg": 18.0,
+  "f_theta": 0.6379320344083215,
+  "n_blocks": 8,
+  "n_total_blocks": 128
+ },
+ "8000|345|36": {
+  "speed_rpm": 8000,
+  "irms_A": 345.0,
+  "phase_deg": 36.0,
+  "f_theta": 0.776547598380035,
+  "n_blocks": 8,
+  "n_total_blocks": 128
+ },
+ "8000|345|54": {
+  "speed_rpm": 8000,
+  "irms_A": 345.0,
+  "phase_deg": 54.0,
+  "f_theta": 0.8854156244483649,
+  "n_blocks": 8,
+  "n_total_blocks": 128
+ },
+ "8000|345|72": {
+  "speed_rpm": 8000,
+  "irms_A": 345.0,
+  "phase_deg": 72.0,
+  "f_theta": 0.9598328826265491,
+  "n_blocks": 8,
+  "n_total_blocks": 128
+ },
+ "8000|345|90": {
+  "speed_rpm": 8000,
+  "irms_A": 345.0,
+  "phase_deg": 90.0,
+  "f_theta": 0.9929401760796781,
+  "n_blocks": 8,
+  "n_total_blocks": 128
+ },
+ "8000|460|0": {
+  "speed_rpm": 8000,
+  "irms_A": 460.0,
+  "phase_deg": 0.0,
+  "f_theta": 0.4560831672627567,
+  "n_blocks": 8,
+  "n_total_blocks": 128
+ },
+ "8000|460|18": {
+  "speed_rpm": 8000,
+  "irms_A": 460.0,
+  "phase_deg": 18.0,
+  "f_theta": 0.5847100696701851,
+  "n_blocks": 8,
+  "n_total_blocks": 128
+ },
+ "8000|460|36": {
+  "speed_rpm": 8000,
+  "irms_A": 460.0,
+  "phase_deg": 36.0,
+  "f_theta": 0.7255630126556609,
+  "n_blocks": 8,
+  "n_total_blocks": 128
+ },
+ "8000|460|54": {
+  "speed_rpm": 8000,
+  "irms_A": 460.0,
+  "phase_deg": 54.0,
+  "f_theta": 0.856004809170937,
+  "n_blocks": 8,
+  "n_total_blocks": 128
+ },
+ "8000|460|72": {
+  "speed_rpm": 8000,
+  "irms_A": 460.0,
+  "phase_deg": 72.0,
+  "f_theta": 0.9515863174651643,
+  "n_blocks": 8,
+  "n_total_blocks": 128
+ },
+ "8000|460|90": {
+  "speed_rpm": 8000,
+  "irms_A": 460.0,
+  "phase_deg": 90.0,
+  "f_theta": 0.9885464289939231,
+  "n_blocks": 8,
+  "n_total_blocks": 128
+ }
+}
