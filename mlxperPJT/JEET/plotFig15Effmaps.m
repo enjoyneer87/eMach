@@ -22,7 +22,13 @@ H = load(hybMat);  F = load(fullMat);
 cntrsEff = [80 84 88 90 92:1:98];
 effClim  = [80 98];
 
-fig = figure('Units','centimeters','Position',[1 1 24 18], 'Color','w');
+% 인쇄 크기(2단 전폭 ~17.6 cm)에 맞춰 물리 크기를 잡고 폰트를 명시한다.
+% 24 cm 도판을 0.30배로 축소하던 종전 설정에서는 축 글자가 ~3 pt로 찍혔다.
+FS = 11;   % 축/눈금 글자 [pt] — 2단 0.72폭 축소(~0.70) 후 지면 약 7.7 pt
+fig = figure('Units','centimeters','Position',[1 1 18 13], 'Color','w');
+set(fig,'DefaultAxesFontSize',FS, 'DefaultTextFontSize',FS, ...
+        'DefaultAxesFontName','Times New Roman', ...
+        'DefaultTextFontName','Times New Roman');
 tl = tiledlayout(fig, 2, 2, 'Padding','compact', 'TileSpacing','compact');
 
 %% (a) Hybrid 효율맵
@@ -44,6 +50,7 @@ contour(ax2, F.Speed, F.Shaft_Torque, F.Efficiency, cntrsEff, ...
     'EdgeColor','k', 'ShowText','on', 'LineWidth', 0.5);
 clim(ax2, effClim); colormap(ax2, jet(256));
 cb2 = colorbar(ax2); cb2.Label.String = 'Efficiency [%]';
+cb2.FontSize = FS; cb2.Label.FontSize = FS;
 xlabel(ax2,'Speed [RPM]'); ylabel(ax2,'Torque [Nm]');
 title(ax2,'(b)', 'FontWeight','normal');
 grid(ax2,'on');
@@ -57,6 +64,7 @@ contour(ax3, F.Speed, F.Shaft_Torque, dEff, [-2:-0.5:-0.5 0.5:0.5:2 0], ...
     'EdgeColor','k', 'ShowText','on', 'LineWidth', 0.5);
 colormap(ax3, parula(256));
 cb3 = colorbar(ax3); cb3.Label.String = '\Delta\eta = \eta_{hyb} − \eta_{FEA} [%p]';
+cb3.FontSize = FS; cb3.Label.FontSize = FS;
 xlabel(ax3,'Speed [RPM]'); ylabel(ax3,'Torque [Nm]');
 title(ax3,'(c)', 'FontWeight','normal');
 grid(ax3,'on');

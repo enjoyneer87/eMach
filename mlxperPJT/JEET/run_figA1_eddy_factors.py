@@ -54,9 +54,10 @@ def main() -> int:
     er = ETA_REF_20K * np.sqrt(s / 20.0)               # η_Ref(s)
     es = 2.0 * er                                       # η_SC(s)
 
-    fig, axs = plt.subplots(1, 2, figsize=(7.0, 2.7))
-    fig.subplots_adjust(left=0.07, right=0.93, top=0.82, bottom=0.17,
-                        wspace=0.42)
+    # 2행 1열 — 단폭 배치에서 축소율이 줄어 패널·글자가 커진다
+    fig, axs = plt.subplots(2, 1, figsize=(3.5, 5.3))
+    fig.subplots_adjust(left=0.15, right=0.85, top=0.91, bottom=0.08,
+                        hspace=0.62)
 
     cases = [("(a)", phi, (0, 6.2), "skin factor $\\varphi$"),
              ("(b)", etaK, (0, 6.2), "proximity kernel $\\eta K(\\eta)$")]
@@ -80,7 +81,7 @@ def main() -> int:
             ax.axvline(s1, color=GREEN_D, lw=0.8, ls="--", alpha=0.8,
                        zorder=1)
             ax.annotate(lbl, xy=(s1, ylim[0]), xytext=(3, 3),
-                        textcoords="offset points", fontsize=6.0,
+                        textcoords="offset points", fontsize=6.6,
                         color=GREEN_D, ha="left", va="bottom", rotation=90)
         # 사례 운전점 도트
         for e0, sk, lbl, off in ((ETA_REF_20K, 20, "Ref 20k", (-16, 5)),
@@ -90,7 +91,7 @@ def main() -> int:
             ax.plot([sk], [y0], "o", ms=7.5, mfc="none", mec="#111111",
                     mew=1.0, zorder=6)
             ax.annotate(lbl, xy=(sk, y0), xytext=off,
-                        textcoords="offset points", fontsize=6.0,
+                        textcoords="offset points", fontsize=6.6,
                         style="italic", ha="center", zorder=6)
         ax.set_xlim(0, 20)
         ax.set_ylim(*ylim)
@@ -113,10 +114,10 @@ def main() -> int:
         ax2.spines["right"].set_color(RED_D)
         if tag == "(b)":
             ax2.annotate(r"$k_r^4{=}16$", xy=(19.6, 16), xytext=(0, 3),
-                         textcoords="offset points", fontsize=6.0,
+                         textcoords="offset points", fontsize=6.6,
                          color=RED_D, ha="right")
             ax2.annotate(r"$k_r{=}2$", xy=(19.6, 2), xytext=(0, 3),
-                         textcoords="offset points", fontsize=6.0,
+                         textcoords="offset points", fontsize=6.6,
                          color=RED_D, ha="right")
 
         # 상단 보조축: η_Ref 눈금
@@ -127,13 +128,13 @@ def main() -> int:
                        lambda e: 20.0 * (e / ETA_REF_20K) ** 2))
         sec.set_xticks([0.5, 1.0, 1.5, 2.0])
         sec.set_xlabel(r"$\eta_{Ref}$  ($\eta_{SC}=2\,\eta_{Ref}$)",
-                       fontsize=7.2)
-        sec.tick_params(labelsize=6.8)
+                       fontsize=7.6)
+        sec.tick_params(labelsize=7.2)
 
         if tag == "(a)":
-            ax.legend(fontsize=6.2, frameon=False, loc="upper left")
+            ax.legend(fontsize=6.8, frameon=False, loc="upper left")
         else:
-            ax.legend(fontsize=6.2, frameon=False, loc="upper left")
+            ax.legend(fontsize=6.8, frameon=False, loc="upper left")
 
     fig.savefig(OUT)
     plt.close(fig)
