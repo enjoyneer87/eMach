@@ -25,7 +25,7 @@ effClim  = [80 98];
 % 인쇄 크기(2단 전폭 ~17.6 cm)에 맞춰 물리 크기를 잡고 폰트를 명시한다.
 % 24 cm 도판을 0.30배로 축소하던 종전 설정에서는 축 글자가 ~3 pt로 찍혔다.
 FS = 7.7;   % 축/눈금 글자 [pt] — 단폭 캔버스(8.4 cm) = 인쇄 크기 -> 축소 ~1.0, 지면 7.7 pt 그대로
-fig = figure('Units','centimeters','Position',[1 1 8.4 6.6], 'Color','w');
+fig = figure('Units','centimeters','Position',[1 1 8.4 9.2], 'Color','w');
 set(fig,'DefaultAxesFontSize',FS, 'DefaultTextFontSize',FS, ...
         'DefaultAxesFontName','Times New Roman', ...
         'DefaultTextFontName','Times New Roman');
@@ -63,6 +63,9 @@ hold(ax3,'on');
 contour(ax3, F.Speed, F.Shaft_Torque, dEff, [-2:-0.5:-0.5 0.5:0.5:2 0], ...
     'EdgeColor','k', 'ShowText','off', 'LineWidth', 0.5);
 colormap(ax3, parula(256));
+cb3 = colorbar(ax3, 'Location','southoutside');
+cb3.Label.String = '\Delta\eta [%p]';
+cb3.FontSize = FS; cb3.Label.FontSize = FS;
 xlabel(ax3,'Speed [RPM]'); ylabel(ax3,'Torque [Nm]');
 title(ax3,'(c)', 'FontWeight','normal');
 grid(ax3,'on');
@@ -87,6 +90,9 @@ imaxPk = max(hypot(Id(:), Iq(:)), [], 'omitnan');
 th = linspace(90, 180, 90);
 plot(ax4, imaxPk*cosd(th), imaxPk*sind(th), 'b-', 'LineWidth', 1.2, ...
     'DisplayName', sprintf('I = %.0f A', imaxPk));
+cb4 = colorbar(ax4, 'Location','southoutside');
+cb4.Label.String = 'Speed [RPM]';
+cb4.FontSize = FS; cb4.Label.FontSize = FS;
 axis(ax4, 'equal'); grid(ax4,'on');
 xlabel(ax4,'i_d [A]'); ylabel(ax4,'i_q [A]');
 title(ax4,'(d)', 'FontWeight','normal');
