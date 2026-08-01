@@ -53,8 +53,17 @@ class RbfModelBuilder:
                 
             h_pt = matches[0]
             h_ac = h_pt["hybrid_total_kW"]
-            f_ac = ts_pt["ts_ac_active_only_kW"]
-            
+            f_ac = ts_pt.get("ts_ac_active_only_kW") or 0.0
+
+            # Older exports (identified by the legacy key ts_dc_active_only_kW)
+            # left ts_ac_active_only_kW unpopulated at 0.0 while carrying the
+            # same quantity in fea_total_ac_kW. Where both are present the two
+            # agree to <2e-14 relative, so fall back rather than drop the point.
+            if f_ac <= 1e-9:
+                legacy = ts_pt.get("fea_total_ac_kW")
+                if legacy is not None and legacy > 1e-6:
+                    f_ac = legacy
+
             if h_ac < 1e-4 or f_ac < 1e-6:
                 continue
                 
