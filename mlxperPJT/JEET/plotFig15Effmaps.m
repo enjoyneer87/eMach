@@ -24,8 +24,8 @@ effClim  = [80 98];
 
 % 인쇄 크기(2단 전폭 ~17.6 cm)에 맞춰 물리 크기를 잡고 폰트를 명시한다.
 % 24 cm 도판을 0.30배로 축소하던 종전 설정에서는 축 글자가 ~3 pt로 찍혔다.
-FS = 12.2;   % 축/눈금 글자 [pt] — 2단 0.65폭 축소(~0.636) 후 지면 약 7.7 pt로 동일 유지
-fig = figure('Units','centimeters','Position',[1 1 18 13], 'Color','w');
+FS = 7.7;   % 축/눈금 글자 [pt] — 단폭 캔버스(8.4 cm) = 인쇄 크기 -> 축소 ~1.0, 지면 7.7 pt 그대로
+fig = figure('Units','centimeters','Position',[1 1 8.4 6.6], 'Color','w');
 set(fig,'DefaultAxesFontSize',FS, 'DefaultTextFontSize',FS, ...
         'DefaultAxesFontName','Times New Roman', ...
         'DefaultTextFontName','Times New Roman');
