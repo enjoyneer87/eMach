@@ -112,7 +112,7 @@ def main():
           % ((t**2).sum() / (a**2).sum(), (t**2).sum() / (b**2).sum()))
 
 
-def figures(model='Ref'):
+def figures(model='Ref', vlim=None):
     """커널 비교 PNG/GIF. 배치 규칙대로 저장.
 
     ``model='Ref'`` 또는 ``'SC'`` --- SC 는 스케일 변형체에서도 TS 와
@@ -135,6 +135,7 @@ def figures(model='Ref'):
         ts, hy, os.path.join(figdir, "fig", "fig2_%s_ts_vs_2d.png" % tag),
         slot_id=SLOT, freq_hz=freq, every=EVERY,
         copper_w_mm=cu_w, copper_h_mm=cu_h, panels=('ts', '2d'),
+        vlim=vlim,
         out_json=os.path.join(drive, "fig2_%s_ts_vs_2d.json" % tag))
 
     make_fig2_kernel_gif(

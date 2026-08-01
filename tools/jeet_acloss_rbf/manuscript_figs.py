@@ -1766,6 +1766,7 @@ def plot_fig2_kernel_comparison(ts_path: str, hybrid_path: str,
                                 copper_h_mm: float = 1.686,
                                 n_strips: int = 20,
                                 vlim_percentile: float = 98.0,
+                                vlim: Optional[float] = None,
                                 panels: Sequence[str] = ('ts', '1d',
                                                          'strips', '2d'),
                                 panel_labels: Optional[Sequence[str]] = None,
@@ -1845,7 +1846,9 @@ def plot_fig2_kernel_comparison(ts_path: str, hybrid_path: str,
     allv = np.concatenate([rms_ts, rms_1d]
                           + [g[2].ravel() for g in g_st]
                           + [g[2].ravel() for g in g_2d])
-    vlim = float(np.percentile(allv, vlim_percentile))
+    # vlim 을 직접 주면 모델 간(예: Ref/SC) 색 스케일을 통일할 수 있다.
+    vlim = (float(vlim) if vlim is not None
+            else float(np.percentile(allv, vlim_percentile)))
 
     npan = len(panels)
     wide = _COLW_IN * (1.05 if npan <= 2 else 2.1)
