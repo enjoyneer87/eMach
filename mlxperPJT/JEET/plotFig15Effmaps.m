@@ -36,7 +36,7 @@ ax1 = nexttile;
 contourf(ax1, H.Speed, H.Shaft_Torque, H.Efficiency, 60, 'EdgeColor','none');
 hold(ax1,'on');
 contour(ax1, H.Speed, H.Shaft_Torque, H.Efficiency, cntrsEff, ...
-    'EdgeColor','k', 'ShowText','on', 'LineWidth', 0.5);
+    'EdgeColor','k', 'ShowText','off', 'LineWidth', 0.5);
 clim(ax1, effClim); colormap(ax1, jet(256));
 xlabel(ax1,'Speed [RPM]'); ylabel(ax1,'Torque [Nm]');
 title(ax1,'(a)', 'FontWeight','normal');
@@ -47,7 +47,7 @@ ax2 = nexttile;
 contourf(ax2, F.Speed, F.Shaft_Torque, F.Efficiency, 60, 'EdgeColor','none');
 hold(ax2,'on');
 contour(ax2, F.Speed, F.Shaft_Torque, F.Efficiency, cntrsEff, ...
-    'EdgeColor','k', 'ShowText','on', 'LineWidth', 0.5);
+    'EdgeColor','k', 'ShowText','off', 'LineWidth', 0.5);
 clim(ax2, effClim); colormap(ax2, jet(256));
 cb2 = colorbar(ax2); cb2.Label.String = 'Efficiency [%]';
 cb2.FontSize = FS; cb2.Label.FontSize = FS;
@@ -61,7 +61,7 @@ dEff = H.Efficiency - F.Efficiency;      % 부호 유지 (Hybrid − FullFEA)
 contourf(ax3, F.Speed, F.Shaft_Torque, dEff, 40, 'EdgeColor','none');
 hold(ax3,'on');
 contour(ax3, F.Speed, F.Shaft_Torque, dEff, [-2:-0.5:-0.5 0.5:0.5:2 0], ...
-    'EdgeColor','k', 'ShowText','on', 'LineWidth', 0.5);
+    'EdgeColor','k', 'ShowText','off', 'LineWidth', 0.5);
 colormap(ax3, parula(256));
 cb3 = colorbar(ax3); cb3.Label.String = '\Delta\eta = \eta_{hyb} − \eta_{FEA} [%p]';
 cb3.FontSize = FS; cb3.Label.FontSize = FS;
@@ -107,7 +107,7 @@ if isfile(refMat)
     contourf(R.Speed, R.Shaft_Torque, R.Efficiency, 60, 'EdgeColor','none');
     hold on
     contour(R.Speed, R.Shaft_Torque, R.Efficiency, cntrsEff, ...
-        'EdgeColor','k', 'ShowText','on', 'LineWidth', 0.5);
+        'EdgeColor','k', 'ShowText','off', 'LineWidth', 0.5);
     clim(effClim); colormap(jet(256));
     cb = colorbar; cb.Label.String = 'Efficiency [%]';
     xlabel('Speed [RPM]'); ylabel('Torque [Nm]'); grid on
