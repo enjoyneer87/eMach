@@ -20,12 +20,15 @@ H = load(hybMat);  F = load(fullMat);
 
 %% ── 공통 스타일 함수형 설정 ─────────────────────────────────────────
 cntrsEff = [80 84 88 90 92:1:98];
+cntrsLbl = [92 94 97];   % 라벨은 성기게 --- 92~98 이 1%p 간격이라 전부 붙이면 좌측 코너에서 뭉친다
 effClim  = [80 98];
 
-% 인쇄 크기(2단 전폭 ~17.6 cm)에 맞춰 물리 크기를 잡고 폰트를 명시한다.
+% 인쇄 크기(2단 전폭 ~17.5 cm)에 맞춰 물리 크기를 잡고 폰트를 명시한다.
+% 컬러바는 eastoutside — 전폭에서 하단 바는 세로를 과하게 먹는다.
 % 24 cm 도판을 0.30배로 축소하던 종전 설정에서는 축 글자가 ~3 pt로 찍혔다.
-FS = 7.7;   % 축/눈금 글자 [pt] — 단폭 캔버스(8.4 cm) = 인쇄 크기 -> 축소 ~1.0, 지면 7.7 pt 그대로
-fig = figure('Units','centimeters','Position',[1 1 8.4 9.2], 'Color','w');
+FS = 7.7;   % 축/눈금 글자 [pt] — 전폭 캔버스(17.5 cm) = 인쇄 크기 -> 축소 ~1.0, 지면 7.7 pt 그대로
+% 등고선 라벨: 전폭에서는 겹치지 않으므로 표시(저자 확인 2026-08-02).
+fig = figure('Units','centimeters','Position',[1 1 17.5 12.4], 'Color','w');
 set(fig,'DefaultAxesFontSize',FS, 'DefaultTextFontSize',FS, ...
         'DefaultAxesFontName','Times New Roman', ...
         'DefaultTextFontName','Times New Roman');
@@ -35,8 +38,9 @@ tl = tiledlayout(fig, 2, 2, 'Padding','compact', 'TileSpacing','compact');
 ax1 = nexttile;
 contourf(ax1, H.Speed, H.Shaft_Torque, H.Efficiency, 60, 'EdgeColor','none');
 hold(ax1,'on');
-contour(ax1, H.Speed, H.Shaft_Torque, H.Efficiency, cntrsEff, ...
-    'EdgeColor','k', 'ShowText','off', 'LineWidth', 0.5);
+[Cc, hc] = contour(ax1, H.Speed, H.Shaft_Torque, H.Efficiency, cntrsEff, ...
+    'EdgeColor','k', 'LineWidth', 0.5);
+clabel(Cc, hc, cntrsLbl, 'FontSize', FS-1.2, 'LabelSpacing', 400);
 clim(ax1, effClim); colormap(ax1, jet(256));
 xlabel(ax1,'Speed [RPM]'); ylabel(ax1,'Torque [Nm]');
 title(ax1,'(a)', 'FontWeight','normal');
@@ -46,10 +50,11 @@ grid(ax1,'on');
 ax2 = nexttile;
 contourf(ax2, F.Speed, F.Shaft_Torque, F.Efficiency, 60, 'EdgeColor','none');
 hold(ax2,'on');
-contour(ax2, F.Speed, F.Shaft_Torque, F.Efficiency, cntrsEff, ...
-    'EdgeColor','k', 'ShowText','off', 'LineWidth', 0.5);
+[Cc, hc] = contour(ax2, F.Speed, F.Shaft_Torque, F.Efficiency, cntrsEff, ...
+    'EdgeColor','k', 'LineWidth', 0.5);
+clabel(Cc, hc, cntrsLbl, 'FontSize', FS-1.2, 'LabelSpacing', 400);
 clim(ax2, effClim); colormap(ax2, jet(256));
-cb2 = colorbar(ax2, 'Location','southoutside'); cb2.Label.String = 'Efficiency [%]';
+cb2 = colorbar(ax2, 'Location','eastoutside'); cb2.Label.String = 'Efficiency [%]';
 cb2.FontSize = FS; cb2.Label.FontSize = FS;
 xlabel(ax2,'Speed [RPM]'); ylabel(ax2,'Torque [Nm]');
 title(ax2,'(b)', 'FontWeight','normal');
@@ -61,9 +66,9 @@ dEff = H.Efficiency - F.Efficiency;      % 부호 유지 (Hybrid − FullFEA)
 contourf(ax3, F.Speed, F.Shaft_Torque, dEff, 40, 'EdgeColor','none');
 hold(ax3,'on');
 contour(ax3, F.Speed, F.Shaft_Torque, dEff, [-2:-0.5:-0.5 0.5:0.5:2 0], ...
-    'EdgeColor','k', 'ShowText','off', 'LineWidth', 0.5);
+    'EdgeColor','k', 'ShowText','on', 'LineWidth', 0.5);
 colormap(ax3, parula(256));
-cb3 = colorbar(ax3, 'Location','southoutside');
+cb3 = colorbar(ax3, 'Location','eastoutside');
 cb3.Label.String = '\Delta\eta [%p]';
 cb3.FontSize = FS; cb3.Label.FontSize = FS;
 xlabel(ax3,'Speed [RPM]'); ylabel(ax3,'Torque [Nm]');
@@ -90,7 +95,7 @@ imaxPk = max(hypot(Id(:), Iq(:)), [], 'omitnan');
 th = linspace(90, 180, 90);
 plot(ax4, imaxPk*cosd(th), imaxPk*sind(th), 'b-', 'LineWidth', 1.2, ...
     'DisplayName', sprintf('I = %.0f A', imaxPk));
-cb4 = colorbar(ax4, 'Location','southoutside');
+cb4 = colorbar(ax4, 'Location','eastoutside');
 cb4.Label.String = 'Speed [RPM]';
 cb4.FontSize = FS; cb4.Label.FontSize = FS;
 axis(ax4, 'equal'); grid(ax4,'on');
@@ -111,7 +116,7 @@ if isfile(refMat)
     contourf(R.Speed, R.Shaft_Torque, R.Efficiency, 60, 'EdgeColor','none');
     hold on
     contour(R.Speed, R.Shaft_Torque, R.Efficiency, cntrsEff, ...
-        'EdgeColor','k', 'ShowText','off', 'LineWidth', 0.5);
+        'EdgeColor','k', 'ShowText','on', 'LineWidth', 0.5);
     clim(effClim); colormap(jet(256));
     cb = colorbar; cb.Label.String = 'Efficiency [%]';
     xlabel('Speed [RPM]'); ylabel('Torque [Nm]'); grid on
