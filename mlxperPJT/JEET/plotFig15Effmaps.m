@@ -49,7 +49,7 @@ hold(ax2,'on');
 contour(ax2, F.Speed, F.Shaft_Torque, F.Efficiency, cntrsEff, ...
     'EdgeColor','k', 'ShowText','off', 'LineWidth', 0.5);
 clim(ax2, effClim); colormap(ax2, jet(256));
-cb2 = colorbar(ax2); cb2.Label.String = 'Efficiency [%]';
+cb2 = colorbar(ax2, 'Location','southoutside'); cb2.Label.String = 'Efficiency [%]';
 cb2.FontSize = FS; cb2.Label.FontSize = FS;
 xlabel(ax2,'Speed [RPM]'); ylabel(ax2,'Torque [Nm]');
 title(ax2,'(b)', 'FontWeight','normal');
@@ -63,11 +63,10 @@ hold(ax3,'on');
 contour(ax3, F.Speed, F.Shaft_Torque, dEff, [-2:-0.5:-0.5 0.5:0.5:2 0], ...
     'EdgeColor','k', 'ShowText','off', 'LineWidth', 0.5);
 colormap(ax3, parula(256));
-cb3 = colorbar(ax3); cb3.Label.String = '\Delta\eta = \eta_{hyb} − \eta_{FEA} [%p]';
-cb3.FontSize = FS; cb3.Label.FontSize = FS;
 xlabel(ax3,'Speed [RPM]'); ylabel(ax3,'Torque [Nm]');
 title(ax3,'(c)', 'FontWeight','normal');
 grid(ax3,'on');
+fprintf('CAPTION Δη range: %.2f to %.2f %%p | speed %.0f to %.0f RPM\n', min(dEff(:),[],'omitnan'), max(dEff(:),[],'omitnan'), min(F.Speed(:),[],'omitnan'), max(F.Speed(:),[],'omitnan'));
 fprintf('Δη: mean(|.|)=%.3f %%p, max(|.|)=%.3f %%p\n', ...
     mean(abs(dEff(:)),'omitnan'), max(abs(dEff(:)),[],'omitnan'));
 
@@ -83,7 +82,6 @@ end
 Id = F.(idName{1}); Iq = F.(iqName{1});
 spdMat = F.Speed;
 scatter(ax4, Id(:), Iq(:), 9, spdMat(:), 'o');
-cb4 = colorbar(ax4); cb4.Label.String = 'Speed [RPM]';
 % 전류 한계원 (920 A rms → peak 변환 여부는 데이터 스케일에 맞춰 자동)
 imaxPk = max(hypot(Id(:), Iq(:)), [], 'omitnan');
 th = linspace(90, 180, 90);
