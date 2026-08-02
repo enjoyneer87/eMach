@@ -16,6 +16,9 @@ import json
 import os
 import sys
 
+# 출력 폴더는 JEET_FIGDIR 로 덮어쓸 수 있다 (배포 레포/CI 용).
+_FIGDIR = os.environ.get('JEET_FIGDIR', r'E:\KDH\Overleaf\JEET-2024_rev1\fig')
+
 sys.path.insert(0, r"D:\KangDH\EveryMotor\eMach\tools")
 
 import matplotlib
@@ -32,7 +35,7 @@ TS_PATH = os.path.join(FIELDS, "Magnetic_Ref_ARCHIVE_460A_36deg_"
 HY_PATH = os.path.join(FIELDS, "Magnetic_Ref_Hybrid_ARCHIVE_460A_36deg_"
                        "full_OnLoadTorque.txt")
 
-FIG_OUT = r"E:\KDH\Overleaf\JEET-2024_rev1\fig\fig2_slot_je_comparison.png"
+FIG_OUT = os.path.join(_FIGDIR, 'fig2_slot_je_comparison.png')
 DRIVE_DIR = r"J:\내 드라이브\EveryMotor_JEET_data\results"
 DATA_JSON = os.path.join(DRIVE_DIR, "fig2_slot_je_static_data.json")
 GIF_OUT = os.path.join(DRIVE_DIR, "fig2_slot_je_comparison.gif")
@@ -40,7 +43,7 @@ GIF_SUMMARY = os.path.join(DRIVE_DIR, "fig2_slot_je_gif_summary.json")
 MANIFEST = os.path.join(DRIVE_DIR, "fig2_slot_je_MANIFEST.md")
 
 # B 필드(슬롯 내부 전체 메시) 산출물
-B_FIG_OUT = r"E:\KDH\Overleaf\JEET-2024_rev1\fig\fig2_slot_b_comparison.png"
+B_FIG_OUT = os.path.join(_FIGDIR, 'fig2_slot_b_comparison.png')
 B_DATA_JSON = os.path.join(DRIVE_DIR, "fig2_slot_b_static_data.json")
 B_GIF_OUT = os.path.join(DRIVE_DIR, "fig2_slot_b_comparison.gif")
 B_GIF_SUMMARY = os.path.join(DRIVE_DIR, "fig2_slot_b_gif_summary.json")

@@ -14,6 +14,9 @@ import json
 import os
 import sys
 
+# 출력 폴더는 JEET_FIGDIR 로 덮어쓸 수 있다 (배포 레포/CI 용).
+_FIGDIR = os.environ.get('JEET_FIGDIR', r'E:\KDH\Overleaf\JEET-2024_rev1\fig')
+
 sys.path.insert(0, r"D:\KangDH\EveryMotor\eMach\tools")
 
 import matplotlib
@@ -24,7 +27,7 @@ from jeet_acloss_rbf.manuscript_figs import plot_motor_geometry_dxf
 # e10 Ref 모델(6턴) 2-D 단면. Motor-CAD .mot 에서 export 된 것으로,
 # D:\KangDH\Thesis\e10\SLFEA\e10Turn6V261SLFEA.mot 이 원본 모델이다.
 DXF = r"D:\KangDH\Thesis\e10\e10_2d.dxf"
-OUT_PDF = r"E:\KDH\Overleaf\JEET-2024_rev1\fig\motor_geometry_e10.pdf"
+OUT_PDF = os.path.join(_FIGDIR, 'motor_geometry_e10.pdf')
 DRIVE_OUT = (r"J:\내 드라이브\EveryMotor_JEET_data\results"
              r"\geometry_dims_e10.json")
 

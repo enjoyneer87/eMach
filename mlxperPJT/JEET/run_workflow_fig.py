@@ -9,9 +9,13 @@
 
 산출: E:/KDH/Overleaf/JEET-2024_rev1/fig/proposed_framework_v3.pdf
 """
+import os
 import sys
 
 import matplotlib
+
+# 출력 폴더는 JEET_FIGDIR 로 덮어쓸 수 있다 (배포 레포/CI 용).
+_FIGDIR = os.environ.get('JEET_FIGDIR', r'E:\KDH\Overleaf\JEET-2024_rev1\fig')
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from matplotlib.patches import FancyArrowPatch, FancyBboxPatch
@@ -19,7 +23,7 @@ from matplotlib.patches import FancyArrowPatch, FancyBboxPatch
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
-OUT = r"E:\KDH\Overleaf\JEET-2024_rev1\fig\proposed_framework_v3.pdf"
+OUT = os.path.join(_FIGDIR, 'proposed_framework_v3.pdf')
 
 LANES = [
     ("1. Reference FEA Build", "#f5f5f5", "#9e9e9e"),

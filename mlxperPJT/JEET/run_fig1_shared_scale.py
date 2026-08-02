@@ -12,13 +12,16 @@ import os
 import sys
 import time
 
+# 출력 폴더는 JEET_FIGDIR 로 덮어쓸 수 있다 (배포 레포/CI 용).
+_FIGDIR = os.environ.get('JEET_FIGDIR', r'E:\KDH\Overleaf\JEET-2024_rev1\fig')
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.abspath(os.path.join(HERE, "..", "..", "tools")))
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 SHARED_VLIM = 250.484633015896      # A/mm^2 — SC 의 98퍼센타일(둘 중 큰 값)
-FIGDIR = r"E:\KDH\Overleaf\JEET-2024_rev1\fig"
+FIGDIR = _FIGDIR
 
 
 def main() -> int:
@@ -39,7 +42,8 @@ def main() -> int:
         plot_fig2_kernel_comparison(
             ts, hy, out, slot_id=kds.SLOT, freq_hz=freq, every=kds.EVERY,
             copper_w_mm=cu_w, copper_h_mm=cu_h, panels=("ts", "2d"),
-            panel_labels=LABELS[model], vlim=SHARED_VLIM)
+            panel_labels=LABELS[model], vlim=SHARED_VLIM,
+            radial_axis_mm=True)
         print("    %.0f s" % (time.time() - t0))
     print("DONE — Ref/SC 공통 스케일 %.1f A/mm^2" % SHARED_VLIM)
     return 0

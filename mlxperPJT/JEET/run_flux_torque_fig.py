@@ -13,6 +13,9 @@ import json
 import os
 import sys
 
+# 출력 폴더는 JEET_FIGDIR 로 덮어쓸 수 있다 (배포 레포/CI 용).
+_FIGDIR = os.environ.get('JEET_FIGDIR', r'E:\KDH\Overleaf\JEET-2024_rev1\fig')
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.abspath(os.path.join(HERE, "..", "..", "tools")))
 if hasattr(sys.stdout, "reconfigure"):
@@ -21,7 +24,7 @@ if hasattr(sys.stdout, "reconfigure"):
 from jeet_acloss_rbf import plot_flux_torque_scaling_tps   # noqa: E402
 
 MAT = os.path.join(HERE, "map_exports", "e10", "lab_scaling_comparison_e10.mat")
-OUT_PDF = r"E:\KDH\Overleaf\JEET-2024_rev1\fig\flux_torque_scaling.pdf"
+OUT_PDF = os.path.join(_FIGDIR, 'flux_torque_scaling.pdf')
 OUT_JSON = os.path.join(HERE, "map_exports", "e10",
                         "flux_torque_scaling_metrics.json")
 

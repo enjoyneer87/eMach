@@ -193,3 +193,6 @@ mlxperPJT/JEET/acloss_ref_methods/elhajji_b_data/Hybrid_Speed_*.json
 # (REPRODUCE.md 참조). 단일 블록 캐노니컬 추출본만 추적한다.
 mlxperPJT/JEET/map_exports/e10/fields/*_ARCHIVE_*.txt
 mlxperPJT/JEET/map_exports/e10/fields/*_OP*A_*deg_*.txt
+
+# 노트북 재현 실행의 그림 출력 (원고 fig/ 와 분리)
+mlxperPJT/JEET/fig_out/

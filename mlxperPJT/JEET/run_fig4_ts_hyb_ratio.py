@@ -4,9 +4,13 @@
 변경(2026-07-27, 그림 내부 텍스트 규칙): 패널 제목의 열거 설명을 제거하고
 '(a)', '(b)' 태그만 남긴다 — 식별 설명은 tex 캡션이 담당.
 """
+import os
 import sys
 
 import matplotlib
+
+# 출력 폴더는 JEET_FIGDIR 로 덮어쓸 수 있다 (배포 레포/CI 용).
+_FIGDIR = os.environ.get('JEET_FIGDIR', r'E:\KDH\Overleaf\JEET-2024_rev1\fig')
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
@@ -17,7 +21,7 @@ if hasattr(sys.stdout, "reconfigure"):
 
 MAT_PATH = (r"D:\KangDH\EveryMotor\eMach\mlxperPJT"
             r"\JEET_ACLoss_Comparison_20260609_223109.mat")
-OUT = r"E:\KDH\Overleaf\JEET-2024_rev1\fig\TS_Hybrid_ratio.png"
+OUT = os.path.join(_FIGDIR, 'TS_Hybrid_ratio.png')
 
 plt.rcParams.update({
     "font.family": "serif",

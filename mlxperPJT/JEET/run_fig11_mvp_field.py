@@ -21,13 +21,16 @@ from __future__ import annotations
 import os
 import sys
 
+# 출력 폴더는 JEET_FIGDIR 로 덮어쓸 수 있다 (배포 레포/CI 용).
+_FIGDIR = os.environ.get('JEET_FIGDIR', r'E:\KDH\Overleaf\JEET-2024_rev1\fig')
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.abspath(os.path.join(HERE, "..", "..", "tools")))
 
 from jeet_acloss_rbf import plot_field_panels  # noqa: E402
 
 FIELDS = os.path.join(HERE, "map_exports", "e10", "fields")
-OUT = r"E:\KDH\Overleaf\JEET-2024_rev1\fig\Bfield_MVP_mesh.pdf"
+OUT = os.path.join(_FIGDIR, 'Bfield_MVP_mesh.pdf')
 
 # (npz, 패널 제목, k_r)  — 열 순서 = Ref 쌍, SC 쌍
 # 모델(Ref/SC) 식별은 그룹 헤더가 담당, 열 제목은 기법만 (compact 규칙)

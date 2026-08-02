@@ -14,9 +14,13 @@
 같은 δ를 16 kRPM에 잘못 귀속해 곡선 전체가 ~12% 높았음 — 앵커 속도 정정.)
 그림 내부 텍스트 규칙: 태그 (a),(b)만, 식별은 범례·캡션.
 """
+import os
 import sys
 
 import matplotlib
+
+# 출력 폴더는 JEET_FIGDIR 로 덮어쓸 수 있다 (배포 레포/CI 용).
+_FIGDIR = os.environ.get('JEET_FIGDIR', r'E:\KDH\Overleaf\JEET-2024_rev1\fig')
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
@@ -24,7 +28,7 @@ import numpy as np
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
-OUT = r"E:\KDH\Overleaf\JEET-2024_rev1\fig\eddy_factors_eta.pdf"
+OUT = os.path.join(_FIGDIR, 'eddy_factors_eta.pdf')
 ETA_REF_20K = 2.06
 
 plt.rcParams.update({

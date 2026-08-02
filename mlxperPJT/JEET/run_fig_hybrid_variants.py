@@ -14,6 +14,9 @@ import os
 import sys
 
 import matplotlib
+
+# 출력 폴더는 JEET_FIGDIR 로 덮어쓸 수 있다 (배포 레포/CI 용).
+_FIGDIR = os.environ.get('JEET_FIGDIR', r'E:\KDH\Overleaf\JEET-2024_rev1\fig')
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
@@ -25,7 +28,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 REF = os.path.join(HERE, "map_exports", "e10", "Ref")
 SRC = os.path.join(REF, "line_sampled_hybrid_Ref_80C.json")
 SRC_TS = os.path.join(REF, "meshb_hybrid_losses_Ref.json")
-OUT = r"E:\KDH\Overleaf\JEET-2024_rev1\fig\hybrid_variants_compare.pdf"
+OUT = os.path.join(_FIGDIR, 'hybrid_variants_compare.pdf')
 SPD = 16000
 
 plt.rcParams.update({

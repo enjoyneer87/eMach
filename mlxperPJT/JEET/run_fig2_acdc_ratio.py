@@ -7,9 +7,13 @@ draw_figures.ipynb 셀 6의 스크립트판 + 저자 제안(2026-07-27):
   - SC @16k  : Fig 1                                 -> "Fig. 1"
   - SC @ 4k  : Fig 3 (상사 대응 운전점)               -> "Fig. 3"
 """
+import os
 import sys
 
 import matplotlib
+
+# 출력 폴더는 JEET_FIGDIR 로 덮어쓸 수 있다 (배포 레포/CI 용).
+_FIGDIR = os.environ.get('JEET_FIGDIR', r'E:\KDH\Overleaf\JEET-2024_rev1\fig')
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from scipy.io import loadmat
@@ -19,7 +23,7 @@ if hasattr(sys.stdout, "reconfigure"):
 
 MAT_PATH = (r"D:\KangDH\EveryMotor\eMach\mlxperPJT"
             r"\JEET_ACLoss_Comparison_20260609_223109.mat")
-OUT = r"E:\KDH\Overleaf\JEET-2024_rev1\fig\ACDC_ratio_scaling.png"
+OUT = os.path.join(_FIGDIR, 'ACDC_ratio_scaling.png')
 
 plt.rcParams.update({
     "font.family": "serif",
