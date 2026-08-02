@@ -1,15 +1,25 @@
 %% plotFig15Effmaps.m — Fig 15: Lab 효율맵 비교 (SC Hybrid vs FullFEA)
 % 패널: (a) Hybrid 기반 효율맵  (b) FullFEA 기반 효율맵
 %       (c) |Δη| 오차맵         (d) 효율맵 운전점의 dq 전류쌍 (DQplane 스타일)
-% 재사용: tools/effiMap/plotEfficiencyMotorcad.m 의 contourf 스타일
+% 스타일 참고: tools/effiMap/plotEfficiencyMotorcad.m 의 contourf 스타일
+%              (코드 의존은 없다 — 전부 MATLAB 내장 함수)
 % 입력: run_lab_effmaps_fig15.py 가 수집한 map_exports/e10/effmaps/*.mat
 
 scriptDir = fileparts(mfilename('fullpath'));
-eMachRoot = fullfile(scriptDir, '..', '..');
-addpath(genpath(fullfile(eMachRoot, 'tools', 'effiMap')));
 
-effDir = fullfile(scriptDir, 'map_exports', 'e10', 'effmaps');
-figDir = 'E:\KDH\Overleaf\JEET-2024_rev1\fig';
+% 데이터 루트는 JEET_DATA_ROOT 로 덮어쓸 수 있다 (배포 레포/CI 용).
+dataRoot = getenv('JEET_DATA_ROOT');   % 미설정이면 '' 를 돌려준다
+if isempty(dataRoot)
+    dataRoot = fullfile(scriptDir, 'map_exports', 'e10');
+end
+% 출력 폴더는 JEET_FIGDIR 로 덮어쓸 수 있다 (배포 레포/CI 용).
+figDir = getenv('JEET_FIGDIR');
+if isempty(figDir)
+    figDir = 'E:\KDH\Overleaf\JEET-2024_rev1\fig';
+end
+if ~isfolder(figDir), mkdir(figDir); end
+
+effDir = fullfile(dataRoot, 'effmaps');
 
 hybMat  = fullfile(effDir, 'MotorLAB_elecdata_SC_hyb.mat');
 fullMat = fullfile(effDir, 'MotorLAB_elecdata_SC_fullfea.mat');

@@ -25,7 +25,16 @@ import numpy as np
 
 __all__ = ["parse_mes_txt", "iter_mes_blocks", "region_summary",
            "loading_metrics", "compare_models", "hybrid_je_reference",
-           "hybrid_je_at_points", "slot_conductor_codes"]
+           "hybrid_je_at_points", "slot_conductor_codes",
+           "REDUCTION_FORMAT"]
+
+# 슬롯 축약본 npz 의 표식 (mlxperPJT/JEET/run_cut_fig1_slot_reduction.py 산출).
+# 같은 폴더의 다른 npz(fields_*.npz 등)를 실수로 넘겼을 때 조용히 넘어가지
+# 않도록 반드시 확인한다.
+REDUCTION_FORMAT = "jeet_slot_reduction_v1"
+# 축약본이 담지 않은 요소별 배열은 0 이 아니라 NaN 으로 채운다 --- 빠진 것을
+# 조용한 0 으로 두면 손실 지표가 틀린 채로 계산된다.
+_ELEM_KEYS = ("bx", "by", "a_wbm", "j_am2", "je_am2", "b_T")
 
 _AIRGAP_RE = re.compile(r"^a\d+$", re.I)
 # Motor-CAD 명명은 Turn_<층>_<슬롯> 이다. 첫 인덱스가 반경방향 층으로,
@@ -187,13 +196,65 @@ def parse_mes_txt(path: str, block: int = 1) -> dict:
                              path, len(blocks))
 
 
+def _read_slot_reduction(path: str) -> list:
+    """슬롯 축약본 npz 를 ``(step, p)`` 목록으로 되살린다.
+
+    ``run_cut_fig1_slot_reduction.py`` 가 구운 파일만 받는다. 담긴 블록은
+    원본 export 의 **원래 스텝 번호**를 그대로 달고 나오므로, 호출부의
+    ``(step - 1) % every`` 필터가 원본에서와 똑같이 동작한다.
+    """
+    with np.load(path, allow_pickle=False) as z:
+        fmt = str(z['format']) if 'format' in z.files else ''
+        if fmt != REDUCTION_FORMAT:
+            raise ValueError(
+                '%s 는 슬롯 축약본이 아니다 (format=%r, 기대 %r). '
+                'Motor-CAD 원본 .txt 를 쓰거나 '
+                'run_cut_fig1_slot_reduction.py 로 다시 구울 것.'
+                % (os.path.basename(path), fmt, REDUCTION_FORMAT))
+        codes = [int(c) for c in z['name_codes']]
+        names = {c: str(n) for c, n in zip(codes, z['name_names'])}
+        sigma = {c: float(v) for c, v in zip(codes, z['sigma_vals'])}
+        static = {'reg': z['reg'].astype(int), 'x_mm': z['x_mm'],
+                  'y_mm': z['y_mm'], 'area_mm2': z['area_mm2'],
+                  'tri': z['tri'].astype(int), 'node_xy': z['node_xy']}
+        steps = z['steps']
+        rot = z['rotate_deg']
+        jval = z['jval']
+        n_sol = int(z['n_solution_blocks'])
+        stored = {k: z[k] for k in _ELEM_KEYS if k in z.files}
+    n_el = static['reg'].size
+    out = []
+    for i, step in enumerate(steps):
+        # 정적 기하는 블록끼리 공유한다(축약본은 메시가 같음을 보장한다).
+        # 읽기 전용으로만 쓸 것 --- 한 블록에서 고치면 전부 바뀐다.
+        p = dict(static)
+        for k in _ELEM_KEYS:
+            p[k] = (stored[k][i] if k in stored
+                    else np.full(n_el, np.nan))
+        p.update({'names': names, 'sigma': sigma,
+                  'jval': {c: float(v) for c, v in zip(codes, jval[i])},
+                  'path': path, 'n_solution_blocks': n_sol,
+                  'rotate_deg': float(rot[i])})
+        out.append((int(step), p))
+    return out
+
+
 def iter_mes_blocks(path: str):
     """전 주기 export 의 Solution 블록을 순서대로 순회한다.
 
     ``for step, p in iter_mes_blocks(path):`` 형태로 쓰며, ``p`` 는
     ``parse_mes_txt`` 와 동일한 구조(1-based ``step`` 이 곧 블록 번호).
     큰 파일(전 주기 export 시 수백 MB)을 한 번만 읽고 블록별로 지연 파싱한다.
+
+    ``path`` 가 ``.npz`` 면 **슬롯 축약본**으로 보고 읽는다 --- 원본 export
+    를 슬롯 하나 주변으로 잘라 둔 것이라(``run_cut_fig1_slot_reduction.py``)
+    담긴 블록만, 원래 스텝 번호를 달고 나온다. 축약 때 뺀 요소별 배열은
+    NaN 으로 채워지므로 잘못 쓰면 조용히 0 이 되는 대신 NaN 으로 드러난다.
     """
+    if os.path.splitext(path)[1].lower() == '.npz':
+        for step, p in _read_slot_reduction(path):
+            yield step, p
+        return
     with open(path, encoding='utf-8', errors='ignore') as fh:
         lines = fh.readlines()
     blocks, regions_tbl = _locate_blocks(lines)

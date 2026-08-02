@@ -21,8 +21,16 @@ from scipy.io import loadmat
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
-MAT_PATH = (r"D:\KangDH\EveryMotor\eMach\mlxperPJT"
-            r"\JEET_ACLoss_Comparison_20260609_223109.mat")
+HERE = os.path.dirname(os.path.abspath(__file__))
+# 데이터 루트는 JEET_DATA_ROOT 로 덮어쓸 수 있다 (배포 레포/CI 용).
+_DATA = os.environ.get('JEET_DATA_ROOT',
+                       os.path.join(HERE, 'map_exports', 'e10'))
+# 이 .mat 은 e10 트리가 아니라 그 부모(배포 레포의 data/)에 놓인다.
+MAT_NAME = 'JEET_ACLoss_Comparison_20260609_223109.mat'
+_MAT_CAND = os.path.join(os.path.dirname(os.path.abspath(_DATA)), MAT_NAME)
+MAT_PATH = _MAT_CAND if os.path.exists(_MAT_CAND) else (
+    r"D:\KangDH\EveryMotor\eMach\mlxperPJT"
+    r"\JEET_ACLoss_Comparison_20260609_223109.mat")
 OUT = os.path.join(_FIGDIR, 'ACDC_ratio_scaling.png')
 
 plt.rcParams.update({

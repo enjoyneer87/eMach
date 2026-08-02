@@ -21,13 +21,25 @@ import sys
 
 import numpy as np
 
-sys.path.insert(0, r"D:\KangDH\EveryMotor\eMach\tools")
+HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, os.path.abspath(os.path.join(HERE, "..", "..", "tools")))
 from jeet_acloss_rbf import (iter_mes_blocks, slot_conductor_codes,
                              hybrid_je_at_points, conductor_je_2d,
                              plot_fig2_kernel_comparison,
                              make_fig2_kernel_gif)
 
-F = r"D:\KangDH\EveryMotor\eMach\mlxperPJT\JEET\map_exports\e10\fields"
+# 출력 폴더는 JEET_FIGDIR 로 덮어쓸 수 있다 (배포 레포/CI 용).
+_FIGDIR = os.environ.get('JEET_FIGDIR', r'E:\KDH\Overleaf\JEET-2024_rev1\fig')
+# 데이터 루트는 JEET_DATA_ROOT 로 덮어쓸 수 있다 (배포 레포/CI 용).
+_DATA = os.environ.get('JEET_DATA_ROOT',
+                       os.path.join(HERE, 'map_exports', 'e10'))
+# 진단용 JSON/GIF 는 로컬 Drive 백업으로 나간다 --- 마운트 안 된 기계에서는
+# 건너뛴다(그림 생성 자체는 이것 없이도 된다). JEET_SCRATCH 로 옮길 수 있다.
+_SCRATCH = os.environ.get(
+    'JEET_SCRATCH',
+    os.path.join(r"J:\내 드라이브", "EveryMotor_JEET_data", "results"))
+
+F = os.path.join(_DATA, "fields")
 TS = os.path.join(F, "Magnetic_Ref_ARCHIVE_460A_36deg_OnLoadTorque.txt")
 HY = os.path.join(F, "Magnetic_Ref_Hybrid_ARCHIVE_460A_36deg_full_"
                      "OnLoadTorque.txt")
@@ -119,29 +131,35 @@ def figures(model='Ref', vlim=None):
     2-D 가 비슷한지 확인하기 위한 것.
     """
     ts, hy, tag, freq, cu_w, cu_h = SOURCES[model]
-    figdir = r"E:\KDH\Overleaf\JEET-2024_rev1"
-    drive = os.path.join(r"J:\내 드라이브", "EveryMotor_JEET_data",
-                         "results")
+    figdir = _FIGDIR
+    # Drive 가 없으면 JSON/GIF 는 조용히 건너뛴다 (깨끗한 체크아웃 대비).
+    drive = _SCRATCH if os.path.isdir(_SCRATCH) else None
+
+    def _json(name):
+        return os.path.join(drive, name) if drive else None
 
     # 4패널 (진단용, 전체 비교)
     plot_fig2_kernel_comparison(
-        ts, hy, os.path.join(figdir, "fig", "fig2_%s_kernel_dim.png" % tag),
+        ts, hy, os.path.join(figdir, "fig2_%s_kernel_dim.png" % tag),
         slot_id=SLOT, freq_hz=freq, every=EVERY,
         copper_w_mm=cu_w, copper_h_mm=cu_h,
-        out_json=os.path.join(drive, "fig2_%s_kernel_dim.json" % tag))
+        out_json=_json("fig2_%s_kernel_dim.json" % tag))
 
     # 2패널 TS vs 2-D (논문 후보)
     plot_fig2_kernel_comparison(
-        ts, hy, os.path.join(figdir, "fig", "fig2_%s_ts_vs_2d.png" % tag),
+        ts, hy, os.path.join(figdir, "fig2_%s_ts_vs_2d.png" % tag),
         slot_id=SLOT, freq_hz=freq, every=EVERY,
         copper_w_mm=cu_w, copper_h_mm=cu_h, panels=('ts', '2d'),
         vlim=vlim,
-        out_json=os.path.join(drive, "fig2_%s_ts_vs_2d.json" % tag))
+        out_json=_json("fig2_%s_ts_vs_2d.json" % tag))
 
-    make_fig2_kernel_gif(
-        ts, hy, os.path.join(drive, "fig2_%s_ts_vs_2d.gif" % tag),
-        slot_id=SLOT, freq_hz=freq, every=2,
-        copper_w_mm=cu_w, copper_h_mm=cu_h, panels=('ts', '2d'))
+    if drive:
+        make_fig2_kernel_gif(
+            ts, hy, os.path.join(drive, "fig2_%s_ts_vs_2d.gif" % tag),
+            slot_id=SLOT, freq_hz=freq, every=2,
+            copper_w_mm=cu_w, copper_h_mm=cu_h, panels=('ts', '2d'))
+    else:
+        print('Drive 미마운트 --- GIF 생략 (%s)' % _SCRATCH)
 
 
 if __name__ == '__main__':

@@ -1770,6 +1770,7 @@ def plot_fig2_kernel_comparison(ts_path: str, hybrid_path: str,
                                 panels: Sequence[str] = ('ts', '1d',
                                                          'strips', '2d'),
                                 panel_labels: Optional[Sequence[str]] = None,
+                                radial_axis_mm: bool = False,
                                 out_json: Optional[str] = None) -> dict:
     """커널 차원수 비교 3-패널: TS-FEA / 1-D 재구성 / 2-D 재구성 (주기 RMS).
 
@@ -1851,7 +1852,8 @@ def plot_fig2_kernel_comparison(ts_path: str, hybrid_path: str,
             else float(np.percentile(allv, vlim_percentile)))
 
     npan = len(panels)
-    wide = _COLW_IN * (1.05 if npan <= 2 else 2.1)
+    wide = _COLW_IN * ((1.20 if radial_axis_mm else 1.05)
+                       if npan <= 2 else 2.1)
     fig, axs = plt.subplots(1, npan, figsize=(wide, 2.7),
                             layout='constrained')
     axs = np.atleast_1d(axs)
@@ -1873,6 +1875,20 @@ def plot_fig2_kernel_comparison(ts_path: str, hybrid_path: str,
                                 np.zeros(f_ts['triang'].x.size),
                                 levels=np.linspace(0, vlim, 21),
                                 cmap='plasma')
+    if radial_axis_mm:
+        # 슬롯 크기로 변형체를 구분할 수 있도록 반경 방향(=플롯 y)에만
+        # 물리 눈금을 되살린다. 원점은 최내측 도체면, 눈금 간격은 두 모델
+        # 공통 5 mm — 눈금 개수 자체가 k_r 를 드러낸다.
+        from matplotlib.ticker import FuncFormatter
+        y_ref = bars[0]['r_c'] - 0.5 * bars[0]['h_mm']
+        y_top = geom['extent'][3]
+        ax0 = axs[0]
+        ax0.set_yticks(y_ref + np.arange(0.0, y_top - y_ref, 5.0))
+        ax0.yaxis.set_major_formatter(
+            FuncFormatter(lambda v, _p: '%g' % (v - y_ref)))
+        ax0.tick_params(axis='y', labelsize=8, length=2.2, pad=1.5)
+        ax0.set_ylabel('radial position [mm]', fontsize=8.5, labelpad=1.5)
+
     labs = (panel_labels if panel_labels is not None
             else '(a) (b) (c) (d)'.split())
     for ax, lab in zip(axs, labs):

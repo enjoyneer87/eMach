@@ -17,6 +17,11 @@ import sys
 # 출력 폴더는 JEET_FIGDIR 로 덮어쓸 수 있다 (배포 레포/CI 용).
 _FIGDIR = os.environ.get('JEET_FIGDIR', r'E:\KDH\Overleaf\JEET-2024_rev1\fig')
 
+HERE = os.path.dirname(os.path.abspath(__file__))
+# 데이터 루트는 JEET_DATA_ROOT 로 덮어쓸 수 있다 (배포 레포/CI 용).
+_DATA = os.environ.get('JEET_DATA_ROOT',
+                       os.path.join(HERE, 'map_exports', 'e10'))
+
 sys.path.insert(0, r"D:\KangDH\EveryMotor\eMach\tools")
 
 import matplotlib
@@ -26,10 +31,22 @@ from jeet_acloss_rbf.manuscript_figs import plot_motor_geometry_dxf
 
 # e10 Ref 모델(6턴) 2-D 단면. Motor-CAD .mot 에서 export 된 것으로,
 # D:\KangDH\Thesis\e10\SLFEA\e10Turn6V261SLFEA.mot 이 원본 모델이다.
-DXF = r"D:\KangDH\Thesis\e10\e10_2d.dxf"
+# 배포 레포에선 데이터 루트(또는 그 부모 data/)에 두면 --dxf 없이 찾는다.
+DXF_NAME = 'e10_2d.dxf'
+DXF = next((p for p in (os.path.join(_DATA, DXF_NAME),
+                        os.path.join(os.path.dirname(os.path.abspath(_DATA)),
+                                     DXF_NAME))
+            if os.path.exists(p)), r"D:\KangDH\Thesis\e10\e10_2d.dxf")
 OUT_PDF = os.path.join(_FIGDIR, 'motor_geometry_e10.pdf')
 DRIVE_OUT = (r"J:\내 드라이브\EveryMotor_JEET_data\results"
              r"\geometry_dims_e10.json")
+
+
+def _mounted(path: str) -> bool:
+    """드라이브가 안 붙어 있으면(배포 레포/CI) JSON 쓰기를 건너뛴다."""
+    drv = os.path.splitdrive(os.path.abspath(path))[0]
+    return not drv or os.path.isdir(drv + os.sep)
+
 
 # tab:Radial 에 실린 값 (대조용)
 TABLE = {"Ds_mm": 198.0, "Dr_mm": 141.5, "g_mm": 0.5,
@@ -63,6 +80,9 @@ def main():
            "symbols": {"w_mm": "w_c (conductor radial thickness)",
                        "h_mm": "h_c (conductor tangential width)",
                        "g_mm": "l_g (airgap length)"}}
+    if not a.json or not _mounted(a.json):
+        print("\nJSON 생략 (경로 미마운트):", a.json or "-")
+        return
     os.makedirs(os.path.dirname(os.path.abspath(a.json)), exist_ok=True)
     with open(a.json, "w", encoding="utf-8") as fh:
         json.dump(rec, fh, ensure_ascii=False, indent=1)

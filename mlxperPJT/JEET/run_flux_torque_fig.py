@@ -23,19 +23,27 @@ if hasattr(sys.stdout, "reconfigure"):
 
 from jeet_acloss_rbf import plot_flux_torque_scaling_tps   # noqa: E402
 
-MAT = os.path.join(HERE, "map_exports", "e10", "lab_scaling_comparison_e10.mat")
+# 데이터 루트는 JEET_DATA_ROOT 로 덮어쓸 수 있다 (배포 레포/CI 용).
+# 이 그림이 읽는 것은 아래 .mat 하나(2.5 KB)뿐이다 — 모델 하위 폴더가 아니라
+# 루트 바로 밑에 있다.
+_DATA = os.environ.get("JEET_DATA_ROOT",
+                       os.path.join(HERE, "map_exports", "e10"))
+MAT = os.path.join(_DATA, "lab_scaling_comparison_e10.mat")
 OUT_PDF = os.path.join(_FIGDIR, 'flux_torque_scaling.pdf')
-OUT_JSON = os.path.join(HERE, "map_exports", "e10",
-                        "flux_torque_scaling_metrics.json")
+# 지표 JSON 도 데이터 루트 밑에 남긴다 (읽기 전용 루트면 건너뛴다).
+OUT_JSON = os.path.join(_DATA, "flux_torque_scaling_metrics.json")
 
 
 def main() -> int:
     metrics = plot_flux_torque_scaling_tps(MAT, OUT_PDF, k_r=2.0, pole_pairs=4)
     print(json.dumps(metrics, indent=1, ensure_ascii=False, default=float))
-    json.dump(metrics, open(OUT_JSON, "w", encoding="utf-8"),
-              indent=1, ensure_ascii=False, default=float)
     print("저장:", OUT_PDF)
-    print("저장:", OUT_JSON)
+    try:
+        with open(OUT_JSON, "w", encoding="utf-8") as fh:
+            json.dump(metrics, fh, indent=1, ensure_ascii=False, default=float)
+        print("저장:", OUT_JSON)
+    except OSError as exc:      # 읽기 전용 배포 루트 — 그림은 이미 나왔다
+        print(f"[건너뜀] 지표 JSON 미기록 ({OUT_JSON}): {exc}")
     return 0
 
 

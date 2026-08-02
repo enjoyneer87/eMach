@@ -29,7 +29,11 @@ sys.path.insert(0, os.path.abspath(os.path.join(HERE, "..", "..", "tools")))
 
 from jeet_acloss_rbf import plot_field_panels  # noqa: E402
 
-FIELDS = os.path.join(HERE, "map_exports", "e10", "fields")
+# 데이터 루트는 JEET_DATA_ROOT 로 덮어쓸 수 있다 (배포 레포/CI 용).
+# 이 그림이 읽는 것은 아래 CASES 의 npz 네 개(합 1.2 MB)뿐이다.
+_DATA = os.environ.get("JEET_DATA_ROOT",
+                       os.path.join(HERE, "map_exports", "e10"))
+FIELDS = os.path.join(_DATA, "fields")
 OUT = os.path.join(_FIGDIR, 'Bfield_MVP_mesh.pdf')
 
 # (npz, 패널 제목, k_r)  — 열 순서 = Ref 쌍, SC 쌍

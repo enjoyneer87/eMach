@@ -4,6 +4,11 @@
 run_kernel_dim_study.figures() 는 논문에 안 쓰는 4패널 진단 PNG와
 J: 드라이브 GIF 까지 함께 만든다. 여기서는 2패널 논문 그림만 뽑는다.
 색 스케일은 두 모델 중 큰 vlim(SC)으로 통일한다.
+
+입력은 두 갈래다. ``<data-root>/fields/reduced/slotcut_<tag>_{TS,MS}.npz``
+(슬롯 축약본, ~640 kB)가 있으면 그것을 쓰고, 없으면 원본 Motor-CAD export
+(1.386 GB)로 되돌아간다 --- 저자 기계의 기존 작업 흐름은 그대로다.
+축약본은 ``run_cut_fig1_slot_reduction.py`` 가 만든다.
 """
 from __future__ import annotations
 
@@ -16,12 +21,25 @@ import time
 _FIGDIR = os.environ.get('JEET_FIGDIR', r'E:\KDH\Overleaf\JEET-2024_rev1\fig')
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+# 데이터 루트는 JEET_DATA_ROOT 로 덮어쓸 수 있다 (배포 레포/CI 용).
+_DATA = os.environ.get('JEET_DATA_ROOT',
+                       os.path.join(HERE, 'map_exports', 'e10'))
 sys.path.insert(0, os.path.abspath(os.path.join(HERE, "..", "..", "tools")))
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 SHARED_VLIM = 250.484633015896      # A/mm^2 — SC 의 98퍼센타일(둘 중 큰 값)
 FIGDIR = _FIGDIR
+REDUCED = os.path.join(_DATA, 'fields', 'reduced')
+
+
+def _inputs(tag, raw_ts, raw_ms):
+    """(TS, MS, 출처표시) --- 축약본이 다 있으면 그쪽, 아니면 원본."""
+    red = (os.path.join(REDUCED, 'slotcut_%s_TS.npz' % tag),
+           os.path.join(REDUCED, 'slotcut_%s_MS.npz' % tag))
+    if all(os.path.exists(p) for p in red):
+        return red[0], red[1], 'reduced'
+    return raw_ts, raw_ms, 'raw export'
 
 
 def main() -> int:
@@ -35,10 +53,12 @@ def main() -> int:
     # 캡션이 (a),(b)=Ref / (c),(d)=SC 로 부르므로 패널 라벨도 그렇게 준다
     LABELS = {"Ref": ("(a)", "(b)"), "SC": ("(c)", "(d)")}
     for model in ("Ref", "SC"):
-        ts, hy, tag, freq, cu_w, cu_h = kds.SOURCES[model]
+        raw_ts, raw_ms, tag, freq, cu_w, cu_h = kds.SOURCES[model]
+        ts, hy, src = _inputs(tag, raw_ts, raw_ms)
         out = os.path.join(FIGDIR, "fig2_%s_ts_vs_2d.png" % tag)
         t0 = time.time()
-        print("=== %s  vlim=%.1f A/mm^2  ->  %s" % (model, SHARED_VLIM, out))
+        print("=== %s  vlim=%.1f A/mm^2  [%s]  ->  %s"
+              % (model, SHARED_VLIM, src, out))
         plot_fig2_kernel_comparison(
             ts, hy, out, slot_id=kds.SLOT, freq_hz=freq, every=kds.EVERY,
             copper_w_mm=cu_w, copper_h_mm=cu_h, panels=("ts", "2d"),

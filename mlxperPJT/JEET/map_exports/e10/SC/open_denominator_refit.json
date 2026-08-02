@@ -18,11 +18,11 @@
   ]
  },
  "old": {
-  "uncorrected_wmae_pct": 26.27,
-  "adopted_wmae_pct": 1.24
+  "uncorrected_wmae_pct": 26.28,
+  "adopted_wmae_pct": 1.13
  },
  "new": {
   "uncorrected_wmae_pct": 52.9,
-  "adopted_wmae_pct": 2.94
+  "adopted_wmae_pct": 2.3
  }
 }
