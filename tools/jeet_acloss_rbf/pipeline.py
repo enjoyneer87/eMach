@@ -31,7 +31,11 @@ from .RbfModelBuilder import RbfModelBuilder
 from .AcLossEvaluator import AcLossEvaluator
 from .SeparableRbfModel import SeparableRbfModel
 
-_E10 = r'D:\KangDH\EveryMotor\eMach\mlxperPJT\JEET\map_exports\e10'
+#: Dataset root. Override with JEET_DATA_ROOT so the package can run from a
+#: distribution checkout that carries only the Map_Summary JSONs.
+_E10 = os.environ.get(
+    'JEET_DATA_ROOT',
+    r'D:\KangDH\EveryMotor\eMach\mlxperPJT\JEET\map_exports\e10')
 
 #: Adopted configuration of the paper (rev3): base kernel at 16 kRPM,
 #: exponent separable model AF = f(w) * g(I, beta)**p(w), Ref = donor with
@@ -283,25 +287,51 @@ class AcLossPipeline:
         })
         return plt
 
-    def make_validation_figure(self, scale: str, out_path: str) -> str:
+    def make_validation_figure(self, scale: str, out_path: str,
+                               eval_all_load_points: bool = False) -> str:
         """Parity plot + error boxplot (Fig 14 style). Returns out_path.
 
         Four series against TS-FEA: uncorrected Hybrid, non-separable
         3-D TPS RBF (all points, reference), scalar separable f*g and
         the adopted exponent separable f*g**p — both separable forms use
         the identical sampling plan/seed, isolating the model form.
+
+        eval_all_load_points: fit on the AF sample-candidate pool as usual but
+        draw and score on every load point (I_rms >= 50 A, AF band released),
+        i.e. the population the manuscript reports accuracy on. The 3-D TPS
+        reference is still fitted on the candidate pool, so its label keeps
+        that count and it no longer interpolates exactly.
         """
         plt = self._journal_rc()
-        ds = self.load_dataset(scale)
+        ds_fit = self.load_dataset(scale)
         model = self.build_model(scale)
-        model_3d = RbfModelBuilder.build_3d_rbf(ds)
+        model_3d = RbfModelBuilder.build_3d_rbf(ds_fit)
         plan = self.cfg['plan'][scale]
         model_sc = self._build_with_seed(scale, plan['seed'],
                                          exponent=False)
+
+        if eval_all_load_points:
+            path = os.path.join(self.cfg['data_root'],
+                                self.cfg['json'][scale])
+            records, err = AcLossJsonReader.read(path, scale)
+            if err is not None:
+                raise IOError(f'{scale}: dataset read failed ({err}): {path}')
+            ds = RbfModelBuilder.match_records_and_create_dataset(
+                records, af_min=0.0, af_max=float('inf'),
+                exclude_points=self.cfg['exclude'].get(scale))
+        else:
+            ds = ds_fit
+
         ea, e3, es = AcLossEvaluator.evaluate_errors(ds, model_3d, model)
         _, _, e_sc = AcLossEvaluator.evaluate_errors(ds, model_3d, model_sc)
-        _, wmae = self._metrics_of(scale, model)
-        _, wmae_sc = self._metrics_of(scale, model_sc)
+        if eval_all_load_points:
+            def _w(err_pct):
+                return float(np.sum(np.abs(err_pct) * ds.f_ac_arr)
+                             / np.sum(ds.f_ac_arr))
+            wmae, wmae_sc = _w(es), _w(e_sc)
+        else:
+            _, wmae = self._metrics_of(scale, model)
+            _, wmae_sc = self._metrics_of(scale, model_sc)
         n_own = plan['n_base'] + (
             plan['n_spd'] * 3 if plan['mode'] == 'own' else plan['n_spd'])
         tag = (f'{n_own} pts' if plan['mode'] == 'own'
@@ -326,7 +356,7 @@ class AcLossPipeline:
         ax.scatter(f_ac, h_ac, c='#999999', s=14, alpha=0.55, zorder=2,
                    label=f'Hybrid, uncorrected (MAE {np.abs(ea).mean():.1f}%)')
         ax.scatter(f_ac, corr_3d, c='#2c6fad', s=20, alpha=0.7, marker='D',
-                   zorder=3, label=f'3D TPS RBF, {len(ds)} pts')
+                   zorder=3, label=f'3D TPS RBF, {len(ds_fit)} pts')
         ax.scatter(f_ac, corr_sc, c='#2e7d32', s=22, alpha=0.75, marker='^',
                    zorder=4,
                    label=f'Scalar separable (wMAE {wmae_sc:.1f}%)')
