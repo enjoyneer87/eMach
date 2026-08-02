@@ -25,7 +25,11 @@ if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-REF = os.path.join(HERE, "map_exports", "e10", "Ref")
+# 데이터 루트는 JEET_DATA_ROOT 로 덮어쓸 수 있다 (배포 레포/CI 용).
+# 이 그림은 필드 아카이브가 아니라 아래 요약 JSON 두 개(합 87 KB)만 읽는다.
+_DATA = os.environ.get("JEET_DATA_ROOT",
+                       os.path.join(HERE, "map_exports", "e10"))
+REF = os.path.join(_DATA, "Ref")
 SRC = os.path.join(REF, "line_sampled_hybrid_Ref_80C.json")
 SRC_TS = os.path.join(REF, "meshb_hybrid_losses_Ref.json")
 OUT = os.path.join(_FIGDIR, 'hybrid_variants_compare.pdf')
