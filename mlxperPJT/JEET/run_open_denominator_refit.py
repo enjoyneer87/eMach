@@ -26,7 +26,9 @@ import numpy as np                                          # noqa: E402
 from jeet_acloss_rbf.pipeline import AcLossPipeline         # noqa: E402
 from jeet_acloss_rbf.AcLossDataset import AcLossDataset     # noqa: E402
 
-E10 = os.path.join(HERE, "map_exports", "e10")
+# 데이터 루트는 JEET_DATA_ROOT 로 덮어쓸 수 있다 (배포 레포/CI 용).
+E10 = os.environ.get("JEET_DATA_ROOT",
+                     os.path.join(HERE, "map_exports", "e10"))
 SRC = os.path.join(E10, "SC", "line_sampled_hybrid_SC_80C.json")
 OUT = os.path.join(E10, "SC", "open_denominator_refit.json")
 
