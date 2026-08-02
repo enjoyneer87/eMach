@@ -34,24 +34,33 @@ SPD = 16000
 plt.rcParams.update({
     "font.family": "serif",
     "font.serif": ["Times New Roman", "Times", "DejaVu Serif"],
-    "font.size": 8, "axes.labelsize": 8, "xtick.labelsize": 7.5,
-    "ytick.labelsize": 7.5, "axes.linewidth": 0.6,
+    "font.size": 8.5, "axes.labelsize": 8.5, "xtick.labelsize": 8.0,
+    "ytick.labelsize": 8.0, "axes.linewidth": 0.6,
     "lines.linewidth": 1.0, "savefig.dpi": 300,
     "savefig.bbox": "tight", "savefig.pad_inches": 0.03,
     "mathtext.fontset": "stix",
 })
 
+# 범례는 자속 축약 방식을 반드시 함께 표기한다: 표본선 계열은 평균 후 제곱
+# <B>^2 (생산 추출 모사), 전면적 계열은 제곱 후 평균 <B^2>. 둘은 같은 커널에서도
+# 16~19% 벌어지므로, 표기가 없으면 "제곱 후 평균은 전면적분과 1.5% 이내"라는
+# 부록 B 본문과 그림이 모순으로 읽힌다. (저자 지시 2026-08-02)
+_MSQ = r"$\langle B\rangle^{2}$"     # 평균 후 제곱 — 표본선
+_SQM = r"$\langle B^{2}\rangle$"     # 제곱 후 평균 — 전면적
+
 SERIES = [  # (key, label, color, style, marker)
     ("mcad_prox_W", "Hybrid analytical-FEA (Volpe et al.)", "#111111",
      "-", "o"),
     ("line_msq_P24c6_translim",
-     "Line-sampled /24 c6 + transition cap (emulation)", "#2e7d32",
-     "-", "s"),
-    ("line_msq_P24_cuboid6", "Line-sampled /24, cuboid-6", "#b71c1c",
-     "--", "s"),
-    ("full_P24_cuboid6", "Full-area /24, cuboid-6", "#e65100", ":", "d"),
-    ("line_msq_Volpe_G2p", "Line-sampled G$_2'$", "#1a3a5c", "--", "^"),
-    ("full_Volpe_G2p", "Full-area $\\langle B^2\\rangle$ G$_2'$",
+     "Line-sampled " + _MSQ + " /24 c6 + transition cap (emulation)",
+     "#2e7d32", "-", "s"),
+    ("line_msq_P24_cuboid6", "Line-sampled " + _MSQ + " /24, cuboid-6",
+     "#b71c1c", "--", "s"),
+    ("full_P24_cuboid6", "Full-area " + _SQM + " /24, cuboid-6",
+     "#e65100", ":", "d"),
+    ("line_msq_Volpe_G2p", "Line-sampled " + _MSQ + " G$_2'$",
+     "#1a3a5c", "--", "^"),
+    ("full_Volpe_G2p", "Full-area " + _SQM + " G$_2'$",
      "#2c6fad", ":", "v"),
 ]
 
@@ -97,9 +106,9 @@ def main() -> int:
     ax.set_axisbelow(True)
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)
-    ax.legend(fontsize=5.6, frameon=False, loc="upper center",
-              bbox_to_anchor=(0.48, -0.16), ncol=2, columnspacing=1.0,
-              handlelength=2.2)
+    ax.legend(fontsize=6.0, frameon=False, loc="upper center",
+              bbox_to_anchor=(0.48, -0.16), ncol=2, columnspacing=0.5,
+              handlelength=1.3)
     fig.savefig(OUT)
     print("저장:", OUT)
 
