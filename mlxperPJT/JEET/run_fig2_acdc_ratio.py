@@ -48,9 +48,25 @@ MODEL_STYLE = {
     "HalfSC": dict(color=GREEN_D, marker="^", label=r"HalfSC  ($k_r{=}1.5$)"),
     "SC":     dict(color=RED_D, marker="s", label=r"SC  ($k_r{=}2$)"),
 }
-# 사례 운전점 (모델, 속도 kRPM) — 그림 번호는 원고마다 달라 캡션이 설명
-# (10p: crowding=Fig1/field=Fig3, rev5: Fig2/Fig11) -> 그림엔 원만.
-CASE_MARKS = [("Ref", 16), ("SC", 16), ("SC", 4)]
+# 사례 운전점 (모델, 속도 kRPM, 라벨, 정렬, 오프셋 pt).
+#
+# ⚠️ 라벨의 그림 번호는 **원고마다 다르다.** 아래는 10p(KO/EN) 기준이며,
+#    rev5 는 같은 그림이 Fig 2(전류 쏠림)·Fig 11(필드 검증)이다. rev5 용으로
+#    다시 뽑을 때는 JEET_FIG2_LABELS 로 덮어쓸 것 —
+#      set JEET_FIG2_LABELS=Figs. 2, 11|Fig. 2|Fig. 11
+#    빈 문자열을 주면 라벨 없이 원만 그린다(종전 동작).
+_DEF_LABELS = ("Figs. 1, 3", "Fig. 1", "Fig. 3")
+_lab = os.environ.get("JEET_FIG2_LABELS")
+LABELS = tuple(_lab.split("|")) if _lab is not None else _DEF_LABELS
+
+# ha 는 텍스트의 어느 끝을 오프셋 지점에 고정할지다 — 오른쪽으로 뻗게 하려면
+# 'left'(왼쪽 끝 고정), 왼쪽으로 뻗게 하려면 'right'.
+CASE_MARKS = [
+    # Ref@16k 와 SC@4k 는 상사쌍이라 비가 1.14 / 1.16 으로 겹친다.
+    ("Ref", 16, "left", (9, 6)),      # +6pt: P_AC=P_DC 점선을 비켜 간다
+    ("SC", 16, "left", (9, 0)),
+    ("SC", 4, "right", (-9, 6)),
+]
 
 
 def main() -> int:
@@ -75,19 +91,23 @@ def main() -> int:
                     fontsize=6.5, color=st["color"], ha="right",
                     fontweight="bold")
 
-    # 사례 운전점 마커 (대응 그림은 각 원고 캡션이 \ref 로 설명)
-    for m, sk in CASE_MARKS:
+    # 사례 운전점 마커 + 대응 그림 라벨
+    for (m, sk, side, off), lab in zip(CASE_MARKS, LABELS):
         i = int((spd / 1000 == sk).nonzero()[0][0])
         y = acdc[m][i]
         ax.plot([sk], [y], "o", ms=9.5, mfc="none", mec="#111111",
                 mew=1.1, zorder=6)
+        if lab:
+            ax.annotate(lab, xy=(sk, y), xytext=off,
+                        textcoords="offset points", fontsize=6.5,
+                        color="#111111", ha=side, va="center", zorder=7)
 
     ax.axhline(1.0, color=GRAY_M, lw=0.8, ls="--", zorder=2)
     ax.text(6.6, 1.13, r"$P_{AC} = P_{DC}$", fontsize=6.5, color=GRAY_M,
             style="italic", va="bottom")
     ax.set_xlabel("Speed [kRPM]")
     ax.set_ylabel(r"AC/DC loss ratio  $P_{AC}\,/\,P_{DC}$")
-    ax.set_xlim(1.5, 16.8)
+    ax.set_xlim(1.5, 18.6)   # 16 kRPM 라벨 자리
     ax.set_ylim(0, 10.2)
     ax.set_xticks([2, 4, 8, 16])
     ax.yaxis.grid(True, linestyle=":", linewidth=0.45, color="#cccccc")
