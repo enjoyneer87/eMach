@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Zenodo 기탁 초안 생성 + 2.6 GB 업로드 (발행은 하지 않는다).
+"""Zenodo 기탁 초안 생성 + 37 GB 업로드 (발행은 하지 않는다).
 
 이 스크립트는 **발행(publish)하지 않는다.** 초안(draft)까지만 만들고 DOI를
 예약해 준 뒤 편집 URL을 찍는다. 발행은 브라우저에서 내용을 눈으로 확인하고
@@ -15,7 +15,11 @@
     # 3) 실제 기탁
     python run_zenodo_upload.py --production
 
-이미 올라간 파일은 체크섬이 맞으면 건너뛰므로, 중간에 끊겨도 다시 돌리면 된다.
+490개 37 GB 라 한 번에 끝나기 어렵다. 이미 올라간 파일은 건너뛰므로
+중단되면 --deposition <번호> 로 이어서 돌리면 된다.
+
+목록·경로·해시는 run_zenodo_manifest.py 가 단독으로 정의한다. 기탁 대상이
+바뀌면 그쪽을 먼저 다시 돌릴 것 — 어긋나면 이 스크립트가 멈춘다.
 """
 from __future__ import annotations
 
@@ -34,24 +38,36 @@ if hasattr(sys.stdout, "reconfigure"):
 
 # ── 레코드 메타데이터 (ZENODO_DEPOSIT.md §2 와 같은 내용) ──────────────
 DESCRIPTION = """\
-<p>Raw analysis outputs behind the AC copper-loss calibration study of a scaled
-hairpin traction-motor family. The set covers three geometrically scaled
-machines (radial scaling factors 1, 1.5 and 2) and contains element-level
-magnetic field exports from transient and magnetostatic finite-element
-solutions at matched operating points, together with the efficiency-map
-electrical data used for the drive-cycle comparison.</p>
+<p>Primary analysis record behind the AC copper-loss calibration study of a
+geometrically scaled hairpin traction-motor family. Every number in the paper
+derives from the finite-element exports deposited here.</p>
 
-<p>These files are the primary record. They are <strong>not</strong> required to
-reproduce the paper's figures: the reproduction package at
+<p><strong>fea/</strong> (480 files) holds one gzip-compressed element export per
+operating point, for the two ends of the scaling family: the reference machine
+(radial scaling factor 1) and the doubled machine (factor 2). Each machine
+contributes 120 operating points across speed, current and current-phase angle,
+solved twice -- <code>FullFEA</code> is the transient finite-element ground
+truth and <code>Hybrid</code> the magnetostatic hybrid evaluation at the same
+point. Their ratio is the amplification factor the paper calibrates. A file
+covers one electrical period at 128 rotor positions and carries, per element,
+the flux-density components, magnetic vector potential and current density.</p>
+
+<p><strong>effmaps/</strong> holds the efficiency-map electrical data used for
+the drive-cycle comparison, on a 33 speed x 151 torque grid (MATLAB v5).
+<strong>models/</strong> holds the Motor-CAD machine models: all three members of
+the family, including the intermediate machine, plus the three rebuilds behind
+the efficiency maps. License-server and user fields have been blanked.</p>
+
+<p>These files are <strong>not</strong> required to reproduce the paper's
+figures. The reproduction package at
 <a href="https://github.com/enjoyneer87/JEET-repro">github.com/enjoyneer87/JEET-repro</a>
-rebuilds every figure from reduced summaries of this data, and includes the
-scripts that produce those reductions. This deposit lets a reader verify the
-reduction step itself.</p>
+rebuilds every figure from reduced summaries, and ships the scripts that produce
+those reductions. This deposit is what lets a reader check the reduction step
+itself.</p>
 
-<p>Field exports are plain text, one file per machine and excitation source,
-each holding 128 rotor positions over one electrical period with per-element
-current density, flux density and magnetic vector potential. Efficiency-map
-data are MATLAB v5 MAT-files on a 33 speed x 151 torque grid.</p>"""
+<p>The intermediate machine's raw sweep is omitted to keep the record within a
+single Zenodo deposit; its calibration summary is public in the reproduction
+package, and its geometry is included here.</p>"""
 
 METADATA = {
     "upload_type": "dataset",
@@ -85,14 +101,40 @@ def digest(path, algo=hashlib.sha256, buf=1 << 22):
 
 
 def load_manifest():
-    """zenodo_manifest.txt -> [(상대경로, 바이트, sha256)]"""
-    rows = []
+    """[(기탁 이름, 원본 경로, 바이트, sha256)]
+
+    이름->경로 대응은 run_zenodo_manifest.collect() 하나에서만 정의한다.
+    기탁 대상이 세 뿌리(_txt_backfill, map_exports, Thesis)에 흩어져 있고
+    .mot 은 세정본을 올리므로, 여기서 경로를 다시 조립하면 어긋난다.
+    매니페스트 파일은 크기·해시 대조용으로만 쓴다.
+    """
+    sys.path.insert(0, HERE)
+    from run_zenodo_manifest import collect          # noqa: E402
+
+    want = {}
     for ln in io.open(MANIFEST, encoding="utf-8"):
         ln = ln.strip()
         if not ln or ln.startswith("#"):
             continue
         h, n, name = ln.split(None, 2)
-        rows.append((name, int(n), h))
+        want[name] = (int(n), h)
+
+    rows, drift = [], []
+    for name, src, n in collect():
+        exp = want.get(name)
+        if exp is None:
+            drift.append("목록에 없음: %s" % name)
+        elif exp[0] != n:
+            drift.append("크기 불일치: %s (%d vs %d)" % (name, n, exp[0]))
+        rows.append((name, src, n, exp[1] if exp else ""))
+    missing = set(want) - {r[0] for r in rows}
+    drift += ["원본 없음: %s" % m for m in sorted(missing)]
+    if drift:
+        print("매니페스트와 현재 상태가 어긋난다 — run_zenodo_manifest.py 를 "
+              "다시 돌릴 것:")
+        for d in drift[:10]:
+            print("   " + d)
+        raise SystemExit(1)
     return rows
 
 
@@ -109,8 +151,7 @@ def main() -> int:
     rows0 = load_manifest()
     if a.check:
         bad = ok = 0
-        for name, n, h in rows0:
-            src = os.path.join(E10, *name.split("/"))
+        for name, src, n, h in rows0:
             if not os.path.exists(src):
                 print("  없음      %s" % name)
                 bad += 1
@@ -120,7 +161,7 @@ def main() -> int:
             else:
                 ok += 1
         print("\n%d개 정상, %d개 문제 (총 %.2f GB)"
-              % (ok, bad, sum(n for _, n, _ in rows0) / 1073741824))
+              % (ok, bad, sum(n for _, _, n, _ in rows0) / 1073741824))
         return 1 if bad else 0
 
     try:
@@ -138,7 +179,7 @@ def main() -> int:
     auth = {"Authorization": "Bearer %s" % tok}
 
     rows = rows0
-    total = sum(n for _, n, _ in rows)
+    total = sum(n for _, _, n, _ in rows)
     print("대상 %d개 파일, %.2f GB  ->  %s"
           % (len(rows), total / 1073741824, base))
     if not a.production:
@@ -178,8 +219,7 @@ def main() -> int:
         have = {f["filename"]: f.get("checksum", "") for f in r.json()}
 
     sent = 0
-    for i, (name, n, _) in enumerate(rows, 1):
-        src = os.path.join(E10, *name.split("/"))
+    for i, (name, src, n, _) in enumerate(rows, 1):
         if not os.path.exists(src):
             print("  [%2d/%d] 원본 없음 — %s" % (i, len(rows), src))
             return 1

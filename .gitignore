@@ -196,3 +196,4 @@ mlxperPJT/JEET/map_exports/e10/fields/*_OP*A_*deg_*.txt
 
 # 노트북 재현 실행의 그림 출력 (원고 fig/ 와 분리)
 mlxperPJT/JEET/fig_out/
+mlxperPJT/JEET/map_exports/_zenodo_stage/
