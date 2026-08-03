@@ -146,6 +146,8 @@ def main() -> int:
                     help="기존 초안 이어서 업로드 (중단 후 재개)")
     ap.add_argument("--check", action="store_true",
                     help="업로드 없이 목록·원본·체크섬만 검증")
+    ap.add_argument("--status", action="store_true",
+                    help="초안에 올라간 파일을 목록과 대조 (발행 직전 확인용)")
     a = ap.parse_args()
 
     rows0 = load_manifest()
@@ -184,6 +186,36 @@ def main() -> int:
           % (len(rows), total / 1073741824, base))
     if not a.production:
         print("*** 샌드박스 모드 — 실제 기탁이 아니다 ***")
+
+    # ── 발행 직전 확인 ────────────────────────────────────────────────
+    if a.status:
+        if not a.deposition:
+            print("--status 는 --deposition <번호> 가 필요하다.")
+            return 2
+        r = requests.get("%s/api/deposit/depositions/%d/files"
+                         % (base, a.deposition), headers=auth, timeout=120)
+        if r.status_code >= 400:
+            print("조회 실패 %d: %s" % (r.status_code, r.text[:300]))
+            return 1
+        up = {f["filename"]: f for f in r.json()}
+        want = {name.replace("/", "_"): (n, name) for name, _, n, _ in rows}
+        miss = sorted(set(want) - set(up))
+        extra = sorted(set(up) - set(want))
+        bad = [k for k in set(up) & set(want)
+               if int(up[k].get("filesize", -1)) != want[k][0]]
+        got = sum(int(up[k].get("filesize", 0)) for k in set(up) & set(want))
+        print("올라감 %d/%d,  %.2f/%.2f GB"
+              % (len(up), len(want), got / 1073741824, total / 1073741824))
+        for tag, lst in (("누락", miss), ("목록 밖", extra), ("크기 불일치", bad)):
+            if lst:
+                print("  %s %d개:" % (tag, len(lst)))
+                for k in lst[:8]:
+                    print("     " + k)
+        if miss or bad:
+            print("\n아직 발행하지 말 것 — 위를 해소한 뒤 다시 확인.")
+            return 1
+        print("\n%d개 전부 일치. 발행해도 된다." % len(want))
+        return 0
 
     # ── 초안 확보 ─────────────────────────────────────────────────────
     if a.deposition:
