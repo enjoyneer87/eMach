@@ -68,6 +68,124 @@ def build(pl, scale):
     return ds, m, set(int(i) for i in np.asarray(idx).ravel())
 
 
+def main_hybrid(pl, plt, built):
+    """저속 3열은 평면, 앵커 속도 1열만 3-D.
+
+    저속에서 물어야 하는 것은 '어느 점을 골랐나'(그리고 SC 는 '하나도 안
+    골랐다')라 위치가 명확해야 한다. 앵커 속도에서는 후보 24점을 전량 쓰므로
+    위치가 정보를 덜 담고, 대신 kappa 가 학습되는 곳이라 표면 형상이 정보다.
+    """
+    from matplotlib import cm
+    from matplotlib.colors import Normalize
+    from matplotlib.patches import ConnectionPatch
+
+    fig = plt.figure(figsize=(7.1, 3.7), layout='constrained')
+    vmin = min(built[s][0].af_arr.min() for s, _ in ROWS)
+    vmax = max(built[s][0].af_arr.max() for s, _ in ROWS)
+    levels = np.linspace(vmin, vmax, 11)
+    norm = Normalize(vmin, vmax)
+    flat_ax = {}
+    cf = None
+
+    for r, (scale, _k) in enumerate(ROWS):
+        ds, m, tr = built[scale]
+        for c, spd in enumerate(SPEEDS):
+            k = r * len(SPEEDS) + c + 1
+            is3d = (spd == 16.0)
+            ax = fig.add_subplot(len(ROWS), len(SPEEDS), k,
+                                 projection='3d' if is3d else None)
+            sel = np.abs(np.asarray(ds.speeds_k) - spd) < 0.1
+            cand = np.where(sel)[0]
+            ii = np.asarray(ds.irms_arr)[cand]
+            pp = np.asarray(ds.phase_arr)[cand]
+            gi = np.linspace(ii.min(), ii.max(), 40)
+            gp = np.linspace(pp.min(), pp.max(), 40)
+            GI, GP = np.meshgrid(gi, gp)
+            Z = np.asarray(m.predict(np.full(GI.size, spd * 1000.0),
+                                     GI.ravel(), GP.ravel()),
+                           float).reshape(GI.shape)
+            X, Y = dq(GI, GP)
+            tsel = sorted(tr & set(cand.tolist()))
+
+            if is3d:
+                ax.plot_surface(X, Y, Z, facecolors=cm.viridis(norm(Z)),
+                                rstride=1, cstride=1, linewidth=0,
+                                shade=False, antialiased=True, alpha=0.92)
+                if tsel:
+                    xt, yt = dq(np.asarray(ds.irms_arr)[tsel],
+                                np.asarray(ds.phase_arr)[tsel])
+                    ax.scatter(xt, yt, np.asarray(ds.af_arr)[tsel], s=11,
+                               c='#e65100', edgecolors='#3b1a00',
+                               linewidths=0.35, depthshade=False)
+                ax.set_zlim(vmin, vmax)
+                ax.view_init(elev=24, azim=-60)
+                ax.tick_params(labelsize=5.4, pad=-2)
+                ax.set_xlabel('$i_d$', fontsize=6.4, labelpad=-8)
+                ax.set_ylabel('$i_q$', fontsize=6.4, labelpad=-8)
+                ax.set_zlabel('$AF$', fontsize=6.4, labelpad=-6)
+            else:
+                cf = ax.tricontourf(X.ravel(), Y.ravel(), Z.ravel(),
+                                    levels=levels, cmap='viridis',
+                                    extend='both')
+                xc, yc = dq(ii, pp)
+                ax.plot(xc, yc, 'o', ms=2.6, mfc='none', mec='#ffffff',
+                        mew=0.7, ls='none', zorder=3)
+                if tsel:
+                    xt, yt = dq(np.asarray(ds.irms_arr)[tsel],
+                                np.asarray(ds.phase_arr)[tsel])
+                    ax.plot(xt, yt, 'o', ms=4.4, mfc='#e65100',
+                            mec='#3b1a00', mew=0.6, ls='none', zorder=5)
+                ax.set_xlim(-1.05 * np.sqrt(2) * ii.max(), 0.06 * ii.max())
+                ax.set_ylim(-0.04 * ii.max(), 1.10 * np.sqrt(2) * ii.max())
+                ax.tick_params(labelsize=6.2)
+                flat_ax[(r, c)] = ax
+                if r == 0:
+                    ax.tick_params(labelbottom=False)
+                else:
+                    ax.set_xlabel('$i_d$ [A, pk]', fontsize=7.2)
+                if c == 0:
+                    ax.set_ylabel('%s\n$i_q$ [A, pk]' % scale, fontsize=7.4)
+
+            if r == 0:
+                ttl = ax.set_title('%g kRPM' % spd, fontsize=8.4,
+                                   pad=-2 if is3d else 2)
+                if spd in PAIR_COLOR:
+                    ttl.set_color(PAIR_COLOR[spd])
+            hue = None
+            if r == 0 and spd in PAIR_COLOR:
+                hue = PAIR_COLOR[spd]
+            if r == 1:
+                for s_, d_ in TRANSFER:
+                    if abs(d_ - spd) < 1e-9:
+                        hue = PAIR_COLOR[s_]
+            if hue and not is3d:
+                for sp in ax.spines.values():
+                    sp.set_color(hue)
+                    sp.set_linewidth(1.6)
+
+    for src, dst in TRANSFER:
+        a0 = fig.axes[SPEEDS.index(src)]
+        a1 = flat_ax.get((1, SPEEDS.index(dst)))
+        if a1 is None:
+            continue
+        fig.add_artist(ConnectionPatch(
+            xyA=(0.5, -0.04), coordsA=a0.transAxes,
+            xyB=(0.5, 1.03), coordsB=a1.transAxes,
+            arrowstyle='-|>', mutation_scale=8, lw=1.2,
+            color=PAIR_COLOR[src], zorder=9,
+            connectionstyle='arc3,rad=0.16'))
+
+    cb = fig.colorbar(cf, ax=fig.axes, pad=0.012, fraction=0.028)
+    cb.set_label('$AF$ [-]', fontsize=7.4)
+    cb.ax.tick_params(labelsize=6.2)
+
+    out = os.path.join(_FIGDIR, 'af_transfer_map_hybrid')
+    fig.savefig(out + '.pdf')
+    fig.savefig(out + '.png', dpi=220)
+    plt.close(fig)
+    print('저장:', out + '.pdf')
+
+
 def main_3d(pl, plt, built):
     """같은 데이터의 3-D 판. 평면판과 나란히 놓고 고르기 위한 것."""
     fig = plt.figure(figsize=(7.1, 3.9), layout='constrained')
@@ -122,7 +240,7 @@ def main_3d(pl, plt, built):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument('--mode', default='both', choices=('flat', '3d', 'both'))
+    ap.add_argument('--mode', default='both', choices=('flat', '3d', 'hybrid', 'both'))
     args = ap.parse_args()
     pl = AcLossPipeline()
     pl.cfg['plan']['HalfSC']['seed'] = 3
@@ -139,7 +257,9 @@ def main():
 
     if args.mode in ('3d', 'both'):
         main_3d(pl, plt, built)
-    if args.mode == '3d':
+    if args.mode in ('hybrid', 'both'):
+        main_hybrid(pl, plt, built)
+    if args.mode in ('3d', 'hybrid'):
         return
 
     fig, axes = plt.subplots(len(ROWS), len(SPEEDS),
