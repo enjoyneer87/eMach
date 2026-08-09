@@ -71,29 +71,47 @@ def build(pl, scale):
 def main_hybrid(pl, plt, built):
     """저속 3열은 평면, 앵커 속도 1열만 3-D.
 
-    저속에서 물어야 하는 것은 '어느 점을 골랐나'(그리고 SC 는 '하나도 안
-    골랐다')라 위치가 명확해야 한다. 앵커 속도에서는 후보 24점을 전량 쓰므로
-    위치가 정보를 덜 담고, 대신 kappa 가 학습되는 곳이라 표면 형상이 정보다.
+    저속에서 물어야 하는 것은 '어느 점을 골랐나'(SC 는 '하나도 안 골랐다')라
+    위치가 명확해야 한다. 앵커 속도에서는 후보 24점을 전량 쓰므로 위치가
+    정보를 덜 담고, 대신 kappa 를 학습하는 곳이라 표면 형상이 정보다.
+
+    혼합 투영에서는 constrained 레이아웃이 3-D 축을 평면 축과 같은 크기로
+    잡지 못한다 (3-D 는 rect 안에 여백을 두고 큐브를 그린다). 그래서 축을
+    전부 figure 좌표로 직접 놓고, 3-D 칸만 rect 를 부풀려 시각 크기를 맞춘다.
+    제목과 화살표도 같은 좌표계에서 계산해 baseline 이 어긋나지 않게 한다.
     """
     from matplotlib import cm
     from matplotlib.colors import Normalize
-    from matplotlib.patches import ConnectionPatch
 
-    fig = plt.figure(figsize=(7.1, 3.7), layout='constrained')
+    L, R, TOP, BOT = 0.088, 0.836, 0.893, 0.118
+    HG, VG = 0.030, 0.058
+    NC, NR = len(SPEEDS), len(ROWS)
+    W = (R - L - HG * (NC - 1)) / NC
+    H = (TOP - BOT - VG * (NR - 1)) / NR
+    # 3-D 칸은 rect 를 부풀려야 큐브가 평면 패널과 비슷해 보인다.
+    INF = dict(dx=-0.008, dy=-0.026, dw=0.016, dh=0.050)
+
+    def rect(r, c, is3d):
+        x = L + c * (W + HG)
+        y = TOP - (r + 1) * H - r * VG
+        if is3d:
+            return [x + INF['dx'], y + INF['dy'],
+                    W + INF['dw'], H + INF['dh']]
+        return [x, y, W, H]
+
+    fig = plt.figure(figsize=(7.1, 3.55))
     vmin = min(built[s][0].af_arr.min() for s, _ in ROWS)
     vmax = max(built[s][0].af_arr.max() for s, _ in ROWS)
     levels = np.linspace(vmin, vmax, 11)
     norm = Normalize(vmin, vmax)
-    flat_ax = {}
     cf = None
 
     for r, (scale, _k) in enumerate(ROWS):
         ds, m, tr = built[scale]
         for c, spd in enumerate(SPEEDS):
-            k = r * len(SPEEDS) + c + 1
             is3d = (spd == 16.0)
-            ax = fig.add_subplot(len(ROWS), len(SPEEDS), k,
-                                 projection='3d' if is3d else None)
+            ax = fig.add_axes(rect(r, c, is3d),
+                              projection='3d' if is3d else None)
             sel = np.abs(np.asarray(ds.speeds_k) - spd) < 0.1
             cand = np.where(sel)[0]
             ii = np.asarray(ds.irms_arr)[cand]
@@ -106,78 +124,75 @@ def main_hybrid(pl, plt, built):
                            float).reshape(GI.shape)
             X, Y = dq(GI, GP)
             tsel = sorted(tr & set(cand.tolist()))
+            if tsel:
+                xt, yt = dq(np.asarray(ds.irms_arr)[tsel],
+                            np.asarray(ds.phase_arr)[tsel])
 
             if is3d:
                 ax.plot_surface(X, Y, Z, facecolors=cm.viridis(norm(Z)),
                                 rstride=1, cstride=1, linewidth=0,
-                                shade=False, antialiased=True, alpha=0.92)
+                                shade=False, antialiased=True, alpha=0.95)
                 if tsel:
-                    xt, yt = dq(np.asarray(ds.irms_arr)[tsel],
-                                np.asarray(ds.phase_arr)[tsel])
-                    ax.scatter(xt, yt, np.asarray(ds.af_arr)[tsel], s=11,
+                    ax.scatter(xt, yt, np.asarray(ds.af_arr)[tsel], s=10,
                                c='#e65100', edgecolors='#3b1a00',
-                               linewidths=0.35, depthshade=False)
+                               linewidths=0.3, depthshade=False)
                 ax.set_zlim(vmin, vmax)
-                ax.view_init(elev=24, azim=-60)
-                ax.tick_params(labelsize=5.4, pad=-2)
-                ax.set_xlabel('$i_d$', fontsize=6.4, labelpad=-8)
-                ax.set_ylabel('$i_q$', fontsize=6.4, labelpad=-8)
-                ax.set_zlabel('$AF$', fontsize=6.4, labelpad=-6)
+                ax.view_init(elev=22, azim=-62)
+                ax.set_box_aspect((1.0, 1.0, 0.70), zoom=0.98)
+                # 인쇄 크기에서 눈금이 셋을 넘으면 라벨이 서로 겹친다.
+                from matplotlib.ticker import MaxNLocator
+                for a_ in (ax.xaxis, ax.yaxis, ax.zaxis):
+                    a_.set_major_locator(MaxNLocator(3))
+                ax.tick_params(labelsize=5.0, pad=-3)
+                ax.set_xlabel('$i_d$', fontsize=6.2, labelpad=-9)
+                ax.set_ylabel('$i_q$', fontsize=6.2, labelpad=-9)
+                ax.set_zlabel('$AF$', fontsize=6.2, labelpad=-7)
+                for pane in (ax.xaxis, ax.yaxis, ax.zaxis):
+                    pane.pane.set_alpha(0.22)
             else:
                 cf = ax.tricontourf(X.ravel(), Y.ravel(), Z.ravel(),
                                     levels=levels, cmap='viridis',
                                     extend='both')
                 xc, yc = dq(ii, pp)
-                ax.plot(xc, yc, 'o', ms=2.6, mfc='none', mec='#ffffff',
+                ax.plot(xc, yc, 'o', ms=2.5, mfc='none', mec='#ffffff',
                         mew=0.7, ls='none', zorder=3)
                 if tsel:
-                    xt, yt = dq(np.asarray(ds.irms_arr)[tsel],
-                                np.asarray(ds.phase_arr)[tsel])
-                    ax.plot(xt, yt, 'o', ms=4.4, mfc='#e65100',
+                    ax.plot(xt, yt, 'o', ms=4.3, mfc='#e65100',
                             mec='#3b1a00', mew=0.6, ls='none', zorder=5)
                 ax.set_xlim(-1.05 * np.sqrt(2) * ii.max(), 0.06 * ii.max())
                 ax.set_ylim(-0.04 * ii.max(), 1.10 * np.sqrt(2) * ii.max())
-                ax.tick_params(labelsize=6.2)
-                flat_ax[(r, c)] = ax
+                ax.tick_params(labelsize=6.0)
                 if r == 0:
                     ax.tick_params(labelbottom=False)
                 else:
-                    ax.set_xlabel('$i_d$ [A, pk]', fontsize=7.2)
+                    ax.set_xlabel('$i_d$ [A, pk]', fontsize=7.0, labelpad=1)
                 if c == 0:
-                    ax.set_ylabel('%s\n$i_q$ [A, pk]' % scale, fontsize=7.4)
-
-            if r == 0:
-                ttl = ax.set_title('%g kRPM' % spd, fontsize=8.4,
-                                   pad=-2 if is3d else 2)
-                if spd in PAIR_COLOR:
-                    ttl.set_color(PAIR_COLOR[spd])
-            hue = None
-            if r == 0 and spd in PAIR_COLOR:
-                hue = PAIR_COLOR[spd]
-            if r == 1:
+                    ax.set_ylabel('%s\n$i_q$ [A, pk]' % scale,
+                                  fontsize=7.2, labelpad=1)
+                hue = None
+                if r == 0 and spd in PAIR_COLOR:
+                    hue = PAIR_COLOR[spd]
                 for s_, d_ in TRANSFER:
-                    if abs(d_ - spd) < 1e-9:
+                    if r == 1 and abs(d_ - spd) < 1e-9:
                         hue = PAIR_COLOR[s_]
-            if hue and not is3d:
-                for sp in ax.spines.values():
-                    sp.set_color(hue)
-                    sp.set_linewidth(1.6)
+                if hue:
+                    for sp in ax.spines.values():
+                        sp.set_color(hue)
+                        sp.set_linewidth(1.6)
 
-    for src, dst in TRANSFER:
-        a0 = fig.axes[SPEEDS.index(src)]
-        a1 = flat_ax.get((1, SPEEDS.index(dst)))
-        if a1 is None:
-            continue
-        fig.add_artist(ConnectionPatch(
-            xyA=(0.5, -0.04), coordsA=a0.transAxes,
-            xyB=(0.5, 1.03), coordsB=a1.transAxes,
-            arrowstyle='-|>', mutation_scale=8, lw=1.2,
-            color=PAIR_COLOR[src], zorder=9,
-            connectionstyle='arc3,rad=0.16'))
+    # 제목은 네 열 공통 baseline 으로 직접 놓는다 (3-D 는 pad 기준이 다르다).
+    for c, spd in enumerate(SPEEDS):
+        fig.text(L + c * (W + HG) + W / 2, TOP + 0.022, '%g kRPM' % spd,
+                 ha='center', va='bottom', fontsize=8.4,
+                 color=PAIR_COLOR.get(spd, '#111111'))
+    # 전달 쌍은 테두리 색과 제목 색으로만 표시한다. 열이 멀리
+    # 떨어져 있어 화살표를 그리면 패널을 가로질러 잡음이 된다.
 
-    cb = fig.colorbar(cf, ax=fig.axes, pad=0.012, fraction=0.028)
+    # 3-D 칸의 z 눈금이 오른쪽으로 삐져나오므로 컬러바를 더 띄운다.
+    cax = fig.add_axes([R + 0.052, BOT, 0.014, TOP - BOT])
+    cb = fig.colorbar(cf, cax=cax)
     cb.set_label('$AF$ [-]', fontsize=7.4)
-    cb.ax.tick_params(labelsize=6.2)
+    cb.ax.tick_params(labelsize=6.0)
 
     out = os.path.join(_FIGDIR, 'af_transfer_map_hybrid')
     fig.savefig(out + '.pdf')
