@@ -75,31 +75,38 @@ def main_hybrid(pl, plt, built):
     위치가 명확해야 한다. 앵커 속도에서는 후보 24점을 전량 쓰므로 위치가
     정보를 덜 담고, 대신 kappa 를 학습하는 곳이라 표면 형상이 정보다.
 
-    혼합 투영에서는 constrained 레이아웃이 3-D 축을 평면 축과 같은 크기로
-    잡지 못한다 (3-D 는 rect 안에 여백을 두고 큐브를 그린다). 그래서 축을
-    전부 figure 좌표로 직접 놓고, 3-D 칸만 rect 를 부풀려 시각 크기를 맞춘다.
-    제목과 화살표도 같은 좌표계에서 계산해 baseline 이 어긋나지 않게 한다.
+    배치 규칙 세 가지.
+      - 패널은 정사각이고 $i_d$ 와 $i_q$ 의 눈금이 부호만 다르게 일치한다.
+        두 축이 같은 물리량이므로 축척이 다르면 전류 원이 타원으로 왜곡된다.
+      - 행 사이를 넓게 벌려 직선 화살표가 패널을 침범하지 않게 한다.
+      - 좌표는 전부 인치로 계산한다. 혼합 투영에서 constrained 레이아웃은
+        3-D 축을 평면 축과 같은 크기로 잡지 못한다.
     """
     from matplotlib import cm
     from matplotlib.colors import Normalize
+    from matplotlib.patches import FancyArrowPatch
+    from matplotlib.ticker import MaxNLocator
 
-    L, R, TOP, BOT = 0.088, 0.836, 0.893, 0.118
-    HG, VG = 0.030, 0.058
+    # ---- 인치 단위 배치 ------------------------------------------------
+    FW = 7.1
+    ML, MR, MT, MB = 0.56, 0.78, 0.30, 0.44   # 여백
+    HG, VG = 0.20, 0.50                        # 열 간격, 행 간격(화살표 자리)
     NC, NR = len(SPEEDS), len(ROWS)
-    W = (R - L - HG * (NC - 1)) / NC
-    H = (TOP - BOT - VG * (NR - 1)) / NR
-    # 3-D 칸은 rect 를 부풀려야 큐브가 평면 패널과 비슷해 보인다.
-    INF = dict(dx=-0.008, dy=-0.026, dw=0.016, dh=0.050)
+    PW = (FW - ML - MR - HG * (NC - 1)) / NC
+    PH = PW                                    # 정사각
+    FH = MT + PH * NR + VG * (NR - 1) + MB
+    INF = dict(dx=-0.09, dy=-0.20, dw=0.18, dh=0.26)   # 3-D 칸 확대(인치)
 
     def rect(r, c, is3d):
-        x = L + c * (W + HG)
-        y = TOP - (r + 1) * H - r * VG
+        x = ML + c * (PW + HG)
+        y = FH - MT - (r + 1) * PH - r * VG
+        w, h = PW, PH
         if is3d:
-            return [x + INF['dx'], y + INF['dy'],
-                    W + INF['dw'], H + INF['dh']]
-        return [x, y, W, H]
+            x += INF['dx']; y += INF['dy']
+            w += INF['dw']; h += INF['dh']
+        return [x / FW, y / FH, w / FW, h / FH]
 
-    fig = plt.figure(figsize=(7.1, 3.55))
+    fig = plt.figure(figsize=(FW, FH))
     vmin = min(built[s][0].af_arr.min() for s, _ in ROWS)
     vmax = max(built[s][0].af_arr.max() for s, _ in ROWS)
     levels = np.linspace(vmin, vmax, 11)
@@ -127,6 +134,9 @@ def main_hybrid(pl, plt, built):
             if tsel:
                 xt, yt = dq(np.asarray(ds.irms_arr)[tsel],
                             np.asarray(ds.phase_arr)[tsel])
+            lim = 1.07 * np.sqrt(2.0) * ii.max()
+            ticks = [t for t in MaxNLocator(4).tick_values(0, lim)
+                     if 0 <= t <= lim]
 
             if is3d:
                 ax.plot_surface(X, Y, Z, facecolors=cm.viridis(norm(Z)),
@@ -136,39 +146,44 @@ def main_hybrid(pl, plt, built):
                     ax.scatter(xt, yt, np.asarray(ds.af_arr)[tsel], s=10,
                                c='#e65100', edgecolors='#3b1a00',
                                linewidths=0.3, depthshade=False)
+                ax.set_xlim(-lim, 0.0)
+                ax.set_ylim(0.0, lim)
                 ax.set_zlim(vmin, vmax)
+                ax.set_xticks([-t for t in ticks][::-1])
+                ax.set_yticks(ticks)
+                ax.zaxis.set_major_locator(MaxNLocator(3))
                 ax.view_init(elev=22, azim=-62)
-                ax.set_box_aspect((1.0, 1.0, 0.70), zoom=0.98)
-                # 인쇄 크기에서 눈금이 셋을 넘으면 라벨이 서로 겹친다.
-                from matplotlib.ticker import MaxNLocator
+                ax.set_box_aspect((1.0, 1.0, 0.68), zoom=0.96)
+                ax.tick_params(labelsize=5.2, pad=-3)
+                ax.set_xlabel('$i_d$', fontsize=6.4, labelpad=-9)
+                ax.set_ylabel('$i_q$', fontsize=6.4, labelpad=-9)
                 for a_ in (ax.xaxis, ax.yaxis, ax.zaxis):
-                    a_.set_major_locator(MaxNLocator(3))
-                ax.tick_params(labelsize=5.0, pad=-3)
-                ax.set_xlabel('$i_d$', fontsize=6.2, labelpad=-9)
-                ax.set_ylabel('$i_q$', fontsize=6.2, labelpad=-9)
-                ax.set_zlabel('$AF$', fontsize=6.2, labelpad=-7)
-                for pane in (ax.xaxis, ax.yaxis, ax.zaxis):
-                    pane.pane.set_alpha(0.22)
+                    a_.pane.set_alpha(0.22)
             else:
                 cf = ax.tricontourf(X.ravel(), Y.ravel(), Z.ravel(),
                                     levels=levels, cmap='viridis',
                                     extend='both')
                 xc, yc = dq(ii, pp)
-                ax.plot(xc, yc, 'o', ms=2.5, mfc='none', mec='#ffffff',
+                ax.plot(xc, yc, 'o', ms=2.6, mfc='none', mec='#ffffff',
                         mew=0.7, ls='none', zorder=3)
                 if tsel:
-                    ax.plot(xt, yt, 'o', ms=4.3, mfc='#e65100',
+                    ax.plot(xt, yt, 'o', ms=4.4, mfc='#e65100',
                             mec='#3b1a00', mew=0.6, ls='none', zorder=5)
-                ax.set_xlim(-1.05 * np.sqrt(2) * ii.max(), 0.06 * ii.max())
-                ax.set_ylim(-0.04 * ii.max(), 1.10 * np.sqrt(2) * ii.max())
-                ax.tick_params(labelsize=6.0)
+                ax.set_xlim(-lim, 0.0)
+                ax.set_ylim(0.0, lim)
+                ax.set_xticks([-t for t in ticks][::-1])
+                ax.set_yticks(ticks)
+                ax.set_aspect('equal', adjustable='box')
+                ax.tick_params(labelsize=6.2)
                 if r == 0:
                     ax.tick_params(labelbottom=False)
                 else:
-                    ax.set_xlabel('$i_d$ [A, pk]', fontsize=7.0, labelpad=1)
+                    ax.set_xlabel('$i_d$ [A, pk]', fontsize=7.2, labelpad=1)
+                if c > 0:
+                    ax.tick_params(labelleft=False)
                 if c == 0:
                     ax.set_ylabel('%s\n$i_q$ [A, pk]' % scale,
-                                  fontsize=7.2, labelpad=1)
+                                  fontsize=7.4, labelpad=1)
                 hue = None
                 if r == 0 and spd in PAIR_COLOR:
                     hue = PAIR_COLOR[spd]
@@ -180,19 +195,29 @@ def main_hybrid(pl, plt, built):
                         sp.set_color(hue)
                         sp.set_linewidth(1.6)
 
-    # 제목은 네 열 공통 baseline 으로 직접 놓는다 (3-D 는 pad 기준이 다르다).
     for c, spd in enumerate(SPEEDS):
-        fig.text(L + c * (W + HG) + W / 2, TOP + 0.022, '%g kRPM' % spd,
-                 ha='center', va='bottom', fontsize=8.4,
+        fig.text((ML + c * (PW + HG) + PW / 2) / FW,
+                 (FH - MT + 0.06) / FH, '%g kRPM' % spd,
+                 ha='center', va='bottom', fontsize=8.6,
                  color=PAIR_COLOR.get(spd, '#111111'))
-    # 전달 쌍은 테두리 색과 제목 색으로만 표시한다. 열이 멀리
-    # 떨어져 있어 화살표를 그리면 패널을 가로질러 잡음이 된다.
 
-    # 3-D 칸의 z 눈금이 오른쪽으로 삐져나오므로 컬러바를 더 띄운다.
-    cax = fig.add_axes([R + 0.052, BOT, 0.014, TOP - BOT])
+    # 직선 화살표. 두 쌍 모두 두 열 왼쪽으로 가므로 서로 평행하다.
+    for src, dst in TRANSFER:
+        cs, cd = SPEEDS.index(src), SPEEDS.index(dst)
+        x0 = (ML + cs * (PW + HG) + PW / 2) / FW
+        x1 = (ML + cd * (PW + HG) + PW / 2) / FW
+        y0 = (FH - MT - PH - 0.05) / FH
+        y1 = (FH - MT - PH - VG + 0.05) / FH
+        fig.add_artist(FancyArrowPatch(
+            (x0, y0), (x1, y1), transform=fig.transFigure,
+            arrowstyle='-|>', mutation_scale=9, lw=1.3,
+            color=PAIR_COLOR[src], zorder=9, shrinkA=0, shrinkB=0))
+
+    cax = fig.add_axes([(FW - MR + 0.30) / FW, MB / FH,
+                        0.10 / FW, (FH - MT - MB) / FH])
     cb = fig.colorbar(cf, cax=cax)
     cb.set_label('$AF$ [-]', fontsize=7.4)
-    cb.ax.tick_params(labelsize=6.0)
+    cb.ax.tick_params(labelsize=6.2)
 
     out = os.path.join(_FIGDIR, 'af_transfer_map_hybrid')
     fig.savefig(out + '.pdf')
