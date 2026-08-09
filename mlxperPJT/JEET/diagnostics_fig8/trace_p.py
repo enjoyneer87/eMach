@@ -4,9 +4,12 @@
 Stage 3(기준커널 kappa) -> Stage 4(속도별 (f,p) 로그회귀) 구간만 떼어
 실데이터로 직접 계산한다.
 """
+import os
 import sys
 import numpy as np
-sys.path.insert(0, r"D:\KangDH\EveryMotor\eMach\tools")
+sys.path.insert(0, os.path.abspath(os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), "..", "..", "..",
+    "tools")))  # 이 체크아웃의 tools
 import matplotlib
 matplotlib.use("Agg")
 from jeet_acloss_rbf.pipeline import AcLossPipeline

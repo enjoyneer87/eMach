@@ -12,11 +12,16 @@ Solution/ElementsTable/NodesTable/RegionsTable 텍스트를 받아야
 """
 import argparse
 import json
+import os
 import sys
 from pathlib import Path
 
-sys.path.insert(0, r"D:\KangDH\EveryMotor\eMach\tools")
-sys.path.insert(0, r"D:\KangDH\EveryMotor\eMach\tools\motorCAD")  # pyMCAD
+sys.path.insert(0, os.path.abspath(os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), "..", "..",
+    "tools")))  # 이 체크아웃의 tools
+sys.path.insert(0, os.path.abspath(os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), "..", "..",
+    "tools", "motorCAD")))  # 이 체크아웃의 tools  # pyMCAD
 
 FIELDS = Path(r"D:\KangDH\EveryMotor\eMach\mlxperPJT\JEET"
               r"\map_exports\e10\fields")

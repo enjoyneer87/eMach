@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 """16k 앵커 3점의 배치 민감도 — 어떤 고정 좌표까지 허용되는가."""
 import os, sys
-sys.path.insert(0, r"D:\KangDH\EveryMotor\eMach\tools")
+sys.path.insert(0, os.path.abspath(os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), "..", "..",
+    "tools")))  # 이 체크아웃의 tools
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 import numpy as np

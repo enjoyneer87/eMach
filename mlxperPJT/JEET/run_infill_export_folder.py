@@ -18,11 +18,16 @@ FEA 결과 폴더만 만든다.
 """
 import argparse
 import shutil
+import os
 import sys
 from pathlib import Path
 
-sys.path.insert(0, r"D:\KangDH\EveryMotor\eMach\tools")
-sys.path.insert(0, r"D:\KangDH\EveryMotor\eMach\tools\motorCAD")
+sys.path.insert(0, os.path.abspath(os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), "..", "..",
+    "tools")))  # 이 체크아웃의 tools
+sys.path.insert(0, os.path.abspath(os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), "..", "..",
+    "tools", "motorCAD")))  # 이 체크아웃의 tools
 
 MOTS = {
     "SC": r"D:\KangDH\Thesis\e10\SLFEA\e10Turn6V261SLFEA.mot",

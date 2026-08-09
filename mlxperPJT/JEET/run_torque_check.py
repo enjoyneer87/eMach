@@ -15,7 +15,9 @@ import json
 import os
 import sys
 
-sys.path.insert(0, r"D:\KangDH\EveryMotor\eMach\tools")
+sys.path.insert(0, os.path.abspath(os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), "..", "..",
+    "tools")))  # 이 체크아웃의 tools
 
 MODELS = {
     "Ref": {"mot": r"D:\KangDH\Thesis\e10\refModel\e10Turn6V261.mot",

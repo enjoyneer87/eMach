@@ -1,7 +1,10 @@
 # -*- coding: utf-8 -*-
 """파이프라인 기준 모델별 데이터셋 점수 확인 (논문 74/82/89 대조)"""
+import os
 import sys, os
-sys.path.insert(0, r"D:\KangDH\EveryMotor\eMach\tools")
+sys.path.insert(0, os.path.abspath(os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), "..", "..", "..",
+    "tools")))  # 이 체크아웃의 tools
 
 import matplotlib
 matplotlib.use("Agg")

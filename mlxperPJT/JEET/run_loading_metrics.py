@@ -11,7 +11,9 @@ import json
 import os
 import sys
 
-sys.path.insert(0, r"D:\KangDH\EveryMotor\eMach\tools")
+sys.path.insert(0, os.path.abspath(os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), "..", "..",
+    "tools")))  # 이 체크아웃의 tools
 
 from jeet_acloss_rbf.field_metrics import (compare_models, read_mot,
                                            winding_losses, parse_mes_txt,

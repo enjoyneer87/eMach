@@ -22,7 +22,9 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 _DATA = os.environ.get('JEET_DATA_ROOT',
                        os.path.join(HERE, 'map_exports', 'e10'))
 
-sys.path.insert(0, r"D:\KangDH\EveryMotor\eMach\tools")
+sys.path.insert(0, os.path.abspath(os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), "..", "..",
+    "tools")))  # 이 체크아웃의 tools
 
 import matplotlib
 matplotlib.use("Agg")

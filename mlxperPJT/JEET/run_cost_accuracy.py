@@ -6,9 +6,12 @@
   python run_cost_accuracy.py [--seeds 6] [--out <json>]
 """
 import argparse
+import os
 import sys
 
-sys.path.insert(0, r"D:\KangDH\EveryMotor\eMach\tools")
+sys.path.insert(0, os.path.abspath(os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), "..", "..",
+    "tools")))  # 이 체크아웃의 tools
 
 import matplotlib
 matplotlib.use("Agg")

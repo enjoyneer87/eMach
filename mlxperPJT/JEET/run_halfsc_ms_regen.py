@@ -23,12 +23,17 @@ import argparse
 import gzip
 import json
 import shutil
+import os
 import sys
 import time
 from pathlib import Path
 
-sys.path.insert(0, r"D:\KangDH\EveryMotor\eMach\tools")
-sys.path.insert(0, r"D:\KangDH\EveryMotor\eMach\tools\motorCAD")
+sys.path.insert(0, os.path.abspath(os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), "..", "..",
+    "tools")))  # 이 체크아웃의 tools
+sys.path.insert(0, os.path.abspath(os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), "..", "..",
+    "tools", "motorCAD")))  # 이 체크아웃의 tools
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
