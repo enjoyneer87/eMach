@@ -34,7 +34,7 @@ LANES = [
 ]
 # (lane, row) -> (제목, 부제, 면색, 테두리색, 글자색)
 BOXES = {
-    (0, 0): ("Reference Model", "MS-FEA  ($k_r{=}1$)",
+    (0, 0): ("Reference Model", "MS-FEA ($k_r{=}1$), 30 pts",
              "white", "#333333", "#111111"),
     (0, 1): ("Extract Slot Field", "$B_r,\\ B_\\theta$ homogenization",
              "white", "#333333", "#111111"),
