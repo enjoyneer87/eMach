@@ -13,6 +13,7 @@
 
   python run_af_transfer_fig.py
 """
+import argparse
 import contextlib
 import io
 import os
@@ -67,7 +68,62 @@ def build(pl, scale):
     return ds, m, set(int(i) for i in np.asarray(idx).ravel())
 
 
+def main_3d(pl, plt, built):
+    """같은 데이터의 3-D 판. 평면판과 나란히 놓고 고르기 위한 것."""
+    fig = plt.figure(figsize=(7.1, 3.9), layout='constrained')
+    vmin = min(built[s][0].af_arr.min() for s, _ in ROWS)
+    vmax = max(built[s][0].af_arr.max() for s, _ in ROWS)
+    from matplotlib import cm
+    from matplotlib.colors import Normalize
+    norm = Normalize(vmin, vmax)
+
+    for r, (scale, _k) in enumerate(ROWS):
+        ds, m, tr = built[scale]
+        for c, spd in enumerate(SPEEDS):
+            ax = fig.add_subplot(len(ROWS), len(SPEEDS),
+                                 r * len(SPEEDS) + c + 1, projection='3d')
+            sel = np.abs(np.asarray(ds.speeds_k) - spd) < 0.1
+            cand = np.where(sel)[0]
+            ii = np.asarray(ds.irms_arr)[cand]
+            pp = np.asarray(ds.phase_arr)[cand]
+            gi = np.linspace(ii.min(), ii.max(), 40)
+            gp = np.linspace(pp.min(), pp.max(), 40)
+            GI, GP = np.meshgrid(gi, gp)
+            Z = np.asarray(m.predict(np.full(GI.size, spd * 1000.0),
+                                     GI.ravel(), GP.ravel()),
+                           float).reshape(GI.shape)
+            X, Y = dq(GI, GP)
+            ax.plot_surface(X, Y, Z, facecolors=cm.viridis(norm(Z)),
+                            rstride=1, cstride=1, linewidth=0,
+                            antialiased=True, shade=False, alpha=0.9)
+            tsel = sorted(tr & set(cand.tolist()))
+            if tsel:
+                xt, yt = dq(np.asarray(ds.irms_arr)[tsel],
+                            np.asarray(ds.phase_arr)[tsel])
+                ax.scatter(xt, yt, np.asarray(ds.af_arr)[tsel],
+                           s=13, c='#e65100', edgecolors='#3b1a00',
+                           linewidths=0.4, depthshade=False, zorder=6)
+            ax.set_zlim(vmin, vmax)
+            ax.view_init(elev=22, azim=-58)
+            ax.tick_params(labelsize=5.2, pad=-2)
+            ax.set_title('%g kRPM' % spd if r == 0 else '',
+                         fontsize=8.0, pad=-4)
+            if c == 0:
+                ax.set_zlabel('%s   $AF$' % scale, fontsize=7.0, labelpad=-6)
+            ax.set_xlabel('$i_d$', fontsize=6.6, labelpad=-8)
+            ax.set_ylabel('$i_q$', fontsize=6.6, labelpad=-8)
+
+    out = os.path.join(_FIGDIR, 'af_transfer_map_3d')
+    fig.savefig(out + '.pdf')
+    fig.savefig(out + '.png', dpi=220)
+    plt.close(fig)
+    print('저장:', out + '.pdf')
+
+
 def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument('--mode', default='both', choices=('flat', '3d', 'both'))
+    args = ap.parse_args()
     pl = AcLossPipeline()
     pl.cfg['plan']['HalfSC']['seed'] = 3
     plt = _journal_rc()
@@ -80,6 +136,11 @@ def main():
         per = {s: sum(1 for i in tr
                       if abs(ds.speeds_k[i] - s) < 0.1) for s in SPEEDS}
         print("%-4s 학습점 %2d  속도별 %s" % (scale, len(tr), per))
+
+    if args.mode in ('3d', 'both'):
+        main_3d(pl, plt, built)
+    if args.mode == '3d':
+        return
 
     fig, axes = plt.subplots(len(ROWS), len(SPEEDS),
                              figsize=(7.1, 3.6), layout='constrained')
