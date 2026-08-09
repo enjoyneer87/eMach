@@ -38,6 +38,8 @@ ROWS = (("Ref", 1.0), ("SC", 2.0))
 # 상사 사상: 기증자 속도 w 는 변형체에서 w / k_r^2 에 대응한다 (k_r = 2 -> /4).
 TRANSFER = ((8.0, 2.0), (16.0, 4.0))
 PAIR_COLOR = {8.0: '#2c6fad', 16.0: '#7b1fa2'}
+SPD_COLOR = {2.0: '#8d6e63', 4.0: '#00897b',
+             8.0: '#2c6fad', 16.0: '#7b1fa2'}
 
 
 def dq(irms, phase_deg):
@@ -91,11 +93,13 @@ def main_hybrid(pl, plt, built):
     FW = 7.1
     ML, MR, MT, MB = 0.56, 0.78, 0.30, 0.44   # 여백
     HG, VG = 0.20, 0.50                        # 열 간격, 행 간격(화살표 자리)
-    NC, NR = len(SPEEDS), len(ROWS)
+    NC, NR = len(SPEEDS) + 1, len(ROWS)   # 마지막 열은 로그 회귀
     PW = (FW - ML - MR - HG * (NC - 1)) / NC
     PH = PW                                    # 정사각
     FH = MT + PH * NR + VG * (NR - 1) + MB
-    INF = dict(dx=-0.09, dy=-0.20, dw=0.18, dh=0.26)   # 3-D 칸 확대(인치)
+    # dx = -dw 로 두면 3-D 칸의 오른쪽 끝이 열 경계와 정확히 맞아
+    # 옆 회귀 패널의 y 라벨을 침범하지 않는다.
+    INF = dict(dx=-0.07, dy=-0.16, dw=0.07, dh=0.22)
 
     def rect(r, c, is3d):
         x = ML + c * (PW + HG)
@@ -152,6 +156,9 @@ def main_hybrid(pl, plt, built):
                 ax.set_xticks([-t for t in ticks][::-1])
                 ax.set_yticks(ticks)
                 ax.zaxis.set_major_locator(MaxNLocator(3))
+                # z 눈금 라벨은 지운다. 컬러바가 같은 축척으로 AF 를
+                # 이미 주고, 옆 회귀 패널의 y 라벨과 부딪혔다.
+                ax.set_zticklabels([])
                 ax.view_init(elev=22, azim=-62)
                 ax.set_box_aspect((1.0, 1.0, 0.68), zoom=0.96)
                 ax.tick_params(labelsize=5.2, pad=-3)
@@ -195,11 +202,56 @@ def main_hybrid(pl, plt, built):
                         sp.set_color(hue)
                         sp.set_linewidth(1.6)
 
+        # ---- 5번째 열: 로그 공간 회귀 --------------------------------
+        axr = fig.add_axes(rect(r, len(SPEEDS), False))
+        for spd in SPEEDS:
+            sel = np.abs(np.asarray(ds.speeds_k) - spd) < 0.1
+            cand = np.where(sel)[0]
+            kap = np.asarray(m.predict_g(np.asarray(ds.irms_arr)[cand],
+                                         np.asarray(ds.phase_arr)[cand]),
+                             float)
+            kap = np.clip(kap, 1e-3, None)
+            lk = np.log10(kap)
+            f_s = float(np.polyval(m.p_coeffs, spd))
+            p_s = (1.0 if m.q_coeffs is None
+                   else float(np.polyval(m.q_coeffs, spd)))
+            xs = np.linspace(lk.min(), lk.max(), 20)
+            axr.plot(xs, np.log10(max(f_s, 1e-6)) + p_s * xs,
+                     '-', lw=1.1, color=SPD_COLOR[spd], zorder=3)
+            tsel = sorted(tr & set(cand.tolist()))
+            if tsel:
+                kt = np.clip(np.asarray(
+                    m.predict_g(np.asarray(ds.irms_arr)[tsel],
+                                np.asarray(ds.phase_arr)[tsel]), float),
+                    1e-3, None)
+                axr.plot(np.log10(kt),
+                         np.log10(np.asarray(ds.af_arr)[tsel]),
+                         'o', ms=3.4, mfc=SPD_COLOR[spd], mec='#222222',
+                         mew=0.4, ls='none', zorder=5)
+        if r == 0:
+            # 열 제목 색이 이미 키를 주지만, 회귀 패널만 떼어 보는 독자를
+            # 위해 윗줄에 한 번 범례를 단다 (데이터가 없는 좌상단).
+            from matplotlib.lines import Line2D
+            axr.legend(handles=[Line2D([], [], color=SPD_COLOR[v], lw=1.2,
+                                       label='%g kRPM' % v)
+                                for v in SPEEDS],
+                       fontsize=5.0, loc='upper left', frameon=False,
+                       handlelength=1.0, handletextpad=0.4,
+                       labelspacing=0.18, borderpad=0.1)
+        axr.tick_params(labelsize=6.2)
+        axr.set_xlabel(r'$\log_{10}\kappa$', fontsize=7.2, labelpad=1)
+        axr.set_ylabel(r'$\log_{10} AF$', fontsize=7.2, labelpad=1)
+        axr.grid(True, ls=':', lw=0.4, color='#dddddd')
+        axr.set_axisbelow(True)
+
     for c, spd in enumerate(SPEEDS):
         fig.text((ML + c * (PW + HG) + PW / 2) / FW,
                  (FH - MT + 0.06) / FH, '%g kRPM' % spd,
                  ha='center', va='bottom', fontsize=8.6,
-                 color=PAIR_COLOR.get(spd, '#111111'))
+                 color=SPD_COLOR[spd])
+    fig.text((ML + len(SPEEDS) * (PW + HG) + PW / 2) / FW,
+             (FH - MT + 0.06) / FH, 'log-space fit',
+             ha='center', va='bottom', fontsize=8.6, color='#111111')
 
     # 직선 화살표. 두 쌍 모두 두 열 왼쪽으로 가므로 서로 평행하다.
     for src, dst in TRANSFER:
