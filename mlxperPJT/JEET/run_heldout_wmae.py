@@ -60,11 +60,25 @@ def train_mask_for(scale: str):
                 picks.append(arr.ravel())
             return out
 
+    # 결정론 배치는 RNG 를 거치지 않는다. 자체 모델·전달 모델 모두
+    # _maximin_indices 를 지나므로 그 반환값을 기록해 학습점을 잡는다.
+    from jeet_acloss_rbf.RbfModelBuilder import RbfModelBuilder as _R
+    orig_mm = _R._maximin_indices
+
+    def rec_mm(cand, x, y, k):
+        out = orig_mm(cand, x, y, k)
+        arr = np.asarray(out)
+        if arr.dtype.kind in "iu":
+            picks.append(arr.ravel())
+        return out
+
     np.random.RandomState = RecRS
+    _R._maximin_indices = staticmethod(rec_mm)
     try:
         model = pl.build_model(scale, seed=use_seed)
     finally:
         np.random.RandomState = orig_rs
+        _R._maximin_indices = staticmethod(orig_mm)
 
     ds = pl.load_dataset(scale)
     n = len(ds)
@@ -81,10 +95,14 @@ def train_mask_for(scale: str):
             mask[k] = True
     n_base_matched = int(mask.sum())
 
-    # (b) 기록된 choice 인덱스 (범위 내 값만)
+    # (b) 빌더가 남긴 '자체 진리값을 쓴 학습점' 인덱스.
+    #     결정론 배치의 kappa-스팬은 순위 분위수 선택이라 RNG 를 거치지
+    #     않으므로, RNG 기록만으로는 나머지 속도의 학습점을 놓친다.
     n_rec = 0
-    for arr in picks:
-        for v in arr:
+    rec = getattr(_R, "last_train_idx", None)
+    src = [np.asarray(rec)] if rec is not None else picks
+    for arr in src:
+        for v in np.asarray(arr).ravel():
             if 0 <= v < n:
                 if not mask[v]:
                     n_rec += 1
@@ -119,7 +137,7 @@ def main() -> int:
             "n_points": int(len(ds)),
             "n_train_identified": int(mask.sum()),
             "n_train_base_coord": n_b,
-            "n_train_rng_recorded": n_r,
+            "n_train_other_speed": n_r,
             "n_heldout": int((~mask).sum()),
             "wmae_full_pct": round(full, 3),
             "wmae_heldout_pct": round(held, 3),

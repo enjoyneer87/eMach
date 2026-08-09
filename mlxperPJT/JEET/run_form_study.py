@@ -6,9 +6,12 @@
   python run_form_study.py [--seeds 10] [--out <json>]
 """
 import argparse
+import os
 import sys
 
-sys.path.insert(0, r"D:\KangDH\EveryMotor\eMach\tools")
+sys.path.insert(0, os.path.abspath(os.path.join(
+    os.path.dirname(os.path.abspath(__file__)),
+    "..", "..", "tools")))   # 워크트리의 tools 를 쓴다
 
 import matplotlib
 matplotlib.use("Agg")

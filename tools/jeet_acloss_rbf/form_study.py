@@ -24,7 +24,8 @@ import numpy as np
 
 __all__ = ["operating_beta_band", "region_mask", "run_form_study"]
 
-_DEFAULT_BUDGET = {"Ref": 34, "HalfSC": 27, "SC": 27}
+# Ref 36 = n_base 24 + 4x3. AF 밴드 해제로 앵커 후보가 24가 되었다.
+_DEFAULT_BUDGET = {"Ref": 36, "HalfSC": 27, "SC": 27}
 _DEFAULT_NS_OWN = {"Ref": 4, "HalfSC": 3, "SC": 3}
 _PLACEMENTS = ("random", "structured")
 _EFFMAP = (r"D:\KangDH\EveryMotor\eMach\mlxperPJT\JEET"

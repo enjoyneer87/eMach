@@ -580,7 +580,7 @@ def plot_form_convergence(pipeline, out_path: str,
 
     Seminar-3: the swept grid is evenly spaced and the x ticks are exactly
     the evaluated counts (marker = actual run); the adopted base-kernel
-    size (Ref 22 / variants 24) is starred on the exponent curve under the
+    size (24 for all three) is starred on the exponent curve under the
     same own-sampling protocol.
     """
     import contextlib
@@ -594,7 +594,7 @@ def plot_form_convergence(pipeline, out_path: str,
         n_seeds = 1
     ns_by = n_spd_by_scale or {'Ref': 4, 'HalfSC': 3, 'SC': 4}
     kr_by = {'Ref': 1.0, 'HalfSC': 1.5, 'SC': 2.0}
-    adopted_by = adopted_by_scale or {'Ref': 22, 'HalfSC': 24, 'SC': 24}
+    adopted_by = adopted_by_scale or {'Ref': 24, 'HalfSC': 24, 'SC': 24}
     base_speed = pipeline.cfg['base_speed']
 
     # 캔버스 폭 = 논문에서의 인쇄 폭(0.31*textwidth = 2.12 in). 배율 1이

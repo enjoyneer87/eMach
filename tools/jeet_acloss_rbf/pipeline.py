@@ -60,10 +60,14 @@ DEFAULT_CONFIG = {
     # sampling plan: mode 'own' (donor) or 'transfer' (similarity);
     # seeds are the representative draws (wMAE closest to the 10-seed mean)
     'plan': {
-        'Ref':    {'mode': 'own',      'n_base': 22, 'n_spd': 4, 'seed': 9},
+        'Ref':    {'mode': 'own',      'n_base': 24, 'n_spd': 4, 'seed': 9},
         'HalfSC': {'mode': 'transfer', 'n_base': 24, 'n_spd': 3, 'seed': 9},
         'SC':     {'mode': 'transfer', 'n_base': 24, 'n_spd': 3, 'seed': 6},
     },
+    # AF 허용 밴드 해제 (저자 결정): 이상점을 포함해 전량을 쓴다.
+    # I_rms >= 50 은 유지 --- 무부하는 kappa 의 좌표계 밖이다.
+    'af_min': 0.0,
+    'af_max': float('inf'),
     'donor_scale': 'Ref',
     'n_probe_transfer': 6,       # donor probes per transferred speed (free)
     'n_seeds_pick': 10,          # seeds scanned when seed is None
@@ -93,6 +97,8 @@ class AcLossPipeline:
             self._datasets[scale] = \
                 RbfModelBuilder.match_records_and_create_dataset(
                     records,
+                    af_min=self.cfg.get('af_min', 0.3),
+                    af_max=self.cfg.get('af_max', 3.0),
                     exclude_points=self.cfg['exclude'].get(scale))
         return self._datasets[scale]
 
@@ -181,16 +187,23 @@ class AcLossPipeline:
         ds = self.load_dataset(scale)
         expo = (bool(self.cfg.get('exponent', False))
                 if exponent is None else bool(exponent))
+        # 표본 좌표는 결정론 규칙으로 확정한다 (앵커 maximin + kappa-스팬).
+        # 앵커 속도는 n_base = 허용 후보 전량이라 seed 와 무관하지만,
+        # 나머지 속도는 seed 경로가 무작위 추출이어서 서술과 어긋났다.
         if plan['mode'] == 'own':
-            return AcLossEvaluator.rebuild_sep_model_with_subsampling(
-                ds, plan['n_base'], plan['n_spd'], seed,
-                base_speed=self.cfg['base_speed'], exponent=expo)
+            index_plan = RbfModelBuilder.plan_sampling_indices(
+                ds, n_base=plan['n_base'], n_spd=plan['n_spd'],
+                base_speed=self.cfg['base_speed'],
+                placement='structured', seed=seed)
+            return RbfModelBuilder.build_separable_rbf(
+                ds, base_speed=self.cfg['base_speed'], exponent=expo,
+                index_plan=index_plan)
         return RbfModelBuilder.build_separable_rbf_transfer(
             ds, self.build_donor(), self.cfg['k_r'][scale],
             plan['n_base'], plan['n_spd'], seed,
             base_speed=self.cfg['base_speed'],
             n_probe_transfer=self.cfg['n_probe_transfer'],
-            exponent=expo)
+            exponent=expo, placement='structured')
 
     def pick_representative_seed(self, scale: str) -> int:
         """Seed in [0, n_seeds_pick) whose wMAE is closest to the mean."""

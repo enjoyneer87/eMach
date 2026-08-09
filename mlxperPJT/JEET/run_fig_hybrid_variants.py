@@ -32,6 +32,12 @@ _DATA = os.environ.get("JEET_DATA_ROOT",
 REF = os.path.join(_DATA, "Ref")
 SRC = os.path.join(REF, "line_sampled_hybrid_Ref_80C.json")
 SRC_TS = os.path.join(REF, "meshb_hybrid_losses_Ref.json")
+# 2-D 자기 확산 BVP (식 (4)). bvp_ac_W 는 이미 AC 전량이므로
+# 다른 계열과 달리 공통 표피를 더하지 않는다.
+SRC_BVP = os.path.join(REF, "bvp_denominator_Ref.json")
+BVP_STYLE = dict(color="#111111", ls="-.", marker="D", ms=2.8,
+                 lw=1.1, zorder=3,
+                 label="2-D frequency-domain BVP")
 OUT = os.path.join(_FIGDIR, 'hybrid_variants_compare.pdf')
 # 속도 패널 (b=36deg 고정, 2/4/8/16k) — subfloat (a) 용 별도 PDF
 SRC_SPD = os.path.join(os.path.dirname(REF), 'Ref_spdsweep',
@@ -74,8 +80,25 @@ SERIES = [  # (key, label, color, style, marker)
 ]
 
 
+def _bvp_rows():
+    if not os.path.exists(SRC_BVP):
+        return None
+    return json.load(open(SRC_BVP, encoding="utf-8"))["rows"]
+
+
+def _bvp_at(br, spd, cur, ph):
+    """2-D BVP 의 AC 전량 [kW]. 없으면 nan."""
+    if br is None:
+        return float("nan")
+    m = [r for r in br if int(r["speed_rpm"]) == int(spd)
+         and abs(r["current_A"] - cur) < 0.5
+         and abs(r["phase_deg"] - ph) < 0.5]
+    return float(m[0]["bvp_ac_W"]) / 1e3 if m else float("nan")
+
+
 def main() -> int:
     rows = json.load(open(SRC, encoding="utf-8"))["rows"]
+    brows = _bvp_rows()
     mb = json.load(open(SRC_TS, encoding="utf-8"))
     if isinstance(mb, dict):
         mb = mb.get("records", mb.get("rows"))
@@ -108,6 +131,13 @@ def main() -> int:
         ax.plot(beta, y, ls, color=col, marker=mk, ms=3.0, label=lbl,
                 zorder=2)
         print("  %-26s %s" % (key, np.round(y, 2)))
+    y_bvp = np.array([_bvp_at(brows, SPD, cur, b) for b in beta])
+    if not np.all(np.isnan(y_bvp)):
+        ax.plot(beta, y_bvp, **BVP_STYLE)
+        print("  %-26s %s" % ("bvp_ac (2-D)", np.round(y_bvp, 2)))
+        print("  %-26s %.2f~%.2f"
+              % ("함의 AF (2-D BVP)", (ts / y_bvp).min(),
+                 (ts / y_bvp).max()))
     ax.set_xlabel(r"Current phase angle $\beta$ [deg]")
     ax.set_ylabel("Machine AC winding loss [kW]")
     ax.set_xticks(beta)
@@ -158,6 +188,10 @@ def main() -> int:
         for key, lbl, col, ls, mk in SERIES:
             y = np.array([r.get(key) or np.nan for r in rs]) / 1e3 + sk2
             ax2.plot(xs, y, ls, color=col, marker=mk, ms=3.0, zorder=2)
+        yb2 = np.array([_bvp_at(brows, s_, cur, BETA_FIX)
+                        for s_ in spds])
+        if not np.all(np.isnan(yb2)):
+            ax2.plot(xs, yb2, **BVP_STYLE)
         ax2.set_xscale("log")
         ax2.set_yscale("log")
         ax2.set_xticks([2, 4, 8, 16])

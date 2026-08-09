@@ -6,6 +6,10 @@ from .RbfModel3D import RbfModel3D
 from .SeparableRbfModel import SeparableRbfModel
 
 class RbfModelBuilder:
+    #: 마지막 빌드에서 '자체 진리값'을 쓴 데이터셋 인덱스.
+    #: held-out 판정이 이걸 읽는다 (결정론 배치는 RNG 기록이 없다).
+    last_train_idx = None
+
     @staticmethod
     def match_records_and_create_dataset(
         records: List[Dict],
@@ -392,7 +396,10 @@ class RbfModelBuilder:
 
         samples_by_speed: Dict[float, List[Tuple[float, float]]] = {}
 
+        _tr = [int(v) for v in np.asarray(selected_base_idx).ravel()]
+
         def admit(spd, idx):
+            _tr.append(int(idx))
             I_val = irms_arr[idx]
             th_val = phase_arr[idx]
             af_actual = af_arr[idx]
@@ -434,6 +441,8 @@ class RbfModelBuilder:
                 for idx in rng.choice(spd_idx, n_sel, replace=False):
                     admit(spd, idx)
 
+        RbfModelBuilder.last_train_idx = np.unique(
+            np.asarray(_tr, dtype=int))
         p_coeffs, q_coeffs = RbfModelBuilder._fit_speed_scaling(
             samples_by_speed, base_speed, exponent)
 
@@ -484,6 +493,7 @@ class RbfModelBuilder:
 
         rng = np.random.RandomState(seed)
 
+        _trt = []
         # 2D kernel at the scaled model's own base speed
         base_idx = np.where(np.abs(speeds_k - base_speed) < 0.1)[0]
         if placement == "structured":
@@ -535,6 +545,8 @@ class RbfModelBuilder:
             else:
                 pick = rng.choice(grp, min(n_pick, len(grp)), replace=False)
             for idx in pick:
+                if not transferable:
+                    _trt.append(int(idx))
                 I_val, th_val = irms_arr[idx], phase_arr[idx]
                 if transferable:
                     # AF from the donor model via similarity mapping
@@ -548,6 +560,9 @@ class RbfModelBuilder:
                     samples_by_speed.setdefault(spd, []).append(
                         (float(af_val), g_val))
 
+        RbfModelBuilder.last_train_idx = np.unique(
+            np.concatenate([np.asarray(bsel, dtype=int).ravel(),
+                            np.asarray(_trt, dtype=int)]))
         p_coeffs, q_coeffs = RbfModelBuilder._fit_speed_scaling(
             samples_by_speed, base_speed, exponent, verbose=False)
 
