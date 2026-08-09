@@ -244,13 +244,17 @@ def main_hybrid(pl, plt, built):
         axr.grid(True, ls=':', lw=0.4, color='#dddddd')
         axr.set_axisbelow(True)
 
+    # 각주 마커는 앞에 위첨자로. mathtext 에 \ddagger 가 없어 두 번째
+    # 기호는 \S 를 쓰고, tex 쪽 각주 기호도 같은 것으로 맞춘다.
+    NOTE = {16.0: r'${}^{\dagger}$'}
     for c, spd in enumerate(SPEEDS):
         fig.text((ML + c * (PW + HG) + PW / 2) / FW,
-                 (FH - MT + 0.06) / FH, '%g kRPM' % spd,
+                 (FH - MT + 0.06) / FH,
+                 '%s%g kRPM' % (NOTE.get(spd, ''), spd),
                  ha='center', va='bottom', fontsize=8.6,
                  color=SPD_COLOR[spd])
     fig.text((ML + len(SPEEDS) * (PW + HG) + PW / 2) / FW,
-             (FH - MT + 0.06) / FH, 'log-space fit',
+             (FH - MT + 0.06) / FH, r'${}^{\S}$log-space fit',
              ha='center', va='bottom', fontsize=8.6, color='#111111')
 
     # 직선 화살표. 두 쌍 모두 두 열 왼쪽으로 가므로 서로 평행하다.
