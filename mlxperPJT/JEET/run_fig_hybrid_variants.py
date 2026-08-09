@@ -33,6 +33,11 @@ REF = os.path.join(_DATA, "Ref")
 SRC = os.path.join(REF, "line_sampled_hybrid_Ref_80C.json")
 SRC_TS = os.path.join(REF, "meshb_hybrid_losses_Ref.json")
 OUT = os.path.join(_FIGDIR, 'hybrid_variants_compare.pdf')
+# 속도 패널 (b=36deg 고정, 2/4/8/16k) — subfloat (a) 용 별도 PDF
+SRC_SPD = os.path.join(os.path.dirname(REF), 'Ref_spdsweep',
+                       'line_sampled_hybrid_Ref_spdsweep_80C.json')
+OUT_SPD = os.path.join(_FIGDIR, 'hybrid_variants_speed.pdf')
+BETA_FIX = 36.0
 SPD = 16000
 
 plt.rcParams.update({
@@ -128,6 +133,48 @@ def main() -> int:
         af = ts / tot[key]
         print("  %-26s %.2f~%.2f  (스윙 %.1f배)"
               % (key, af.min(), af.max(), af.max() / af.min()))
+
+    # ── (a) 속도 패널: b=36deg 고정, 변형별 총량 vs 속도 ────────────────
+    if os.path.exists(SRC_SPD):
+        rs = json.load(open(SRC_SPD, encoding="utf-8"))["rows"]
+        rs = [r for r in rs if abs(r["phase_deg"] - BETA_FIX) < 0.5
+              and abs(r["current_A"] - cur) < 1e-6]
+        rs.sort(key=lambda r: r["speed_rpm"])
+        spds = [r["speed_rpm"] for r in rs]
+
+        def g2(spd, key):
+            m = [x for x in mb if int(x["speed_rpm"]) == spd
+                 and abs(x["current_A"] - cur) < 0.5
+                 and abs(x["phase_deg"] - BETA_FIX) < 0.5]
+            return float(m[0][key]) if m else np.nan
+
+        sk2 = np.array([g2(s_, "mcad_skin_W") for s_ in spds]) / 1e3
+        ts2 = np.array([g2(s_, "ts_ac_W") for s_ in spds]) / 1e3
+        xs = np.array(spds) / 1000.0
+
+        fig2, ax2 = plt.subplots(figsize=(3.5, 2.6))
+        ax2.plot(xs, ts2, "-", color="#888888", lw=2.6, alpha=0.55,
+                 zorder=1, label="TS-FEA (truth)")
+        for key, lbl, col, ls, mk in SERIES:
+            y = np.array([r.get(key) or np.nan for r in rs]) / 1e3 + sk2
+            ax2.plot(xs, y, ls, color=col, marker=mk, ms=3.0, zorder=2)
+        ax2.set_xscale("log")
+        ax2.set_yscale("log")
+        ax2.set_xticks([2, 4, 8, 16])
+        ax2.set_xticklabels(["2", "4", "8", "16"])
+        ax2.minorticks_off()
+        ax2.set_xlabel("Speed [kRPM]")
+        ax2.set_ylabel("Machine AC winding loss [kW]")
+        ax2.yaxis.grid(True, linestyle=":", linewidth=0.45, color="#cccccc")
+        ax2.set_axisbelow(True)
+        ax2.spines["top"].set_visible(False)
+        ax2.spines["right"].set_visible(False)
+        fig2.savefig(OUT_SPD)
+        plt.close(fig2)
+        print("저장:", OUT_SPD)
+    else:
+        print("(속도 스윕 JSON 없음 — (a) 패널 생략:", SRC_SPD, ")")
+
     return 0
 
 
