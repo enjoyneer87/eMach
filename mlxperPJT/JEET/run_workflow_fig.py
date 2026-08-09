@@ -4,6 +4,8 @@
 변경점 (세미나3 그림 단계):
   - 우하단 성능 수치 갱신: wMAE 0.6--1.2% -> 0.5--1.2% (헤드라인 B-통일 정합, 2026-07-30)
   - 우하단 성능 수치 재갱신: 0.5--1.2% -> 1.1--1.3% (단일 경로·전 부하점 96 기준, 2026-08-02)
+  - 2026-08-09: AF 밴드 삭제·결정론 배치 반영. TS-FEA -> Full-FEA (본문 용어 통일),
+    Ref 34 -> 36 pts, wMAE 1.1--1.3% -> 0.6--0.8%. 그림이 본문과 어긋나 있었다.
   - 'Proposed' 라벨 통일: 방법 박스 "Proposed: Exponent Separable RBF"
   - 캡션 규칙: 그림 내부 텍스트는 박스 라벨(다이어그램 고유 요소)만.
 
@@ -44,8 +46,8 @@ BOXES = {
              "#dbe8f7", "#2c6fad", "#153a5e"),
     (1, 2): ("Baseline Scaled", "AC winding-loss map",
              "#dbe8f7", "#2c6fad", "#153a5e"),
-    (2, 0): ("Sparse TS-FEA Sampling",
-             "Ref donor: full band, 34 pts\nvariants: high band only,"
+    (2, 0): ("Sparse Full-FEA Sampling",
+             "Ref donor: full band, 36 pts\nvariants: high band only,"
              " 24$+$3 pts",
              "#f6ecf9", "#8e4ba8", "#4d2461"),
     (2, 1): ("Proposed:\nExponent Separable RBF",
@@ -53,7 +55,7 @@ BOXES = {
              " kernel @ $\\omega_{max}$",
              "#e65100", "#a03800", "white"),
     (2, 2): ("Calibrated AC Loss\n& Efficiency Map",
-             "wMAE 1.1–1.3%",
+             "wMAE 0.6–0.8%",
              "#2e7d32", "#1b4d1e", "white"),
 }
 
