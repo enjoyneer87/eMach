@@ -1,0 +1,27 @@
+[
+ {
+  "proximity_model": 3,
+  "mode": "FullFEA",
+  "speed": 16000.0,
+  "current": 14.4,
+  "phase": 0.0,
+  "backup_dir": "D:\\KangDH\\Thesis\\e10\\ACLossCalcExport_Ref_no_txt\\FullFEA_Speed_16000RPM_14.4A_0.0deg",
+  "fea_per_turn_raw": "33.9352505371307 : 13.6980703033358 : 9.36992907849642 : 7.15357750489034 : 5.84997637348614 : 5.22748741984184",
+  "fea_per_turn_sum_kW": 0.07523429121718124,
+  "fea_total_ac_kW": 0.04445168416349,
+  "ts_dc_active_kW": 0.030782607053691263,
+  "ts_dc_end_kW": 0.018089568313230116,
+  "ts_ac_active_only_kW": 0.04445168416348998
+ },
+ {
+  "proximity_model": 1,
+  "mode": "Hybrid",
+  "speed": 16000.0,
+  "current": 14.4,
+  "phase": 0.0,
+  "backup_dir": "D:\\KangDH\\Thesis\\e10\\ACLossCalcExport_Ref_no_txt\\Hybrid_Speed_16000RPM_14.4A_0.0deg",
+  "hybrid_total_kW": 0.033748809322445505,
+  "hybrid_prox_kW": 0.0323692524947153,
+  "hybrid_skin_kW": 0.00137955682773024
+ }
+]
