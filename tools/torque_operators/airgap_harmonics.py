@@ -67,9 +67,15 @@ def harmonic_residual(phi: np.ndarray, values: np.ndarray,
     d = _design(np.asarray(phi, float), orders)
     v = np.asarray(values, dtype=np.float64)
     coef, *_ = np.linalg.lstsq(d, v, rcond=None)
-    resid = v - d @ coef
+    fit = d @ coef
+    resid = v - fit
     return {
         "coefficients": coef,
+        # The reconstruction is returned so callers can score it as a PREDICTOR
+        # against the truth field, in whatever metric their gate uses. A residual
+        # norm and a pooled nRMSE of |B| are not the same statistic, and only the
+        # latter is comparable to a benchmark number.
+        "reconstruction": fit,
         "residual_pct": float(100.0 * np.linalg.norm(resid) / np.linalg.norm(v)),
         "n_params": int(d.shape[1]),
     }
