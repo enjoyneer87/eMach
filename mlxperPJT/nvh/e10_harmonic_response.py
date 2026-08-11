@@ -34,6 +34,9 @@ LOAD_POINT = int(os.environ.get("MF_LOADPOINT", "4"))   # 15000rpm
 N_MODES = 40
 FREQ_MAX = 9000.0
 N_ORDERS = 3                    # 상위 힘 온도차수 몇 개를 해석할지
+# ORDERS="10,12" 지정 시 자동선정 대신 그 차수만 해석. MERGE=1 이면 기존 npz 에 병합.
+ORDERS_ENV = os.environ.get("ORDERS", "")
+MERGE = os.environ.get("MERGE", "0") == "1"
 R_BORE = 0.0713
 R_OD = 0.0990
 RT = 1.0e-3
@@ -70,7 +73,10 @@ def tooth_force_harmonics():
         hk[k] = np.stack([2 * FXk[:, k], 2 * FYk[:, k]], axis=1)   # (48,2) complex
     # 차수별 세기
     strength = {k: float(np.abs(v).sum()) for k, v in hk.items()}
-    top = sorted(strength, key=strength.get, reverse=True)[:N_ORDERS]
+    if ORDERS_ENV:
+        top = [int(x) for x in ORDERS_ENV.split(",")]
+    else:
+        top = sorted(strength, key=strength.get, reverse=True)[:N_ORDERS]
     P("force temporal orders (top10):",
       {k: round(strength[k], 1) for k in sorted(strength, key=strength.get, reverse=True)[:10]})
     P("selected orders:", top, " f_elec=", f_elec, "Hz → freqs=",
@@ -207,10 +213,18 @@ def main():
             P(f"  k={k}: OD nodes={len(nn)}, max|Uxy|={amp:.3e} m")
             mapdl.finish()
 
-        # ---- 저장 ---------------------------------------------------------
+        # ---- 저장 (MERGE=1 이면 기존 npz 에 새 차수 병합) ------------------
         os.makedirs(os.path.dirname(OUT_NPZ), exist_ok=True)
-        save = {"freqs_modal": np.array(freqs), "orders": np.array(orders),
-                "f_elec": f_elec, "rpm": rpm}
+        save = {}
+        if MERGE and os.path.exists(OUT_NPZ):
+            old = np.load(OUT_NPZ)
+            save.update({k: old[k] for k in old.files})
+            all_orders = sorted(set(int(x) for x in old["orders"]) | set(orders))
+            P("merge: existing orders", list(old["orders"]), "+", orders)
+        else:
+            all_orders = orders
+        save.update({"freqs_modal": np.array(freqs), "orders": np.array(all_orders),
+                     "f_elec": f_elec, "rpm": rpm})
         for k, r in results.items():
             save[f"k{k}_freq"] = r["freq"]
             save[f"k{k}_nnum"] = r["nnum"]
