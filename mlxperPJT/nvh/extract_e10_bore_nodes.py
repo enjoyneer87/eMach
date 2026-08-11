@@ -20,7 +20,7 @@ M_ST, M_MG, M_CO, M_SH, M_RO = 1, 2, 3, 4, 5
 R_STA_OUT, R_STA_IN = 0.0990, 0.0713
 R_ROT_OUT = 0.07027             # 로터 OD(Maxwell 2D)
 Z_ST0, Z_ST1 = -0.2075, -0.0575
-RT = 1.2e-3                      # 반경밴드(보어 표면 1층 tet10 포함 위해 약간 넉넉)
+RT = 8e-4                        # 반경밴드. EXT(외표면) 필터와 함께 써야 표면만 잡힌다.
 OUTDIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
 LOG = os.path.join(os.environ.get("SP", tempfile.gettempdir()), "e10_bore_extract.txt")
 log = open(LOG, "w", encoding="utf-8")
@@ -38,18 +38,26 @@ def sel_node_coords(mapdl):
     return ids, xyz
 
 
-def pick_ring(mapdl, mat, r_lo, r_hi, z_lo=None, z_hi=None, tag=""):
+def pick_ring(mapdl, mat, r_lo, r_hi, z_lo=None, z_hi=None, tag="", ext=True):
+    """재료 mat 의 절점 중 반경/축 밴드에 드는 것. ext=True 면 **외표면 절점만**.
+
+    ⚠️ ext 를 빼면 반경밴드 두께만큼의 **체적 절점**이 딸려온다(e10 보어의 경우
+    48,439 중 진짜 보어면은 9,071뿐, 나머지는 치 내부). 표면 하중을 실을 때는
+    반드시 ext=True.
+    """
     mapdl.allsel()
     mapdl.esel("S", "MAT", "", mat)
     ne = mapdl.mesh.n_elem
     mapdl.nsle("S")
+    if ext:
+        mapdl.nsel("R", "EXT")        # 선택 요소집합의 외표면 절점만
     ids, xyz = sel_node_coords(mapdl)
     r = np.hypot(xyz[:, 0], xyz[:, 1]); z = xyz[:, 2]
     m = (r >= r_lo) & (r <= r_hi)
     if z_lo is not None: m &= (z >= z_lo)
     if z_hi is not None: m &= (z <= z_hi)
-    P(f"[{tag}] MAT{mat} elems={ne} selNodes={len(ids)} → ring={m.sum()} "
-      f"(r∈[{r_lo:.4f},{r_hi:.4f}])")
+    P(f"[{tag}] MAT{mat} elems={ne} sel{'Ext' if ext else 'All'}Nodes={len(ids)} "
+      f"→ ring={m.sum()} (r∈[{r_lo:.4f},{r_hi:.4f}])")
     return ids[m], xyz[m]
 
 

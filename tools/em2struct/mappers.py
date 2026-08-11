@@ -26,7 +26,7 @@ import numpy as np
 from scipy import sparse
 from scipy.spatial import cKDTree
 
-from .core import ForceField, MappingResult, TargetMesh, _skew_batch
+from .core import ForceField, MappingResult, Quantity, TargetMesh, _skew_batch
 
 
 # ============================================================== base
@@ -70,8 +70,16 @@ class BaseMapper:
                 f[:, j, :] = W @ vals[:, j, :]
 
         if not self.conservative:
-            # 일관형: 보간된 값이 압력/밀도 → 타깃 면적으로 절점력 환산
-            if self._tgt.areas is not None:
+            # 일관형: 보간된 값이 압력/밀도 → 타깃 면적으로 절점력 환산.
+            # 면적이 없으면 [Pa]가 [N]으로 둔갑하므로(무언의 단위오염) 명시적으로 막는다.
+            if self._tgt.areas is None:
+                if src.quantity != Quantity.NODAL_FORCE:
+                    raise ValueError(
+                        f"일관형 맵핑으로 {src.quantity.value}(intensive, 단위면적/체적당) 를 "
+                        "절점력으로 환산하려면 target.areas 가 필요합니다. "
+                        "TargetMesh(..., areas=...) 를 주거나, make_segment_target(...)"
+                        ".as_target_mesh() 를 쓰거나, 보존형 맵퍼('lsq'/'idw')를 쓰세요.")
+            else:
                 f = f * self._tgt.areas[:, None, None]
         return MappingResult(
             forces=f, target=self._tgt, times=src.times, mapper=self.name,
@@ -226,20 +234,29 @@ class LeastSquaresMapper(BaseMapper):
 
 # ============================================================== RBF
 class RBFMapper(BaseMapper):
-    """방사기저함수(RBF) 맵핑. 일관형(부드러운 필드 보간)이 기본.
+    """방사기저함수(RBF) 맵핑 — **일관형 전용**(부드러운 필드 보간).
 
     소스 값을 RBF 로 보간하는 함수를 세우고 타깃 위치에서 평가한다. 산재한
-    데이터에 매끈하다. 압력/트랙션 필드 전달에 적합.
+    데이터에 매끈하다. 압력/트랙션 **필드** 전달에 적합.
 
     kernel : 'linear'|'tps'(thin-plate)|'gaussian'|'multiquadric'.
     eps    : gaussian/multiquadric 형상계수.
-    conservative=True 로 두면 가상일 일관(전치) 전달로 전환 →
-             에너지 정합(합력은 전치 구조상 근사 보존). 대형 메시엔 LSQ 권장.
+
+    ⚠️ **보존형(conservative=True) 미지원.** 가상일 일관 힘전달은 타깃중심 RBF
+    계수행렬(M×M)이 필요해 대형 구조메시(M~1e4-1e5)에서 비현실적이다(48k면
+    ~18GB). 힘(절점력) 전달에는 **`lsq`(합력+모멘트 보존, 권장)** 또는
+    **`idw`(합력 보존, 빠름)** 를 쓸 것.
     """
 
     name = "rbf"
 
     def __init__(self, conservative=False, kernel="tps", eps=1.0, reg=1e-8):
+        if conservative:
+            raise ValueError(
+                "RBFMapper 는 일관형 전용입니다(conservative=True 미지원). "
+                "가상일 보존전달은 타깃중심 RBF(M×M)가 필요해 대형 메시에서 비현실적입니다. "
+                "절점력 전달에는 make_mapper('lsq')(합력+모멘트 보존) 또는 "
+                "make_mapper('idw')(합력 보존)를 사용하세요.")
         super().__init__(conservative)
         self.kernel, self.eps, self.reg = kernel, eps, reg
 
@@ -259,7 +276,7 @@ class RBFMapper(BaseMapper):
     def fit(self, source, target):
         self._src, self._tgt = source, target
         P = source.points
-        # 소스-소스 커널 + 다항(1차) 확장으로 보간 계수행렬 구성
+        # 소스-소스 커널로 보간 계수행렬 구성
         rss = np.linalg.norm(P[:, None, :] - P[None, :, :], axis=-1)
         A = self._phi(rss) + self.reg * np.eye(len(P))
         # 타깃-소스 커널
@@ -267,18 +284,10 @@ class RBFMapper(BaseMapper):
         B = self._phi(rts)
         # H = B A⁻¹  (타깃값 = H · 소스값), 행 정규화로 PoU 근사
         Ainv = np.linalg.pinv(A)
-        H = B @ Ainv
-        if self.conservative:
-            # 가상일 일관: 힘 전달은 Hᵀ (소스→타깃). 열정규화로 합력 보존 보정.
-            W = H.T
-            colsum = W.sum(axis=0, keepdims=True)
-            colsum[colsum == 0] = 1.0
-            W = W / colsum
-        else:
-            W = H
-            rowsum = W.sum(axis=1, keepdims=True)
-            rowsum[rowsum == 0] = 1.0
-            W = W / rowsum
+        W = B @ Ainv                      # (M,N) 일관형 보간
+        rowsum = W.sum(axis=1, keepdims=True)
+        rowsum[rowsum == 0] = 1.0
+        W = W / rowsum
         self._W = sparse.csr_matrix(W)
         return self
 

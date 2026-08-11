@@ -60,40 +60,42 @@ def write_ansys_mechanical(
         with open(path, "w", encoding="utf-8") as fh:
             fh.write("! em2struct → MAPDL 절점 하중 (단일 스텝)\n")
             fh.write(f"! mapper={result.mapper}  col={c}  t={t[c]:.6g}\n/prep7\n")
-            _apdl_f_block(fh, ids, F[:, :, c], tol)
+            _apdl_f_block(fh, ids, F[:, :, c], tol=tol)
             fh.write("finish\n")
         written.append(path)
     else:
-        # 시간이력: 각 절점·성분별 테이블배열 + 스텝루프
+        # 시간이력: 활성 절점집합을 고정하고 매 스텝 전 성분(0 포함) 기록.
+        # (스텝마다 0을 생략하면 MAPDL 의 F 는 누적이 아니라 '유지'라서 이전 스텝
+        #  하중이 잔류한다 — 활성집합 고정으로 원천 차단.)
+        active = np.where(np.linalg.norm(F, axis=1).max(axis=1) > tol)[0]
         with open(path, "w", encoding="utf-8") as fh:
             fh.write("! em2struct → MAPDL 절점 하중 시간이력\n")
-            fh.write(f"! mapper={result.mapper}  nsteps={result.ncols}\n")
-            fh.write("! 사용법: transient/harmonic 해석의 각 하중스텝에서 아래 배열 참조\n")
+            fh.write(f"! mapper={result.mapper}  nsteps={result.ncols} "
+                     f"active_nodes={len(active)}/{len(ids)}\n")
+            fh.write("! 각 하중스텝에서 활성절점 전 성분을 갱신(0 포함) → 잔류하중 없음\n")
             fh.write("/prep7\nfinish\n/solu\nantype,trans\n")
             fh.write(f"*dim,EM_T,array,{result.ncols}\n")
             for k in range(result.ncols):
                 fh.write(f"EM_T({k+1})={t[k]:.8g}\n")
-            comp = ("FX", "FY", "FZ")
             for k in range(result.ncols):
                 fh.write(f"\n! ---- load step {k+1}, time={t[k]:.6g} ----\n")
                 fh.write(f"time,{t[k]:.8g}\n")
-                _apdl_f_block(fh, ids, F[:, :, k], tol)
+                _apdl_f_block(fh, ids, F[:, :, k], active)
                 fh.write("solve\n")
             fh.write("finish\n")
         written.append(path)
     return written
 
 
-def _apdl_f_block(fh, ids, F2d, tol):
+def _apdl_f_block(fh, ids, F2d, active=None, tol=0.0):
+    """F 커맨드 블록. active 가 주어지면 그 절점의 **전 성분**(0 포함)을 기록."""
     comp = ("FX", "FY", "FZ")
-    mag = np.linalg.norm(F2d, axis=1)
-    for i, nid in enumerate(ids):
-        if mag[i] <= tol:
-            continue
+    if active is None:
+        active = np.where(np.linalg.norm(F2d, axis=1) > tol)[0]
+    for i in active:
+        nid = int(ids[i])
         for j in range(3):
-            v = F2d[i, j]
-            if v != 0.0:
-                fh.write(f"f,{int(nid)},{comp[j]},{v:.8e}\n")
+            fh.write(f"f,{nid},{comp[j]},{F2d[i, j]:.8e}\n")
 
 
 def _write_mech_external(path, ids, xyz, F, t, tol):
@@ -296,6 +298,7 @@ def write_ansys_remote_force(
     coupling: str = "rbe3",
     pilot_id0: int = 9000001,
     tol: float = 0.0,
+    moments=None,
 ) -> str:
     """ANSYS/MAPDL **원격힘(Remote Force)** 스크립트(.inp).
 
@@ -311,17 +314,30 @@ def write_ansys_remote_force(
     파일럿 위치 = 배정된 타깃 절점들의 중심(실제 3D 표면 위, 소스의 축슬라이스
     z=0 과 타깃 메시 z 불일치를 자동 보정).
 
+    ⚠️ **치 힘을 합력만 lumping 하면 정확도 손실이 정량적으로 보고돼 있다.**
+    Pile(2021) §3.4.2 는 분포 절점력(기준) 대비 **합력만 lumping 시 10·f_s 에서
+    약 4 dB 오차**, 모달 기저를 20→50 으로 늘려도 좁혀지지 않았고, **치 끝
+    모멘트를 더한 '토서(force+moment)' 로 <1 dB 회복**된다고 보고한다(§3.5 결론).
+    분포 소스가 있으면 :func:`em2struct.lump_torsor` 로 (F, M) 을 구해 ``moments``
+    로 넘길 것. Motor-CAD 멀티포스 export 는 치당 **합력만** 제공하므로 이 경우
+    모멘트는 얻을 수 없다(알려진 한계).
+
     Parameters
     ----------
     source : ForceField(NODAL_FORCE) — 소스 힘점(극/치).
     target : TargetMesh — 실제 솔버 절점 ID·좌표를 가진 표면 메시.
     coupling : 'rbe3'(권장, 하중분산) | 'cerig'(강체).
+    moments : (S,3) 또는 (S,3,C) 소스별 모멘트 [N·m]. 주면 pilot 에 MX/MY/MZ 로
+              함께 가한다(치 토서). None 이면 힘만(위 4 dB 경고 해당).
     """
     import numpy as _np
     from scipy.spatial import cKDTree
     sp = source.points                     # (S,3)
     sf = source.as_nodal_forces()          # (S,3,C)
     S, _, C = sf.shape
+    sm = None
+    if moments is not None:
+        sm = _np_asarray_3d(moments, S, C)  # (S,3,C)
     tp = target.nodes                      # (M,3)
     tids = target.node_ids
     t = source.times if (source.times is not None and len(source.times) == C) else _np.arange(C)
@@ -369,32 +385,57 @@ def write_ansys_remote_force(
             cname = f"_RF_SLV{s}"
             fh.write(f"cm,{cname},node\n")
             if coupling == "cerig":
-                fh.write(f"cerig,{pid},ALL,{cname}\n")
+                # CERIG,MASTE,SLAVE,Ldof — SLAVE='ALL' = 현재 선택된 절점.
+                # (3번째 인자는 Ldof 이므로 컴포넌트명을 넣으면 안 된다.)
+                fh.write(f"nsel,a,node,,{pid}\n")     # 마스터도 선택에 포함
+                fh.write(f"cerig,{pid},ALL\n")
             else:
+                # RBE3,MASTER,DOF,SLAVES(컴포넌트명 허용),WTFACT
                 fh.write(f"rbe3,{pid},ALL,{cname}\n")
             fh.write("allsel\n")
             pilots.append((s, pid))
         # 하중(정적: col0 / 트랜지언트: 스텝루프)
+        mcomp = ("MX", "MY", "MZ")
         fh.write("\nfinish\n/solu\n")
+        if sm is None:
+            fh.write("! ⚠️ 합력만 적용(모멘트 없음). Pile(2021)§3.4.2: 치 토서 대비 "
+                     "~4 dB 손실 가능 — 분포 소스가 있으면 lump_torsor 로 M 을 넘길 것.\n")
         if C == 1:
             for s, pid in pilots:
                 for j in range(3):
-                    v = sf[s, j, 0]
-                    if v != 0.0:
-                        fh.write(f"f,{pid},{comp[j]},{v:.8e}\n")
+                    fh.write(f"f,{pid},{comp[j]},{sf[s, j, 0]:.8e}\n")
+                if sm is not None:
+                    for j in range(3):
+                        fh.write(f"f,{pid},{mcomp[j]},{sm[s, j, 0]:.8e}\n")
         else:
             fh.write("antype,trans\n")
             for kstep in range(C):
                 fh.write(f"\n! load step {kstep+1} t={t[kstep]:.6g}\n")
                 fh.write(f"time,{t[kstep]:.8g}\n")
+                # 매 스텝 전 성분 갱신(0 포함) → 이전 스텝 하중 잔류 방지
                 for s, pid in pilots:
                     for j in range(3):
-                        v = sf[s, j, kstep]
-                        if v != 0.0:
-                            fh.write(f"f,{pid},{comp[j]},{v:.8e}\n")
+                        fh.write(f"f,{pid},{comp[j]},{sf[s, j, kstep]:.8e}\n")
+                    if sm is not None:
+                        for j in range(3):
+                            fh.write(f"f,{pid},{mcomp[j]},{sm[s, j, kstep]:.8e}\n")
                 fh.write("solve\n")
         fh.write("finish\n")
     return path
+
+
+def _np_asarray_3d(a, S, C):
+    """(S,3) 또는 (S,3,C) → (S,3,C) 정규화."""
+    a = np.asarray(a, dtype=float)
+    if a.ndim == 2:
+        a = a[:, :, None]
+    if a.shape[0] != S or a.shape[1] != 3:
+        raise ValueError(f"moments 는 (S,3[,C]) 여야 합니다. got {a.shape}, S={S}")
+    if a.shape[2] == 1 and C > 1:
+        a = np.repeat(a, C, axis=2)
+    if a.shape[2] != C:
+        raise ValueError(f"moments 열수({a.shape[2]}) != 힘 열수({C})")
+    return a
 
 
 WRITERS = {

@@ -315,16 +315,111 @@ class ConservationReport:
     moment_rel_err: float
 
     def summary(self) -> str:
+        # Pile(2021) §3.4.1 의 실패모드: 투영 후 **불평형 합력 잔차**가 2e-5 → 8e-2 N
+        # 으로 튀어 있지도 않은 (3,0) 모드를 여기시켰다. 상대오차만 보면 놓치므로
+        # 절대 잔차[N]를 함께 보고한다. (같은 논문 Annex C.4: 토크는 훨씬 관대해
+        # 투영 정확도 판정 기준으로 부적합 — 합력/치별 힘으로 판단할 것.)
+        resid = np.linalg.norm(self.tgt_force - self.src_force, axis=0).max()
         return (
             "── em2struct 보존 진단 ──────────────────────────────\n"
             f"  합력 소스(col0)  : [{self.src_force[0,0]:+.4g}, "
             f"{self.src_force[1,0]:+.4g}, {self.src_force[2,0]:+.4g}] N\n"
             f"  합력 타깃(col0)  : [{self.tgt_force[0,0]:+.4g}, "
             f"{self.tgt_force[1,0]:+.4g}, {self.tgt_force[2,0]:+.4g}] N\n"
+            f"  **불평형 합력 잔차(절대, max) : {resid:.3e} N**  "
+            f"← 허위 모드 여기 위험지표\n"
             f"  합력 상대오차(max over cols) : {self.force_rel_err:.3e}\n"
             f"  합모멘트 상대오차(max)       : {self.moment_rel_err:.3e}\n"
             "─────────────────────────────────────────────────────"
         )
+
+
+def lump_torsor(field: ForceField, centers, about_centers: bool = True):
+    """분포 힘장 → 그룹별 **토서(합력 F + 모멘트 M)**.
+
+    치(teeth)/극 단위로 힘을 묶을 때, 합력만 취하면 분포가 만드는 모멘트가 사라진다.
+    Pile(2021) §3.4.2 는 분포 절점력 대비 **합력만 lumping 시 10·f_s 에서 ~4 dB
+    오차**, **토서(힘+모멘트)로 <1 dB 회복**을 보고한다(모달 기저를 늘려도 합력만으론
+    좁혀지지 않음). 이 함수로 M 을 구해 :func:`write_ansys_remote_force` 의
+    ``moments`` 로 넘기면 그 손실을 회복할 수 있다.
+
+    Parameters
+    ----------
+    field   : 분포 소스(에어갭 MST, VWP 절점력 등). 등가 절점력으로 환산해 사용.
+    centers : (G,2|3) 그룹 대표점(치 끝 중앙 등). 각 소스점은 **xy 평면 최근접**
+              대표점에 배정된다(회전기 각도섹터 분할과 동일).
+    about_centers : True 면 모멘트를 각 그룹 대표점 둘레로 계산(권장).
+
+    Returns
+    -------
+    (centers3, F, M) : centers3 (G,3), F (G,3,C) [N], M (G,3,C) [N·m].
+    """
+    from scipy.spatial import cKDTree
+
+    centers3 = _as3d(np.atleast_2d(centers))
+    G = len(centers3)
+    f = field.as_nodal_forces()                     # (N,3,C)
+    C = f.shape[2]
+    tree = cKDTree(centers3[:, :2])
+    _, g = tree.query(field.points[:, :2], k=1)     # 각 소스 → 최근접 그룹
+    g = np.atleast_1d(g)
+
+    F = np.zeros((G, 3, C))
+    M = np.zeros((G, 3, C))
+    for gi in range(G):
+        sel = np.where(g == gi)[0]
+        if len(sel) == 0:
+            continue
+        F[gi] = f[sel].sum(axis=0)
+        if about_centers:
+            r = field.points[sel] - centers3[gi]     # (n,3)
+            M[gi] = np.einsum("nij,njc->ic", _skew_batch(r), f[sel])
+    return centers3, F, M
+
+
+@dataclass
+class CoverageReport:
+    """하중 **분포 품질** 진단.
+
+    보존(합력·모멘트)이 정확해도 하중이 소수 절점에 뭉치면 인위적 응력집중이
+    생겨 NVH 응답이 왜곡된다. 보존진단만으로는 절대 드러나지 않으므로 별도 지표.
+
+    n_target      : 타깃 절점 수.
+    n_loaded      : 실제로 0 이 아닌 하중을 받는 절점 수.
+    coverage      : n_loaded / n_target.
+    top1pct_share : 상위 1% 절점이 떠안은 힘 비중(집중도, 1.0 에 가까울수록 집중).
+    """
+
+    n_target: int
+    n_loaded: int
+    coverage: float
+    top1pct_share: float
+
+    def summary(self) -> str:
+        warn = ""
+        if self.coverage < 0.5:
+            warn = f"\n  ⚠️ 커버리지 {self.coverage*100:.1f}% — 하중이 일부 절점에 집중됨." \
+                   "\n     맵퍼 k↑/radius 확대, 또는 원격힘(RBE3) 전달을 검토하세요."
+        return (
+            "── 하중 분포 진단 ──────────────────────────────────\n"
+            f"  하중 받는 절점 : {self.n_loaded:,} / {self.n_target:,} "
+            f"({self.coverage*100:.1f}%)\n"
+            f"  상위 1% 집중도 : {self.top1pct_share*100:.1f}% of ΣF{warn}\n"
+            "─────────────────────────────────────────────────────"
+        )
+
+
+def coverage_report(result: MappingResult) -> CoverageReport:
+    """맵핑 결과의 하중 분포 품질(커버리지·집중도)을 계산한다."""
+    mag = np.linalg.norm(result.forces, axis=1).max(axis=1)   # 절점별 시간최대 |F|
+    m = len(mag)
+    n_loaded = int((mag > 0).sum())
+    total = mag.sum()
+    if total <= 0:
+        return CoverageReport(m, 0, 0.0, 0.0)
+    ntop = max(1, int(round(0.01 * m)))
+    top = np.sort(mag)[::-1][:ntop].sum()
+    return CoverageReport(m, n_loaded, n_loaded / m if m else 0.0, float(top / total))
 
 
 def conservation_report(

@@ -33,12 +33,15 @@ from __future__ import annotations
 
 from .core import (
     ConservationReport,
+    CoverageReport,
     ForceField,
     MappingResult,
     Quantity,
     SegmentTarget,
     TargetMesh,
     conservation_report,
+    coverage_report,
+    lump_torsor,
     make_segment_target,
 )
 from .readers import (read_airgap_mst, read_maxwell_nodal, read_motorcad_nvh,
@@ -60,6 +63,7 @@ __all__ = [
     "Quantity", "ForceField", "TargetMesh", "MappingResult",
     "SegmentTarget", "make_segment_target",
     "ConservationReport", "conservation_report",
+    "CoverageReport", "coverage_report", "lump_torsor",
     "read_maxwell_nodal", "read_airgap_mst", "read_motorcad_nvh",
     "read_motorcad_multiforce", "read_vwp_force",
     "BaseMapper", "NearestMapper", "InverseDistanceMapper",

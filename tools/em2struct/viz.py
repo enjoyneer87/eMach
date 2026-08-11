@@ -42,14 +42,21 @@ def plot_mapping(
     fig, axes = plt.subplots(1, 3, figsize=(16, 5.2))
     fig.suptitle(title, fontsize=14, fontweight="bold")
 
-    # (1) 화살표: 소스(회색) vs 타깃(빨강)
+    # (1) 화살표: 소스(회색) vs 타깃(빨강).
+    # ⚠️ 두 quiver 에 **공통 스케일**을 강제해야 길이 비교가 성립한다(각각
+    #    오토스케일하면 서로 다른 배율이 걸려 시각적으로 오해를 준다).
     ax = axes[0]
+    if quiver_scale is None:
+        span = max(np.ptp(sp[:, a]), np.ptp(sp[:, b]), 1e-12)
+        fmax = max(np.abs(np.hypot(sf[:, a], sf[:, b])).max(),
+                   np.abs(np.hypot(tf[:, a], tf[:, b])).max(), 1e-30)
+        quiver_scale = fmax / (0.15 * span)   # 최대 화살표 ≈ 도면폭의 15%
     ax.quiver(sp[:, a], sp[:, b], sf[:, a], sf[:, b], color="#888",
-              angles="xy", scale_units="xy", scale=quiver_scale, width=0.003,
+              angles="xy", scale_units="xy", scale=quiver_scale, width=0.004,
               label=f"source ({source.quantity.value})")
     ax.quiver(tp[:, a], tp[:, b], tf[:, a], tf[:, b], color="#d0342c",
               angles="xy", scale_units="xy", scale=quiver_scale, width=0.003,
-              label="target nodal force")
+              alpha=0.75, label="target nodal force")
     ax.set_aspect("equal"); ax.set_title(f"force vectors ({plane}, col={col})")
     ax.set_xlabel(plane[0]); ax.set_ylabel(plane[1]); ax.legend(fontsize=8)
 

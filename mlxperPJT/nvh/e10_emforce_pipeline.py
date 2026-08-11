@@ -17,7 +17,7 @@ _HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.abspath(os.path.join(_HERE, "..", "..", "tools")))
 
 from em2struct import (EMStructMapper, read_airgap_mst, read_motorcad_nvh,
-                       read_motorcad_multiforce, make_segment_target, write_lsdyna_segment)
+                       read_motorcad_multiforce, write_ansys_remote_force)
 from em2struct.target_io import target_from_arrays
 from em2struct.viz import plot_mapping
 
@@ -29,6 +29,8 @@ MF_JSON = os.path.join(FFDATA, "e10_multiforce.json")
 MF_CSV = [os.path.join(FFDATA, "e10_multiforce.csv"),
           os.path.join(FFDATA, "e10_multiforce.txt")]
 LOAD_POINT = int(os.environ.get("MF_LOADPOINT", "0"))
+N_AXIAL = int(os.environ.get("EM2S_NAXIAL", "20"))   # 2D→3D 축방향 스테이션 수
+K_NEIGH = int(os.environ.get("EM2S_K", "12"))        # 분산경로 LSQ 이웃 수(커버리지↑)
 
 # e10 파라미터
 R_AG = 0.0713
@@ -79,7 +81,7 @@ def main():
                          "먼저 extract_e10_bore_nodes.py 를 실행하세요.")
     nz = np.load(NODES_NPZ)
     bore_xyz, bore_ids = nz["bore_xyz"], nz["bore_ids"]
-    print(f"[target] 스테이터 보어 절점 {len(bore_ids)}개 "
+    print(f"[target] 스테이터 보어 표면절점 {len(bore_ids)}개 "
           f"(r≈{np.hypot(bore_xyz[:,0],bore_xyz[:,1]).mean():.4f} m, "
           f"z=[{bore_xyz[:,2].min():.3f},{bore_xyz[:,2].max():.3f}])")
     tgt = target_from_arrays(bore_xyz, bore_ids)
@@ -87,32 +89,37 @@ def main():
     times = np.linspace(0, 1.0 / F_ELEC, 24, endpoint=False)
     src, src_tag = build_source(times)
 
-    # 축방향 스테이션 = 타깃 절점의 실제 z 분포에 맞춤
-    z_stations = np.linspace(Z_ST0, Z_ST1, 20)
-    pipe = (EMStructMapper()
-            .load_source(src)
-            .set_target(tgt))
-    # 2D 소스(단일 축슬라이스)면 스택 길이에 걸쳐 축방향 분배
-    if src.dim == 2 or np.allclose(src.points[:, 2], src.points[0, 2]):
-        pipe.extrude(z_stations=z_stations)   # 2D 단면 → 3D
-    pipe.map("lsq", k=6).report()
+    # ── (A) 기본 경로: 치별 **원격힘**(pilot + RBE3) ────────────────────────
+    # 치 힘은 본디 치당 합력(lumped)이다. 이를 소수 절점에 절점력으로 박으면
+    # 인위적 응력집중이 생기므로, 치마다 pilot 을 두고 해당 치의 보어면 절점군에
+    # RBE3 로 분산 결합한다(축방향 균일 = 2D 소스의 가정과 정합).
+    rf = write_ansys_remote_force(
+        src, tgt, os.path.join(DATA, "e10_emforce_remote.inp"),
+        scope="nearest", coupling="rbe3")
+    print(f"[A/remote force] 치 {src.n}개 → pilot+RBE3 : {rf}")
 
-    # export 3종 + QA
-    outs = {}
-    outs["mapdl"] = pipe.export(os.path.join(DATA, "e10_emforce_mapdl.inp"),
-                                solver="ansys_mechanical")
-    outs["mapdl_ext"] = pipe.export(os.path.join(DATA, "e10_emforce_external.csv"),
-                                    solver="ansys_mechanical", mode="external")
-    outs["lsdyna"] = pipe.export(os.path.join(DATA, "e10_emforce_lsdyna.k"),
-                                 solver="lsdyna")
-    outs["motion"] = pipe.export(os.path.join(DATA, "e10_emforce_motion.csv"),
-                                 solver="ansys_motion")
-    fig = plot_mapping(pipe.source, pipe.result,
-                       os.path.join(DATA, "e10_emforce_qa.png"),
-                       col=0, plane="xy",
-                       title=f"e10 EM force → MAPDL stator bore nodes (LSQ, src={src_tag})")
-    print("exports:", {k: (v if isinstance(v, str) else v) for k, v in outs.items()})
-    print("QA:", fig)
+    # ── (B) 옵션 경로: 분산 절점력(LSQ 보존형) ─────────────────────────────
+    if os.environ.get("EM2S_DISTRIBUTED", "1") != "0":
+        z_stations = np.linspace(Z_ST0, Z_ST1, N_AXIAL)
+        pipe = (EMStructMapper()
+                .load_source(src)
+                .set_target(tgt))
+        if np.allclose(src.points[:, 2], src.points[0, 2]):   # 2D 소스 → 축분배
+            pipe.extrude(z_stations=z_stations)
+        pipe.map("lsq", k=K_NEIGH).report()      # 보존 + 분포 커버리지 진단
+
+        pipe.export(os.path.join(DATA, "e10_emforce_mapdl.inp"),
+                    solver="ansys_mechanical")
+        pipe.export(os.path.join(DATA, "e10_emforce_external.csv"),
+                    solver="ansys_mechanical", mode="external")
+        pipe.export(os.path.join(DATA, "e10_emforce_lsdyna.k"), solver="lsdyna")
+        pipe.export(os.path.join(DATA, "e10_emforce_motion.csv"), solver="ansys_motion")
+        fig = plot_mapping(pipe.source, pipe.result,
+                           os.path.join(DATA, "e10_emforce_qa.png"),
+                           col=0, plane="xy",
+                           title=f"e10 EM force → stator bore surface (LSQ k={K_NEIGH}, "
+                                 f"src={src_tag})")
+        print("[B/distributed] QA:", fig)
     print("PIPELINE-OK")
 
 

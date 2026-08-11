@@ -19,7 +19,7 @@ import numpy as np
 
 from .axial import extrude_field
 from .core import (ConservationReport, ForceField, MappingResult, TargetMesh,
-                   conservation_report)
+                   conservation_report, coverage_report)
 from .mappers import BaseMapper, make_mapper
 from .writers import WRITERS
 
@@ -76,9 +76,16 @@ class EMStructMapper:
         if self.result is None:
             raise RuntimeError("report() 전에 map() 하세요.")
         self._report = conservation_report(self.source, self.result, about=about)
+        self._coverage = coverage_report(self.result)
         if echo:
             print(self._report.summary())
+            print(self._coverage.summary())
         return self
+
+    @property
+    def coverage(self):
+        """하중 분포 품질 진단(커버리지·집중도)."""
+        return getattr(self, "_coverage", None)
 
     @property
     def conservation(self) -> ConservationReport:

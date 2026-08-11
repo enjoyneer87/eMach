@@ -19,9 +19,9 @@ sys.path.insert(0, os.path.abspath(os.path.join(_HERE, "..", "..")))
 import json as _json
 
 from em2struct import (EMStructMapper, ForceField, Quantity, TargetMesh,
-                       conservation_report, extrude_field, make_mapper,
+                       conservation_report, coverage_report, extrude_field, make_mapper,
                        make_segment_target, read_airgap_mst, read_maxwell_nodal,
-                       read_motorcad_multiforce, read_vwp_force,
+                       read_motorcad_multiforce, read_vwp_force, lump_torsor,
                        write_ansys_mechanical, write_ansys_motion, write_lsdyna,
                        write_lsdyna_segment, write_ansys_remote_force)
 
@@ -239,6 +239,107 @@ def test_segment_pressure_matches_uniform():
     Fn = np.einsum("sjc,sj->sc", res.forces, st.normals)
     pres = Fn[:, 0] / st.areas
     assert np.allclose(pres, 1000.0, rtol=1e-6), pres
+
+
+# ------------------------------------------------- 회귀: 2026-08-11 검토 결함
+def test_rbf_conservative_is_rejected():
+    """RBF 보존형은 (M,N)이어야 할 연산자를 (N,M)로 만들어 크래시했다.
+    가상일 보존전달은 타깃중심 RBF(M×M)라 대형메시에 비현실적 → 명시적 차단."""
+    try:
+        make_mapper("rbf", conservative=True)
+    except ValueError as e:
+        assert "lsq" in str(e)   # 대안을 안내해야 함
+    else:
+        raise AssertionError("RBF conservative=True 가 차단되지 않음")
+
+
+def test_consistent_intensive_requires_areas():
+    """일관형 + intensive(TRACTION) + target.areas 없음 → [Pa]가 [N]으로 둔갑했었다."""
+    th = np.linspace(0, 2 * np.pi, 24, endpoint=False)
+    src = read_airgap_mst(th, np.cos(th) * 1e5, radius=0.07, stack_length=0.15)
+    tgt = TargetMesh(np.column_stack([0.07*np.cos(th), 0.07*np.sin(th), np.zeros(24)]))
+    try:
+        make_mapper("idw", conservative=False).fit_apply(src, tgt)
+    except ValueError as e:
+        assert "areas" in str(e)
+    else:
+        raise AssertionError("면적 없는 일관형 intensive 맵핑이 통과됨(단위 오염)")
+    # areas 를 주면 정상 동작
+    tgt2 = TargetMesh(tgt.nodes, areas=np.full(24, 1e-3))
+    r = make_mapper("idw", conservative=False).fit_apply(src, tgt2)
+    assert r.forces.shape == (24, 3, 1)
+
+
+def test_multistep_has_no_stale_loads():
+    """스텝별로 0을 생략하면 MAPDL F 는 이전 값을 유지 → 잔류하중.
+    활성절점의 전 성분을 매 스텝 기록해야 한다."""
+    pts = np.array([[0, 0, 0], [1, 0, 0.]])
+    v = np.zeros((2, 3, 2)); v[0, 0, 0] = 100.0; v[1, 0, 1] = 50.0
+    res = make_mapper("nearest").fit_apply(
+        ForceField(pts, v, times=[0., 1.]), TargetMesh(pts, node_ids=[11, 22]))
+    d = tempfile.mkdtemp(); p = os.path.join(d, "t.inp")
+    write_ansys_mechanical(res, p)
+    txt = open(p, encoding="utf-8").read()
+    blocks = txt.split("! ---- load step")
+    counts = [b.count("\nf,") for b in blocks[1:]]
+    assert len(set(counts)) == 1, f"스텝별 F 개수 불일치 {counts} → 잔류하중 위험"
+    # step2 에서 노드11 은 명시적으로 0 이어야 함
+    assert "f,11,FX,0.00000000e+00" in blocks[2]
+
+
+def test_cerig_syntax():
+    """CERIG,MASTE,SLAVE,Ldof — 3번째는 Ldof. 컴포넌트명을 넣으면 MAPDL 실패."""
+    ang = np.linspace(0, 2*np.pi, 12, endpoint=False)
+    tp = np.column_stack([0.07*np.cos(ang), 0.07*np.sin(ang), np.zeros(12)])
+    src = ForceField(np.array([[0.07, 0, 0], [-0.07, 0, 0.]]), np.ones((2, 3, 1)))
+    d = tempfile.mkdtemp(); p = os.path.join(d, "c.inp")
+    write_ansys_remote_force(src, TargetMesh(tp, node_ids=np.arange(1, 13)), p,
+                             coupling="cerig")
+    for line in open(p, encoding="utf-8"):
+        if line.startswith("cerig"):
+            parts = line.strip().split(",")
+            assert not any(pp.startswith("_RF_SLV") for pp in parts), \
+                f"컴포넌트명이 Ldof 자리에 들어감: {line.strip()}"
+
+
+def test_coverage_report_detects_concentration():
+    """보존은 정확해도 하중이 소수 절점에 뭉치는 결함을 잡는 지표."""
+    rng = np.random.default_rng(5)
+    src = ForceField(rng.uniform(-1, 1, (10, 3)), rng.normal(0, 1, (10, 3)))
+    tgt = TargetMesh(rng.uniform(-1, 1, (1000, 3)))          # 소스≪타깃
+    res = make_mapper("lsq", k=4).fit_apply(src, tgt)
+    cov = coverage_report(res)
+    assert cov.n_target == 1000
+    assert cov.n_loaded <= 40                                 # 10소스×4이웃
+    assert cov.coverage < 0.05                                # 커버리지 경고 영역
+    assert "⚠️" in cov.summary()
+
+
+def test_lump_torsor_conserves_and_recovers_moment():
+    """분포 힘 → 치별 토서. 합력 보존 + 합력만으론 사라지는 모멘트 복원.
+    (Pile 2021 §3.4.2: 합력만 lumping 시 ~4 dB 손실, 토서로 <1 dB 회복.)"""
+    nth = 240
+    th = np.linspace(0, 2*np.pi, nth, endpoint=False)
+    f = read_airgap_mst(th, 120e3*np.cos(8*th), 25e3*np.sin(8*th),
+                        radius=0.0713, stack_length=0.15)
+    ang = np.linspace(0, 2*np.pi, 24, endpoint=False)
+    centers = np.column_stack([0.0713*np.cos(ang), 0.0713*np.sin(ang)])
+    C, F, M = lump_torsor(f, centers)
+    assert F.shape == (24, 3, 1) and M.shape == (24, 3, 1)
+    # 합력 보존
+    assert np.allclose(F.sum(axis=0)[:, 0], f.total_force()[:, 0], atol=1e-9)
+    # 분포가 만드는 모멘트는 0 이 아니어야(합력만 쓰면 이게 버려짐)
+    assert np.linalg.norm(M, axis=1).max() > 0
+    # 라이터가 모멘트를 실제로 기록하는지
+    d = tempfile.mkdtemp(); p = os.path.join(d, "rf.inp")
+    src = ForceField(C, F)
+    tp = np.column_stack([0.0713*np.cos(np.linspace(0, 2*np.pi, 100, endpoint=False)),
+                          0.0713*np.sin(np.linspace(0, 2*np.pi, 100, endpoint=False)),
+                          np.zeros(100)])
+    write_ansys_remote_force(src, TargetMesh(tp, node_ids=np.arange(1, 101)), p,
+                             moments=M)
+    txt = open(p, encoding="utf-8").read()
+    assert ",MX," in txt and ",MY," in txt and ",MZ," in txt
 
 
 # ---------------------------------------------------------------- 단독 실행
