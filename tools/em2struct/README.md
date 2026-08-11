@@ -188,9 +188,19 @@ python tools/em2struct/examples/example_airgap_to_structural.py   # e10 데모 +
 - `coverage_report()` — 하중이 소수 절점에 집중되는지 진단(보존만으론 절대 안 드러남).
 - 불평형 합력 **절대 잔차[N]** 를 보존 진단에 명시.
 
+**문헌 반영 구현(2026-08-11 완료)**
+- **`l2` 맵퍼(`L2ProjectionMapper`)** — Pile/Kotter 권장 **L² Galerkin 일관하중**:
+  타깃 표면요소(tri/quad, 곡면 야코비안) Gauss 구적으로 F_i=∫φ_i·t dΓ 조립.
+  분할단위 ⇒ ΣF 기계정밀 보존(검증). Gauss 밀도는 `n_gauss` 로(늘려도 선형계
+  불변 — Pile의 저비용 손잡이). **타깃 표면요소 연결성 필요**(`TargetMesh(segments=)`
+  또는 `make_segment_target`); 절점 클라우드만 있으면 lsq/idw 사용.
+- **`nodal_to_density(F, nodes, segments)`** — VWP 절점력→연속 밀도 복원
+  ([M]{ρ}={F} 일관질량 역산, 라운드트립 기계정밀 검증). Pile §1.4.6.1 의
+  "절점력은 Dirac 진폭이라 보간 불가" 원칙을 코드로 강제: `l2` 는 areas 없는
+  NODAL_FORCE 를 거부하고 이 함수를 안내한다.
+
 **알려진 한계(문헌 대비)**
-- **L² Galerkin 투영 미구현** — 현재는 보존형(lsq/idw)·일관형(rbf) 보간. `lsq` 는 합력+모멘트를 정확 보존하나 L² 최적은 아니다. Kotter식 supermesh는 미구현.
-- **VWP 절점력의 밀도 변환 미구현** — `read_vwp_force(density=True)` 로 **밀도를 직접 주는 경로만** 지원. 원시 절점력을 밀도로 되돌리는 일관질량행렬 역산(`[A]{f}={F}`)은 없으므로, Maxwell/Motor-CAD 가 절점력만 주면 국소 분포는 메시 의존적임을 감안할 것.
+- Kotter식 **supermesh 교차적분 미구현** — 다점 Gauss 구적(Pile의 대안 경로)으로 대체.
 - **접선 성분이 오차 핫스팟**(Pile: 반경 4% vs 접선 15%). 반경 오차가 작다고 접선이 정확하다는 보장은 없다.
 - 치별 lumping의 **공간차수 한계 = N_teeth/2**(e10: 48치 → 24차까지). Chauvicourt의 8점 사례처럼 소스가 성기면 홀수차가 소거된다.
 

@@ -57,6 +57,8 @@ from .mappers import (
 from .writers import (write_ansys_mechanical, write_ansys_motion, write_lsdyna,
                       write_lsdyna_segment, write_ansys_remote_force)
 from .axial import extrude_field
+from .galerkin import (L2ProjectionMapper, consistent_mass_matrix,
+                       nodal_to_density)
 from .pipeline import EMStructMapper, map_forces
 
 __all__ = [
@@ -70,6 +72,7 @@ __all__ = [
     "LeastSquaresMapper", "RBFMapper", "make_mapper",
     "write_ansys_mechanical", "write_lsdyna", "write_lsdyna_segment",
     "write_ansys_motion", "write_ansys_remote_force",
+    "L2ProjectionMapper", "consistent_mass_matrix", "nodal_to_density",
     "extrude_field", "EMStructMapper", "map_forces",
 ]
 

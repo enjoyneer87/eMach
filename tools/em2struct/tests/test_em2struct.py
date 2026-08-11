@@ -23,7 +23,8 @@ from em2struct import (EMStructMapper, ForceField, Quantity, TargetMesh,
                        make_segment_target, read_airgap_mst, read_maxwell_nodal,
                        read_motorcad_multiforce, read_vwp_force, lump_torsor,
                        write_ansys_mechanical, write_ansys_motion, write_lsdyna,
-                       write_lsdyna_segment, write_ansys_remote_force)
+                       write_lsdyna_segment, write_ansys_remote_force,
+                       consistent_mass_matrix, nodal_to_density)
 
 
 def _synthetic(seed=0, n=200, m=120, ncols=3):
@@ -340,6 +341,99 @@ def test_lump_torsor_conserves_and_recovers_moment():
                              moments=M)
     txt = open(p, encoding="utf-8").read()
     assert ",MX," in txt and ",MY," in txt and ",MZ," in txt
+
+
+# --------------------------------------------- L² Galerkin / VWP 밀도 (문헌 경로)
+def _plate(nx=3, ny=3, sx=1.0, sy=1.0):
+    """z=0 평판 절점/사각요소. 반환 (nodes(N,3), segs(S,4))."""
+    xs = np.linspace(0, sx * (nx - 1), nx)
+    ys = np.linspace(0, sy * (ny - 1), ny)
+    X, Y = np.meshgrid(xs, ys, indexing="ij")
+    nodes = np.column_stack([X.ravel(), Y.ravel(), np.zeros(nx * ny)])
+    idx = np.arange(nx * ny).reshape(nx, ny)
+    segs = []
+    for i in range(nx - 1):
+        for j in range(ny - 1):
+            segs.append([idx[i, j], idx[i+1, j], idx[i+1, j+1], idx[i, j+1]])
+    return nodes, np.array(segs)
+
+
+def test_l2_partition_of_unity_conserves_total():
+    """균일 트랙션 → ΣF = t·A 가 **기계정밀**(Kotter eq.3.11 분할단위 성질)."""
+    nodes, segs = _plate()
+    tgt = TargetMesh(nodes, segments=segs)
+    # 소스: 성긴 균일 트랙션(값이 상수면 IDW 도 정확)
+    sp = np.array([[0.3, 0.3, 0], [1.5, 0.7, 0], [0.8, 1.6, 0.]])
+    t0 = np.array([0, 0, 1000.0])
+    src = ForceField(sp, np.tile(t0, (3, 1)), quantity=Quantity.TRACTION,
+                     areas=np.ones(3))
+    res = make_mapper("l2", n_gauss=3).fit_apply(src, tgt)
+    F = res.forces[:, :, 0]
+    assert np.allclose(F.sum(axis=0), [0, 0, 1000.0 * 4.0], rtol=1e-12), F.sum(axis=0)
+    # 일관하중 패턴: 중앙절점 = p·1.0 (인접 4요소 × A/4)
+    center = 4  # (1,1) of 3x3
+    assert abs(F[center, 2] - 1000.0 * 1.0) < 1e-9
+
+
+def test_l2_requires_segments():
+    nodes, _ = _plate()
+    src = ForceField(nodes[:3], np.ones((3, 3)), quantity=Quantity.TRACTION)
+    try:
+        make_mapper("l2").fit(src, TargetMesh(nodes))
+    except ValueError as e:
+        assert "segments" in str(e) or "표면요소" in str(e)
+    else:
+        raise AssertionError("연결성 없는 타깃이 통과됨")
+
+
+def test_l2_nodal_force_needs_density():
+    """절점력 소스 + areas 없음 → Pile §1.4.6.1 근거로 명시적 거부."""
+    nodes, segs = _plate()
+    src = ForceField(nodes[:4], np.ones((4, 3)))       # NODAL_FORCE, areas 없음
+    m = make_mapper("l2").fit(src, TargetMesh(nodes, segments=segs))
+    try:
+        m.apply()
+    except ValueError as e:
+        assert "nodal_to_density" in str(e)
+    else:
+        raise AssertionError("절점력 직접 투영이 허용됨(보간 불가 원칙 위반)")
+
+
+def test_nodal_to_density_roundtrip():
+    """ρ(선형장) → F=Mρ → 역산 → ρ 복원(기계정밀). [M]{ρ}={F} 검증."""
+    nodes, segs = _plate(4, 4, 0.5, 0.5)
+    rho = np.column_stack([2.0 + 3.0 * nodes[:, 0],
+                           1.0 - 0.5 * nodes[:, 1],
+                           np.full(len(nodes), 7.0)])
+    M = consistent_mass_matrix(nodes, segs)
+    F = np.column_stack([M @ rho[:, j] for j in range(3)])
+    rec = nodal_to_density(F, nodes, segs)
+    assert np.allclose(rec, rho, rtol=1e-10), np.abs(rec - rho).max()
+    # 질량행렬 자체 검증: 행합 = 절점 담당면적, 총합 = 전체면적
+    assert abs(M.sum() - 1.5 * 1.5) < 1e-12
+
+
+def test_l2_on_curved_quad():
+    """원통 곡면(비평면 quad) 야코비안: 균일 반경압력 합력 ≈ 해석적분."""
+    R, L = 0.07, 0.1
+    th = np.linspace(-0.4, 0.4, 9)
+    zz = np.linspace(0, L, 5)
+    TH, ZZ = np.meshgrid(th, zz, indexing="ij")
+    nodes = np.column_stack([R*np.cos(TH).ravel(), R*np.sin(TH).ravel(), ZZ.ravel()])
+    idx = np.arange(9*5).reshape(9, 5)
+    segs = [[idx[i, j], idx[i+1, j], idx[i+1, j+1], idx[i, j+1]]
+            for i in range(8) for j in range(4)]
+    tgt = TargetMesh(nodes, segments=np.array(segs))
+    # 소스: 세밀한 원호 위 반경 트랙션 p0
+    ths = np.linspace(-0.45, 0.45, 60)
+    sp = np.column_stack([R*np.cos(ths), R*np.sin(ths), np.full(60, L/2)])
+    p0 = 5e4
+    tvec = p0 * np.column_stack([np.cos(ths), np.sin(ths), np.zeros(60)])
+    src = ForceField(sp, tvec, quantity=Quantity.TRACTION)
+    F = make_mapper("l2", n_gauss=3).fit_apply(src, tgt).forces[:, :, 0]
+    # 해석: Fx = p0 L R ∫cosθ dθ = p0 L R (sin0.4-sin(-0.4))
+    Fx_ref = p0 * L * R * 2 * np.sin(0.4)
+    assert abs(F.sum(axis=0)[0] - Fx_ref) / Fx_ref < 5e-3, (F.sum(axis=0)[0], Fx_ref)
 
 
 # ---------------------------------------------------------------- 단독 실행
