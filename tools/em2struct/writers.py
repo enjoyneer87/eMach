@@ -205,10 +205,92 @@ def write_ansys_motion(
     return path
 
 
+def write_lsdyna_segment(
+    result: MappingResult,
+    path: str,
+    seg_target=None,
+    sign: float = -1.0,
+    tol: float = 0.0,
+    curve_id0: int = 2000,
+    include_tangential_as_nodal: bool = False,
+) -> str:
+    """LS-DYNA *LOAD_SEGMENT 법선 압력 카드(.k).
+
+    맵핑 결과(세그먼트 중심점에서의 절점력, ``result``)를 세그먼트 법선압력으로
+    환산해 내보낸다.  pressure[s,t] = sign · (F_s(t)·n_s) / area_s  [Pa].
+
+    *LOAD_SEGMENT 는 법선 성분만 표현 가능(스칼라 압력). LS-DYNA 관례상 양압력은
+    세그먼트 법선 **반대**(면 안쪽)로 작용하므로 기본 sign=-1(외향력→양압력).
+
+    Parameters
+    ----------
+    result   : make_segment_target(...).as_target_mesh() 에 맵핑한 결과
+               (result.forces shape = (S,3,C), S=세그먼트 수).
+    seg_target : 동일 세그먼트의 SegmentTarget(법선·면적·코너ID 제공).
+    sign     : 압력 부호 관례(+면 법선방향 양압력). 기본 -1.
+    tol      : |압력|max 가 이 값 이하인 세그먼트 생략.
+    include_tangential_as_nodal : True 면 접선(법선 제거) 잔여 힘을 별도
+               *LOAD_NODE_POINT 로 함께 출력(법선압력이 못 싣는 성분 보존).
+    """
+    if seg_target is None:
+        raise ValueError("write_lsdyna_segment 는 seg_target(SegmentTarget) 이 필요합니다.")
+    F = result.forces                            # (S,3,C)
+    if F.shape[0] != seg_target.s:
+        raise ValueError(f"result S({F.shape[0]}) != seg_target.s({seg_target.s}). "
+                         "make_segment_target(...).as_target_mesh() 에 맵핑했는지 확인.")
+    n = seg_target.normals                       # (S,3)
+    area = seg_target.areas                      # (S,)
+    conn = seg_target.conn_ids                   # (S,4)
+    C = result.ncols
+    t = _times(result)
+
+    # 법선압력 시간이력 (S,C)
+    Fn = np.einsum("sjc,sj->sc", F, n)           # 법선방향 힘
+    pres = sign * Fn / area[:, None]
+    pmax = np.abs(pres).max(axis=1)
+    keep = np.where(pmax > tol)[0]
+
+    os.makedirs(os.path.dirname(os.path.abspath(path)) or ".", exist_ok=True)
+    cid = curve_id0
+    with open(path, "w", encoding="utf-8") as fh:
+        fh.write("$ em2struct -> LS-DYNA *LOAD_SEGMENT 법선 압력\n")
+        fh.write(f"$ mapper={result.mapper}  segments={len(keep)}  steps={C}  sign={sign}\n")
+        fh.write("*KEYWORD\n")
+        cards = []   # (n1,n2,n3,n4,lcid)
+        for s in keep:
+            series = pres[s]
+            if np.all(series == 0):
+                continue
+            fh.write("*DEFINE_CURVE\n")
+            fh.write(f"{cid},0,1.0,1.0,0.0,0.0\n")
+            if C == 1:
+                fh.write(f"{0.0:20.8e}{series[0]:20.8e}\n")
+                fh.write(f"{1.0:20.8e}{series[0]:20.8e}\n")
+            else:
+                for k in range(C):
+                    fh.write(f"{t[k]:20.8e}{series[k]:20.8e}\n")
+            cards.append((*[int(x) for x in conn[s]], cid))
+            cid += 1
+        fh.write("*LOAD_SEGMENT\n")
+        fh.write("$    lcid        sf        at        n1        n2        n3        n4\n")
+        for n1, n2, n3, n4, lcid in cards:
+            fh.write(f"{lcid:10d}{1.0:10.4f}{0.0:10.4f}"
+                     f"{n1:10d}{n2:10d}{n3:10d}{n4:10d}\n")
+
+        if include_tangential_as_nodal:
+            # 접선 잔여력(법선 제거) → 중심점 등가 절점하중(참고, 별도 절점 필요)
+            Ft = F - np.einsum("sc,sj->sjc", Fn, n)
+            fh.write("$ --- 접선 잔여력(참고): 세그먼트 중심점 등가, 필요시 별도 처리 ---\n")
+            fh.write(f"$ max|Ft| = {np.linalg.norm(Ft,axis=1).max():.4e} N\n")
+        fh.write("*END\n")
+    return path
+
+
 WRITERS = {
     "ansys_mechanical": write_ansys_mechanical,
     "mapdl": write_ansys_mechanical,
     "lsdyna": write_lsdyna,
+    "lsdyna_segment": write_lsdyna_segment,
     "ansys_motion": write_ansys_motion,
     "motion": write_ansys_motion,
 }

@@ -36,8 +36,10 @@ from .core import (
     ForceField,
     MappingResult,
     Quantity,
+    SegmentTarget,
     TargetMesh,
     conservation_report,
+    make_segment_target,
 )
 from .readers import read_airgap_mst, read_maxwell_nodal, read_motorcad_nvh
 from .mappers import (
@@ -48,18 +50,20 @@ from .mappers import (
     RBFMapper,
     make_mapper,
 )
-from .writers import write_ansys_mechanical, write_ansys_motion, write_lsdyna
+from .writers import (write_ansys_mechanical, write_ansys_motion, write_lsdyna,
+                      write_lsdyna_segment)
 from .axial import extrude_field
 from .pipeline import EMStructMapper, map_forces
 
 __all__ = [
     "Quantity", "ForceField", "TargetMesh", "MappingResult",
+    "SegmentTarget", "make_segment_target",
     "ConservationReport", "conservation_report",
     "read_maxwell_nodal", "read_airgap_mst", "read_motorcad_nvh",
     "BaseMapper", "NearestMapper", "InverseDistanceMapper",
     "LeastSquaresMapper", "RBFMapper", "make_mapper",
-    "write_ansys_mechanical", "write_lsdyna", "write_ansys_motion",
-    "extrude_field", "EMStructMapper", "map_forces",
+    "write_ansys_mechanical", "write_lsdyna", "write_lsdyna_segment",
+    "write_ansys_motion", "extrude_field", "EMStructMapper", "map_forces",
 ]
 
 __version__ = "0.1.0"

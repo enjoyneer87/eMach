@@ -18,8 +18,9 @@ sys.path.insert(0, os.path.abspath(os.path.join(_HERE, "..", "..")))
 
 from em2struct import (EMStructMapper, ForceField, Quantity, TargetMesh,
                        conservation_report, extrude_field, make_mapper,
-                       read_airgap_mst, read_maxwell_nodal, write_ansys_mechanical,
-                       write_ansys_motion, write_lsdyna)
+                       make_segment_target, read_airgap_mst, read_maxwell_nodal,
+                       write_ansys_mechanical, write_ansys_motion, write_lsdyna,
+                       write_lsdyna_segment)
 
 
 def _synthetic(seed=0, n=200, m=120, ncols=3):
@@ -118,6 +119,48 @@ def test_writers_produce_files():
     c = write_ansys_motion(res, os.path.join(d, "f.csv"))
     for p in ([*a] if isinstance(a, list) else [a]) + [b, c]:
         assert os.path.exists(p) and os.path.getsize(p) > 0
+
+
+# ---------------------------------------------------------------- 세그먼트 압력
+def _flat_plate():
+    """z=0 평판: 3x3 절점, 4개 사각 세그먼트. 법선 +z."""
+    xs = np.array([0, 1, 2.0])
+    X, Y = np.meshgrid(xs, xs, indexing="ij")
+    nodes = np.column_stack([X.ravel(), Y.ravel(), np.zeros(9)])
+    # 절점 인덱스(0-based) 3x3 → 4 사각형
+    idx = np.arange(9).reshape(3, 3)
+    segs = []
+    for i in range(2):
+        for j in range(2):
+            segs.append([idx[i, j], idx[i+1, j], idx[i+1, j+1], idx[i, j+1]])
+    return nodes, np.array(segs)
+
+
+def test_segment_target_geometry():
+    nodes, segs = _flat_plate()
+    st = make_segment_target(nodes, segs)
+    assert st.s == 4
+    assert np.allclose(st.areas, 1.0)                    # 단위 사각형
+    assert np.allclose(np.abs(st.normals[:, 2]), 1.0)    # 법선 ±z
+
+
+def test_segment_pressure_matches_uniform():
+    """균일 +z 트랙션 1000 Pa → 각 세그먼트 압력 1000 Pa(부호관례 포함)."""
+    nodes, segs = _flat_plate()
+    st = make_segment_target(nodes, segs)
+    # 소스: 중심점 위 균일 z-트랙션
+    src = ForceField(st.centroids, np.tile([0, 0, 1000.0], (4, 1)),
+                     quantity=Quantity.TRACTION, areas=st.areas,
+                     normals=st.normals)
+    res = make_mapper("nearest", conservative=False).fit_apply(src, st.as_target_mesh())
+    d = tempfile.mkdtemp()
+    p = write_lsdyna_segment(res, os.path.join(d, "seg.k"), seg_target=st, sign=1.0)
+    txt = open(p, encoding="utf-8").read()
+    assert "*LOAD_SEGMENT" in txt and "*DEFINE_CURVE" in txt
+    # 압력 = F·n/area, F=1000*area*n → 1000 Pa
+    Fn = np.einsum("sjc,sj->sc", res.forces, st.normals)
+    pres = Fn[:, 0] / st.areas
+    assert np.allclose(pres, 1000.0, rtol=1e-6), pres
 
 
 # ---------------------------------------------------------------- 단독 실행

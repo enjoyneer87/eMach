@@ -190,6 +190,76 @@ class TargetMesh:
 
 
 @dataclass
+class SegmentTarget:
+    """표면 세그먼트(면요소) 타깃 — LS-DYNA *LOAD_SEGMENT 압력용.
+
+    맵핑은 세그먼트 **중심점**(``centroids``)에 대해 수행하고(공유절점 이중계산
+    회피), 라이터는 ``conn_ids``(각 세그먼트 코너의 솔버 절점 ID)로 카드를 쓴다.
+
+    centroids : (S,3) 세그먼트 중심점 [m] — 맵핑 타깃 노드.
+    conn_ids  : (S,4) 세그먼트 코너 절점 ID. 삼각형은 마지막 ID 반복.
+    areas     : (S,) 세그먼트 면적 [m^2].
+    normals   : (S,3) 세그먼트 외향 단위 법선.
+    """
+
+    centroids: np.ndarray
+    conn_ids: np.ndarray
+    areas: np.ndarray
+    normals: np.ndarray
+
+    @property
+    def s(self) -> int:
+        return len(self.centroids)
+
+    def as_target_mesh(self) -> "TargetMesh":
+        """중심점을 절점으로 하는 TargetMesh(맵핑 입력용). areas 전달."""
+        return TargetMesh(nodes=self.centroids,
+                          node_ids=np.arange(1, self.s + 1), areas=self.areas)
+
+
+def make_segment_target(nodes, segments, node_ids=None) -> SegmentTarget:
+    """구조 표면 절점·연결성 → SegmentTarget(중심점·면적·법선·코너ID).
+
+    Parameters
+    ----------
+    nodes    : (M,2|3) 절점 좌표 [m].
+    segments : (S,3|4) 각 세그먼트의 절점 **인덱스**(0-based). 삼각형/사각형 혼용 시
+               사각형 기준으로 패딩(삼각형은 마지막 인덱스 반복).
+    node_ids : (M,) 솔버 절점 ID. 없으면 1..M.
+
+    법선·면적은 Newell 법(비평면 사각형에도 강건)으로 계산.
+    """
+    nodes = _as3d(nodes)
+    segments = np.asarray(segments, dtype=int)
+    M = len(nodes)
+    ids = np.arange(1, M + 1) if node_ids is None else np.asarray(node_ids).ravel()
+    if segments.ndim != 2:
+        raise ValueError("segments must be (S,k)")
+    S, k = segments.shape
+
+    centroids = np.zeros((S, 3))
+    areas = np.zeros(S)
+    normals = np.zeros((S, 3))
+    conn = np.zeros((S, 4), dtype=np.int64)
+    for i in range(S):
+        verts = nodes[segments[i]]                 # (k,3)
+        centroids[i] = verts.mean(axis=0)
+        # Newell 법선(면적가중) : n = Σ (v_j × v_{j+1})
+        nvec = np.zeros(3)
+        for j in range(k):
+            a = verts[j]; b = verts[(j + 1) % k]
+            nvec += np.cross(a, b)
+        area = 0.5 * np.linalg.norm(nvec)
+        areas[i] = area
+        normals[i] = nvec / (np.linalg.norm(nvec) + 1e-30)
+        seg_ids = list(ids[segments[i]])
+        while len(seg_ids) < 4:                     # 삼각형 → 4번째 반복
+            seg_ids.append(seg_ids[-1])
+        conn[i] = seg_ids[:4]
+    return SegmentTarget(centroids=centroids, conn_ids=conn, areas=areas, normals=normals)
+
+
+@dataclass
 class MappingResult:
     """맵핑 산출: 타깃 절점력 + 진단.
 

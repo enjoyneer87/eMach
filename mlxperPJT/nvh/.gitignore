@@ -1,0 +1,5 @@
+# 대용량 파생 하중파일(재생성 가능) — 코드/소량 npz만 버전관리
+data/*.inp
+data/*.k
+data/*.csv
+data/*.png
