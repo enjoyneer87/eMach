@@ -368,6 +368,11 @@ def write_ansys_remote_force(
                  f"{coupling.upper()}\n")
         fh.write(f"! sources={S} steps={C} coupling={coupling} scope={scope}\n")
         fh.write("/prep7\n")
+        # pilot 절점은 요소에 붙어야 DOF 가 생긴다(안 붙으면 RBE3 마스터가 solve 에서
+        # 제거되어 실패) → 6DOF 더미 MASS21 을 각 pilot 에 부착.
+        fh.write("et,9990,mass21,,,0        ! pilot 더미질량(6DOF)\n")
+        fh.write("r,9990,1e-12,1e-12,1e-12,1e-12,1e-12,1e-12\n")
+        fh.write("type,9990\nreal,9990\n")
         pilots = []
         for s in range(S):
             slaves = assign[s]
@@ -378,6 +383,7 @@ def write_ansys_remote_force(
             cen = tp[slaves].mean(axis=0)
             fh.write(f"\n! ---- source {s}: |F|max={fmax:.3g} N, slaves={len(slaves)} ----\n")
             fh.write(f"n,{pid},{cen[0]:.8e},{cen[1]:.8e},{cen[2]:.8e}\n")
+            fh.write(f"e,{pid}\n")                     # MASS21 부착(DOF 활성)
             # 슬레이브 절점 선택 → 컴포넌트
             fh.write("nsel,none\n")
             for j in slaves:
@@ -396,7 +402,9 @@ def write_ansys_remote_force(
             pilots.append((s, pid))
         # 하중(정적: col0 / 트랜지언트: 스텝루프)
         mcomp = ("MX", "MY", "MZ")
-        fh.write("\nfinish\n/solu\n")
+        fh.write("\nallsel                    ! solve 전 선택 복원(후처리 선택 오염 방지)\n")
+        fh.write("/nerr,,9999999            ! 경고 1만건 초과 시 런 종료 방지\n")
+        fh.write("finish\n/solu\n")
         if sm is None:
             fh.write("! ⚠️ 합력만 적용(모멘트 없음). Pile(2021)§3.4.2: 치 토서 대비 "
                      "~4 dB 손실 가능 — 분포 소스가 있으면 lump_torsor 로 M 을 넘길 것.\n")

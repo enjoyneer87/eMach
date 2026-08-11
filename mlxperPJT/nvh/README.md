@@ -10,6 +10,8 @@ Motor-CAD(Maxwell) 에어갭 가진력을 e10 MAPDL 구조 메시로 맵핑·exp
 | `extract_e10_bore_nodes.py` | e10 MAPDL 메시(`ff_e10_mesh_v2.cdb`, 1.11M절점)에서 **스테이터 보어 표면 절점**(mat=1, r≈0.0713, z=스택) 추출 → `data/e10_target_nodes.npz`. 스테이터 OD·권선엔드도 함께. |
 | `e10_emforce_pipeline.py` | 보어절점을 타깃으로 에어갭 가진력 LSQ 맵핑 → MAPDL/LS-DYNA/Motion export + QA. 실 Motor-CAD 멀티포스 파일 있으면 사용, 없으면 e10 파라미터 에어갭 MST. |
 | `e10_rotor_remote_force.py` | 로터측 rotorExcitation(8극) → 로터 OD 절점 **원격힘**(pilot+RBE3) MAPDL export + QA. |
+| `e10_harmonic_response.py` | **NVH 하모닉 응답 실전**: 열메시 ETCHG→SOLID187, 스테이터(MAT1)+48 pilot/RBE3/MASS21, 자유-자유 모달(LANB) → 치 힘 FFT 상위 온도차수에서 FULL 하모닉 → OD 복소변위 추출(npz). 기본 loadPoint4(15000rpm, f_elec=1kHz). |
+| `e10_harmonic_viz.py` | 하모닉 결과 시각화: 모드 vs 가진차수 / 차수별 OD 반경변위 / 지배차수 ODS(극좌표)+공간차수 FFT. |
 
 ## 실행
 

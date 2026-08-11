@@ -3,3 +3,4 @@ data/*.inp
 data/*.k
 data/*.csv
 data/*.png
+data/e10_harmonic_result.npz
