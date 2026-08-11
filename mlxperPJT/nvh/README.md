@@ -31,16 +31,23 @@ PYTHONIOENCODING=utf-8 python mlxperPJT/nvh/e10_emforce_pipeline.py
 > 대용량 하중파일(.inp/.k/.csv)은 `.gitignore` — 재생성 가능. `data/e10_target_nodes.npz`
 > (타깃 절점)만 버전관리.
 
-## Motor-CAD 실 멀티포스 연동
+## Motor-CAD 실 멀티포스 연동 (✅ 검증 완료)
 
-`e10_emforce_pipeline.py` 는 아래 경로에 실 Motor-CAD 멀티포스 export 가 있으면
-자동 사용한다(우선). 생성: Motor-CAD API `do_multi_force_calculation()` +
-`export_multi_force_data(file)`. → `tools/em2struct` `read_motorcad_nvh` 로 파싱
-(export 헤더에 맞춰 `col_map` 조정).
+`e10_emforce_pipeline.py` 는 실 Motor-CAD 멀티포스 export 가 있으면 우선 사용한다.
+생성: Motor-CAD API `do_magnetic_calculation()` → `do_multi_force_calculation()` →
+`export_multi_force_data(file)` (네이티브 **JSON** 출력).
 
 ```
-mlxperPJT/thermal/freeflow/data/e10_multiforce.csv  (또는 .txt)
+mlxperPJT/thermal/freeflow/data/e10_multiforce.json   # v2026 네이티브
 ```
+
+**실 데이터 검증(2026-08-11)**: e10Turn6V261.mot, loadPoint0 = 250rpm/498.8Nm.
+48치 × 128스텝, 치당 반경·접선력(~1360N), f_elec 16.7Hz. `read_motorcad_multiforce`
+로 파싱 → 보어 48,439절점에 LSQ 맵핑, 보존 4.9e-15/1.1e-14. QA 에 48치 힘 클러스터
+뚜렷. 다른 운전점은 `MF_LOADPOINT` 환경변수(0~4)로 선택.
+
+> 헤드리스 주의: `do_multi_force_calculation` 전 `set_variable("MessageDisplayState",2)`
+> 로 다이얼로그 억제해야 hang 회피. (첫 시도 `get_magnetic_graph` 호출에서 헤드리스 hang.)
 
 ## 관련
 

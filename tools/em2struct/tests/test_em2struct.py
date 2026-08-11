@@ -16,11 +16,13 @@ import numpy as np
 _HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.abspath(os.path.join(_HERE, "..", "..")))
 
+import json as _json
+
 from em2struct import (EMStructMapper, ForceField, Quantity, TargetMesh,
                        conservation_report, extrude_field, make_mapper,
                        make_segment_target, read_airgap_mst, read_maxwell_nodal,
-                       write_ansys_mechanical, write_ansys_motion, write_lsdyna,
-                       write_lsdyna_segment)
+                       read_motorcad_multiforce, write_ansys_mechanical,
+                       write_ansys_motion, write_lsdyna, write_lsdyna_segment)
 
 
 def _synthetic(seed=0, n=200, m=120, ncols=3):
@@ -119,6 +121,39 @@ def test_writers_produce_files():
     c = write_ansys_motion(res, os.path.join(d, "f.csv"))
     for p in ([*a] if isinstance(a, list) else [a]) + [b, c]:
         assert os.path.exists(p) and os.path.getsize(p) > 0
+
+
+# ---------------------------------------------------------------- Motor-CAD JSON
+def test_motorcad_multiforce_json():
+    """실제 Motor-CAD export 포맷(축소본) 파싱 검증: 극→직교 변환, 시간·메타."""
+    nT = 4
+    teeth = [{"nodeID": f"S_{i:04d}",
+              "forceRValues": [10.0, 0, -10.0, 0],      # 반경력
+              "forceTValues": [0.0, 5.0, 0, -5.0]}      # 접선력
+             for i in range(4)]
+    nodes = [{"nodeID": f"S_{i:04d}", "nodeCoord": [70.0, i * 90.0], "axialSlice": 1}
+             for i in range(4)]  # 0,90,180,270도
+    doc = {
+        "loadPointDefinition": [{
+            "speedPoint": 1500, "torquePoint": 100.0,
+            "excitationData": {"torqueValues": [1] * nT,
+                               "statorExcitation": teeth, "rotorExcitation": []}}],
+        "statorNodeLocations": {"geometryUnitLinear": "mm", "geometryUnitAngular": "deg",
+                                "statorNodes": nodes},
+        "eMachineGeometry": {"rotorPoleNumber": 8, "statorLength": 150},
+    }
+    d = tempfile.mkdtemp(); p = os.path.join(d, "mf.json")
+    _json.dump(doc, open(p, "w"))
+    f = read_motorcad_multiforce(p)
+    assert f.n == 4 and f.ncols == 4 and f.quantity == Quantity.NODAL_FORCE
+    # 반경 70mm → 0.07m
+    assert np.allclose(np.hypot(f.points[:, 0], f.points[:, 1]), 0.07, atol=1e-6)
+    # 치0(θ=0): e_r=(1,0),e_t=(0,1) → t0: Fr=10→Fx=10,Fy=0
+    assert np.allclose(f.values[0, :, 0], [10, 0, 0], atol=1e-9)
+    # 치1(θ=90): e_r=(0,1),e_t=(-1,0) → t1: Ft=5 → Fx=-5,Fy=0
+    assert np.allclose(f.values[1, :, 1], [-5, 0, 0], atol=1e-9)
+    # f_elec = 1500/60*4 = 100 Hz → 시간축
+    assert abs(f.meta["f_elec_Hz"] - 100.0) < 1e-6
 
 
 # ---------------------------------------------------------------- 세그먼트 압력

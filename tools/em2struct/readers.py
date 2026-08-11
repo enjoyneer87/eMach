@@ -13,6 +13,7 @@ in-memory 배열을 받도록 유연하게 설계했다. 실제 export 헤더가
 from __future__ import annotations
 
 import csv
+import json
 import os
 from typing import Optional, Sequence
 
@@ -245,3 +246,76 @@ def read_motorcad_nvh(
     return ForceField(points=pts, values=F, quantity=Quantity.NODAL_FORCE,
                       meta={"source": os.path.basename(src),
                             "stack_length": stack_length, "ncols": T})
+
+
+# ============================================================ 3b) Motor-CAD 네이티브 JSON
+def read_motorcad_multiforce(
+    path: str,
+    load_point: int = 0,
+    part: str = "stator",
+    poles: Optional[int] = None,
+) -> ForceField:
+    """Motor-CAD ``export_multi_force_data`` 네이티브 JSON → ForceField(NODAL_FORCE).
+
+    실제 e10 export 포맷(Motor-CAD v2026)에 정합. 구조::
+
+        loadPointDefinition[i].excitationData.statorExcitation[t] =
+            {nodeID, forceRValues[nT], forceTValues[nT]}   # 반경/접선력 [N] 시간이력
+        statorNodeLocations.statorNodes[t] = {nodeID, nodeCoord:[r_mm, theta_deg], axialSlice}
+
+    각 치(teeth)의 (Fr, Ft) 를 치 각도로 (Fx, Fy) 로 변환해 절점력 필드를 만든다.
+    시간축은 한 전기주기를 등분한 것으로 두고(정규화 [0,1) 사이클) times 에 기록.
+
+    Parameters
+    ----------
+    path       : e10_multiforce.json 등.
+    load_point : loadPointDefinition 인덱스(운전점 선택).
+    part       : 'stator'(치 힘) | 'rotor'(로터 극 힘).
+    poles      : 전기주기 환산용(없으면 geometry.rotorPoleNumber 사용).
+    """
+    with open(path, "r", encoding="utf-8-sig") as fh:
+        d = json.load(fh)
+    lp = d["loadPointDefinition"][load_point]
+    ex = lp["excitationData"]
+    if part == "stator":
+        exc = ex["statorExcitation"]
+        nodes = {n["nodeID"]: n for n in d["statorNodeLocations"]["statorNodes"]}
+        geo = d["statorNodeLocations"]
+    else:
+        exc = ex["rotorExcitation"]
+        nodes = {n["nodeID"]: n for n in d["rotorNodeLocations"]["rotorNodes"]}
+        geo = d["rotorNodeLocations"]
+    len_scale = 1e-3 if str(geo.get("geometryUnitLinear", "mm")).lower() == "mm" else 1.0
+    ang_deg = str(geo.get("geometryUnitAngular", "deg")).lower().startswith("deg")
+
+    pts, Fx_l, Fy_l = [], [], []
+    for e in exc:
+        nd = nodes[e["nodeID"]]
+        r_mm, th = nd["nodeCoord"]
+        r = r_mm * len_scale
+        ang = np.deg2rad(th) if ang_deg else th
+        fr = np.asarray(e["forceRValues"], float)   # (nT,)
+        ft = np.asarray(e["forceTValues"], float)
+        # 극→직교: e_r=(cosθ,sinθ), e_t=(-sinθ,cosθ)
+        Fx_l.append(np.cos(ang) * fr - np.sin(ang) * ft)
+        Fy_l.append(np.sin(ang) * fr + np.cos(ang) * ft)
+        pts.append([r * np.cos(ang), r * np.sin(ang), 0.0])
+    pts = np.asarray(pts)
+    Fx = np.asarray(Fx_l); Fy = np.asarray(Fy_l)     # (Nteeth, nT)
+    F = np.stack([Fx, Fy, np.zeros_like(Fx)], axis=1)  # (Nteeth,3,nT)
+    nT = F.shape[2]
+
+    # 시간축: 한 전기주기 정규화(스텝→사이클 분율). 절대시간은 speed 로 환산 가능.
+    times = np.arange(nT, dtype=float) / nT
+    speed = lp.get("speedPoint")
+    P = poles or d.get("eMachineGeometry", {}).get("rotorPoleNumber")
+    meta = {"source": os.path.basename(path), "load_point": load_point,
+            "part": part, "speed_rpm": speed, "poles": P,
+            "stack_length_mm": d.get("eMachineGeometry", {}).get("statorLength")}
+    if speed and P:
+        f_elec = speed / 60.0 * (P / 2)
+        if f_elec > 0:
+            times = times / f_elec          # 한 전기주기 절대시간 [s]
+            meta["f_elec_Hz"] = f_elec
+    return ForceField(points=pts, values=F, quantity=Quantity.NODAL_FORCE,
+                      times=times, meta=meta)

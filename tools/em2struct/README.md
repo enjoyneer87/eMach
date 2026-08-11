@@ -109,8 +109,12 @@ read_maxwell_nodal("forces.csv", col_map={"x":"X [mm]","Fx":"Force_x", ...},
 # ② 에어갭 Maxwell 응력텐서 (NVH 표준)
 read_airgap_mst(theta, sigma_r, sigma_t, radius=..., stack_length=..., times=...)
 
-# ③ Motor-CAD NVH 치(teeth) 힘
+# ③ Motor-CAD NVH 치(teeth) 힘 — 일반 CSV
 read_motorcad_nvh("nvh_teeth.csv", representation="polar")  # Fr,Ft → x,y
+
+# ③b Motor-CAD 네이티브 멀티포스 JSON (export_multi_force_data 출력, 권장)
+read_motorcad_multiforce("e10_multiforce.json", load_point=0, part="stator")
+#   → 48치 × nT스텝, forceRValues/forceTValues 를 치 각도로 x,y 변환. 실 e10 검증됨.
 ```
 
 리더는 **열이름 매핑(`col_map`)** 이나 in-memory 배열을 받으므로 export 헤더가
@@ -155,7 +159,8 @@ python tools/em2struct/examples/example_airgap_to_structural.py   # e10 데모 +
 
 ## 한계 / TODO
 
-- Motor-CAD NVH export 실제 헤더 스키마는 버전별로 다름 → 실파일 확보 시 `col_map`
-  기본값 정합 필요(현재 유연 파서 + 문서화된 스키마로 대응).
+- `read_motorcad_multiforce` 는 Motor-CAD v2026 네이티브 JSON 에 정합(실 e10 검증).
+  구형/타버전 CSV 는 `read_motorcad_nvh` + `col_map` 으로 대응.
 - 2-way(구조 변형 → 전자계 되먹임) 미지원(1-way 하중 전달 전용).
-- 표면 세그먼트 압력(`*LOAD_SEGMENT`) 라이터는 절점력 방식으로 대체(추후 추가 가능).
+- 축방향: 현재 export 는 단일 축슬라이스(axialSlice=1)를 `extrude_field` 로 분배.
+  Motor-CAD 다중 축슬라이스/사구 데이터가 있으면 슬라이스별 소스로 확장 가능.

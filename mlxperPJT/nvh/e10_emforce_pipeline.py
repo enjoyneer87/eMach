@@ -17,16 +17,18 @@ _HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.abspath(os.path.join(_HERE, "..", "..", "tools")))
 
 from em2struct import (EMStructMapper, read_airgap_mst, read_motorcad_nvh,
-                       make_segment_target, write_lsdyna_segment)
+                       read_motorcad_multiforce, make_segment_target, write_lsdyna_segment)
 from em2struct.target_io import target_from_arrays
 from em2struct.viz import plot_mapping
 
 DATA = os.path.join(_HERE, "data")
 NODES_NPZ = os.path.join(DATA, "e10_target_nodes.npz")
-MF_CANDIDATES = [
-    r"D:\KDH\NvidiaNemo\eMach\mlxperPJT\thermal\freeflow\data\e10_multiforce.csv",
-    r"D:\KDH\NvidiaNemo\eMach\mlxperPJT\thermal\freeflow\data\e10_multiforce.txt",
-]
+FFDATA = r"D:\KDH\NvidiaNemo\eMach\mlxperPJT\thermal\freeflow\data"
+# 실 Motor-CAD 멀티포스 export(네이티브 JSON 우선, 구형 CSV/TXT 폴백)
+MF_JSON = os.path.join(FFDATA, "e10_multiforce.json")
+MF_CSV = [os.path.join(FFDATA, "e10_multiforce.csv"),
+          os.path.join(FFDATA, "e10_multiforce.txt")]
+LOAD_POINT = int(os.environ.get("MF_LOADPOINT", "0"))
 
 # e10 파라미터
 R_AG = 0.0713
@@ -38,13 +40,24 @@ F_ELEC = 16000 / 60 * (POLES / 2)
 
 def build_source(times):
     """실 Motor-CAD 멀티포스 있으면 로드, 없으면 에어갭 MST 현실값."""
-    for mf in MF_CANDIDATES:
+    # (우선) 네이티브 JSON — 실제 e10 export 포맷
+    if os.path.exists(MF_JSON) and os.path.getsize(MF_JSON) > 0:
+        print(f"[source] 실 Motor-CAD 멀티포스 JSON 사용: {MF_JSON} (loadPoint={LOAD_POINT})")
+        try:
+            src = read_motorcad_multiforce(MF_JSON, load_point=LOAD_POINT, part="stator")
+            print(f"  {src.n}치 × {src.ncols}스텝, "
+                  f"{src.meta.get('speed_rpm')}rpm/{src.meta.get('poles')}극, "
+                  f"f_elec={src.meta.get('f_elec_Hz'):.1f}Hz")
+            return src, "motorcad_multiforce_json"
+        except Exception as e:
+            print(f"  [warn] JSON 파싱 실패({repr(e)[:100]}) → CSV/에어갭 대체")
+    for mf in MF_CSV:
         if os.path.exists(mf) and os.path.getsize(mf) > 0:
-            print(f"[source] 실 Motor-CAD 멀티포스 사용: {mf}")
+            print(f"[source] Motor-CAD 멀티포스 CSV 사용: {mf}")
             try:
-                return read_motorcad_nvh(mf), "motorcad_multiforce"
+                return read_motorcad_nvh(mf, representation="polar"), "motorcad_nvh_csv"
             except Exception as e:
-                print(f"  [warn] 멀티포스 파싱 실패({repr(e)[:80]}) → 에어갭 MST 대체")
+                print(f"  [warn] CSV 파싱 실패({repr(e)[:80]}) → 에어갭 MST 대체")
             break
     print("[source] 실 파일 없음 → e10 파라미터 에어갭 Maxwell 응력(대체)")
     n_theta = 360
@@ -79,7 +92,8 @@ def main():
     pipe = (EMStructMapper()
             .load_source(src)
             .set_target(tgt))
-    if src_tag == "airgap_mst":
+    # 2D 소스(단일 축슬라이스)면 스택 길이에 걸쳐 축방향 분배
+    if src.dim == 2 or np.allclose(src.points[:, 2], src.points[0, 2]):
         pipe.extrude(z_stations=z_stations)   # 2D 단면 → 3D
     pipe.map("lsq", k=6).report()
 

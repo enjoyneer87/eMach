@@ -41,7 +41,8 @@ from .core import (
     conservation_report,
     make_segment_target,
 )
-from .readers import read_airgap_mst, read_maxwell_nodal, read_motorcad_nvh
+from .readers import (read_airgap_mst, read_maxwell_nodal, read_motorcad_nvh,
+                      read_motorcad_multiforce)
 from .mappers import (
     BaseMapper,
     InverseDistanceMapper,
@@ -60,6 +61,7 @@ __all__ = [
     "SegmentTarget", "make_segment_target",
     "ConservationReport", "conservation_report",
     "read_maxwell_nodal", "read_airgap_mst", "read_motorcad_nvh",
+    "read_motorcad_multiforce",
     "BaseMapper", "NearestMapper", "InverseDistanceMapper",
     "LeastSquaresMapper", "RBFMapper", "make_mapper",
     "write_ansys_mechanical", "write_lsdyna", "write_lsdyna_segment",
