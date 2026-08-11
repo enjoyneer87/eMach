@@ -21,8 +21,9 @@ import json as _json
 from em2struct import (EMStructMapper, ForceField, Quantity, TargetMesh,
                        conservation_report, extrude_field, make_mapper,
                        make_segment_target, read_airgap_mst, read_maxwell_nodal,
-                       read_motorcad_multiforce, write_ansys_mechanical,
-                       write_ansys_motion, write_lsdyna, write_lsdyna_segment)
+                       read_motorcad_multiforce, read_vwp_force,
+                       write_ansys_mechanical, write_ansys_motion, write_lsdyna,
+                       write_lsdyna_segment, write_ansys_remote_force)
 
 
 def _synthetic(seed=0, n=200, m=120, ncols=3):
@@ -154,6 +155,48 @@ def test_motorcad_multiforce_json():
     assert np.allclose(f.values[1, :, 1], [-5, 0, 0], atol=1e-9)
     # f_elec = 1500/60*4 = 100 Hz → 시간축
     assert abs(f.meta["f_elec_Hz"] - 100.0) < 1e-6
+
+
+# ---------------------------------------------------------------- VWP 리더
+def test_vwp_force_density():
+    """힘밀도[N/m³] × 체적 → 절점력[N]. 총력 검증."""
+    pts = np.array([[0, 0, 0], [1, 0, 0], [0, 1, 0.]])
+    fdens = np.array([[100, 0, 0], [0, 200, 0], [0, 0, 50.]])  # N/m^3
+    vol = np.array([2.0, 3.0, 4.0])                             # m^3
+    f = read_vwp_force((pts, fdens, vol), density=True)
+    assert f.quantity == Quantity.FORCE_DENSITY
+    nf = f.as_nodal_forces()[:, :, 0]     # density*vol
+    assert np.allclose(nf, [[200, 0, 0], [0, 600, 0], [0, 0, 200]])
+    assert np.allclose(f.total_force()[:, 0], [200, 600, 200])
+
+
+def test_vwp_force_nodal():
+    pts = np.array([[0, 0], [1, 1.]]); F = np.array([[3, 4.], [1, 0]])
+    f = read_vwp_force((pts, F), density=False)
+    assert f.quantity == Quantity.NODAL_FORCE
+    assert np.allclose(f.total_force()[:, 0], [4, 4, 0])
+
+
+# ---------------------------------------------------------------- 원격힘 라이터
+def test_remote_force_writer():
+    """소스 4점 → 링 타깃. pilot 4개, RBE3, F 커맨드, 파티션 전체 커버 검증."""
+    # 링 타깃(z≠0, 소스는 z=0 슬라이스) → 축 불일치 자동보정 확인
+    ang = np.linspace(0, 2*np.pi, 40, endpoint=False)
+    tp = np.column_stack([0.07*np.cos(ang), 0.07*np.sin(ang), np.full(40, -0.13)])
+    tgt = TargetMesh(tp, node_ids=np.arange(500, 540))
+    sang = np.array([0, np.pi/2, np.pi, 3*np.pi/2])
+    sp = np.column_stack([0.07*np.cos(sang), 0.07*np.sin(sang), np.zeros(4)])
+    sv = np.zeros((4, 3, 2)); sv[:, 0, :] = 10.0  # Fx=10, 2 스텝
+    src = ForceField(sp, sv, quantity=Quantity.NODAL_FORCE, times=[0., 1.])
+    d = tempfile.mkdtemp(); p = os.path.join(d, "rf.inp")
+    write_ansys_remote_force(src, tgt, p, scope="nearest", coupling="rbe3")
+    txt = open(p, encoding="utf-8").read()
+    assert txt.count("rbe3,") == 4                  # 극당 pilot 1개
+    assert txt.count("\nn,900") == 4                # pilot 절점 4개
+    assert "f,9000001,FX" in txt                    # 힘 적용
+    assert "antype,trans" in txt                    # 다스텝 → 트랜지언트
+    # 모든 타깃이 어떤 파티션엔가 배정(nsel,a 총계 ≥ 타깃수)
+    assert txt.count("nsel,a,node,,") >= 40
 
 
 # ---------------------------------------------------------------- 세그먼트 압력

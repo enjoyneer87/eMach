@@ -286,6 +286,117 @@ def write_lsdyna_segment(
     return path
 
 
+def write_ansys_remote_force(
+    source,
+    target,
+    path: str,
+    scope: str = "nearest",
+    k: int = 30,
+    radius: Optional[float] = None,
+    coupling: str = "rbe3",
+    pilot_id0: int = 9000001,
+    tol: float = 0.0,
+) -> str:
+    """ANSYS/MAPDL **원격힘(Remote Force)** 스크립트(.inp).
+
+    소스 힘점(예: 로터 8극 / 스테이터 48치)마다 **파일럿 절점**을 만들고, 그 힘을
+    받을 타깃 표면 절점들에 **RBE3**(변형허용) 또는 **CERIG**(강체)로 결합한 뒤,
+    파일럿에 힘(+모멘트) 시간이력을 가한다. 비컨포멀 절점맞춤 불필요 — 각 극/치의
+    합력이 해당 표면 영역으로 분산 전달된다.
+
+    타깃 절점→소스 배정: ``scope``
+      'nearest' : 각 타깃을 xy 평면상 최근접 소스에 배정(각도 섹터 분할, 로터극에 적합).
+      'knn'     : 각 소스가 자신에 최근접한 k개 타깃과 결합.
+      'radius'  : 각 소스가 반경 내 타깃과 결합.
+    파일럿 위치 = 배정된 타깃 절점들의 중심(실제 3D 표면 위, 소스의 축슬라이스
+    z=0 과 타깃 메시 z 불일치를 자동 보정).
+
+    Parameters
+    ----------
+    source : ForceField(NODAL_FORCE) — 소스 힘점(극/치).
+    target : TargetMesh — 실제 솔버 절점 ID·좌표를 가진 표면 메시.
+    coupling : 'rbe3'(권장, 하중분산) | 'cerig'(강체).
+    """
+    import numpy as _np
+    from scipy.spatial import cKDTree
+    sp = source.points                     # (S,3)
+    sf = source.as_nodal_forces()          # (S,3,C)
+    S, _, C = sf.shape
+    tp = target.nodes                      # (M,3)
+    tids = target.node_ids
+    t = source.times if (source.times is not None and len(source.times) == C) else _np.arange(C)
+
+    # 타깃→소스 배정
+    assign = {s: [] for s in range(S)}
+    if scope == "nearest":
+        tree = cKDTree(sp[:, :2])          # xy 평면(축 z 불일치 무시)
+        _, near = tree.query(tp[:, :2], k=1)
+        for i, s in enumerate(near):
+            assign[int(s)].append(i)
+    elif scope in ("knn", "radius"):
+        tree = cKDTree(tp)
+        for s in range(S):
+            if scope == "knn":
+                _, idx = tree.query(sp[s], k=min(k, len(tp)))
+                idx = _np.atleast_1d(idx)
+            else:
+                idx = _np.array(tree.query_ball_point(sp[s], radius or 1e9), dtype=int)
+            assign[s] = list(idx)
+    else:
+        raise ValueError("scope must be 'nearest'|'knn'|'radius'")
+
+    os.makedirs(os.path.dirname(os.path.abspath(path)) or ".", exist_ok=True)
+    comp = ("FX", "FY", "FZ")
+    with open(path, "w", encoding="utf-8") as fh:
+        fh.write("! em2struct → MAPDL 원격힘(Remote Force) : 소스 힘점별 pilot + "
+                 f"{coupling.upper()}\n")
+        fh.write(f"! sources={S} steps={C} coupling={coupling} scope={scope}\n")
+        fh.write("/prep7\n")
+        pilots = []
+        for s in range(S):
+            slaves = assign[s]
+            fmax = _np.linalg.norm(sf[s], axis=0).max()
+            if not slaves or fmax <= tol:
+                continue
+            pid = pilot_id0 + s
+            cen = tp[slaves].mean(axis=0)
+            fh.write(f"\n! ---- source {s}: |F|max={fmax:.3g} N, slaves={len(slaves)} ----\n")
+            fh.write(f"n,{pid},{cen[0]:.8e},{cen[1]:.8e},{cen[2]:.8e}\n")
+            # 슬레이브 절점 선택 → 컴포넌트
+            fh.write("nsel,none\n")
+            for j in slaves:
+                fh.write(f"nsel,a,node,,{int(tids[j])}\n")
+            cname = f"_RF_SLV{s}"
+            fh.write(f"cm,{cname},node\n")
+            if coupling == "cerig":
+                fh.write(f"cerig,{pid},ALL,{cname}\n")
+            else:
+                fh.write(f"rbe3,{pid},ALL,{cname}\n")
+            fh.write("allsel\n")
+            pilots.append((s, pid))
+        # 하중(정적: col0 / 트랜지언트: 스텝루프)
+        fh.write("\nfinish\n/solu\n")
+        if C == 1:
+            for s, pid in pilots:
+                for j in range(3):
+                    v = sf[s, j, 0]
+                    if v != 0.0:
+                        fh.write(f"f,{pid},{comp[j]},{v:.8e}\n")
+        else:
+            fh.write("antype,trans\n")
+            for kstep in range(C):
+                fh.write(f"\n! load step {kstep+1} t={t[kstep]:.6g}\n")
+                fh.write(f"time,{t[kstep]:.8g}\n")
+                for s, pid in pilots:
+                    for j in range(3):
+                        v = sf[s, j, kstep]
+                        if v != 0.0:
+                            fh.write(f"f,{pid},{comp[j]},{v:.8e}\n")
+                fh.write("solve\n")
+        fh.write("finish\n")
+    return path
+
+
 WRITERS = {
     "ansys_mechanical": write_ansys_mechanical,
     "mapdl": write_ansys_mechanical,

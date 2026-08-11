@@ -108,6 +108,72 @@ def read_maxwell_nodal(
                       meta={"source": os.path.basename(src)})
 
 
+# ============================================================ 1b) VWP body force
+def read_vwp_force(
+    src,
+    col_map: Optional[dict] = None,
+    density: bool = False,
+    stack_length: float = 1.0,
+    scale_len: float = 1.0,
+    scale_force: float = 1.0,
+    delimiter=None,
+) -> ForceField:
+    """가상일법(Virtual Work Principle) 전자기 **체적력** → ForceField.
+
+    에어갭 MST(표면 트랙션)와 달리, VWP 는 철심·자석 내부에 분포하는 체적 힘을
+    준다(자기변형·릴럭턴스력). Maxwell/Motor-CAD FEA 메시의 요소별 힘 또는
+    힘밀도를 읽어 절점력 필드로 만든다.
+
+    두 입력 모드:
+      density=False : 열 Fx,Fy[,Fz] 가 **요소당 총 힘 [N]** → NODAL_FORCE.
+      density=True  : 열 Fx,Fy[,Fz] 가 **힘밀도 [N/m^3]** → FORCE_DENSITY.
+                      요소 체적으로 적분(2D면 area×stack_length). area/vol 열 필요.
+
+    기대 열(기본): x,y[,z], Fx,Fy[,Fz], (density 시) area 또는 vol.
+    헤더가 다르면 col_map 지정. 단위 환산 scale_len/scale_force.
+
+    Parameters
+    ----------
+    src          : CSV 경로 또는 (points, values[, weights]) 배열.
+    density      : True 면 힘밀도 모드(체적 적분).
+    stack_length : 2D(area만 있을 때) 체적 환산용 적층 길이 [m].
+    """
+    cm = col_map or {}
+    if not isinstance(src, str):
+        arr = list(src)
+        pts = np.asarray(arr[0], float) * scale_len
+        vals = np.asarray(arr[1], float) * scale_force
+        w = np.asarray(arr[2], float) if len(arr) > 2 else None
+    else:
+        headers, data = _read_table(src, delimiter=delimiter)
+        x = _pick(headers, data, cm.get("x", ["x", "X [mm]", "X", "c0"]))
+        y = _pick(headers, data, cm.get("y", ["y", "Y [mm]", "Y", "c1"]))
+        z = _pick(headers, data, cm.get("z", ["z", "Z [mm]", "Z"]), required=False, default=0.0)
+        fx = _pick(headers, data, cm.get("Fx", ["fx", "Force_x", "Fx", "FX", "fdens_x"]))
+        fy = _pick(headers, data, cm.get("Fy", ["fy", "Force_y", "Fy", "FY", "fdens_y"]))
+        fz = _pick(headers, data, cm.get("Fz", ["fz", "Force_z", "Fz", "FZ", "fdens_z"]),
+                   required=False, default=0.0)
+        pts = np.column_stack([x, y, z]) * scale_len
+        vals = np.column_stack([fx, fy, fz]) * scale_force
+        w = None
+        if density:
+            vol = _pick(headers, data, cm.get("vol", ["vol", "volume", "Volume"]),
+                        required=False)
+            if vol is None:
+                area = _pick(headers, data, cm.get("area", ["area", "Area", "elem_area"]))
+                vol = area * stack_length
+            w = np.asarray(vol, float)
+
+    if density:
+        if w is None:
+            raise ValueError("density=True 에는 area 또는 vol 열/배열이 필요합니다.")
+        return ForceField(points=pts, values=vals, quantity=Quantity.FORCE_DENSITY,
+                          volumes=w, meta={"source": "vwp_force(density)",
+                                           "method": "virtual_work"})
+    return ForceField(points=pts, values=vals, quantity=Quantity.NODAL_FORCE,
+                      meta={"source": "vwp_force(nodal)", "method": "virtual_work"})
+
+
 # ============================================================ 2) air-gap MST
 def read_airgap_mst(
     theta,
@@ -260,10 +326,13 @@ def read_motorcad_multiforce(
     실제 e10 export 포맷(Motor-CAD v2026)에 정합. 구조::
 
         loadPointDefinition[i].excitationData.statorExcitation[t] =
-            {nodeID, forceRValues[nT], forceTValues[nT]}   # 반경/접선력 [N] 시간이력
-        statorNodeLocations.statorNodes[t] = {nodeID, nodeCoord:[r_mm, theta_deg], axialSlice}
+            {nodeID, forceRValues[nT], forceTValues[nT]}   # 스테이터: 반경/접선력 [N]
+        loadPointDefinition[i].excitationData.rotorExcitation[t] =
+            {nodeID, forceXValues[nT], forceYValues[nT]}   # 로터: 직교 x/y력 [N]
+        {stator|rotor}NodeLocations.{...}Nodes[t] = {nodeID, nodeCoord:[r_mm, θ_deg], axialSlice}
 
-    각 치(teeth)의 (Fr, Ft) 를 치 각도로 (Fx, Fy) 로 변환해 절점력 필드를 만든다.
+    성분 규약은 자동감지: 스테이터는 극좌표(Fr,Ft)→치 각도로 (Fx,Fy) 변환,
+    로터는 이미 직교(Fx,Fy)라 그대로 사용. 절점력 필드를 만든다.
     시간축은 한 전기주기를 등분한 것으로 두고(정규화 [0,1) 사이클) times 에 기록.
 
     Parameters
@@ -288,17 +357,27 @@ def read_motorcad_multiforce(
     len_scale = 1e-3 if str(geo.get("geometryUnitLinear", "mm")).lower() == "mm" else 1.0
     ang_deg = str(geo.get("geometryUnitAngular", "deg")).lower().startswith("deg")
 
+    # 성분 규약 자동감지: 스테이터=극좌표(forceR/T), 로터=직교(forceX/Y)
+    e0 = exc[0]
+    polar = "forceRValues" in e0
+    cart = "forceXValues" in e0
+    if not (polar or cart):
+        raise KeyError(f"excitation 힘 키를 못 찾음: {list(e0.keys())}")
+
     pts, Fx_l, Fy_l = [], [], []
     for e in exc:
         nd = nodes[e["nodeID"]]
         r_mm, th = nd["nodeCoord"]
         r = r_mm * len_scale
         ang = np.deg2rad(th) if ang_deg else th
-        fr = np.asarray(e["forceRValues"], float)   # (nT,)
-        ft = np.asarray(e["forceTValues"], float)
-        # 극→직교: e_r=(cosθ,sinθ), e_t=(-sinθ,cosθ)
-        Fx_l.append(np.cos(ang) * fr - np.sin(ang) * ft)
-        Fy_l.append(np.sin(ang) * fr + np.cos(ang) * ft)
+        if polar:                                    # 극→직교
+            fr = np.asarray(e["forceRValues"], float)
+            ft = np.asarray(e["forceTValues"], float)
+            Fx_l.append(np.cos(ang) * fr - np.sin(ang) * ft)
+            Fy_l.append(np.sin(ang) * fr + np.cos(ang) * ft)
+        else:                                        # 이미 직교(로터)
+            Fx_l.append(np.asarray(e["forceXValues"], float))
+            Fy_l.append(np.asarray(e["forceYValues"], float))
         pts.append([r * np.cos(ang), r * np.sin(ang), 0.0])
     pts = np.asarray(pts)
     Fx = np.asarray(Fx_l); Fy = np.asarray(Fy_l)     # (Nteeth, nT)

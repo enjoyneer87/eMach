@@ -18,6 +18,7 @@ import numpy as np
 CDB = r"D:\KDH\simVary\Ansys_Thermal\ff_e10_mesh_v2"
 M_ST, M_MG, M_CO, M_SH, M_RO = 1, 2, 3, 4, 5
 R_STA_OUT, R_STA_IN = 0.0990, 0.0713
+R_ROT_OUT = 0.07027             # 로터 OD(Maxwell 2D)
 Z_ST0, Z_ST1 = -0.2075, -0.0575
 RT = 1.2e-3                      # 반경밴드(보어 표면 1층 tet10 포함 위해 약간 넉넉)
 OUTDIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
@@ -76,12 +77,17 @@ def main():
         # 권선 엔드턴(축 hi 끝, 스택 밖)
         we_ids, we_xyz = pick_ring(mapdl, M_CO, 0.0, 1.0, Z_ST1 - 1e-4, 1.0, "windEnd_hi")
         out["windEnd_ids"], out["windEnd_xyz"] = we_ids, we_xyz
+        # 로터 OD 표면(원격힘 타깃) — mat=rotor, r≈R_ROT_OUT
+        rod_ids, rod_xyz = pick_ring(mapdl, M_RO, R_ROT_OUT - RT, R_ROT_OUT + RT,
+                                     Z_ST0 - 1e-3, Z_ST1 + 1e-3, "rotorOD")
+        out["rotorOD_ids"], out["rotorOD_xyz"] = rod_ids, rod_xyz
 
         if len(bore_ids) < 50:
             P(f"[WARN] 보어 절점 {len(bore_ids)}개 — 예상보다 적음. 반경밴드/재료 확인 필요.")
         outnpz = os.path.join(OUTDIR, "e10_target_nodes.npz")
         np.savez(outnpz, **out)
-        P(f"saved {outnpz}: bore={len(bore_ids)} OD={len(od_ids)} windEnd={len(we_ids)}")
+        P(f"saved {outnpz}: bore={len(bore_ids)} statorOD={len(od_ids)} "
+          f"windEnd={len(we_ids)} rotorOD={len(rod_ids)}")
         if len(bore_ids):
             rr = np.hypot(bore_xyz[:,0], bore_xyz[:,1])
             P(f"  bore r=[{rr.min():.4f},{rr.max():.4f}] "

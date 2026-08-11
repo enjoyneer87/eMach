@@ -114,7 +114,11 @@ read_motorcad_nvh("nvh_teeth.csv", representation="polar")  # Fr,Ft → x,y
 
 # ③b Motor-CAD 네이티브 멀티포스 JSON (export_multi_force_data 출력, 권장)
 read_motorcad_multiforce("e10_multiforce.json", load_point=0, part="stator")
-#   → 48치 × nT스텝, forceRValues/forceTValues 를 치 각도로 x,y 변환. 실 e10 검증됨.
+#   스테이터: forceR/T(극좌표)→치각도로 x,y. 로터(part="rotor"): forceX/Y(직교) 그대로.
+#   실 e10 검증됨(48치/8극, nT스텝, 성분규약 자동감지).
+
+# ④ VWP(가상일법) 체적력 — 철심·자석 내부 분포력(MST 표면트랙션과 상보)
+read_vwp_force("vwp_force.csv", density=True, stack_length=0.150)  # N/m³ × 체적 → 절점력
 ```
 
 리더는 **열이름 매핑(`col_map`)** 이나 in-memory 배열을 받으므로 export 헤더가
@@ -126,6 +130,10 @@ read_motorcad_multiforce("e10_multiforce.json", load_point=0, part="stator")
   스텝루프) 또는 단일스텝. `mode="external"`: External Data용 long-format CSV.
 - **LS-DYNA** — 절점·성분별 `*DEFINE_CURVE`(시간 vs 힘) + `*LOAD_NODE_POINT`.
 - **Ansys Motion** — 플렉시블 바디 절점하중 CSV(NodeID,Time,Fx,Fy,Fz).
+- **LS-DYNA `*LOAD_SEGMENT`** — `write_lsdyna_segment`: 세그먼트 법선압력 F·n/A.
+- **ANSYS 원격힘(Remote Force)** — `write_ansys_remote_force`: 소스 힘점(극/치)마다
+  pilot 절점 + **RBE3**(또는 CERIG) 로 표면섹터에 결합, 합력을 분산 전달. 비컨포멀
+  절점맞춤 불필요, 파일 극소(8 pilot vs 수만 절점력). 로터 8극에 적합.
 
 `tol` 로 미소 힘 절점 생략(파일 축소), `col` 로 특정 스텝만 export.
 

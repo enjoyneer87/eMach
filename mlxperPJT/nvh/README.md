@@ -9,6 +9,7 @@ Motor-CAD(Maxwell) 에어갭 가진력을 e10 MAPDL 구조 메시로 맵핑·exp
 |---|---|
 | `extract_e10_bore_nodes.py` | e10 MAPDL 메시(`ff_e10_mesh_v2.cdb`, 1.11M절점)에서 **스테이터 보어 표면 절점**(mat=1, r≈0.0713, z=스택) 추출 → `data/e10_target_nodes.npz`. 스테이터 OD·권선엔드도 함께. |
 | `e10_emforce_pipeline.py` | 보어절점을 타깃으로 에어갭 가진력 LSQ 맵핑 → MAPDL/LS-DYNA/Motion export + QA. 실 Motor-CAD 멀티포스 파일 있으면 사용, 없으면 e10 파라미터 에어갭 MST. |
+| `e10_rotor_remote_force.py` | 로터측 rotorExcitation(8극) → 로터 OD 절점 **원격힘**(pilot+RBE3) MAPDL export + QA. |
 
 ## 실행
 
@@ -21,9 +22,10 @@ PYTHONIOENCODING=utf-8 python mlxperPJT/nvh/e10_emforce_pipeline.py
 
 ## 검증된 결과 (2026-08-11)
 
-- 타깃: 스테이터 보어 **48,439절점**(r∈[0.0713,0.0725], z=[-0.2075,-0.0575]).
-- 소스: e10 에어갭 Maxwell 응력(8극 회전파 + 48슬롯 하모닉, 16000rpm, 24 시간스텝).
-- 맵핑: LSQ, **합력 3e-15 · 모멘트 9e-15 보존**(기계정밀).
+- 타깃: 스테이터 보어 **48,439절점** / 로터 OD **66,326절점** / 스테이터 OD 19,554 / 권선엔드 64,006.
+- 스테이터 소스: 실 Motor-CAD 멀티포스 48치×128스텝(또는 에어갭 MST 대체).
+- 로터 소스: rotorExcitation 8극×128스텝(극당~3463N) → 8 pilot 원격힘(RBE3), 파일 1.5MB.
+- 맵핑: LSQ, **합력 ~3e-15 · 모멘트 ~1e-14 보존**(기계정밀). 로터 QA에 8극 클러스터.
 - export: `e10_emforce_mapdl.inp`(F 시간이력) · `_external.csv`(Mechanical External Data)
   · `_lsdyna.k`(*LOAD_NODE_POINT+*DEFINE_CURVE) · `_motion.csv`. 모두 **실제 MAPDL
   노드 ID** 사용. QA: `e10_emforce_qa.png`.
