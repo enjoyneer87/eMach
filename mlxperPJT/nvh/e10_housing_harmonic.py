@@ -89,7 +89,7 @@ def extract_band(mapdl, mat, r_lo, r_hi):
 def solve_selection(mapdl):
     """솔브 선택셋: 스테이터+하우징+접촉/타깃+MASS21."""
     mapdl.esel("S", "MAT", "", 1)
-    mapdl.esel("A", "MAT", "", 2)
+    mapdl.esel("A", "MAT", "", 6)   # 하우징(MAT6; MAT2는 CDB의 자석이므로 금지)
     mapdl.esel("A", "TYPE", "", 9990)
     mapdl.esel("A", "TYPE", "", 20)
     mapdl.esel("A", "TYPE", "", 21)
@@ -114,15 +114,16 @@ def main():
         P("stator ready:", mapdl.mesh.n_node, "nodes")
 
         # ---- B. 하우징 볼륨 + 메시 ----------------------------------------
-        mapdl.mp("EX", 2, 70e9); mapdl.mp("PRXY", 2, 0.33); mapdl.mp("DENS", 2, 2700)
+        MAT_H = 6                              # ⚠️ CDB에서 MAT2=자석! 미사용 번호 사용
+        mapdl.mp("EX", MAT_H, 70e9); mapdl.mp("PRXY", MAT_H, 0.33); mapdl.mp("DENS", MAT_H, 2700)
         etmax = 30
         mapdl.et(etmax, "SOLID187")
-        mapdl.type(etmax); mapdl.mat(2)
+        mapdl.type(etmax); mapdl.mat(MAT_H)
         mapdl.csys(0)
         mapdl.cylind(R_OD, R_HOUT, Z_ST0 - HOUS_OH, Z_ST1 + HOUS_OH)
         mapdl.esize(ESIZE_H)
         mapdl.vmesh("ALL")                  # 유일 볼륨(방금 만든 원통)
-        mapdl.esel("S", "MAT", "", 2)
+        mapdl.esel("S", "MAT", "", MAT_H)
         P("housing meshed:", mapdl.mesh.n_elem, "elems")
 
         # ---- C. MPC 본딩 접촉 (스테이터OD ↔ 하우징내면) --------------------
@@ -130,12 +131,13 @@ def main():
         mapdl.et(21, "CONTA174")
         mapdl.keyopt(21, 2, 2)     # MPC
         mapdl.keyopt(21, 12, 5)    # bonded always
+        mapdl.keyopt(21, 9, 1)     # 초기 관입/갭 무시
         mapdl.r(20)
         # 타깃 = 하우징 내면
-        mapdl.esel("S", "MAT", "", 2); mapdl.nsle("S")
+        mapdl.esel("S", "MAT", "", MAT_H); mapdl.nsle("S")
         mapdl.nsel("R", "EXT")
         mapdl.csys(1); mapdl.nsel("R", "LOC", "X", R_OD - RT, R_OD + RT); mapdl.csys(0)
-        mapdl.type(20); mapdl.real(20); mapdl.mat(2)
+        mapdl.type(20); mapdl.real(20); mapdl.mat(MAT_H)
         mapdl.esurf()
         nt = mapdl.mesh.n_elem
         # 접촉 = 스테이터 OD
@@ -204,7 +206,7 @@ def main():
             mapdl.solve(); mapdl.finish()
 
             mapdl.post1()
-            hn, hxyz, hU = extract_band(mapdl, 2, R_HOUT - RT, R_HOUT + RT)  # 하우징 외면
+            hn, hxyz, hU = extract_band(mapdl, 6, R_HOUT - RT, R_HOUT + RT)  # 하우징 외면
             sn, sxyz, sU = extract_band(mapdl, 1, R_OD - RT, R_OD + RT)      # 스테이터 OD
             results[k] = dict(freq=fexc, h_xyz=hxyz, h_U=hU, s_xyz=sxyz, s_U=sU)
             P(f"  k={k}: housing outer max|Uxy|={np.abs(hU[:,:2]).max():.3e} m "
