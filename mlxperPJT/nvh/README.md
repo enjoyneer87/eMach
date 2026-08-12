@@ -12,6 +12,9 @@ Motor-CAD(Maxwell) 에어갭 가진력을 e10 MAPDL 구조 메시로 맵핑·exp
 | `e10_rotor_remote_force.py` | 로터측 rotorExcitation(8극) → 로터 OD 절점 **원격힘**(pilot+RBE3) MAPDL export + QA. |
 | `e10_harmonic_response.py` | **NVH 하모닉 응답 실전**: 열메시 ETCHG→SOLID187, 스테이터(MAT1)+48 pilot/RBE3/MASS21, 자유-자유 모달(LANB) → 치 힘 FFT 상위 온도차수에서 FULL 하모닉 → OD 복소변위 추출(npz). 기본 loadPoint4(15000rpm, f_elec=1kHz). |
 | `e10_harmonic_viz.py` | 하모닉 결과 시각화: 모드 vs 가진차수 / 차수별 OD 반경변위 / 지배차수 ODS(극좌표)+공간차수 FFT. |
+| `e10_campbell_modes.py` | **Campbell 스윕**(5 운전점×5 차수 FULL 하모닉) + **모드형상 OD 추출**(40모드) → e10_campbell.npz / e10_mode_shapes.npz. |
+| `e10_paper_figs.py` | 논문용 그림 패키지 figs/(fig01~07, 300dpi): 3D 모델·가진·ODS·모달비교·응답ERP·**Campbell**·**모드형상 3D**. exp_data/*.csv 있으면 fig06에 실측 자동 오버레이. |
+| `exp_data/` | 실측 오버레이 인터페이스(스키마 README_exp.md). 현재 실측 없음 — CSV만 넣으면 자동 반영. |
 
 ## 실행
 

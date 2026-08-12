@@ -302,6 +302,148 @@ def fig05_response_erp():
     _save(fig, "fig05_response_erp.png")
 
 
+# ============================================================ fig06: Campbell
+def _load_exp_overlay():
+    """실험 오버레이 데이터 로더(틀). exp_data/*.csv:
+        order_level 스키마: rpm, k, freq_Hz, Lw_dB   (차수추출 레벨)
+    파일이 없으면 None — 그림은 시뮬레이션만으로 그려진다."""
+    import glob, csv
+    rows = []
+    for p in glob.glob(os.path.join(HERE, "exp_data", "*.csv")):
+        with open(p, encoding="utf-8-sig") as fh:
+            for r in csv.DictReader(fh):
+                try:
+                    rows.append((float(r["rpm"]), float(r["freq_Hz"]),
+                                 float(r.get("Lw_dB", "nan"))))
+                except Exception:
+                    continue
+    return np.array(rows) if rows else None
+
+
+def fig06_campbell():
+    dc = np.load(os.path.join(DATA, "e10_campbell.npz"))
+    rows = dc["rows"]                      # (rpm, k, freq, umax, umean, erp)
+    fs = dc["freqs_modal"]; es = fs[fs > 1]
+    try:
+        eh = np.load(NPZ_H)["freqs_modal"]
+        eh = eh[eh > 1]
+    except Exception:
+        eh = np.array([])
+
+    fig, ax = plt.subplots(figsize=(9.2, 6.2))
+    rpm_max = 16000
+    # 모드 수평선
+    for f in es:
+        ax.axhline(f, color=C_BLUE, lw=0.8, alpha=0.55)
+    for f in eh:
+        ax.axhline(f, color=C_GREEN, lw=0.8, ls=":", alpha=0.6)
+    # 차수선 f = k·rpm/15
+    rr = np.linspace(0, rpm_max, 50)
+    for k in sorted(set(int(x) for x in rows[:, 1])):
+        ax.plot(rr, k * rr / 15.0, color=C_GRAY, lw=0.9, ls="--")
+        ax.text(rpm_max * 1.005, k * rpm_max / 15.0, f"k={k}",
+                fontsize=8.5, color="#555", va="center")
+    # 응답 버블(Lw)
+    lw = 10 * np.log10(np.maximum(rows[:, 5], 1e-30) / P_REF)
+    sc = ax.scatter(rows[:, 0], rows[:, 2], s=np.clip((lw - 30) * 4, 8, 260),
+                    c=lw, cmap="inferno", vmin=40, vmax=95,
+                    edgecolors="k", linewidths=0.4, zorder=5)
+    cb = fig.colorbar(sc, ax=ax, fraction=0.04, pad=0.02)
+    cb.set_label("$L_W$ [dB re 1 pW] ($\\sigma_{rad}$=1)")
+    # 실험 오버레이(있을 때만)
+    exp = _load_exp_overlay()
+    if exp is not None:
+        ax.scatter(exp[:, 0], exp[:, 1], marker="*", s=140, c="k", zorder=6,
+                   label="measured")
+        ax.legend(frameon=False, loc="upper left")
+    ax.set_xlim(0, rpm_max * 1.06); ax.set_ylim(0, 13000)
+    ax.set_xlabel("speed [rpm]"); ax.set_ylabel("frequency [Hz]")
+    ax.set_title("Campbell diagram — force orders vs stator modes "
+                 "(bubbles: simulated ERP at 5 load points)")
+    from matplotlib.lines import Line2D
+    handles = [Line2D([], [], color=C_BLUE, lw=1.2, label="stator-only modes"),
+               Line2D([], [], color=C_GREEN, lw=1.2, ls=":", label="+housing modes"),
+               Line2D([], [], color=C_GRAY, lw=1, ls="--", label="order lines $k f_e$")]
+    if exp is not None:
+        handles.append(Line2D([], [], marker="*", color="k", lw=0, ms=12,
+                              label="measured"))
+    ax.legend(handles=handles, frameon=False, fontsize=8.5, loc="upper left")
+    _save(fig, "fig06_campbell.png")
+
+
+# ============================================================ fig07: mode shapes
+def fig07_mode_shapes(n_show=6):
+    import pyvista as pv
+    from scipy.interpolate import griddata
+    pv.OFF_SCREEN = True
+    dm = np.load(os.path.join(DATA, "e10_mode_shapes.npz"))
+    mf = dm["mode_freqs"]; MU = dm["mode_U"]; xyz = dm["xyz"]
+    th = np.arctan2(xyz[:, 1], xyz[:, 0])
+    zmid = np.abs(xyz[:, 2] - 0.5 * (Z_ST0 + Z_ST1)) < 0.008
+
+    # 이중근 쌍 제거(주파수 0.5% 이내는 같은 모드) 후 앞에서 n_show개
+    sel, last = [], -1e9
+    for i, f in enumerate(mf):
+        if f > last * 1.005:
+            sel.append(i); last = f
+        if len(sel) >= n_show:
+            break
+
+    ncol = 3; nrow = int(np.ceil(len(sel) / ncol))
+    pl = pv.Plotter(shape=(nrow, ncol), off_screen=True,
+                    window_size=(520 * ncol, 560 * nrow))
+    pl.set_background("white")
+    tg = np.linspace(-np.pi, np.pi, 181)
+    zg = np.linspace(xyz[:, 2].min(), xyz[:, 2].max(), 61)
+    TH, ZZ = np.meshgrid(tg, zg, indexing="ij")
+    th3 = np.concatenate([th - 2 * np.pi, th, th + 2 * np.pi])
+    z3 = np.tile(xyz[:, 2], 3)
+    for j, i in enumerate(sel):
+        U = MU[i]                                   # (Nod,3) 실수 고유벡터
+        ur = U[:, 0] * np.cos(th) + U[:, 1] * np.sin(th)
+        # 원주차수 추정: 축방향 절선 회피 — 신호가 가장 큰 z-밴드에서 FFT
+        tgm = np.linspace(-np.pi, np.pi, 256, endpoint=False)
+        best_spec, best_pw = None, -1.0
+        for zc_band in np.linspace(xyz[:, 2].min() + 0.01,
+                                   xyz[:, 2].max() - 0.01, 5):
+            m = np.abs(xyz[:, 2] - zc_band) < 0.008
+            if m.sum() < 50:
+                continue
+            o = np.argsort(th[m])
+            ug = np.interp(tgm, th[m][o], ur[m][o], period=2 * np.pi)
+            pw = np.sum((ug - ug.mean()) ** 2)
+            if pw > best_pw:
+                best_pw = pw
+                best_spec = np.abs(np.fft.rfft(ug - ug.mean()))
+        n_circ = int(np.argmax(best_spec[1:11]) + 1)   # n≤10 (물리적 상한)
+        # 축방향 차수(0/1) 간이판별: 상·하단 θ-프로파일 내적 부호(반대위상 → m=1)
+        def _prof(mask):
+            o = np.argsort(th[mask])
+            return np.interp(tgm, th[mask][o], ur[mask][o], period=2 * np.pi)
+        zmin, zmax = xyz[:, 2].min(), xyz[:, 2].max()
+        p_lo = _prof(np.abs(xyz[:, 2] - (zmin + 0.015)) < 0.01)
+        p_hi = _prof(np.abs(xyz[:, 2] - (zmax - 0.015)) < 0.01)
+        m_ax = 1 if np.dot(p_lo - p_lo.mean(), p_hi - p_hi.mean()) < 0 else 0
+        # 형상 보간·워프
+        ur3 = np.tile(ur, 3)
+        amp = np.nan_to_num(griddata(np.column_stack([th3, z3]), ur3,
+                                     (TH, ZZ), method="linear"), nan=0.0)
+        scale = 0.007 / max(np.abs(ur).max(), 1e-12)
+        Rw = R_OD + scale * amp
+        grid = pv.StructuredGrid(Rw * np.cos(TH), Rw * np.sin(TH), ZZ)
+        sname = f"u_r (mode {j+1})"
+        grid[sname] = amp.ravel(order="F") / max(np.abs(ur).max(), 1e-12)
+        pl.subplot(j // ncol, j % ncol)
+        pl.add_mesh(grid, scalars=sname, cmap="RdBu_r", clim=[-1, 1],
+                    smooth_shading=True, show_scalar_bar=False)
+        pl.add_text(f"({n_circ},{m_ax})  {mf[i]:.0f} Hz", font_size=12, color="black")
+        pl.camera_position = [(0.30, -0.28, 0.10),
+                              (0, 0, 0.5 * (Z_ST0 + Z_ST1)), (0, 0, 1)]
+    img = os.path.join(FIGS, "fig07_mode_shapes.png")
+    pl.screenshot(img); pl.close()
+    print("saved", img)
+
+
 # ============================================================ captions
 CAPTIONS = """# e10 NVH — paper figure set (draft captions)
 
@@ -337,17 +479,33 @@ radiated power per force order: (a) maximum radial displacement on the
 emitting surface; (b) ERP (σ_rad = 1). The housing attenuates all orders
 (−1.4 to −6.7 dB) while k = 6 remains dominant.
 
+**Fig. 6 (fig06_campbell.png).** Campbell diagram: excitation order lines
+(k = 2–12, dashed) against the free–free stator modes (solid) and
+stator-plus-housing modes (dotted); bubbles show the simulated ERP at the
+5 × 5 load-point/order grid (250–15 000 rpm). The critical point is **not**
+at rated speed: at 8 900 rpm the k = 12 order crosses the 7.1 kHz mode
+cluster (114.5 dB, undamped upper bound — 25 dB above the rated-speed
+maximum). Harmonic solutions are undamped, so on-resonance levels are upper
+bounds; off-resonance values are damping-insensitive. Measured order levels,
+when available in `exp_data/*.csv`, are overlaid automatically (star markers).
+
+**Fig. 7 (fig07_mode_shapes.png).** Representative free–free stator mode
+shapes (outer-surface radial displacement, normalised, warp exaggerated),
+labelled by circumferential order n and natural frequency.
+
 ## Reproduction
 ```
 python mlxperPJT/nvh/e10_harmonic_response.py     # stator-only harmonics
 ORDERS=2,6,10 python mlxperPJT/nvh/e10_housing_harmonic.py
+python mlxperPJT/nvh/e10_campbell_modes.py        # Campbell sweep + mode shapes
 python mlxperPJT/nvh/e10_paper_figs.py
 ```
 
-## TODO (framework placeholders)
-- Mode-shape 3D renders (requires eigenvector surface export pass).
-- Experimental overlay panel (Fig. 4/5) once measurements exist.
-- Campbell diagram across load points 0–4 (speed sweep).
+## Experimental overlay
+No e10 NVH measurements exist yet. Drop order-tracked CSVs into
+`exp_data/` (schema in `exp_data/README_exp.md`) and re-run
+`e10_paper_figs.py` — Fig. 6 gains measured star markers automatically.
+Compare order ranking and rpm trends first (σ_rad = 1 caveat for absolute dB).
 """
 
 
@@ -363,6 +521,17 @@ def main():
         fig03_ods3d()
     except Exception as e:
         print("[warn] fig03 3D:", repr(e)[:200])
+    # fig06/07 은 e10_campbell_modes.py 산출이 있을 때만
+    if os.path.exists(os.path.join(DATA, "e10_campbell.npz")):
+        try:
+            fig06_campbell()
+        except Exception as e:
+            print("[warn] fig06:", repr(e)[:200])
+    if os.path.exists(os.path.join(DATA, "e10_mode_shapes.npz")):
+        try:
+            fig07_mode_shapes()
+        except Exception as e:
+            print("[warn] fig07:", repr(e)[:200])
     open(os.path.join(FIGS, "README_figs.md"), "w", encoding="utf-8").write(CAPTIONS)
     print("saved", os.path.join(FIGS, "README_figs.md"))
 

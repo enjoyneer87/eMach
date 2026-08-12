@@ -32,14 +32,30 @@ radiated power per force order: (a) maximum radial displacement on the
 emitting surface; (b) ERP (σ_rad = 1). The housing attenuates all orders
 (−1.4 to −6.7 dB) while k = 6 remains dominant.
 
+**Fig. 6 (fig06_campbell.png).** Campbell diagram: excitation order lines
+(k = 2–12, dashed) against the free–free stator modes (solid) and
+stator-plus-housing modes (dotted); bubbles show the simulated ERP at the
+5 × 5 load-point/order grid (250–15 000 rpm). The critical point is **not**
+at rated speed: at 8 900 rpm the k = 12 order crosses the 7.1 kHz mode
+cluster (114.5 dB, undamped upper bound — 25 dB above the rated-speed
+maximum). Harmonic solutions are undamped, so on-resonance levels are upper
+bounds; off-resonance values are damping-insensitive. Measured order levels,
+when available in `exp_data/*.csv`, are overlaid automatically (star markers).
+
+**Fig. 7 (fig07_mode_shapes.png).** Representative free–free stator mode
+shapes (outer-surface radial displacement, normalised, warp exaggerated),
+labelled by circumferential order n and natural frequency.
+
 ## Reproduction
 ```
 python mlxperPJT/nvh/e10_harmonic_response.py     # stator-only harmonics
 ORDERS=2,6,10 python mlxperPJT/nvh/e10_housing_harmonic.py
+python mlxperPJT/nvh/e10_campbell_modes.py        # Campbell sweep + mode shapes
 python mlxperPJT/nvh/e10_paper_figs.py
 ```
 
-## TODO (framework placeholders)
-- Mode-shape 3D renders (requires eigenvector surface export pass).
-- Experimental overlay panel (Fig. 4/5) once measurements exist.
-- Campbell diagram across load points 0–4 (speed sweep).
+## Experimental overlay
+No e10 NVH measurements exist yet. Drop order-tracked CSVs into
+`exp_data/` (schema in `exp_data/README_exp.md`) and re-run
+`e10_paper_figs.py` — Fig. 6 gains measured star markers automatically.
+Compare order ranking and rpm trends first (σ_rad = 1 caveat for absolute dB).
