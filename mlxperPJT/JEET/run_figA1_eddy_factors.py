@@ -136,9 +136,11 @@ def main() -> int:
         sec.tick_params(labelsize=7.2)
 
         if tag == "(a)":
-            ax.legend(fontsize=6.8, frameon=False, loc="upper left")
+            ax.legend(fontsize=6.8, frameon=True, framealpha=0.85,
+                      edgecolor="none", loc="upper left")
         else:
-            ax.legend(fontsize=6.8, frameon=False, loc="upper left")
+            ax.legend(fontsize=6.8, frameon=True, framealpha=0.85,
+                      edgecolor="none", loc="upper left")
 
     fig.savefig(OUT)
     plt.close(fig)
