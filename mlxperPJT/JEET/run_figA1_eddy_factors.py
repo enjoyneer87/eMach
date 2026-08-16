@@ -64,24 +64,24 @@ def main() -> int:
                         hspace=0.62)
 
     cases = [("(a)", phi, (0, 6.2), "skin factor $\\varphi$"),
-             ("(b)", etaK, (0, 6.2), "proximity kernel $\\eta K(\\eta)$")]
+             ("(b)", etaK, (0, 6.2), "proximity kernel $\\xi K(\\xi)$")]
     for ax, (tag, fn, ylim, ylab) in zip(axs, cases):
         yr, ys = fn(er), fn(es)
         ax.plot(s, yr, "-", color=NAVY, lw=1.3, label="Ref ($k_r{=}1$)")
         ax.plot(s, ys, "-.", color=NAVY, lw=1.3, label="SC ($k_r{=}2$)")
         # η 곡선 = 대각 점근선 겸용
         ax.plot(s, er, ":", color=GREEN_D, lw=1.1,
-                label=r"$\eta$ (large-$\eta$ asym.)")
+                label=r"$\xi$ (large-$\xi$ asym.)")
         ax.plot(s, es, ":", color=GREEN_D, lw=1.1)
         if tag == "(b)":
             ax.plot(s, er**4 / 6, "--", color=ORANGE, lw=0.9,
-                    label=r"small-$\eta$: $\eta^4/6$ ($\propto f^2$)")
+                    label=r"small-$\xi$: $\xi^4/6$ ($\propto f^2$)")
             ax.plot(s, es**4 / 6, "--", color=ORANGE, lw=0.9)
         # η = 1 경계 수직선 (η<1: 저항 지배 / η>1: 표피 깊이가 도체보다 얕음)
         s1_ref = 20.0 / ETA_REF_20K ** 2          # η_Ref = 1  (≈4.71 kRPM)
         s1_sc = s1_ref / 4.0                      # η_SC = 1   (≈0.94 kRPM)
-        for s1, lbl in ((s1_ref, r"$\eta_{Ref}{=}1$"),
-                        (s1_sc, r"$\eta_{SC}{=}1$")):
+        for s1, lbl in ((s1_ref, r"$\xi_{Ref}{=}1$"),
+                        (s1_sc, r"$\xi_{SC}{=}1$")):
             ax.axvline(s1, color=GREEN_D, lw=0.8, ls="--", alpha=0.8,
                        zorder=1)
             ax.annotate(lbl, xy=(s1, ylim[0]), xytext=(3, 3),
@@ -131,7 +131,7 @@ def main() -> int:
                                                        / 20.0),
                        lambda e: 20.0 * (e / ETA_REF_20K) ** 2))
         sec.set_xticks([0.5, 1.0, 1.5, 2.0])
-        sec.set_xlabel(r"$\eta_{Ref}$  ($\eta_{SC}=2\,\eta_{Ref}$)",
+        sec.set_xlabel(r"$\xi_{Ref}$  ($\xi_{SC}=2\,\xi_{Ref}$)",
                        fontsize=7.6)
         sec.tick_params(labelsize=7.2)
 
