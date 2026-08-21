@@ -2,10 +2,12 @@
 """Fig 2 (fig:prox_comparison, AC/DC 비) — 사례 운전점 마커판.
 
 draw_figures.ipynb 셀 6의 스크립트판 + 저자 제안(2026-07-27):
-사례 연구 그림들이 쓰는 운전점을 원(○)으로 표시해 그림 간 내비게이션 제공
-  - Ref@16k  : Fig 1(전류 쏠림)·Fig 3(필드 검증) 공용  -> "Figs. 1, 3"
-  - SC @16k  : Fig 1                                 -> "Fig. 1"
-  - SC @ 4k  : Fig 3 (상사 대응 운전점)               -> "Fig. 3"
+사례 연구 그림들이 쓰는 운전점을 원(○)으로 표시해 그림 간 내비게이션 제공.
+
+저자 결정(2026-08-15, Drive 댓글): sec23 재편으로 전류 쏠림 그림이 빠지면서
+필드 검증(현 Fig 2, 구 Fig 3)의 상사쌍 운전점만 남긴다
+  - Ref@16k : Fig 2 (필드 검증, 기준 모델)   -> "Fig. 2"
+  - SC @ 4k : Fig 2 (상사 대응 운전점)       -> "Fig. 2"
 """
 import os
 import sys
@@ -55,7 +57,9 @@ MODEL_STYLE = {
 #    다시 뽑을 때는 JEET_FIG2_LABELS 로 덮어쓸 것 —
 #      set JEET_FIG2_LABELS=Figs. 2, 11|Fig. 2|Fig. 11
 #    빈 문자열을 주면 라벨 없이 원만 그린다(종전 동작).
-_DEF_LABELS = ("Figs. 1, 3", "Fig. 1", "Fig. 3")
+# 전류 집중 그림이 EN 에 복원되면서(세미나 6) 필드 검증 그림이 Fig 3 이 되었다.
+# KO 는 그 그림을 지운 적이 없어 원래부터 Fig 3 이었다 — 이제 두 원고가 같다.
+_DEF_LABELS = ("Fig. 3", "Fig. 3")
 _lab = os.environ.get("JEET_FIG2_LABELS")
 LABELS = tuple(_lab.split("|")) if _lab is not None else _DEF_LABELS
 
@@ -64,7 +68,6 @@ LABELS = tuple(_lab.split("|")) if _lab is not None else _DEF_LABELS
 CASE_MARKS = [
     # Ref@16k 와 SC@4k 는 상사쌍이라 비가 1.14 / 1.16 으로 겹친다.
     ("Ref", 16, "left", (9, 6)),      # +6pt: P_AC=P_DC 점선을 비켜 간다
-    ("SC", 16, "left", (9, 0)),
     ("SC", 4, "right", (-9, 6)),
 ]
 
