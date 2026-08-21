@@ -36,6 +36,12 @@ MODELS = {
     "HalfSC": (os.path.join(ROOT, "_txt_backfill", "HalfSC",
                             "FullFEA_Speed_16000RPM_460.0A_36.0deg",
                             "FEA_data.txt.gz"), 4, 16000.0, None),
+    # HalfSC at its own 690 A limit exists only as the rotor-stepped MS
+    # (Hybrid-mode) export of the campaign back-fill: Je = 0 there, so the
+    # eddy corrections vanish and Table 3's 1797 Nm is the comparison.
+    "HalfSC_690_MS": (os.path.join(ROOT, "_txt_backfill", "HalfSC_campaign",
+                                   "Hybrid_Speed_16000RPM_690.0A_36.0deg",
+                                   "FEA_data.txt.gz"), 4, 16000.0, 1797.0),
     "SC": (os.path.join(ROOT, "_txt_backfill", "SC",
                         "FullFEA_Speed_16000RPM_920.0A_36.0deg",
                         "FEA_data.txt.gz"), 4, 16000.0, 3284.29),
@@ -46,7 +52,7 @@ OUT_NPZ = os.path.join(HERE, "map_exports", "e10", "torque_methods_series.npz")
 
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--models", default="Ref,HalfSC,SC")
+    ap.add_argument("--models", default="Ref,HalfSC,HalfSC_690_MS,SC")
     ap.add_argument("--out", default=OUT_JSON)
     a = ap.parse_args()
 

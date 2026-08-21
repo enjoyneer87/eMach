@@ -113,11 +113,16 @@ def iter_fea_blocks(path: str) -> Iterator[dict]:
     ``rcode, rnu, rjval, rbremx, rbremy, rsigma`` and ``names``.
     """
     cur_hdr, tbl, rows, tables = None, None, [], {}
+    units = {"j_scale": 1.0}      # A/mm2 exports (campaign originals) -> A/m2
 
     def build():
         E = _numeric_rows(tables["ElementsTable"])
         N = _numeric_rows(tables["NodesTable"])
         R, names = _region_rows(tables["RegionsTable"])
+        if units["j_scale"] != 1.0:
+            E[:, 8] *= units["j_scale"]
+            E[:, 9] *= units["j_scale"]
+            R[:, 3] *= units["j_scale"]
         node_xy = np.full((int(N[:, 0].max()) + 1, 2), np.nan)
         node_xy[N[:, 0].astype(int)] = N[:, 1:3]
         tri = E[:, 1:4].astype(int)
@@ -168,6 +173,8 @@ def iter_fea_blocks(path: str) -> Iterator[dict]:
             s = ln.strip()
             if not s or s.startswith("-") and s[1:2] == "-":
                 continue
+            if tbl == "ElementsTable" and "[A/mm2]" in s:
+                units["j_scale"] = 1e6        # campaign-original unit
             if s[0].isdigit() or s[0] == "-":
                 rows.append(s)
     if cur_hdr is not None:
