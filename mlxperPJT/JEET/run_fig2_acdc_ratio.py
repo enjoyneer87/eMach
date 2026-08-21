@@ -57,9 +57,10 @@ MODEL_STYLE = {
 #    다시 뽑을 때는 JEET_FIG2_LABELS 로 덮어쓸 것 —
 #      set JEET_FIG2_LABELS=Figs. 2, 11|Fig. 2|Fig. 11
 #    빈 문자열을 주면 라벨 없이 원만 그린다(종전 동작).
-# 전류 집중 그림이 EN 에 복원되면서(세미나 6) 필드 검증 그림이 Fig 3 이 되었다.
-# KO 는 그 그림을 지운 적이 없어 원래부터 Fig 3 이었다 — 이제 두 원고가 같다.
-_DEF_LABELS = ("Fig. 3", "Fig. 3")
+# 세미나 6 에서 전류 집중 그림이 EN 에 복원되어 세 점 표시가 되살아난다.
+# 10p(KO/EN 공통): 전류 집중 = Fig 2 (두 모델 모두 16 kRPM),
+# 필드 검증 = Fig 3 (상사쌍 Ref@16k / SC@4k). Ref@16k 는 두 그림에 다 나온다.
+_DEF_LABELS = ("Figs. 2, 3", "Fig. 2", "Fig. 3")
 _lab = os.environ.get("JEET_FIG2_LABELS")
 LABELS = tuple(_lab.split("|")) if _lab is not None else _DEF_LABELS
 
@@ -68,6 +69,7 @@ LABELS = tuple(_lab.split("|")) if _lab is not None else _DEF_LABELS
 CASE_MARKS = [
     # Ref@16k 와 SC@4k 는 상사쌍이라 비가 1.14 / 1.16 으로 겹친다.
     ("Ref", 16, "left", (9, 6)),      # +6pt: P_AC=P_DC 점선을 비켜 간다
+    ("SC", 16, "left", (9, 0)),
     ("SC", 4, "right", (-9, 6)),
 ]
 
