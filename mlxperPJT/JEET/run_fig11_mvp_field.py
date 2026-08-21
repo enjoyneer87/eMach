@@ -64,6 +64,11 @@ def main() -> int:
         show_axes=True,   # mm 눈금 박스
         compact_labels=True,          # 행 식별 최좌측 1회, 열 제목 1줄
         group_labels=["Ref", "SC"],   # 모델 식별 = 그룹 헤더 (유지)
+        # 세미나 6: Ref 20 mm / SC 50 mm 로 갈리던 눈금을 한 규칙으로.
+        # 저자 결정 2026-08-21 — Ref 50 / SC 100, 곧 k_r 배. 두 모델의 눈금이
+        # 종이 위 같은 자리에 오고 x 축의 기존 눈금과도 일치한다.
+        tick_step=[50.0, 50.0, 100.0, 100.0],
+        tag_pos="bottom",             # (a)~(h) 를 패널 아래로 (저자 선호)
     )
     print(f"저장: {out}")
     print(f"  크기: {os.path.getsize(out) / 1024:.0f} KB")

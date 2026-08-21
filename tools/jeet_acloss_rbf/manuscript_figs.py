@@ -116,6 +116,8 @@ def plot_field_panels(
     show_axes: bool = True,
     compact_labels: bool = False,
     group_labels: Optional[Sequence[str]] = None,
+    tick_step: Optional[Sequence[float]] = None,
+    tag_pos: str = 'top',
 ) -> str:
     """2xN journal figure from field .npz files.
 
@@ -135,6 +137,12 @@ def plot_field_panels(
     show_axes : draw the mm axis box with ticks. The stored coordinates are
         already in mm, and the tick box also conveys the k_r size ratio
         directly (seminar-2 / journal reviewer: "add x-y dimensions").
+    tick_step : per-column tick interval in mm for both axes. Without it
+        matplotlib picks per-panel steps and the models end up with
+        different grids (Ref every 20 mm, SC every 50 mm) — seminar-6
+        asked for one rule across the models.
+    tag_pos : ``'top'`` keeps the ``(a)`` tags as panel titles, ``'bottom'``
+        moves them under each panel (seminar-6, author preference).
     compact_labels : 그림 내부 텍스트 최소화 규칙(2026-07-26) — 열 제목은
         상단 행 한 줄만, 하단 행은 (e)~(h) 태그만, 행 식별($|B|$,
         MVP $A/k_r$)은 최좌측에 1회(회전 라벨). 절약된 공간만큼 패널이
@@ -176,9 +184,11 @@ def plot_field_panels(
         h_b = ax.scatter(d['x_mm'], d['y_mm'], c=d['b_T'], s=point_size,
                          marker='.', cmap='jet', vmin=0, vmax=b_max,
                          rasterized=True, linewidths=0)
+        tag_top, tag_bot = f'({chr(97 + col)})', f'({chr(97 + n + col)})'
         if compact_labels:
             # 열 식별(기법명)은 tex 캡션이 담당 — 그림엔 태그만(중앙 정렬)
-            ax.set_title(f'({chr(97 + col)})', fontsize=9.8, pad=2)
+            if tag_pos != 'bottom':
+                ax.set_title(tag_top, fontsize=9.8, pad=2)
         else:
             ax.set_title(f'({chr(97 + col)}) {title}\n$|B|$', fontsize=10.9)
 
@@ -189,7 +199,8 @@ def plot_field_panels(
                           rasterized=True, linewidths=0)
         a_title = 'MVP $A/k_r$' if k_r is not None else 'MVP $A$'
         if compact_labels:
-            ax2.set_title(f'({chr(97 + n + col)})', fontsize=9.8, pad=2)
+            if tag_pos != 'bottom':
+                ax2.set_title(tag_bot, fontsize=9.8, pad=2)
         else:
             ax2.set_title(f'({chr(97 + n + col)}) {title}\n{a_title}',
                           fontsize=10.9)
@@ -207,15 +218,28 @@ def plot_field_panels(
                 a.tick_params(labelsize=7.6, length=2.2, pad=1.5)
                 for sp in a.spines.values():
                     sp.set_visible(True)
+                if tick_step is not None:
+                    from matplotlib.ticker import MultipleLocator
+                    st = float(tick_step[col] if np.ndim(tick_step)
+                               else tick_step)
+                    a.xaxis.set_major_locator(MultipleLocator(st))
+                    a.yaxis.set_major_locator(MultipleLocator(st))
             else:
                 a.set_xticks([])
                 a.set_yticks([])
         if show_axes and compact_labels:
             # 상단 행은 눈금 숫자 생략(하단 행과 동일 축) — 행 간격 절약
             ax.tick_params(labelbottom=False)
+        if tag_pos == 'bottom' and compact_labels:
+            # 태그를 패널 아래로 (저자 선호, 세미나 6). 상단 행은 눈금 숫자가
+            # 없으므로 xlabel 자리가 비어 있고, 하단 행은 축 라벨 아래 줄에 둔다.
+            ax.set_xlabel(tag_top, fontsize=9.8, labelpad=2)
         if show_axes:
             # 축 라벨은 좌측 열에만 — 반복 표기로 지면 낭비하지 않는다
-            axes[1, col].set_xlabel('x [mm]', fontsize=8.2, labelpad=1.5)
+            xlab = 'x [mm]'
+            if tag_pos == 'bottom' and compact_labels:
+                xlab = f'x [mm]\n{tag_bot}'
+            axes[1, col].set_xlabel(xlab, fontsize=8.2, labelpad=1.5)
             if col == 0:
                 # 행 물리량 식별은 우측 컬러바 라벨(+캡션)이 담당 — y[mm]만
                 for r in (0, 1):
