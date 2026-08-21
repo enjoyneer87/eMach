@@ -1,6 +1,6 @@
 %% plotFig15Effmaps.m — Fig 15: Lab 효율맵 비교 (SC Hybrid vs FullFEA)
-% 패널: (a) Hybrid 기반 효율맵  (b) FullFEA 기반 효율맵
-%       (c) |Δη| 오차맵         (d) 효율맵 운전점의 dq 전류쌍 (DQplane 스타일)
+% 패널: (a) Hybrid 기반 효율맵  (b) FullFEA 기반 효율맵  (c) |Δη| 오차맵
+% (d) dq 전류쌍 패널은 2026-08-21 저자 지시로 삭제 — 3패널 1행 배치로 전환
 % 스타일 참고: tools/effiMap/plotEfficiencyMotorcad.m 의 contourf 스타일
 %              (코드 의존은 없다 — 전부 MATLAB 내장 함수)
 % 입력: run_lab_effmaps_fig15.py 가 수집한 map_exports/e10/effmaps/*.mat
@@ -38,11 +38,11 @@ effClim  = [80 98];
 % 24 cm 도판을 0.30배로 축소하던 종전 설정에서는 축 글자가 ~3 pt로 찍혔다.
 FS = 7.7;   % 축/눈금 글자 [pt] — 전폭 캔버스(17.5 cm) = 인쇄 크기 -> 축소 ~1.0, 지면 7.7 pt 그대로
 % 등고선 라벨: 전폭에서는 겹치지 않으므로 표시(저자 확인 2026-08-02).
-fig = figure('Units','centimeters','Position',[1 1 17.5 12.4], 'Color','w');
+fig = figure('Units','centimeters','Position',[1 1 17.5 5.9], 'Color','w');
 set(fig,'DefaultAxesFontSize',FS, 'DefaultTextFontSize',FS, ...
         'DefaultAxesFontName','Times New Roman', ...
         'DefaultTextFontName','Times New Roman');
-tl = tiledlayout(fig, 2, 2, 'Padding','compact', 'TileSpacing','compact');
+tl = tiledlayout(fig, 1, 3, 'Padding','compact', 'TileSpacing','compact');
 
 %% (a) Hybrid 효율맵
 ax1 = nexttile;
@@ -88,29 +88,8 @@ fprintf('CAPTION Δη range: %.2f to %.2f %%p | speed %.0f to %.0f RPM\n', min(d
 fprintf('Δη: mean(|.|)=%.3f %%p, max(|.|)=%.3f %%p\n', ...
     mean(abs(dEff(:)),'omitnan'), max(abs(dEff(:)),[],'omitnan'));
 
-%% (d) dq 전류쌍 (DQplane 스타일)
-ax4 = nexttile; hold(ax4,'on');
-fn = fieldnames(F);
-idName = fn(ismember(lower(fn), {'id_peak','id','current_d','id_a'}));
-iqName = fn(ismember(lower(fn), {'iq_peak','iq','current_q','iq_a'}));
-if isempty(idName)
-    disp('사용 가능 필드:'); disp(fn);
-    error('elecdata에서 Id/Iq 필드를 못 찾음 — 필드명 확인 필요');
-end
-Id = F.(idName{1}); Iq = F.(iqName{1});
-spdMat = F.Speed;
-scatter(ax4, Id(:), Iq(:), 9, spdMat(:), 'o');
-% 전류 한계원 (920 A rms → peak 변환 여부는 데이터 스케일에 맞춰 자동)
-imaxPk = max(hypot(Id(:), Iq(:)), [], 'omitnan');
-th = linspace(90, 180, 90);
-plot(ax4, imaxPk*cosd(th), imaxPk*sind(th), 'b-', 'LineWidth', 1.2, ...
-    'DisplayName', sprintf('I = %.0f A', imaxPk));
-cb4 = colorbar(ax4, 'Location','eastoutside');
-cb4.Label.String = 'Speed [RPM]';
-cb4.FontSize = FS; cb4.Label.FontSize = FS;
-axis(ax4, 'equal'); grid(ax4,'on');
-xlabel(ax4,'i_d [A]'); ylabel(ax4,'i_q [A]');
-title(ax4,'(d)', 'FontWeight','normal');
+% (d) dq 전류쌍 패널은 삭제했다 (저자 지시 2026-08-21). 운전 궤적이 보정
+% 학습 영역 안에 있다는 근거는 Fig 4(AF 맵의 전류원)가 그대로 담고 있다.
 
 %% 저장
 outPng = fullfile(figDir, 'effmap_SC_compare.png');
