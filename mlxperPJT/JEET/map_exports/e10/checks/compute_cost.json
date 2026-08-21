@@ -1,0 +1,84 @@
+{
+ "per_point_seconds": {
+  "Ref": {
+   "ts_fullfea": {
+    "2000": 285.0,
+    "4000": 572.0,
+    "8000": 585.0,
+    "16000": 579.0
+   },
+   "ts_msfea": {
+    "2000": 268.0,
+    "4000": 270.0,
+    "8000": 272.0,
+    "16000": 273.0
+   }
+  },
+  "SC": {
+   "ts_fullfea": {
+    "2000": 362.0,
+    "4000": 717.0,
+    "8000": 725.0,
+    "16000": 733.0
+   },
+   "ts_msfea": {
+    "2000": 374.0,
+    "4000": 388.0,
+    "8000": 377.0,
+    "16000": 373.0
+   }
+  }
+ },
+ "mesh": {
+  "Ref": {
+   "elements": 19616,
+   "nodes": 10105,
+   "source": "FullFEA_Speed_16000RPM_0.1A_0.0deg"
+  },
+  "SC": {
+   "elements": 23818,
+   "nodes": 12199,
+   "source": "FullFEA_Speed_16000RPM_0.1A_0.0deg"
+  }
+ },
+ "saturation_sweep_h": {
+  "Ref": 0.375,
+  "SC": 0.463
+ },
+ "_meta": {
+  "plan": {
+   "Ref": [
+    [
+     16000,
+     24
+    ],
+    [
+     2000,
+     4
+    ],
+    [
+     4000,
+     4
+    ],
+    [
+     8000,
+     4
+    ]
+   ],
+   "SC": [
+    [
+     16000,
+     24
+    ],
+    [
+     8000,
+     3
+    ]
+   ]
+  },
+  "verify_points_per_model": 120,
+  "method": "per-point time = span of the file mtimes in that operating point's export directory; restricted to the 5-current grid of the verification sweep. Saturation sweep = span of its Motor-CAD message log.",
+  "classification": "Hybrid_* exports are time-stepping solves without conductor eddy currents, so they are TS MS-FEA (author, 2026-08-21).",
+  "excluded": "field export for the hybrid evaluation, 0.33 h over 30 points, is solver-specific overhead (39 s/point to reopen the binary vs 2.7 s to read the text deposit) and is not charged to the method."
+ }
+}

@@ -61,6 +61,7 @@ CHECKS = [
     ("checks/check_torque_methods.py",     "three torques (1%)"),
     ("checks/check_similarity_pairs.py",   "24 similarity pairs (1.6%)"),
     ("checks/check_field_similarity.py",   "field-level similarity"),
+    ("checks/check_compute_cost.py",       "measured compute cost (70%)"),
 ]
 
 

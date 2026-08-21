@@ -79,6 +79,7 @@
 @JEET/check_torque_methods.py     -> checks/
 @JEET/check_similarity_pairs.py   -> checks/
 @JEET/check_field_similarity.py   -> checks/
+@JEET/check_compute_cost.py       -> checks/
 
 # ── data: AF dataset (one Map_Summary per machine) ──────────────────────
 @E10/Ref/JEET_ACLoss_Ref_Map_Summary.json       -> data/e10/Ref/ [allow-abs]
