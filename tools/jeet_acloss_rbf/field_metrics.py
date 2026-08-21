@@ -196,6 +196,183 @@ def parse_mes_txt(path: str, block: int = 1) -> dict:
                              path, len(blocks))
 
 
+def periodic_vector_to_raster(node_xy, tri, vx, vy, X, Y, period_deg,
+                              k_range, region=None, antiperiodic=True):
+    """Sample a periodic-sector vector field anywhere, by folding the
+    query points back into the stored sector.
+
+    A periodic model stores one sector, and the rotor half of it sits
+    wherever the rotor happens to have turned to, which need not be the
+    angular window the stator occupies (e10 at block 91: rotor at
+    -130..-85 degrees against a stator at -45..0).  Drawing the two side
+    by side is what a solver's post-processor does, and it does it by
+    symmetry: a point the stored sector does not cover is rotated back by
+    whole sectors until it is covered, and the value found there is
+    rotated forward again.  Over one pole pitch the solution is
+    antiperiodic, so each whole sector also flips the sign; set
+    ``antiperiodic=False`` for a whole pole pair.
+
+    Tiling the mesh instead would be the obvious move and does not work:
+    neighbouring copies share their sector boundary, the duplicated nodes
+    make the triangulation degenerate, and the point-location structures
+    both matplotlib and scipy build refuse it.
+
+    k_range : sector offsets to try, e.g. ``range(-4, 5)``.  ``0`` is the
+        stored sector.  The first offset that covers a point wins, so
+        ordering matters only where copies overlap (they should not).
+    Returns ``(VX, VY)`` shaped like ``X``, NaN where no offset covers.
+    """
+    X, Y = np.asarray(X, float), np.asarray(Y, float)
+    VX = np.full(X.shape, np.nan)
+    VY = np.full(X.shape, np.nan)
+    for k in k_range:
+        todo = ~np.isfinite(VX)
+        if not todo.any():
+            break
+        a = np.radians(period_deg * k)
+        c, s_ = np.cos(a), np.sin(a)
+        # 조회점을 -k 섹터만큼 되돌려 저장된 섹터에서 찾는다.
+        xq = X[todo] * c + Y[todo] * s_
+        yq = -X[todo] * s_ + Y[todo] * c
+        ux = mesh_field_to_raster(node_xy, tri, vx, xq, yq, region=region)
+        uy = mesh_field_to_raster(node_xy, tri, vy, xq, yq, region=region)
+        sign = (-1.0) ** k if antiperiodic else 1.0
+        idx = np.nonzero(todo)
+        VX[idx] = sign * (ux * c - uy * s_)
+        VY[idx] = sign * (ux * s_ + uy * c)
+    return VX, VY
+
+
+def periodic_region_to_raster(node_xy, tri, reg, X, Y, period_deg, k_range,
+                              fill=-1):
+    """Region codes for :func:`periodic_vector_to_raster`'s folded points.
+
+    Returns ``(codes, base)``: ``codes`` is offset per sector so that
+    region-wise operations do not merge one sector's copy of a region
+    with the next one's, while ``base`` keeps the stored code so that
+    material lookups (is this copper?) still work.
+    """
+    X, Y = np.asarray(X, float), np.asarray(Y, float)
+    reg = np.asarray(reg, int)
+    span = int(reg.max()) - int(reg.min()) + 1
+    out = np.full(X.shape, fill, int)
+    done = np.zeros(X.shape, bool)
+    for slot, k in enumerate(k_range):
+        todo = ~done
+        if not todo.any():
+            break
+        a = np.radians(period_deg * k)
+        c, s_ = np.cos(a), np.sin(a)
+        xq = X[todo] * c + Y[todo] * s_
+        yq = -X[todo] * s_ + Y[todo] * c
+        got = mesh_element_to_raster(node_xy, tri, reg, xq, yq, fill=fill)
+        idx = np.nonzero(todo)
+        hit = got != fill
+        vals = np.where(hit, got + span * slot, fill)
+        out[idx] = vals
+        d = np.zeros(X.shape, bool)
+        d[idx] = hit
+        done |= d
+    lo = int(reg.min())
+    base = np.where(out != fill, (out - lo) % span + lo, fill)
+    return out, base
+
+
+def _nodal_interp(node_xy, tri, v, area, X, Y):
+    """Area-weighted nodal average of element values, linear in-element."""
+    from matplotlib.tri import Triangulation, LinearTriInterpolator
+    # 쓰이지 않는 노드 번호(NaN 좌표)를 빼고 번호를 다시 매긴다 —
+    # Triangulation 은 NaN 좌표를 허용하지 않는다.
+    used, inv = np.unique(tri, return_inverse=True)
+    t = inv.reshape(tri.shape)
+    xy = np.asarray(node_xy, float)[used]
+    num = np.zeros(len(used))
+    den = np.zeros(len(used))
+    for k in range(3):
+        np.add.at(num, t[:, k], v * area)
+        np.add.at(den, t[:, k], area)
+    nodal = num / np.where(den > 0, den, np.nan)
+    f = LinearTriInterpolator(Triangulation(xy[:, 0], xy[:, 1], t), nodal)
+    return f(X, Y).filled(np.nan)
+
+
+def mesh_field_to_raster(node_xy, tri, elem_vals, X, Y, area=None,
+                         region=None):
+    """Element-wise field sampled on a raster the way a solver draws contours.
+
+    Two things go wrong when an FEA field is rasterised as a point cloud
+    of element centroids: a Delaunay of the centroids spans the convex
+    hull, so a periodic model whose rotor window sits at a different
+    angle from the stator window gets its empty wedge filled and its
+    sliding surface bridged; and nearest-element lookup leaves a
+    staircase at the element scale.  Motor-CAD, JMAG and Maxwell avoid
+    both by staying on the mesh: element values are averaged to the nodes
+    (area-weighted) and interpolated linearly inside each element, and
+    nothing is drawn where there is no element.
+
+    With ``region`` the averaging is done one region at a time, so a node
+    on a copper/iron interface carries the copper value on the copper
+    side and the iron value on the iron side.  Without it the interface
+    is smeared over one element, and two meshes of different density
+    smear it differently -- comparing them then shows the meshes, not
+    the fields (e10 MS-FEA conductors: 30 % cell-wise with one global
+    average, against 1.3 % for the Full-FEA pair whose meshes coincide).
+
+    node_xy : (n_node, 2) node coordinates; rows not referenced by
+        ``tri`` may hold NaN.
+    tri : (n_el, 3) node indices per element.
+    elem_vals : (n_el,) one value per element.
+    area : (n_el,) element areas for the nodal weighting; computed from
+        the mesh when omitted.
+    region : (n_el,) region code per element; averaging stays inside a
+        region when given.
+    Returns an array shaped like ``X`` with NaN outside the mesh.
+    """
+    tri = np.asarray(tri, int)
+    v = np.asarray(elem_vals, float)
+    P = np.asarray(node_xy, float)[tri]                  # (n_el, 3, 2)
+    if area is None:
+        area = 0.5 * np.abs(
+            (P[:, 1, 0] - P[:, 0, 0]) * (P[:, 2, 1] - P[:, 0, 1])
+            - (P[:, 2, 0] - P[:, 0, 0]) * (P[:, 1, 1] - P[:, 0, 1]))
+    area = np.asarray(area, float)
+    if region is None:
+        return _nodal_interp(node_xy, tri, v, area, X, Y)
+    region = np.asarray(region)
+    owner = mesh_element_to_raster(node_xy, tri, region, X, Y,
+                                   fill=np.iinfo(np.int64).min)
+    out = np.full(np.shape(X), np.nan)
+    for code in np.unique(region):
+        cells = owner == code
+        if not cells.any():
+            continue
+        m = region == code
+        vals = _nodal_interp(node_xy, tri[m], v[m], area[m],
+                             X[cells], Y[cells])
+        out[cells] = vals
+    return out
+
+
+def mesh_element_to_raster(node_xy, tri, elem_vals, X, Y, fill=-1):
+    """Piecewise-constant sampling: each raster cell takes the value of the
+    element that contains it, ``fill`` where no element does.
+
+    The companion of :func:`mesh_field_to_raster` for quantities that must
+    not be averaged across elements -- region codes, material flags,
+    element indices.
+    """
+    from matplotlib.tri import Triangulation, TrapezoidMapTriFinder
+    tri = np.asarray(tri, int)
+    used, inv = np.unique(tri, return_inverse=True)
+    t = inv.reshape(tri.shape)
+    xy = np.asarray(node_xy, float)[used]
+    finder = TrapezoidMapTriFinder(Triangulation(xy[:, 0], xy[:, 1], t))
+    idx = finder(np.asarray(X, float).ravel(), np.asarray(Y, float).ravel())
+    v = np.asarray(elem_vals)
+    out = np.where(idx >= 0, v[np.maximum(idx, 0)], fill)
+    return out.reshape(np.shape(X))
+
+
 def _read_slot_reduction(path: str) -> list:
     """슬롯 축약본 npz 를 ``(step, p)`` 목록으로 되살린다.
 

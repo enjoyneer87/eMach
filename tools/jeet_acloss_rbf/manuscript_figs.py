@@ -1119,13 +1119,21 @@ def plot_flux_torque_scaling_tps(comparison_mat: str, out_path: str,
     ax.clabel(c1, fmt='%.0f', fontsize=7.5)
     ax.set_title(r"(c) $T_{em}$ [Nm] & deviation", fontsize=10.9)
 
+    # 범례는 등고선 위에 얹히므로 흰 배경을 준다. (TPS) 는 뺀다 — 캡션이
+    # "same TPS reconstruction" 을 이미 말하고 TPS 는 4.2 절에서 정의된다.
+    # 두 계열 모두 SC 를 가리킨다 — 하나는 직접 푼 것, 하나는 Ref 를 스케일해
+    # 얻은 것. 'Ref, scaled' 는 그것이 SC 가 된다는 말을 하지 않으므로 둘 다
+    # SC 로 시작하게 쓴다 (저자 지시 2026-08-22).
     from matplotlib.lines import Line2D
     axes[0].legend(handles=[
         Line2D([], [], color='#1a3a5c', lw=0.9,
-               label='SC, FEA build nodes (TPS)'),
+               label='SC, MS-FEA sweep'),
         Line2D([], [], color='#e65100', lw=0.9, ls='--',
-               label=r'Ref, scaled ($k_r{=}2$, TPS)')],
-        fontsize=8, frameon=False, loc='upper left')
+               label='SC, scaled from Ref')],
+        fontsize=8, loc='upper left',
+        frameon=True, facecolor='white', framealpha=0.85,
+        edgecolor='#cccccc', borderpad=0.35, handlelength=1.7,
+        handletextpad=0.5, labelspacing=0.3)
     for ax in axes:
         ax.set_aspect('equal', adjustable='box')
         ax.set_xlabel('$i_d$ [A, pk]')
@@ -2371,101 +2379,234 @@ def make_fig_b_slot_gif(ts_path: str, hybrid_path: str, out_gif: str,
     return summary
 
 
+
+
 # ── Section 5 computational-cost stacked bar ───────────────────────────
 
-# 원고 Section 5(계산 효율) 본문 수치. 전수 Full-FEA 는 모델당 120 운전점
-# x 556 s = 18.53 h, 두 모델 37.1 h. 제안 기법은 Ref 보정 5.84 h
-# (MS-FEA 30 점 0.28 + Full-FEA 36 점 5.56), SC 보정 4.17 h (Full-FEA 27 점,
-# 자체 MS-FEA 없음), 맵 단계 0.33 h/모델 = 0.66 h → 10.7 h.
+# 실측값 (2026-08-21). 종전 원고 수치는 모든 Full-FEA 점에 일률 556 s 를
+# 적용한 것이었다 (5.56/36 = 4.17/27 = 556 s). 실제 운전점당 시간은 속도에
+# 따라 285 s(2 kRPM)에서 935 s(16 kRPM)까지 벌어지고, 보정 플랜은 앵커
+# 16 kRPM 에 22~24 점이 몰려 있어 가장 비싼 대역이다. 전수 기준선은 속도가
+# 고르게 섞여 일률 요율이 얼추 맞지만, 보정 비용은 과소평가된다.
+#
+# 출처:
+#   운전점당 시간   ACLossCalcExport_{Ref,SC}_no_txt 의 운전점 폴더 mtime 스팬 중앙값.
+#                   Ref 16 kRPM 그룹은 저전류 3단(14.4/28.8/57.6 A)이 더 있는 8전류
+#                   격자라, 다른 속도와 같은 5전류로 제한해 잰다 (935 -> 579 s).
+#   채택 플랜       AF_model_{Ref,SC}_exponent.json _meta.plan
+#                   Ref 22@16k + 4@2/4/8k, SC 24@16k + 3@8k (= 27, 원고와 일치)
+#   MS-FEA 30 점    Lab30 메시지 로그, Ref 22.5 분 = 0.375 h
+#   맵 연산         슬롯 B 는 별도 해석이 아니라 위 MS-FEA 와 보정용 TS Full-FEA
+#                   의 메시 데이터에서 추출한다 (저자 지적 2026-08-21). 남는 비용은
+#                   그 필드를 꺼내는 export 뿐 — _txt_backfill 실측 2.60 h/240 점을
+#                   30 점분으로 환산해 0.33 h. 막대에는 넣지 않는다: 이는 Motor-CAD 가
+#                   자기 바이너리를 다시 여는 몫(39 s/점)이고, 해가 그대로 읽히는
+#                   형식이면 파일 읽기(74.6 MB gz 2.7 s)로 수렴하는, 솔버가 아니라
+#                   도구에 붙는 비용이기 때문이다. 각주로만 적는다.
+#   SC 가 점당 비싼 이유는 스케일링이 아니라 메시다 — Motor-CAD 가 SC 를 23,818
+#   요소로 끊었고 Ref 는 19,616 이다(비 1.21). 점당 시간 비 1.27 이 거의 그것으로
+#   설명된다. HalfSC 는 21,272 로 그 사이에 있다.
+# 저자 지시(2026-08-21): 와전류가 없는 시간이산 해석은 TS MS-FEA 로 분류한다.
 #
 # 색은 모델이 아니라 *단계* 를 뜻한다. 같은 단계는 어느 막대에서나 같은
-# 색이라 높이 차이가 곧 절감이다. 무보정 하이브리드의 0.6 h 는 같은
-# 본문 수치로 MS-FEA 0.28 h + 맵 0.33 h 로 분해된다.
+# 색이라 높이 차이가 곧 절감이다. 쌓는 순서는 워크플로 순서이고, 맵 연산이
+# 마지막이므로 맨 위에 온다 (저자 지시 2026-08-21).
+#
+# 무보정 하이브리드는 별도 막대가 아니라 제안 막대에서 Full-FEA 를 뺀
+# 부분이다 (저자 지시 2026-08-21) — 제안 기법은 그 위에 희소 Full-FEA
+# 보정을 얹은 것이다.
+#
+# 각 구간은 (라벨, 시간[h], 색, 해석 점수) 이며, 점수는 그 구간 옆에
+# 꺾쇠와 함께 적는다 (저자 지시 2026-08-21) — 점수는 막대 총계가 아니라
+# 단계에 붙는 양이기 때문이다.
 COST_STACKBAR_DEFAULT = {
     'Exhaustive Full-FEA': [
-        ('Full-FEA, Ref', 18.53, '#2e7d32'),
-        ('Full-FEA, SC', 18.53, '#7cb342'),
+        ('Full-FEA, Ref', 16.84, '#2e7d32', '120 pts'),
+        ('Full-FEA, SC', 21.14, '#7cb342', '120 pts'),
     ],
     'Proposed': [
-        ('MS-FEA', 0.28, '#4f7ea8'),
-        ('Full-FEA, Ref', 5.56, '#2e7d32'),
-        ('Full-FEA, SC', 4.17, '#7cb342'),
-        ('Map computation', 0.66, '#c5cf9a'),
-    ],
-    'Uncorrected\nHybrid': [
-        ('MS-FEA', 0.28, '#4f7ea8'),
-        ('Map computation', 0.33, '#c5cf9a'),
+        ('MS-FEA', 0.38, '#4f7ea8', '30 pts'),
+        ('Full-FEA, Ref', 5.46, '#2e7d32', '36 pts'),
+        ('Full-FEA, SC', 5.49, '#7cb342', '27 pts'),
     ],
 }
 
+# label -> 막대 위에 적을 정확도
 COST_STACKBAR_NOTES = {
-    'Exhaustive Full-FEA': ('240 pts', '(reference)'),
-    'Proposed': ('63 pts', 'wMAE 0.6-0.8 %'),
-    'Uncorrected\nHybrid': ('0 pts', 'wMAE 27-45 %'),
+    'Exhaustive Full-FEA': '(reference)',
+    'Proposed': 'wMAE 0.6-0.8 %',
 }
+
+# 본 축에서 선으로만 보이는 바닥 구간을 확대해 보여 준다.
+COST_STACKBAR_INSET = {
+    'bar': 'Proposed',
+    'ylim': 1.5,
+    'text': 'Proposed, base',
+}
+
+_BRACKET_MIN_H = 2.0     # 이보다 얇은 구간은 꺾쇠 대신 지시선으로 뺀다
+
+
+def _stack_bars(ax, bars, width, seen=None, inner_labels=True, positions=None):
+    """Draw the stacked bars on ``ax``; return {label: cumulative total}."""
+    totals = {}
+    positions = positions or list(range(len(bars)))
+    for x, lab in zip(positions, bars):
+        bottom = 0.0
+        for seg, hours, colour, _pts in bars[lab]:
+            ax.bar(x, hours, bottom=bottom, width=width, color=colour,
+                   edgecolor='white', linewidth=0.6)
+            if seen is not None:
+                seen.setdefault(seg, colour)
+            if inner_labels and hours >= 3.0:
+                ax.text(x, bottom + hours / 2, f'{hours:.1f}',
+                        ha='center', va='center', fontsize=_fs(7.6),
+                        color='white')
+            bottom += hours
+        totals[lab] = bottom
+    return totals
+
+
+def _bracket(ax, x, y0, y1, text, side='right', tick=0.035, gap=0.055,
+             fs=7.4, colour='#666666'):
+    """A bracket spanning y0..y1 at ``x``, labelled ``text`` beside it.
+
+    ``side`` says which way the label goes; the ticks always point back
+    towards the bar, so a left-side bracket is the mirror image.
+    """
+    s = 1.0 if side == 'right' else -1.0
+    ax.plot([x, x], [y0, y1], lw=0.7, color=colour, clip_on=False)
+    for y in (y0, y1):
+        ax.plot([x - s * tick, x], [y, y], lw=0.7, color=colour,
+                clip_on=False)
+    ax.text(x + s * gap, (y0 + y1) / 2, text,
+            ha='left' if side == 'right' else 'right', va='center',
+            fontsize=_fs(fs), color='#333333', clip_on=False)
 
 
 def plot_cost_stackbar(out_path: str,
                        bars: Optional[Dict] = None,
                        notes: Optional[Dict] = None,
-                       figsize: Tuple[float, float] = (_COLW_IN, 2.6)
+                       inset: Optional[Dict] = None,
+                       figsize: Tuple[float, float] = (_COLW_IN, 2.9)
                        ) -> str:
     """Stacked bar of the two-model study cost, replacing the cost table.
 
-    Each bar stacks the stages that make up its total wall-clock time, so
-    the height difference is the saving.  ``bars`` maps a bar label to a
-    list of ``(segment label, hours, colour)``; ``notes`` maps the same
-    label to ``(Full-FEA point count, accuracy)`` drawn under the tick and
-    above the bar.  Defaults come from the manuscript body.
+    Each bar stacks the stages that make up its total wall-clock time in
+    workflow order, so the height difference is the saving.  ``bars`` maps
+    a bar label to a list of ``(segment label, hours, colour, point
+    count)``; the point count is written beside its own segment with a
+    bracket, because points attach to a stage and not to the bar total.
+    ``notes`` maps a bar label to the accuracy printed above it.
+    ``inset`` names the bar whose bottom stage is too thin to read on the
+    main axis and is magnified.  Defaults come from the body of the
+    manuscript's Section 5.
     """
     plt = _journal_rc()
     bars = bars or COST_STACKBAR_DEFAULT
     notes = notes if notes is not None else COST_STACKBAR_NOTES
+    inset = inset if inset is not None else COST_STACKBAR_INSET
 
     fig, ax = plt.subplots(figsize=figsize, layout='constrained')
     labels = list(bars)
-    xs = np.arange(len(labels))
+    WIDTH = 0.42
+    # 막대를 1 간격으로 두면 오른쪽 꺾쇠 라벨이 다음 막대에 닿는다. 라벨
+    # 한 폭만큼 벌린다.
+    POS = [1.35 * i for i in range(len(labels))]
     seen: Dict[str, str] = {}
+    totals = _stack_bars(ax, bars, WIDTH, seen, positions=POS)
 
-    for x, lab in zip(xs, labels):
+    # 꺾쇠는 두 막대 모두 오른쪽에 둔다 (저자 지시 2026-08-21). 확대 인셋은
+    # 막대 사이가 아니라 그림 오른쪽 아래, 두 막대의 라벨을 다 지난 자리에
+    # 놓아 연결선이 라벨을 가로지르지 않게 한다.
+    for x, lab in zip(POS, labels):
+        side, s = 'right', 1.0
         bottom = 0.0
-        for seg, hours, colour in bars[lab]:
-            ax.bar(x, hours, bottom=bottom, width=0.56, color=colour,
-                   edgecolor='white', linewidth=0.6,
-                   label=seg if seg not in seen else None)
-            seen.setdefault(seg, colour)
-            # 두께가 충분한 구간만 안쪽에 시간을 적는다.
-            if hours >= 3.0:
-                ax.text(x, bottom + hours / 2, f'{hours:.1f}',
-                        ha='center', va='center', fontsize=_fs(7.6),
-                        color='white')
+        segs = bars[lab]
+        for i, (seg, hours, colour, pts) in enumerate(segs):
+            if hours >= _BRACKET_MIN_H:
+                if pts:
+                    _bracket(ax, x + s * (WIDTH / 2 + 0.05), bottom,
+                             bottom + hours, pts, side=side)
+            elif i == len(segs) - 1:
+                # 최상단의 얇은 구간은 지시선으로 빼서 적는다.
+                y = bottom + hours / 2
+                ax.annotate(f'{hours:.2f} h',
+                            xy=(x + WIDTH / 2, y),
+                            xytext=(x + WIDTH / 2 + 0.30, y + 3.4),
+                            fontsize=_fs(7.0), color='#333333',
+                            ha='left', va='center',
+                            arrowprops=dict(arrowstyle='-', lw=0.6,
+                                            color='#666666',
+                                            shrinkA=0, shrinkB=1))
             bottom += hours
-        ax.text(x, bottom + 1.1, f'{bottom:.1f} h', ha='center',
-                va='bottom', fontsize=_fs(8.4), fontweight='bold')
+        ax.text(x, bottom + 1.4, f'{totals[lab]:.1f} h', ha='center',
+                va='bottom', fontsize=_fs(8.6), fontweight='bold')
         if lab in notes:
-            ax.text(x, bottom + 4.4, notes[lab][1], ha='center',
-                    va='bottom', fontsize=_fs(7.8), color='#444444')
+            ax.text(x, bottom + 4.9, notes[lab], ha='center', va='bottom',
+                    fontsize=_fs(7.8), color='#444444')
 
-    ax.set_xticks(xs)
-    ax.set_xticklabels(
-        [f'{l}\n{notes[l][0]}' if l in notes else l for l in labels],
-        fontsize=_fs(8.2))
+    ax.set_xticks(POS)
+    ax.set_xticklabels(labels, fontsize=_fs(8.2))
+    ax.set_xlim(-0.50, POS[-1] + 1.75)
     ax.set_ylabel('Wall-clock time [h]')
-    ax.set_ylim(0, 50)
+    ax.set_ylim(0, 52)
     ax.set_yticks([0, 10, 20, 30, 40])
     ax.grid(axis='y', ls=':', lw=0.6, color='#bbbbbb')
     ax.set_axisbelow(True)
     for side in ('top', 'right'):
         ax.spines[side].set_visible(False)
+
+    # 바닥 구간 확대 — 본 축에서 MS-FEA 0.28 h 는 선으로만 보인다.
+    if inset and inset.get('bar') in bars:
+        bl = inset['bar']
+        ytop = inset.get('ylim', 1.5)
+        axins = ax.inset_axes([0.790, 0.090, 0.185, 0.245])
+        _stack_bars(axins, {bl: bars[bl]}, WIDTH, inner_labels=False)
+        axins.set_xlim(-WIDTH * 1.7, WIDTH * 1.7)
+        axins.set_ylim(0, ytop)
+        # 눈금은 두지 않는다 — 확대 구간의 값은 옆에 적어 두므로 축이
+        # 중복이고, 작은 인셋에서 눈금 라벨은 본 축 눈금과 헷갈린다.
+        axins.set_xticks([])
+        axins.set_yticks([])
+        for side in ('top', 'right', 'left'):
+            axins.spines[side].set_visible(False)
+        axins.spines['bottom'].set_linewidth(0.6)
+        # 값은 인셋 아래 한 줄로 — 막대 옆에 붙이면 인셋 폭을 넘어
+        # 본 축의 라벨과 부딪힌다.
+        seg, hours, _c, pts = bars[bl][0]
+        axins.set_xlabel(f'{hours:.2f} h\n{pts}' if pts else f'{hours:.2f} h',
+                         fontsize=_fs(6.6), color='#333333', labelpad=2,
+                         linespacing=1.15)
+        axins.set_title(inset.get('text', ''), fontsize=_fs(6.8),
+                        color='#444444', pad=2)
+
+        # 확대한 자리를 본 축에 표시하고 인셋으로 잇는다.
+        # indicate_inset_zoom 은 못 쓴다 — 인셋이 막대를 x=0 에 다시 그리므로
+        # 그 x 범위를 본 축 좌표로 읽으면 두 막대를 가로지르는 사각형이 된다.
+        bi = POS[labels.index(bl)]
+        rx0, rx1 = bi - WIDTH / 2 - 0.03, bi + WIDTH / 2 + 0.03
+        ry1 = ytop
+        ax.add_patch(plt.Rectangle((rx0, 0), rx1 - rx0, ry1, fill=False,
+                                   edgecolor='#999999', lw=0.6, zorder=5))
+        # 인셋은 막대 오른쪽 아래에 있다. 사각형 오른쪽 변에서 인셋 왼쪽
+        # 아래 모서리로 낮게 잇는다 — 꺾쇠 라벨(가장 낮은 것이 y≈3)보다
+        # 아래로 지나가야 선이 글자를 가로지르지 않는다.
+        ip = axins.get_position()
+        inv = ax.transData.inverted()
+        ix0, iy0 = inv.transform(fig.transFigure.transform((ip.x0, ip.y0)))
+        ax.plot([rx1, ix0], [ry1 * 0.5, iy0], lw=0.6, color='#999999',
+                zorder=5, clip_on=False)
+
     # 범례는 그려진 순서가 아니라 워크플로 순서로 세운다.
     from matplotlib.patches import Patch
     order = [s for s in ('MS-FEA', 'Full-FEA, Ref', 'Full-FEA, SC',
                          'Map computation') if s in seen]
     order += [s for s in seen if s not in order]
     ax.legend(handles=[Patch(facecolor=seen[s], label=s) for s in order],
-              loc='upper right', frameon=False, fontsize=_fs(7.6),
-              handlelength=1.1, handletextpad=0.5, labelspacing=0.28,
-              borderaxespad=0.1)
+              loc='upper right', frameon=False, fontsize=_fs(7.2),
+              handlelength=1.0, handletextpad=0.45, labelspacing=0.24,
+              borderaxespad=0.0)
 
     os.makedirs(os.path.dirname(os.path.abspath(out_path)), exist_ok=True)
     fig.savefig(out_path)
@@ -2475,3 +2616,390 @@ def plot_cost_stackbar(out_path: str,
     plt.close(fig)
     print('비용 누적막대 저장:', out_path)
     return out_path
+
+
+# ── Similarity-transfer error, as a field (Section 5.2) ────────────────
+
+# Fig 3 은 상사 대응점의 필드를 나란히 보일 뿐 오차를 정량화하지 않는다.
+# 회로 수준에는 Fig 9 가 그 일을 해 주는데 필드 수준에는 대응 그림이
+# 없다는 것이 저자 지적(2026-08-22)이었다.
+#
+# 차분을 어떻게 그리느냐가 그림의 정직성을 가른다. 두 모델은 Motor-CAD 가
+# 각자 메시를 끊어(Ref MS 14,792 요소 / SC MS 22,690) 요소가 서로 겹치지
+# 않는다. 한쪽을 다른 쪽 메시에 최근접으로 얹으면 요소 간 결맞음이 0.43 —
+# 사실상 소금후추 잡음이고, 그것도 공극·치선단에 몰려 독자가 보는 자리에
+# 얼룩이 앉는다. 최근접을 선형 보간으로 바꿔도 6.59 % -> 5.90 % 로 거의
+# 안 줄어드는데, 이는 남는 차이가 매칭 오차가 아니라 불연속면 해상도라는
+# 뜻이다. 그래서 **양쪽을 제3의 공통 극좌표 격자로 보낸다** (결맞음 0.89).
+#
+# 그리고 두 양을 함께 보인다. A 는 재질 경계에서 연속이라 차분장이
+# 매끄럽고(전 범위의 1.3 %), 식~(MVPScaling) 의 A -> k_r A 주장과 직결된다.
+# |B| 는 경계에서 불연속이라 차분에 밝은 선이 남는데, 그것은 잡음이 아니라
+# 이산화가 불연속을 다르게 끊는 실제 효과다 — 캡션이 그렇게 말한다.
+
+_DIFF_RASTER = (400, 600)        # (반경 방향, 각 방향) — 외경에서 셀 0.5 x 0.75 mm, 요소(0.44~0.69 mm)와 동급
+
+
+from .field_metrics import (mesh_element_to_raster, mesh_field_to_raster,
+                            periodic_region_to_raster,
+                            periodic_vector_to_raster)
+
+
+def _polar_raster(clouds, n_r=None, n_t=None, pad=0.995):
+    """Common polar grid covering the overlap of several point clouds.
+
+    Returns (R, T, X, Y) meshes. Both fields are interpolated onto this,
+    rather than one onto the other's mesh, so neither model's
+    discretisation is privileged.
+    """
+    n_r = n_r or _DIFF_RASTER[0]
+    n_t = n_t or _DIFF_RASTER[1]
+    rr = [np.hypot(c[0], c[1]) for c in clouds]
+    tt = [np.arctan2(c[1], c[0]) for c in clouds]
+    r0 = max(r.min() for r in rr) / pad
+    r1 = min(r.max() for r in rr) * pad
+    t0 = max(t.min() for t in tt)
+    t1 = min(t.max() for t in tt)
+    R, T = np.meshgrid(np.linspace(r0, r1, n_r),
+                       np.linspace(t0, t1, n_t), indexing='ij')
+    return R, T, R * np.cos(T), R * np.sin(T)
+
+
+def _to_raster(x, y, v, X, Y):
+    """Linear interpolation of a scattered field onto the raster."""
+    from scipy.interpolate import LinearNDInterpolator
+    f = LinearNDInterpolator(np.column_stack([x, y]), np.asarray(v, float))
+    return f(X, Y)
+
+
+def _curl_z_mag(A, R, T):
+    """|B| from a z-directed vector potential on a polar raster.
+
+    In two dimensions B_r = (1/r) dA/dtheta and B_theta = -dA/dr, so a
+    difference field in A yields the corresponding difference in B by one
+    stencil on one grid.  A arrives in Wb/m and R in mm, so the radius
+    converts to metres for the result to come out in tesla.
+    """
+    r_m = R[:, 0] / 1000.0
+    t_rad = T[0, :]
+    dA_dr = np.gradient(A, r_m, axis=0)
+    dA_dt = np.gradient(A, t_rad, axis=1)
+    b_r = dA_dt / np.maximum(R / 1000.0, 1e-9)
+    b_t = -dA_dr
+    return np.hypot(b_r, b_t)
+
+
+_PARULA_STOPS = [
+    (0.2422, 0.1504, 0.6603), (0.2810, 0.3228, 0.9579),
+    (0.1786, 0.5289, 0.9682), (0.0689, 0.6948, 0.8394),
+    (0.2161, 0.7843, 0.5923), (0.6720, 0.7793, 0.2227),
+    (0.9763, 0.7831, 0.0538), (0.9769, 0.9839, 0.0805),
+]
+
+
+def _parula():
+    """Fig 11 draws its delta-eta map in MATLAB's parula; the error panels
+    here use the same ramp so the two figures read alike."""
+    from matplotlib.colors import LinearSegmentedColormap
+    return LinearSegmentedColormap.from_list('parula', _PARULA_STOPS)
+
+
+_SECTOR_DEG = 45.0               # e10: 8 poles, so one sector is one pole
+_SECTOR_FOLDS = [0, 1, 2, -1, 3, -2, 4, -3, 5]
+
+
+def _diff_row(ref_npz, sc_npz, k_r, window_deg=(-40.0, 0.0)):
+    """Everything one row of the similarity-error figure needs.
+
+    The stored sector is folded into a single angular window so that the
+    rotor sits inside the stator bore, the way a solver assembles a
+    cross-section from a periodic model.
+
+    window_deg : the window to draw.  It has to be narrow enough that the
+        rotor reaches it in one fold, or the picture carries a seam where
+        two folds meet -- exact in the field, but the region codes change
+        across it and every region-wise step then treats it as an
+        interface.  e10 at block 91 stores the rotor at -130..-85 and the
+        stator at -45..0 degrees, so one +90-degree fold covers -40..0
+        and that is the widest seamless window.
+    """
+    dr, ds = np.load(ref_npz), np.load(sc_npz)
+    # 상사 변환: 좌표(노드까지)는 k_r 배, B 는 불변.
+    r_nodes, r_tri = dr['node_xy'] * k_r, dr['tri']
+    s_nodes, s_tri = ds['node_xy'], ds['tri']
+    rr = np.hypot(dr['x_mm'], dr['y_mm']) * k_r
+    rs = np.hypot(ds['x_mm'], ds['y_mm'])
+
+    # 창 하나짜리 극좌표 격자. 두 모델이 같은 격자를 쓰므로 어느 쪽
+    # 메시도 특별대우를 받지 않는다.
+    n_r, n_t = _DIFF_RASTER
+    r0, r1 = max(rr.min(), rs.min()), min(rr.max(), rs.max())
+    R, T = np.meshgrid(np.linspace(r0, r1, n_r),
+                       np.radians(np.linspace(*window_deg, n_t)),
+                       indexing='ij')
+    X, Y = R * np.cos(T), R * np.sin(T)
+
+    def sample(nodes, tri, d, scale_area):
+        # 값은 솔버 등고선처럼 메시 연결 정보 위에서 영역별로 뽑는다.
+        # 영역별로 나누지 않으면 구리/철 계면이 요소 하나만큼 번지고,
+        # 밀도가 다른 두 메시는 다르게 번져서 필드가 아니라 메시를
+        # 비교하게 된다.
+        bx, by = periodic_vector_to_raster(
+            nodes, tri, d['bx_T'], d['by_T'], X, Y,
+            _SECTOR_DEG, _SECTOR_FOLDS, region=d['reg'])
+        code, base = periodic_region_to_raster(
+            nodes, tri, d['reg'], X, Y, _SECTOR_DEG, _SECTOR_FOLDS)
+        return bx, by, code, base
+
+    Bx_r, By_r, code_r, base_r = sample(r_nodes, r_tri, dr, k_r ** 2)
+    Bx_s, By_s, code_s, base_s = sample(s_nodes, s_tri, ds, 1.0)
+    B_r, B_s = np.hypot(Bx_r, By_r), np.hypot(Bx_s, By_s)
+    # 성분을 각각 빼서 참 벡터차를 만든다. |B_1| - |B_2| (크기의 차) 가
+    # 아니고, A 를 미분하지도 않는다 — 내보낸 A 는 1e-4 Wb/m 로 양자화돼
+    # 있어(B 는 2.3e-7 T) 0.8 mm 격자에서 한 양자가 0.12 T 로 증폭된다.
+    dB = np.hypot(Bx_r - Bx_s, By_r - By_s)
+    ok = np.isfinite(dB)
+
+    # 계면 띠: 이웃 셀과 코드가 다른 곳 한 칸 양옆까지, 두 메시 합집합.
+    edge = np.zeros_like(ok)
+    for arr in (code_r, code_s):
+        edge[1:, :] |= arr[1:, :] != arr[:-1, :]
+        edge[:-1, :] |= arr[1:, :] != arr[:-1, :]
+        edge[:, 1:] |= arr[:, 1:] != arr[:, :-1]
+        edge[:, :-1] |= arr[:, 1:] != arr[:, :-1]
+    interior = ok & ~edge
+    # 번호는 두 모델이 다르게 매기므로(같은 도체가 Ref 264, SC 266) 모델
+    # 간 비교는 코드가 아니라 도체 플래그로 한다.
+    cond = (ok & np.isin(base_s, ds['conductor_codes'])
+            & np.isin(base_r, dr['conductor_codes']))
+
+    def block(m):
+        # 셀 평균 |dB| / 셀 평균 |B| 가 아니라 L2 노름 비 — 경계의 소수
+        # 셀이 평균을 끌지 않도록 에너지 무게로 잰다.
+        b_rms = float(np.sqrt(np.nanmean(B_s[m] ** 2)))
+        d_rms = float(np.sqrt(np.nanmean(dB[m] ** 2)))
+        return {
+            'n': int(m.sum()),
+            'dB_rms_T': d_rms,
+            'dB_mean_T': float(np.nanmean(dB[m])),
+            'dB_p95_T': float(np.nanpercentile(dB[m], 95)),
+            'B_rms_T': b_rms,
+            'dB_L2_pct': float(100 * d_rms / b_rms),
+            'share_of_sum_dB2_pct': float(100 * np.nansum(dB[m] ** 2)
+                                          / np.nansum(dB[ok] ** 2)),
+        }
+
+    # 도체별 평균 벡터의 차 — 원고의 진폭 지표처럼 도체 평균 수준에서
+    # 재는 값이라 화소 단위 비와 급이 다르다. 같은 셀을 양쪽에 쓰므로
+    # 도체 경계를 두 메시가 달리 놓는 문제가 평균 안에서 사라진다.
+    codes = np.unique(code_s[cond])
+    counts = np.array([(cond & (code_s == c)).sum() for c in codes])
+    # 창 가장자리에 걸쳐 잘린 도체는 평균이 반쪽이라 뺀다.
+    whole = counts > 0.75 * np.median(counts)
+    cb_r, cb_s, centres = [], [], []
+    for c in codes[whole]:
+        m = cond & (code_s == c)
+        cb_r.append([np.nanmean(Bx_r[m]), np.nanmean(By_r[m])])
+        cb_s.append([np.nanmean(Bx_s[m]), np.nanmean(By_s[m])])
+        centres.append((c, float(X[m].mean()), float(Y[m].mean())))
+    cb_r, cb_s = np.asarray(cb_r), np.asarray(cb_s)
+    d_c = np.hypot(*(cb_r - cb_s).T)
+    b_c = np.hypot(*cb_s.T)
+    per_conductor = {
+        'n_conductors': int(len(b_c)),
+        'dBbar_L2_pct': float(100 * np.sqrt(np.sum(d_c ** 2))
+                              / np.sqrt(np.sum(b_c ** 2))),
+        'dBbar_rel_mean_pct': float(100 * np.mean(d_c / b_c)),
+        'dBbar_rel_max_pct': float(100 * np.max(d_c / b_c)),
+        'Bbar_mean_T': float(np.mean(b_c)),
+    }
+    # 접힌 복제 번호가 곧 회전자/고정자 구분이다: 고정자는 저장된
+    # 섹터(k=0)에서, 회전자는 창을 덮는 복제에서 온다.
+    lo, span = int(ds['reg'].min()), int(ds['reg'].max()) - int(ds['reg'].min()) + 1
+    slot = np.where(code_s >= 0, (code_s - lo) // span, -1)
+    stator = ok & (slot == 0)
+    rotor = ok & (slot > 0)
+    stats = {
+        'all': block(ok),
+        'rotor': block(rotor),
+        'stator': block(stator),
+        'interior': block(interior),
+        'interface': block(ok & ~interior),
+        'conductor_cells': block(cond),
+        'conductor_mean': per_conductor,
+    }
+    return dict(X=X, Y=Y, B_r=B_r, B_s=B_s, dB=dB, ok=ok, stats=stats,
+                r_nodes=r_nodes, r_tri=r_tri, s_nodes=s_nodes, s_tri=s_tri,
+                reg_s=code_s, centres=centres)
+
+
+def _zoom_box(row, half_mm=3.4):
+    """A box on one conductor, the same one in every row: the gap-side
+    layer of the middle slot, found by geometry rather than by region name
+    since the two export formats name conductors differently."""
+    codes, cx, cy = zip(*row['centres'])
+    cx, cy = np.asarray(cx), np.asarray(cy)
+    r, th = np.hypot(cx, cy), np.degrees(np.arctan2(cy, cx))
+    mid = -22.5 if th.min() < -10 else th.mean()
+    near = np.abs(th - mid) < 4.0
+    if not near.any():
+        near = np.ones_like(th, bool)
+    k = np.flatnonzero(near)[np.argmax(r[near])]
+    m = row['reg_s'] == codes[k]
+    return (float(row['X'][m].mean()), float(row['Y'][m].mean()), half_mm)
+
+
+def _draw_mesh_zoom(ax, row, box, aspect=1.9, legend=False):
+    """Both meshes and the common raster inside ``box``.
+
+    The box is widened to the panel aspect so the zoom fills the same
+    frame as the field panels beside it.
+    """
+    from matplotlib.tri import Triangulation
+    x0, y0, h = box
+    hx, hy = h * aspect, h
+    X, Y = row['X'], row['Y']
+    # 공통 격자: 셀 경계선을 r 방향·θ 방향으로 그린다. 상자를 넘는
+    # 선분은 잘라 두어 축 밖으로 새지 않게 한다.
+    inside = (np.abs(X - x0) < hx * 1.3) & (np.abs(Y - y0) < hy * 1.3)
+    ii, jj = np.nonzero(inside)
+    i0, i1, j0, j1 = ii.min(), ii.max() + 1, jj.min(), jj.max() + 1
+    for i in range(i0, i1):
+        ax.plot(X[i, j0:j1], Y[i, j0:j1], color='0.6', lw=0.3, zorder=1)
+    for j in range(j0, j1):
+        ax.plot(X[i0:i1, j], Y[i0:i1, j], color='0.6', lw=0.3, zorder=1)
+    for nodes, tri, colour, z in ((row['r_nodes'], row['r_tri'], '#1f77b4', 2),
+                                  (row['s_nodes'], row['s_tri'], '#d62728', 3)):
+        P = nodes[tri]
+        keep = ((np.abs(P[:, :, 0].mean(1) - x0) < hx * 1.4)
+                & (np.abs(P[:, :, 1].mean(1) - y0) < hy * 1.4))
+        t = tri[keep]
+        used, inv = np.unique(t, return_inverse=True)
+        T = Triangulation(nodes[used, 0], nodes[used, 1],
+                          inv.reshape(t.shape))
+        ax.triplot(T, color=colour, lw=0.45, zorder=z)
+    if legend:
+        from matplotlib.lines import Line2D
+        ax.legend(handles=[Line2D([], [], color='#1f77b4', lw=0.8,
+                                  label='Ref, scaled'),
+                           Line2D([], [], color='#d62728', lw=0.8,
+                                  label='SC'),
+                           Line2D([], [], color='0.6', lw=0.8,
+                                  label='common raster')],
+                  loc='upper left', fontsize=_fs(5.6), frameon=True,
+                  facecolor='white', framealpha=0.85, borderpad=0.25,
+                  handlelength=1.3, handletextpad=0.4,
+                  labelspacing=0.25).get_frame().set_linewidth(0.3)
+    ax.set_xlim(x0 - hx, x0 + hx)
+    ax.set_ylim(y0 - hy, y0 + hy)
+    ax.set_aspect('equal')
+    ax.set_xticks([])
+    ax.set_yticks([])
+
+
+def plot_field_diff_panels(rows, out_path: str,
+                           figsize: Optional[Tuple[float, float]] = None,
+                           raster_dpi: int = 600,
+                           show_mesh: bool = True) -> Dict:
+    """Similarity-transfer error as a field, one row per solver level.
+
+    ``rows`` is a sequence of ``(label, ref_npz, sc_npz, k_r)``.  The Ref
+    field is carried onto SC by the similarity transform -- coordinates
+    by k_r, B invariant -- and both are then projected onto a common
+    polar raster through their own mesh connectivity.  Each row draws the
+    transferred |B|, the directly solved |B| on the same scale, and the
+    vector difference |B_ref - B_sc|; with ``show_mesh`` a fourth panel
+    zooms on one conductor to show the two meshes and the common raster
+    the comparison lives on.  Colour scales are shared across rows and
+    sit above the panels.  The MVP is not drawn: the export quantises A
+    at 1e-4 Wb/m, so its difference is four quanta of structureless
+    noise.
+
+    Returns the per-row difference statistics, so the caption and the
+    body can quote the same numbers the figure draws.
+    """
+    plt = _journal_rc()
+    data = [(label, _diff_row(ref_npz, sc_npz, k_r))
+            for label, ref_npz, sc_npz, k_r in rows]
+    n_row, n_col = len(data), 4 if show_mesh else 3
+
+    # 눈금은 행 공용: 두 수준이 같은 자로 읽히게.
+    b_max = max(np.nanpercentile(np.concatenate([d['B_r'][d['ok']],
+                                                 d['B_s'][d['ok']]]), 99.5)
+                for _, d in data)
+    dB_lim = max(np.nanpercentile(d['dB'][d['ok']], 99) for _, d in data)
+    parula = _parula()
+
+    fig, axes = plt.subplots(
+        n_row, n_col,
+        figsize=figsize or (2.1 * n_col, 1.28 * n_row + 0.85),
+        layout='constrained')
+    axes = np.asarray(axes).reshape(n_row, n_col)
+
+    h_b = h_d = None
+    box = _zoom_box(data[0][1]) if show_mesh else None
+    for i, (label, d) in enumerate(data):
+        X, Y = d['X'], d['Y']
+        panels = [(d['B_r'], 'jet', 0.0, b_max),
+                  (d['B_s'], 'jet', 0.0, b_max),
+                  (d['dB'], parula, 0.0, dB_lim)]
+        for j, (V, cmap, lo, hi) in enumerate(panels):
+            ax = axes[i, j]
+            h = ax.pcolormesh(X, Y, np.ma.masked_invalid(V), cmap=cmap,
+                              vmin=lo, vmax=hi, shading='auto',
+                              rasterized=True)
+            if j == 0:
+                h_b = h
+            elif j == 2:
+                h_d = h
+            ax.set_aspect('equal')
+            ax.set_xticks([])
+            ax.set_yticks([])
+        if show_mesh:
+            _draw_mesh_zoom(axes[i, 3], d, box, legend=(i == 0))
+            # 확대 위치를 차분 패널에 상자로 표시
+            x0, y0, hh = box
+            axes[i, 2].add_patch(plt.Rectangle(
+                (x0 - 1.9 * hh, y0 - hh), 3.8 * hh, 2 * hh, fill=False,
+                ec='k', lw=0.6))
+        for j in range(n_col):
+            ax = axes[i, j]
+            for sp in ax.spines.values():
+                sp.set_linewidth(0.4)
+            # 패널 태그는 하단, 그림 내부 제목은 두지 않는다.
+            ax.set_xlabel(f'({chr(97 + i * n_col + j)})',
+                          fontsize=_fs(8.0), labelpad=2)
+        axes[i, 0].set_ylabel(label, fontsize=_fs(8.2))
+
+    # 컬러바는 행 공용으로 상단에: |B| 는 (a)(b) 열 위, |dB| 는 (c) 열 위.
+    for h, cols in ((h_b, [0, 1]), (h_d, [2])):
+        cb = fig.colorbar(h, ax=list(axes[:, cols].ravel()),
+                          location='top', shrink=0.9, aspect=40 if len(cols) > 1 else 20,
+                          pad=0.02)
+        cb.ax.tick_params(labelsize=_fs(6.4), length=2, pad=1)
+        cb.ax.xaxis.set_ticks_position('top')
+
+    os.makedirs(os.path.dirname(os.path.abspath(out_path)), exist_ok=True)
+    fig.savefig(out_path, dpi=raster_dpi)
+    stem = os.path.splitext(out_path)[0]
+    if out_path.lower().endswith('.pdf'):
+        fig.savefig(stem + '.png', dpi=220)
+    plt.close(fig)
+
+    stats = {label: d['stats'] for label, d in data}
+    print('상사 전달 오차 필드 저장:', out_path)
+    for k, v in stats.items():
+        print(f'  {k}:')
+        for sub, w in v.items():
+            if 'n' not in w:
+                print(f"    {sub:16s} {w['n_conductors']} conductors  "
+                      f"||dB_bar||/||B_bar|| {w['dBbar_L2_pct']:.2f} %  "
+                      f"rel mean {w['dBbar_rel_mean_pct']:.2f} %  "
+                      f"max {w['dBbar_rel_max_pct']:.2f} %  "
+                      f"B_bar {w['Bbar_mean_T']:.3f} T")
+                continue
+            print(f"    {sub:16s} n {w['n']:6d}  |dB| rms {w['dB_rms_T']:.4f} "
+                  f"mean {w['dB_mean_T']:.4f} p95 {w['dB_p95_T']:.4f} T  "
+                  f"||dB||/||B|| {w['dB_L2_pct']:5.2f} %  "
+                  f"share of sum dB^2 {w['share_of_sum_dB2_pct']:5.1f} %")
+    return stats
