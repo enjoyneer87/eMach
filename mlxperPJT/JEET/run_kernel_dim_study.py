@@ -29,15 +29,14 @@ from jeet_acloss_rbf import (iter_mes_blocks, slot_conductor_codes,
                              make_fig2_kernel_gif)
 
 # 출력 폴더는 JEET_FIGDIR 로 덮어쓸 수 있다 (배포 레포/CI 용).
-_FIGDIR = os.environ.get('JEET_FIGDIR', r'E:\KDH\Overleaf\JEET-2024_rev1\fig')
+from jeet_acloss_rbf.repro_env import fig_dir, results_dir
+_FIGDIR = fig_dir()
 # 데이터 루트는 JEET_DATA_ROOT 로 덮어쓸 수 있다 (배포 레포/CI 용).
 _DATA = os.environ.get('JEET_DATA_ROOT',
                        os.path.join(HERE, 'map_exports', 'e10'))
 # 진단용 JSON/GIF 는 로컬 Drive 백업으로 나간다 --- 마운트 안 된 기계에서는
 # 건너뛴다(그림 생성 자체는 이것 없이도 된다). JEET_SCRATCH 로 옮길 수 있다.
-_SCRATCH = os.environ.get(
-    'JEET_SCRATCH',
-    os.path.join(r"J:\내 드라이브", "EveryMotor_JEET_data", "results"))
+_SCRATCH = os.environ.get('JEET_SCRATCH') or results_dir()
 
 F = os.path.join(_DATA, "fields")
 TS = os.path.join(F, "Magnetic_Ref_ARCHIVE_460A_36deg_OnLoadTorque.txt")

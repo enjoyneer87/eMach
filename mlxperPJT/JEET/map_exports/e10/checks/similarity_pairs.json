@@ -1,0 +1,695 @@
+{
+ "rows": [
+  {
+   "speed_ref_rpm": 8000.0,
+   "current_ref_A": 115.075,
+   "phase_deg": 0.0,
+   "speed_sc_rpm": 2000.0,
+   "current_sc_A": 230.075,
+   "p_ref_kW": 0.9444551614897709,
+   "p_sc_kW": 0.952476685817356,
+   "dev_pct": 0.8493282322616702,
+   "subsets": [
+    "loaded"
+   ]
+  },
+  {
+   "speed_ref_rpm": 8000.0,
+   "current_ref_A": 115.075,
+   "phase_deg": 18.0,
+   "speed_sc_rpm": 2000.0,
+   "current_sc_A": 230.075,
+   "p_ref_kW": 0.935364088377351,
+   "p_sc_kW": 0.9420121343333521,
+   "dev_pct": 0.7107441945450432,
+   "subsets": [
+    "loaded"
+   ]
+  },
+  {
+   "speed_ref_rpm": 8000.0,
+   "current_ref_A": 115.075,
+   "phase_deg": 36.0,
+   "speed_sc_rpm": 2000.0,
+   "current_sc_A": 230.075,
+   "p_ref_kW": 0.830944054413246,
+   "p_sc_kW": 0.832656542334206,
+   "dev_pct": 0.20608943669129243,
+   "subsets": [
+    "loaded"
+   ]
+  },
+  {
+   "speed_ref_rpm": 8000.0,
+   "current_ref_A": 115.075,
+   "phase_deg": 54.0,
+   "speed_sc_rpm": 2000.0,
+   "current_sc_A": 230.075,
+   "p_ref_kW": 0.6427461325850391,
+   "p_sc_kW": 0.637545948871273,
+   "dev_pct": -0.8090571767194632,
+   "subsets": [
+    "loaded"
+   ]
+  },
+  {
+   "speed_ref_rpm": 8000.0,
+   "current_ref_A": 115.075,
+   "phase_deg": 72.0,
+   "speed_sc_rpm": 2000.0,
+   "current_sc_A": 230.075,
+   "p_ref_kW": 0.528150863904124,
+   "p_sc_kW": 0.5229491285361101,
+   "dev_pct": -0.9848957416376036,
+   "subsets": [
+    "loaded"
+   ]
+  },
+  {
+   "speed_ref_rpm": 8000.0,
+   "current_ref_A": 115.075,
+   "phase_deg": 90.0,
+   "speed_sc_rpm": 2000.0,
+   "current_sc_A": 230.075,
+   "p_ref_kW": 0.45241725717176096,
+   "p_sc_kW": 0.451207822011388,
+   "dev_pct": -0.2673273711824464,
+   "subsets": [
+    "loaded"
+   ]
+  },
+  {
+   "speed_ref_rpm": 8000.0,
+   "current_ref_A": 230.05,
+   "phase_deg": 0.0,
+   "speed_sc_rpm": 2000.0,
+   "current_sc_A": 460.05,
+   "p_ref_kW": 3.73241711352854,
+   "p_sc_kW": 3.69680000489495,
+   "dev_pct": -0.9542638871870013,
+   "subsets": [
+    "loaded",
+    "grid"
+   ]
+  },
+  {
+   "speed_ref_rpm": 8000.0,
+   "current_ref_A": 230.05,
+   "phase_deg": 18.0,
+   "speed_sc_rpm": 2000.0,
+   "current_sc_A": 460.05,
+   "p_ref_kW": 3.52734843902559,
+   "p_sc_kW": 3.48492158328119,
+   "dev_pct": -1.2027974122148288,
+   "subsets": [
+    "loaded",
+    "grid"
+   ]
+  },
+  {
+   "speed_ref_rpm": 8000.0,
+   "current_ref_A": 230.05,
+   "phase_deg": 36.0,
+   "speed_sc_rpm": 2000.0,
+   "current_sc_A": 460.05,
+   "p_ref_kW": 3.3648823323472703,
+   "p_sc_kW": 3.32761465279282,
+   "dev_pct": -1.1075477794925792,
+   "subsets": [
+    "loaded",
+    "grid"
+   ]
+  },
+  {
+   "speed_ref_rpm": 8000.0,
+   "current_ref_A": 230.05,
+   "phase_deg": 54.0,
+   "speed_sc_rpm": 2000.0,
+   "current_sc_A": 460.05,
+   "p_ref_kW": 2.8921973502111302,
+   "p_sc_kW": 2.86016339365735,
+   "dev_pct": -1.107599263633996,
+   "subsets": [
+    "loaded",
+    "grid"
+   ]
+  },
+  {
+   "speed_ref_rpm": 8000.0,
+   "current_ref_A": 230.05,
+   "phase_deg": 72.0,
+   "speed_sc_rpm": 2000.0,
+   "current_sc_A": 460.05,
+   "p_ref_kW": 2.15577849791197,
+   "p_sc_kW": 2.12708743426629,
+   "dev_pct": -1.3308910759370463,
+   "subsets": [
+    "loaded",
+    "grid"
+   ]
+  },
+  {
+   "speed_ref_rpm": 8000.0,
+   "current_ref_A": 230.05,
+   "phase_deg": 90.0,
+   "speed_sc_rpm": 2000.0,
+   "current_sc_A": 460.05,
+   "p_ref_kW": 2.32149592581446,
+   "p_sc_kW": 2.28462681555389,
+   "dev_pct": -1.5881617473713638,
+   "subsets": [
+    "loaded",
+    "grid"
+   ]
+  },
+  {
+   "speed_ref_rpm": 8000.0,
+   "current_ref_A": 345.025,
+   "phase_deg": 0.0,
+   "speed_sc_rpm": 2000.0,
+   "current_sc_A": 690.025,
+   "p_ref_kW": 7.48934939787699,
+   "p_sc_kW": 7.40989867508145,
+   "dev_pct": -1.0608494620115039,
+   "subsets": [
+    "loaded"
+   ]
+  },
+  {
+   "speed_ref_rpm": 8000.0,
+   "current_ref_A": 345.025,
+   "phase_deg": 18.0,
+   "speed_sc_rpm": 2000.0,
+   "current_sc_A": 690.025,
+   "p_ref_kW": 7.113466705117791,
+   "p_sc_kW": 7.02892282657526,
+   "dev_pct": -1.1885045934312943,
+   "subsets": [
+    "loaded"
+   ]
+  },
+  {
+   "speed_ref_rpm": 8000.0,
+   "current_ref_A": 345.025,
+   "phase_deg": 36.0,
+   "speed_sc_rpm": 2000.0,
+   "current_sc_A": 690.025,
+   "p_ref_kW": 6.89236711366584,
+   "p_sc_kW": 6.82827129976721,
+   "dev_pct": -0.9299535680788673,
+   "subsets": [
+    "loaded"
+   ]
+  },
+  {
+   "speed_ref_rpm": 8000.0,
+   "current_ref_A": 345.025,
+   "phase_deg": 54.0,
+   "speed_sc_rpm": 2000.0,
+   "current_sc_A": 690.025,
+   "p_ref_kW": 6.10753445360278,
+   "p_sc_kW": 6.06246350603104,
+   "dev_pct": -0.7379565013366784,
+   "subsets": [
+    "loaded"
+   ]
+  },
+  {
+   "speed_ref_rpm": 8000.0,
+   "current_ref_A": 345.025,
+   "phase_deg": 72.0,
+   "speed_sc_rpm": 2000.0,
+   "current_sc_A": 690.025,
+   "p_ref_kW": 4.88693483250718,
+   "p_sc_kW": 4.8318312344628005,
+   "dev_pct": -1.1275697330326184,
+   "subsets": [
+    "loaded"
+   ]
+  },
+  {
+   "speed_ref_rpm": 8000.0,
+   "current_ref_A": 345.025,
+   "phase_deg": 90.0,
+   "speed_sc_rpm": 2000.0,
+   "current_sc_A": 690.025,
+   "p_ref_kW": 4.97415499953968,
+   "p_sc_kW": 4.87677058494,
+   "dev_pct": -1.9578082027739807,
+   "subsets": [
+    "loaded"
+   ]
+  },
+  {
+   "speed_ref_rpm": 8000.0,
+   "current_ref_A": 460.0,
+   "phase_deg": 0.0,
+   "speed_sc_rpm": 2000.0,
+   "current_sc_A": 920.0,
+   "p_ref_kW": 12.163868610710301,
+   "p_sc_kW": 12.0546739201289,
+   "dev_pct": -0.8976970573757681,
+   "subsets": [
+    "loaded",
+    "grid",
+    "rated"
+   ]
+  },
+  {
+   "speed_ref_rpm": 8000.0,
+   "current_ref_A": 460.0,
+   "phase_deg": 18.0,
+   "speed_sc_rpm": 2000.0,
+   "current_sc_A": 920.0,
+   "p_ref_kW": 11.7430345339758,
+   "p_sc_kW": 11.6358599134081,
+   "dev_pct": -0.9126654635785658,
+   "subsets": [
+    "loaded",
+    "grid",
+    "rated"
+   ]
+  },
+  {
+   "speed_ref_rpm": 8000.0,
+   "current_ref_A": 460.0,
+   "phase_deg": 36.0,
+   "speed_sc_rpm": 2000.0,
+   "current_sc_A": 920.0,
+   "p_ref_kW": 11.1558530294853,
+   "p_sc_kW": 11.0935456487424,
+   "dev_pct": -0.5585174040767638,
+   "subsets": [
+    "loaded",
+    "grid",
+    "rated"
+   ]
+  },
+  {
+   "speed_ref_rpm": 8000.0,
+   "current_ref_A": 460.0,
+   "phase_deg": 54.0,
+   "speed_sc_rpm": 2000.0,
+   "current_sc_A": 920.0,
+   "p_ref_kW": 9.8102447669149,
+   "p_sc_kW": 9.77373122597149,
+   "dev_pct": -0.37219806244338516,
+   "subsets": [
+    "loaded",
+    "grid",
+    "rated"
+   ]
+  },
+  {
+   "speed_ref_rpm": 8000.0,
+   "current_ref_A": 460.0,
+   "phase_deg": 72.0,
+   "speed_sc_rpm": 2000.0,
+   "current_sc_A": 920.0,
+   "p_ref_kW": 8.36081829072468,
+   "p_sc_kW": 8.29958810200015,
+   "dev_pct": -0.7323468420843082,
+   "subsets": [
+    "loaded",
+    "grid",
+    "rated"
+   ]
+  },
+  {
+   "speed_ref_rpm": 8000.0,
+   "current_ref_A": 460.0,
+   "phase_deg": 90.0,
+   "speed_sc_rpm": 2000.0,
+   "current_sc_A": 920.0,
+   "p_ref_kW": 8.709295851789529,
+   "p_sc_kW": 8.58031945136968,
+   "dev_pct": -1.4809050308395078,
+   "subsets": [
+    "loaded",
+    "grid",
+    "rated"
+   ]
+  },
+  {
+   "speed_ref_rpm": 16000.0,
+   "current_ref_A": 115.075,
+   "phase_deg": 0.0,
+   "speed_sc_rpm": 4000.0,
+   "current_sc_A": 230.075,
+   "p_ref_kW": 3.143947517391,
+   "p_sc_kW": 3.16243727283877,
+   "dev_pct": 0.5881063645462259,
+   "subsets": [
+    "loaded"
+   ]
+  },
+  {
+   "speed_ref_rpm": 16000.0,
+   "current_ref_A": 115.075,
+   "phase_deg": 18.0,
+   "speed_sc_rpm": 4000.0,
+   "current_sc_A": 230.075,
+   "p_ref_kW": 3.09359434091286,
+   "p_sc_kW": 3.10866198049494,
+   "dev_pct": 0.4870593207005225,
+   "subsets": [
+    "loaded"
+   ]
+  },
+  {
+   "speed_ref_rpm": 16000.0,
+   "current_ref_A": 115.075,
+   "phase_deg": 36.0,
+   "speed_sc_rpm": 4000.0,
+   "current_sc_A": 230.075,
+   "p_ref_kW": 2.77324732142224,
+   "p_sc_kW": 2.77763723572633,
+   "dev_pct": 0.15829508858369312,
+   "subsets": [
+    "loaded"
+   ]
+  },
+  {
+   "speed_ref_rpm": 16000.0,
+   "current_ref_A": 115.075,
+   "phase_deg": 54.0,
+   "speed_sc_rpm": 4000.0,
+   "current_sc_A": 230.075,
+   "p_ref_kW": 2.2076649614934,
+   "p_sc_kW": 2.1927902269911503,
+   "dev_pct": -0.6737768076994555,
+   "subsets": [
+    "loaded"
+   ]
+  },
+  {
+   "speed_ref_rpm": 16000.0,
+   "current_ref_A": 115.075,
+   "phase_deg": 72.0,
+   "speed_sc_rpm": 4000.0,
+   "current_sc_A": 230.075,
+   "p_ref_kW": 1.87844873548153,
+   "p_sc_kW": 1.8639890333773899,
+   "dev_pct": -0.7697682577658127,
+   "subsets": [
+    "loaded"
+   ]
+  },
+  {
+   "speed_ref_rpm": 16000.0,
+   "current_ref_A": 115.075,
+   "phase_deg": 90.0,
+   "speed_sc_rpm": 4000.0,
+   "current_sc_A": 230.075,
+   "p_ref_kW": 1.6923239950094602,
+   "p_sc_kW": 1.68779739106845,
+   "dev_pct": -0.267478565236845,
+   "subsets": [
+    "loaded"
+   ]
+  },
+  {
+   "speed_ref_rpm": 16000.0,
+   "current_ref_A": 230.05,
+   "phase_deg": 0.0,
+   "speed_sc_rpm": 4000.0,
+   "current_sc_A": 460.05,
+   "p_ref_kW": 12.384373127304299,
+   "p_sc_kW": 12.263225882026399,
+   "dev_pct": -0.9782267058055738,
+   "subsets": [
+    "loaded",
+    "grid"
+   ]
+  },
+  {
+   "speed_ref_rpm": 16000.0,
+   "current_ref_A": 230.05,
+   "phase_deg": 18.0,
+   "speed_sc_rpm": 4000.0,
+   "current_sc_A": 460.05,
+   "p_ref_kW": 11.6902458003552,
+   "p_sc_kW": 11.562479293042799,
+   "dev_pct": -1.092932599488361,
+   "subsets": [
+    "loaded",
+    "grid"
+   ]
+  },
+  {
+   "speed_ref_rpm": 16000.0,
+   "current_ref_A": 230.05,
+   "phase_deg": 36.0,
+   "speed_sc_rpm": 4000.0,
+   "current_sc_A": 460.05,
+   "p_ref_kW": 11.1760520501008,
+   "p_sc_kW": 11.0763787394247,
+   "dev_pct": -0.8918472303929725,
+   "subsets": [
+    "loaded",
+    "grid"
+   ]
+  },
+  {
+   "speed_ref_rpm": 16000.0,
+   "current_ref_A": 230.05,
+   "phase_deg": 54.0,
+   "speed_sc_rpm": 4000.0,
+   "current_sc_A": 460.05,
+   "p_ref_kW": 9.832479639209659,
+   "p_sc_kW": 9.75292751938558,
+   "dev_pct": -0.8090748493070232,
+   "subsets": [
+    "loaded",
+    "grid"
+   ]
+  },
+  {
+   "speed_ref_rpm": 16000.0,
+   "current_ref_A": 230.05,
+   "phase_deg": 72.0,
+   "speed_sc_rpm": 4000.0,
+   "current_sc_A": 460.05,
+   "p_ref_kW": 7.649612764932209,
+   "p_sc_kW": 7.57970990283818,
+   "dev_pct": -0.9138091592620579,
+   "subsets": [
+    "loaded",
+    "grid"
+   ]
+  },
+  {
+   "speed_ref_rpm": 16000.0,
+   "current_ref_A": 230.05,
+   "phase_deg": 90.0,
+   "speed_sc_rpm": 4000.0,
+   "current_sc_A": 460.05,
+   "p_ref_kW": 7.80581321597079,
+   "p_sc_kW": 7.7224506530879395,
+   "dev_pct": -1.0679548764027547,
+   "subsets": [
+    "loaded",
+    "grid"
+   ]
+  },
+  {
+   "speed_ref_rpm": 16000.0,
+   "current_ref_A": 345.025,
+   "phase_deg": 0.0,
+   "speed_sc_rpm": 4000.0,
+   "current_sc_A": 690.025,
+   "p_ref_kW": 24.7795620599207,
+   "p_sc_kW": 24.5115560947918,
+   "dev_pct": -1.081560539612525,
+   "subsets": [
+    "loaded"
+   ]
+  },
+  {
+   "speed_ref_rpm": 16000.0,
+   "current_ref_A": 345.025,
+   "phase_deg": 18.0,
+   "speed_sc_rpm": 4000.0,
+   "current_sc_A": 690.025,
+   "p_ref_kW": 23.6012021735277,
+   "p_sc_kW": 23.3393413099188,
+   "dev_pct": -1.1095234119159136,
+   "subsets": [
+    "loaded"
+   ]
+  },
+  {
+   "speed_ref_rpm": 16000.0,
+   "current_ref_A": 345.025,
+   "phase_deg": 36.0,
+   "speed_sc_rpm": 4000.0,
+   "current_sc_A": 690.025,
+   "p_ref_kW": 22.921265302498302,
+   "p_sc_kW": 22.726869185565903,
+   "dev_pct": -0.8481037777229972,
+   "subsets": [
+    "loaded"
+   ]
+  },
+  {
+   "speed_ref_rpm": 16000.0,
+   "current_ref_A": 345.025,
+   "phase_deg": 54.0,
+   "speed_sc_rpm": 4000.0,
+   "current_sc_A": 690.025,
+   "p_ref_kW": 20.7386859302928,
+   "p_sc_kW": 20.6227202359626,
+   "dev_pct": -0.5591757101678696,
+   "subsets": [
+    "loaded"
+   ]
+  },
+  {
+   "speed_ref_rpm": 16000.0,
+   "current_ref_A": 345.025,
+   "phase_deg": 72.0,
+   "speed_sc_rpm": 4000.0,
+   "current_sc_A": 690.025,
+   "p_ref_kW": 16.915148796696602,
+   "p_sc_kW": 16.7897085557475,
+   "dev_pct": -0.7415852054083127,
+   "subsets": [
+    "loaded"
+   ]
+  },
+  {
+   "speed_ref_rpm": 16000.0,
+   "current_ref_A": 345.025,
+   "phase_deg": 90.0,
+   "speed_sc_rpm": 4000.0,
+   "current_sc_A": 690.025,
+   "p_ref_kW": 16.891688482399097,
+   "p_sc_kW": 16.6559948072314,
+   "dev_pct": -1.395323359256151,
+   "subsets": [
+    "loaded"
+   ]
+  },
+  {
+   "speed_ref_rpm": 16000.0,
+   "current_ref_A": 460.0,
+   "phase_deg": 0.0,
+   "speed_sc_rpm": 4000.0,
+   "current_sc_A": 920.0,
+   "p_ref_kW": 40.393503690480905,
+   "p_sc_kW": 40.021270965355896,
+   "dev_pct": -0.9215163110813052,
+   "subsets": [
+    "loaded",
+    "grid",
+    "rated"
+   ]
+  },
+  {
+   "speed_ref_rpm": 16000.0,
+   "current_ref_A": 460.0,
+   "phase_deg": 18.0,
+   "speed_sc_rpm": 4000.0,
+   "current_sc_A": 920.0,
+   "p_ref_kW": 38.9591262577164,
+   "p_sc_kW": 38.6170176488071,
+   "dev_pct": -0.8781218722571871,
+   "subsets": [
+    "loaded",
+    "grid",
+    "rated"
+   ]
+  },
+  {
+   "speed_ref_rpm": 16000.0,
+   "current_ref_A": 460.0,
+   "phase_deg": 36.0,
+   "speed_sc_rpm": 4000.0,
+   "current_sc_A": 920.0,
+   "p_ref_kW": 37.1718430714458,
+   "p_sc_kW": 36.9687121645331,
+   "dev_pct": -0.546464447625783,
+   "subsets": [
+    "loaded",
+    "grid",
+    "rated"
+   ]
+  },
+  {
+   "speed_ref_rpm": 16000.0,
+   "current_ref_A": 460.0,
+   "phase_deg": 54.0,
+   "speed_sc_rpm": 4000.0,
+   "current_sc_A": 920.0,
+   "p_ref_kW": 33.1784583203291,
+   "p_sc_kW": 33.1007913086815,
+   "dev_pct": -0.23408866951485363,
+   "subsets": [
+    "loaded",
+    "grid",
+    "rated"
+   ]
+  },
+  {
+   "speed_ref_rpm": 16000.0,
+   "current_ref_A": 460.0,
+   "phase_deg": 72.0,
+   "speed_sc_rpm": 4000.0,
+   "current_sc_A": 920.0,
+   "p_ref_kW": 28.6381619668023,
+   "p_sc_kW": 28.5262149847318,
+   "dev_pct": -0.39090142097900626,
+   "subsets": [
+    "loaded",
+    "grid",
+    "rated"
+   ]
+  },
+  {
+   "speed_ref_rpm": 16000.0,
+   "current_ref_A": 460.0,
+   "phase_deg": 90.0,
+   "speed_sc_rpm": 4000.0,
+   "current_sc_A": 920.0,
+   "p_ref_kW": 29.7396955545982,
+   "p_sc_kW": 29.440088037879,
+   "dev_pct": -1.0074330322889735,
+   "subsets": [
+    "loaded",
+    "grid",
+    "rated"
+   ]
+  }
+ ],
+ "aggregate": {
+  "grid": {
+   "n": 24,
+   "dev_min_pct": -1.5881617473713638,
+   "dev_max_pct": -0.23408866951485363,
+   "absdev_min_pct": 0.23408866951485363,
+   "absdev_max_pct": 1.5881617473713638,
+   "absdev_mean_pct": 0.9157484250267068
+  },
+  "rated": {
+   "n": 12,
+   "dev_min_pct": -1.4809050308395078,
+   "dev_max_pct": -0.23408866951485363,
+   "absdev_min_pct": 0.23408866951485363,
+   "absdev_max_pct": 1.4809050308395078,
+   "absdev_mean_pct": 0.7444046345121172
+  },
+  "loaded": {
+   "n": 48,
+   "dev_min_pct": -1.9578082027739807,
+   "dev_max_pct": 0.8493282322616702,
+   "absdev_min_pct": 0.15829508858369312,
+   "absdev_max_pct": 1.9578082027739807,
+   "absdev_mean_pct": 0.8643292254783282
+  }
+ },
+ "_meta": {
+  "rule": "mode FullFEA, I > 0.1 A, speed_SC = speed_Ref/4, I_SC = 2 I_Ref (tol 0.2 A), same beta; dev_pct = 100 (P_SC/P_Ref - 1) on fea_total_ac_kW",
+  "grid_subset": "Ref current also lies on the SC current grid (within 0.1 A), so both machines are evaluated on native grid points at I and 2I",
+  "rated_subset": "Ref 460 A <-> SC 920 A"
+ }
+}

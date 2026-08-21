@@ -19,17 +19,22 @@ import os
 import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, os.path.join(HERE, "acloss_ref_methods"))
+sys.path.insert(0, os.path.abspath(os.path.join(HERE, "..", "..", "tools")))
+sys.path.insert(0, HERE)
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 import numpy as np                                          # noqa: E402
-import mesh_b_vs_mcad as _mb                                # noqa: E402
+from acloss_ref_methods import mesh_b_vs_mcad as _mb        # noqa: E402
 
 _mb.SIGMA /= 1.2358          # 80°C 정합 (스펙트럼 실행과 동일)
 _mb._SIGMA_V /= 1.2358
 
-E10 = os.path.join(HERE, "map_exports", "e10")
+from jeet_acloss_rbf.repro_env import data_root             # noqa: E402
+
+E10 = data_root()
+_FEA = os.environ.get("JEET_FEA_ROOT", "")   # e.g. <...>/Thesis/e10
+_E4A = os.path.join(os.path.dirname(_FEA), "e4a") if _FEA else "e4a"
 MACHINES = {   # tag -> (line_json, h_radial_m, w_tan_m, summary_json)
     "Ref": (os.path.join(E10, "Ref_rated",
                          "line_sampled_hybrid_Ref_rated_80C.json"),
@@ -46,8 +51,8 @@ MACHINES = {   # tag -> (line_json, h_radial_m, w_tan_m, summary_json)
            os.path.join(E10, "SC", "JEET_ACLoss_SC_Map_Summary.json")),
     "e4a": (os.path.join(E10, "e4a", "line_sampled_hybrid_e4a_80C.json"),
             3.551e-3, 3.079e-3,
-            r"D:\KangDH\Thesis\e4a\newfam_results\kturn4"
-            r"\JEET_ACLoss_kturn4_Map_Summary.json"),
+            os.path.join(_E4A, "newfam_results", "kturn4",
+                         "JEET_ACLoss_kturn4_Map_Summary.json")),
 }
 
 

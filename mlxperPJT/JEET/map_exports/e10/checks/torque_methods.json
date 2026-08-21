@@ -1,6 +1,6 @@
 {
  "Ref": {
-  "path": "D:\\KangDH\\Thesis\\e10\\_txt_backfill\\Ref\\FullFEA_Speed_16000RPM_460.0A_36.0deg\\FEA_data.txt.gz",
+  "path": "FullFEA_Speed_16000RPM_460.0A_36.0deg",
   "n_steps": 127,
   "pole_pairs": 4,
   "speed_rpm": 16000.0,
@@ -121,7 +121,7 @@
   }
  },
  "HalfSC": {
-  "path": "D:\\KangDH\\Thesis\\e10\\_txt_backfill\\HalfSC\\FullFEA_Speed_16000RPM_460.0A_36.0deg\\FEA_data.txt.gz",
+  "path": "FullFEA_Speed_16000RPM_460.0A_36.0deg",
   "n_steps": 127,
   "pole_pairs": 4,
   "speed_rpm": 16000.0,
@@ -243,7 +243,7 @@
   }
  },
  "HalfSC_690_MS": {
-  "path": "D:\\KangDH\\Thesis\\e10\\_txt_backfill\\HalfSC_campaign\\Hybrid_Speed_16000RPM_690.0A_36.0deg\\FEA_data.txt.gz",
+  "path": "Hybrid_Speed_16000RPM_690.0A_36.0deg",
   "n_steps": 127,
   "pole_pairs": 4,
   "speed_rpm": 16000.0,
@@ -364,7 +364,7 @@
   }
  },
  "SC": {
-  "path": "D:\\KangDH\\Thesis\\e10\\_txt_backfill\\SC\\FullFEA_Speed_16000RPM_920.0A_36.0deg\\FEA_data.txt.gz",
+  "path": "FullFEA_Speed_16000RPM_920.0A_36.0deg",
   "n_steps": 127,
   "pole_pairs": 4,
   "speed_rpm": 16000.0,

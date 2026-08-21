@@ -10,7 +10,10 @@ import sys
 import matplotlib
 
 # 출력 폴더는 JEET_FIGDIR 로 덮어쓸 수 있다 (배포 레포/CI 용).
-_FIGDIR = os.environ.get('JEET_FIGDIR', r'E:\KDH\Overleaf\JEET-2024_rev1\fig')
+sys.path.insert(0, os.path.abspath(os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), '..', '..', 'tools')))
+from jeet_acloss_rbf.repro_env import fig_dir
+_FIGDIR = fig_dir()
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
@@ -26,9 +29,9 @@ _DATA = os.environ.get('JEET_DATA_ROOT',
 # 이 .mat 은 e10 트리가 아니라 그 부모(배포 레포의 data/)에 놓인다.
 MAT_NAME = 'JEET_ACLoss_Comparison_20260609_223109.mat'
 _MAT_CAND = os.path.join(os.path.dirname(os.path.abspath(_DATA)), MAT_NAME)
-MAT_PATH = _MAT_CAND if os.path.exists(_MAT_CAND) else (
-    r"D:\KangDH\EveryMotor\eMach\mlxperPJT"
-    r"\JEET_ACLoss_Comparison_20260609_223109.mat")
+# 워크트리에서는 mlxperPJT/ 바로 아래(JEET 의 부모)에 있다.
+_MAT_WT = os.path.abspath(os.path.join(HERE, '..', MAT_NAME))
+MAT_PATH = _MAT_CAND if os.path.exists(_MAT_CAND) else _MAT_WT
 OUT = os.path.join(_FIGDIR, 'TS_Hybrid_ratio.png')
 
 plt.rcParams.update({

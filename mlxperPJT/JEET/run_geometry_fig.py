@@ -15,7 +15,10 @@ import os
 import sys
 
 # 출력 폴더는 JEET_FIGDIR 로 덮어쓸 수 있다 (배포 레포/CI 용).
-_FIGDIR = os.environ.get('JEET_FIGDIR', r'E:\KDH\Overleaf\JEET-2024_rev1\fig')
+sys.path.insert(0, os.path.abspath(os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), '..', '..', 'tools')))
+from jeet_acloss_rbf.repro_env import fig_dir, results_dir
+_FIGDIR = fig_dir()
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 # 데이터 루트는 JEET_DATA_ROOT 로 덮어쓸 수 있다 (배포 레포/CI 용).
@@ -32,16 +35,15 @@ matplotlib.use("Agg")
 from jeet_acloss_rbf.manuscript_figs import plot_motor_geometry_dxf
 
 # e10 Ref 모델(6턴) 2-D 단면. Motor-CAD .mot 에서 export 된 것으로,
-# D:\KangDH\Thesis\e10\SLFEA\e10Turn6V261SLFEA.mot 이 원본 모델이다.
+# 원본 모델은 저자 아카이브의 Motor-CAD .mot (e10Turn6V261SLFEA) 이다.
 # 배포 레포에선 데이터 루트(또는 그 부모 data/)에 두면 --dxf 없이 찾는다.
 DXF_NAME = 'e10_2d.dxf'
 DXF = next((p for p in (os.path.join(_DATA, DXF_NAME),
                         os.path.join(os.path.dirname(os.path.abspath(_DATA)),
                                      DXF_NAME))
-            if os.path.exists(p)), r"D:\KangDH\Thesis\e10\e10_2d.dxf")
+            if os.path.exists(p)), os.path.join(_DATA, DXF_NAME))
 OUT_PDF = os.path.join(_FIGDIR, 'motor_geometry_e10.pdf')
-DRIVE_OUT = (r"J:\내 드라이브\EveryMotor_JEET_data\results"
-             r"\geometry_dims_e10.json")
+DRIVE_OUT = os.path.join(results_dir(), 'geometry_dims_e10.json')
 
 
 def _mounted(path: str) -> bool:

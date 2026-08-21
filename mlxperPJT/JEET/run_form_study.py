@@ -18,9 +18,9 @@ matplotlib.use("Agg")
 
 from jeet_acloss_rbf.pipeline import AcLossPipeline
 from jeet_acloss_rbf.form_study import run_form_study
+from jeet_acloss_rbf.repro_env import results_dir
 
-DRIVE_OUT = (r"J:\내 드라이브\EveryMotor_JEET_data\results"
-             r"\form_study.json")
+DRIVE_OUT = os.path.join(results_dir(), 'form_study.json')
 
 
 def main():

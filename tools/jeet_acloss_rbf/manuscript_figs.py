@@ -2369,3 +2369,109 @@ def make_fig_b_slot_gif(ts_path: str, hybrid_path: str, out_gif: str,
             json.dump(summary, fh, ensure_ascii=False, indent=1)
         print('B 요약 JSON 저장:', out_json)
     return summary
+
+
+# ── Section 5 computational-cost stacked bar ───────────────────────────
+
+# 원고 Section 5(계산 효율) 본문 수치. 전수 Full-FEA 는 모델당 120 운전점
+# x 556 s = 18.53 h, 두 모델 37.1 h. 제안 기법은 Ref 보정 5.84 h
+# (MS-FEA 30 점 0.28 + Full-FEA 36 점 5.56), SC 보정 4.17 h (Full-FEA 27 점,
+# 자체 MS-FEA 없음), 맵 단계 0.33 h/모델 = 0.66 h → 10.7 h.
+#
+# 색은 모델이 아니라 *단계* 를 뜻한다. 같은 단계는 어느 막대에서나 같은
+# 색이라 높이 차이가 곧 절감이다. 무보정 하이브리드의 0.6 h 는 같은
+# 본문 수치로 MS-FEA 0.28 h + 맵 0.33 h 로 분해된다.
+COST_STACKBAR_DEFAULT = {
+    'Exhaustive Full-FEA': [
+        ('Full-FEA, Ref', 18.53, '#2e7d32'),
+        ('Full-FEA, SC', 18.53, '#7cb342'),
+    ],
+    'Proposed': [
+        ('MS-FEA', 0.28, '#4f7ea8'),
+        ('Full-FEA, Ref', 5.56, '#2e7d32'),
+        ('Full-FEA, SC', 4.17, '#7cb342'),
+        ('Map computation', 0.66, '#c5cf9a'),
+    ],
+    'Uncorrected\nHybrid': [
+        ('MS-FEA', 0.28, '#4f7ea8'),
+        ('Map computation', 0.33, '#c5cf9a'),
+    ],
+}
+
+COST_STACKBAR_NOTES = {
+    'Exhaustive Full-FEA': ('240 pts', '(reference)'),
+    'Proposed': ('63 pts', 'wMAE 0.6-0.8 %'),
+    'Uncorrected\nHybrid': ('0 pts', 'wMAE 27-45 %'),
+}
+
+
+def plot_cost_stackbar(out_path: str,
+                       bars: Optional[Dict] = None,
+                       notes: Optional[Dict] = None,
+                       figsize: Tuple[float, float] = (_COLW_IN, 2.6)
+                       ) -> str:
+    """Stacked bar of the two-model study cost, replacing the cost table.
+
+    Each bar stacks the stages that make up its total wall-clock time, so
+    the height difference is the saving.  ``bars`` maps a bar label to a
+    list of ``(segment label, hours, colour)``; ``notes`` maps the same
+    label to ``(Full-FEA point count, accuracy)`` drawn under the tick and
+    above the bar.  Defaults come from the manuscript body.
+    """
+    plt = _journal_rc()
+    bars = bars or COST_STACKBAR_DEFAULT
+    notes = notes if notes is not None else COST_STACKBAR_NOTES
+
+    fig, ax = plt.subplots(figsize=figsize, layout='constrained')
+    labels = list(bars)
+    xs = np.arange(len(labels))
+    seen: Dict[str, str] = {}
+
+    for x, lab in zip(xs, labels):
+        bottom = 0.0
+        for seg, hours, colour in bars[lab]:
+            ax.bar(x, hours, bottom=bottom, width=0.56, color=colour,
+                   edgecolor='white', linewidth=0.6,
+                   label=seg if seg not in seen else None)
+            seen.setdefault(seg, colour)
+            # 두께가 충분한 구간만 안쪽에 시간을 적는다.
+            if hours >= 3.0:
+                ax.text(x, bottom + hours / 2, f'{hours:.1f}',
+                        ha='center', va='center', fontsize=_fs(7.6),
+                        color='white')
+            bottom += hours
+        ax.text(x, bottom + 1.1, f'{bottom:.1f} h', ha='center',
+                va='bottom', fontsize=_fs(8.4), fontweight='bold')
+        if lab in notes:
+            ax.text(x, bottom + 4.4, notes[lab][1], ha='center',
+                    va='bottom', fontsize=_fs(7.8), color='#444444')
+
+    ax.set_xticks(xs)
+    ax.set_xticklabels(
+        [f'{l}\n{notes[l][0]}' if l in notes else l for l in labels],
+        fontsize=_fs(8.2))
+    ax.set_ylabel('Wall-clock time [h]')
+    ax.set_ylim(0, 50)
+    ax.set_yticks([0, 10, 20, 30, 40])
+    ax.grid(axis='y', ls=':', lw=0.6, color='#bbbbbb')
+    ax.set_axisbelow(True)
+    for side in ('top', 'right'):
+        ax.spines[side].set_visible(False)
+    # 범례는 그려진 순서가 아니라 워크플로 순서로 세운다.
+    from matplotlib.patches import Patch
+    order = [s for s in ('MS-FEA', 'Full-FEA, Ref', 'Full-FEA, SC',
+                         'Map computation') if s in seen]
+    order += [s for s in seen if s not in order]
+    ax.legend(handles=[Patch(facecolor=seen[s], label=s) for s in order],
+              loc='upper right', frameon=False, fontsize=_fs(7.6),
+              handlelength=1.1, handletextpad=0.5, labelspacing=0.28,
+              borderaxespad=0.1)
+
+    os.makedirs(os.path.dirname(os.path.abspath(out_path)), exist_ok=True)
+    fig.savefig(out_path)
+    stem = os.path.splitext(out_path)[0]
+    if out_path.lower().endswith('.pdf'):
+        fig.savefig(stem + '.png', dpi=220)
+    plt.close(fig)
+    print('비용 누적막대 저장:', out_path)
+    return out_path

@@ -1,90 +1,162 @@
 # -*- coding: utf-8 -*-
-"""회로 수준 검증 — 요소 전류밀도를 도체 단면으로 합산해 도체 전류 파형 복원.
+"""Section 5.1 check: conductor-current reconstruction from the FEA export.
 
-저자 제안: 요소별 밀도 파형 말고 상(회로) 기준 전류 파형도 확인 가능하지
-않은가. 결선 정보 없이도 각 도체의 I_c(t) = sum_e J_e^total A_e 를 만들면
-파형의 위상으로 상 그룹이 드러나고, RMS 가 알려진 상전류(460/920 A)와
-일치하는지로 export·파싱의 회로 정합을 검증한다.
+Summing the exported element current density over each conductor cross
+section, I_c(t) = sum_e J_e A_e, must reproduce the impressed phase
+current (the fundamental amplitude over sqrt(2) equals the commanded
+460 / 920 A rms) with no circuit information involved.  The manuscript
+states the reconstruction holds "to four significant digits".
 
-또한 도체별 유도(와전류) 손실 파형 P_c(t) = sum_e Je^2 A_e / sigma 의
-주기 평균도 도체(층)별로 보고한다 --- Motor-CAD 상별 손실 그래프의
-export 판 대응물.
+Modes
+-----
+default            read the shipped ``checks/conductor_currents.json``,
+                   print the numbers, judge against ``--tol``.
+``--recompute``    parse the two rated Full-FEA exports (Ref 16 kRPM
+                   460 A and SC 16 kRPM 920 A, both at beta = 36 deg)
+                   and rewrite the JSON.  The exports resolve through
+                   ``jeet_acloss_rbf.repro_env.raw_export`` (Zenodo
+                   ``fea/`` layout first, then ``JEET_FEA_ROOT``).
 
-실행:  python check_conductor_currents.py
+Exit codes: 0 pass / 1 missing input or tolerance exceeded.
+
+Note: the time-domain rms stored in ``torque_methods.json`` (458.6 A) is
+0.3 % low because the export spans a non-integer number of periods; the
+least-squares fundamental used here is free of that bias.
 """
 from __future__ import annotations
 
+import argparse
+import json
+import math
 import os
 import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, os.path.abspath(os.path.join(HERE, "..", "..", "tools")))
+for _cand in (os.path.abspath(os.path.join(HERE, "..", "..", "tools")),
+              os.path.abspath(os.path.join(HERE, ".."))):
+    if os.path.isdir(os.path.join(_cand, "jeet_acloss_rbf")) \
+            and _cand not in sys.path:
+        sys.path.insert(0, _cand)
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 import numpy as np                                          # noqa: E402
-from jeet_acloss_rbf.field_metrics import (                 # noqa: E402
-    iter_mes_blocks, slot_conductor_codes)
+from jeet_acloss_rbf import repro_env                       # noqa: E402
+from jeet_acloss_rbf.torque_methods import (                # noqa: E402
+    conductor_codes, iter_fea_blocks)
 
-F = os.path.join(HERE, "map_exports", "e10", "fields")
-SLOT = 1
-SIGMA = 4.709e7
 POLE_PAIRS = 4
-
+# (model, mode, rpm, amp, phase) -> impressed phase current [A rms]
 CASES = {
-    "Ref_16k": ("Magnetic_Ref_ARCHIVE_460A_36deg_OnLoadTorque.txt", 460.0),
-    "SC_16k":  ("Magnetic_SC_OP920A_36deg_OnLoadTorque.txt", 920.0),
+    "Ref_16k": (("Ref", "FullFEA", 16000.0, 460.0, 36.0), 460.0),
+    "SC_16k": (("SC", "FullFEA", 16000.0, 920.0, 36.0), 920.0),
 }
+CLAIM = ("manuscript Sec. 5.1: conductor-current reconstruction reproduces "
+         "the impressed current to four significant digits")
+
+
+def recompute_case(tag: str, spec, i_exp: float) -> dict:
+    path = repro_env.require(
+        repro_env.raw_export(*spec),
+        "%s Full-FEA export %s" % (tag, repro_env.zenodo_name(*spec)))
+    blocks = [b for b in iter_fea_blocks(path) if b["time_s"] is not None]
+    p0 = blocks[0]
+    codes = sorted(conductor_codes(p0), key=lambda c: float(np.hypot(
+        p0["x_mm"][p0["reg"] == c], p0["y_mm"][p0["reg"] == c]).mean()))
+    masks = [p0["reg"] == c for c in codes]
+    areas = [p0["area_mm2"][m] * 1e-6 for m in masks]           # m^2
+    a_reg = np.array([a.sum() for a in areas])                  # m^2
+
+    i_elem = np.array([[float(np.sum(b["j_am2"][m] * a))
+                        for m, a in zip(masks, areas)] for b in blocks])
+    jmap = [dict(zip(b["rcode"], b["rjval"])) for b in blocks]
+    i_tbl = np.array([[jm.get(int(c), np.nan) * a_reg[k]
+                       for k, c in enumerate(codes)] for jm in jmap])
+
+    rot = next(abs(b["rotate_deg"]) for b in blocks if b["rotate_deg"])
+    th_e = np.deg2rad((np.array([b["step"] for b in blocks], float) - 1.0)
+                      * rot) * POLE_PAIRS
+    A = np.column_stack([np.ones_like(th_e), np.cos(th_e), np.sin(th_e)])
+    coef, *_ = np.linalg.lstsq(A, i_elem, rcond=None)
+    amp1 = np.hypot(coef[1], coef[2])                           # peak [A]
+    i_fund = amp1 / np.sqrt(2.0)                                # rms  [A]
+    rel_dev = np.abs(i_fund / i_exp - 1.0)
+
+    # parsing consistency: the RegionsTable current density times the
+    # region area must equal the element sum at every step
+    tbl_mismatch = float(np.nanmax(np.abs(i_tbl - i_elem)) / amp1.min())
+    rmax = float(rel_dev.max())
+    return {
+        "file": os.path.basename(os.path.dirname(path)) or
+        os.path.basename(path),
+        "i_expected_Arms": i_exp,
+        "n_steps": len(blocks),
+        "n_conductors": len(codes),
+        "i_fund_Arms": [float(v) for v in i_fund],
+        "rel_dev": [float(v) for v in rel_dev],
+        "rel_dev_max": rmax,
+        "sig_digits": int(math.floor(-math.log10(rmax))) if rmax > 0 else 16,
+        "region_table_vs_element_sum_max_rel": tbl_mismatch,
+    }
+
+
+def judge(res: dict, tol: float) -> int:
+    worst = 0.0
+    for tag, r in sorted(res.items()):
+        if tag.startswith("_"):
+            continue
+        print("[%s]  %s  impressed %g A rms, %d conductors, %d steps"
+              % (tag, r["file"], r["i_expected_Arms"], r["n_conductors"],
+                 r["n_steps"]))
+        print("  fundamental/sqrt(2): %.2f .. %.2f A rms   "
+              "max |rel.dev| %.2e   region-table consistency %.1e"
+              % (min(r["i_fund_Arms"]), max(r["i_fund_Arms"]),
+                 r["rel_dev_max"], r["region_table_vs_element_sum_max_rel"]))
+        worst = max(worst, r["rel_dev_max"])
+    ok = worst <= tol
+    print("%s: worst relative deviation %.2e vs tolerance %.0e "
+          "(agreement to four significant digits in the 5e-4 half-unit "
+          "convention) -- %s" % ("PASS" if ok else "FAIL", worst, tol,
+                                 CLAIM))
+    return 0 if ok else 1
 
 
 def main() -> int:
-    for tag, (fn, i_rms_exp) in CASES.items():
-        path = os.path.join(F, fn)
-        if not os.path.exists(path):
-            print(f"[{tag}] 파일 없음 --- 건너뜀")
-            continue
-        codes = None
-        idx, I, PL = [], [], []                    # 블록, I_c(t), P_c(t)
-        step_deg = None
-        for bi, p in iter_mes_blocks(path):
-            if codes is None:
-                codes = sorted(slot_conductor_codes(p, SLOT),
-                               key=lambda c: np.hypot(
-                                   p['x_mm'][p['reg'] == c],
-                                   p['y_mm'][p['reg'] == c]).mean())
-                masks = [(p['reg'] == c) for c in codes]
-                areas = [p['area_mm2'][m] * 1e-6 for m in masks]
-            if step_deg is None and p['rotate_deg']:
-                step_deg = abs(p['rotate_deg'])
-            I.append([float(np.sum(p['j_am2'][m] * a))
-                      for m, a in zip(masks, areas)])
-            PL.append([float(np.sum(p['je_am2'][m] ** 2 * a) / SIGMA)
-                       for m, a in zip(masks, areas)])
-            idx.append(bi - 1)
-        I = np.asarray(I)                          # (nt, 6)
-        PL = np.asarray(PL)
-        th_e = np.deg2rad(np.asarray(idx, float) * step_deg) * POLE_PAIRS
+    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap.add_argument("--recompute", action="store_true",
+                    help="re-parse the raw exports instead of reading the "
+                         "shipped JSON")
+    ap.add_argument("--out", default=os.path.join(
+        repro_env.checks_dir(), "conductor_currents.json"))
+    ap.add_argument("--tol", type=float, default=5e-4,
+                    help="max allowed relative deviation of the "
+                         "reconstructed fundamental (5e-4 = 4 s.f.)")
+    a = ap.parse_args()
 
-        # 기본파 위상·진폭 (LSQ), 전 고조파 RMS
-        A = np.column_stack([np.ones_like(th_e), np.cos(th_e), np.sin(th_e)])
-        coef, *_ = np.linalg.lstsq(A, I, rcond=None)
-        amp1 = np.hypot(coef[1], coef[2])
-        ph1 = np.rad2deg(np.arctan2(-coef[2], coef[1]))
-        rms = np.sqrt((I ** 2).mean(axis=0))
-        thd = np.sqrt(np.maximum(rms ** 2 - amp1 ** 2 / 2, 0)) / (amp1 / np.sqrt(2))
-
-        print(f"\n[{tag}]  기대 상전류 {i_rms_exp:g} A_rms  (도체 = 층 순서:"
-              f" 공극측 -> 슬롯바닥)")
-        print(f"{'층':>3} {'I_rms[A]':>9} {'기본파[A_rms]':>12} {'위상[deg]':>10}"
-              f" {'왜곡율%':>8} {'P_eddy_avg[W/m]':>15}")
-        for L in range(I.shape[1]):
-            print(f"{L + 1:>3} {rms[L]:>9.1f} {amp1[L] / np.sqrt(2):>12.1f}"
-                  f" {ph1[L]:>10.1f} {100 * thd[L]:>8.2f}"
-                  f" {PL[:, L].mean():>15.1f}")
-        print(f"  합(슬롯1 유도손실): {PL.sum(axis=1).mean():.1f} W/m"
-              f"   상전류 대비 편차: "
-              f"{100 * (rms.mean() / i_rms_exp - 1):+.2f}%")
-    return 0
+    print("Check (Sec. 5.1): conductor-current reconstruction "
+          "I_c(t) = sum_e J_e A_e vs the impressed 460/920 A rms")
+    if a.recompute:
+        res = {}
+        for tag, (spec, i_exp) in CASES.items():
+            res[tag] = recompute_case(tag, spec, i_exp)
+        res["_meta"] = {
+            "pole_pairs": POLE_PAIRS,
+            "method": "least-squares fundamental of sum_e J_e A_e per "
+                      "conductor region vs electrical angle",
+            "note": "sig_digits = floor(-log10(max rel.dev)); the static "
+                    "pre-solve block is excluded",
+        }
+        os.makedirs(os.path.dirname(a.out), exist_ok=True)
+        with open(a.out, "w", encoding="utf-8", newline="\n") as fh:
+            json.dump(res, fh, indent=1)
+        print("saved:", a.out)
+    else:
+        if not os.path.isfile(a.out):
+            print("[missing input] %s\n  Run with --recompute (raw exports "
+                  "required), or restore the shipped checks/ JSON." % a.out)
+            return 1
+        res = json.load(open(a.out, encoding="utf-8"))
+    return judge(res, a.tol)
 
 
 if __name__ == "__main__":

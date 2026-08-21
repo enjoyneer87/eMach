@@ -32,7 +32,7 @@ import time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.abspath(os.path.join(HERE, "..", "..", "tools")))
-sys.path.insert(0, os.path.join(HERE, "acloss_ref_methods"))
+sys.path.insert(0, HERE)
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
@@ -40,13 +40,16 @@ import numpy as np                                          # noqa: E402
 from jeet_acloss_rbf.field_metrics import (                 # noqa: E402
     _locate_blocks, _parse_regions, _build_block_dict,
     slot_conductor_codes)
-from mesh_b_vs_mcad import (                                # noqa: E402
+from acloss_ref_methods.mesh_b_vs_mcad import (             # noqa: E402
     prox_24, prox_g2, prox_g2_volpe_prime, mcad_reference,
     L_ACTIVE, POLE_PAIRS, SECTORS)
-from volpe_hybrid_acloss import calc_skin_loss              # noqa: E402
+from acloss_ref_methods.volpe_hybrid_acloss import (        # noqa: E402
+    calc_skin_loss)
 
-BACKFILL = r"D:\KangDH\Thesis\e10\_txt_backfill"
-E10 = os.path.join(HERE, "map_exports", "e10")
+from jeet_acloss_rbf.repro_env import data_root             # noqa: E402
+
+BACKFILL = os.path.join(os.environ.get("JEET_FEA_ROOT", ""), "_txt_backfill")
+E10 = data_root()
 SLOTS = range(1, 7)                     # 1섹터 = 6슬롯 x 6도체 = 36도체
 _DIR_RE = re.compile(r"Hybrid_Speed_(\d+)RPM_([\d.]+)A_([\d.]+)deg$")
 

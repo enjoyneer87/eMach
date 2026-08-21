@@ -40,25 +40,43 @@ the one-cycle FFT amplitudes at 16k inherit a small bias from it.
 from __future__ import annotations
 
 import json
+import os
 import sys
 from pathlib import Path
 
 import numpy as np
 
-from kim_acloss import (kde_representative, prox_loss_kim,
-                        skin_loss_kim)
-from volpe_hybrid_acloss import (calc_prox_2D_G2 as _volpe_prox_g2p,
-                                  calc_skin_loss,
-                                  SIGMA_CU_20C as _SIGMA_V,
-                                  MU_0 as _MU_V)
+try:  # imported as the package ``acloss_ref_methods``
+    from .kim_acloss import (kde_representative, prox_loss_kim,
+                             skin_loss_kim)
+    from .volpe_hybrid_acloss import (calc_prox_2D_G2 as _volpe_prox_g2p,
+                                      calc_skin_loss,
+                                      SIGMA_CU_20C as _SIGMA_V,
+                                      MU_0 as _MU_V)
+except ImportError:  # run from inside acloss_ref_methods/ (legacy)
+    from kim_acloss import (kde_representative, prox_loss_kim,
+                            skin_loss_kim)
+    from volpe_hybrid_acloss import (calc_prox_2D_G2 as _volpe_prox_g2p,
+                                     calc_skin_loss,
+                                     SIGMA_CU_20C as _SIGMA_V,
+                                     MU_0 as _MU_V)
 
 HERE = Path(__file__).resolve().parent
 
-# Auto-detect platform: prefer the sibling map_exports folder (cross-platform),
-# fall back to the original Windows absolute path.
-_MAP_E10_LINUX = HERE.parent / 'map_exports' / 'e10'
-_MAP_E10_WIN   = Path(r'D:\KangDH\EveryMotor\eMach\mlxperPJT\JEET\map_exports\e10')
-MAP_E10 = _MAP_E10_LINUX if _MAP_E10_LINUX.exists() else _MAP_E10_WIN
+
+def _map_e10() -> Path:
+    """Reduced data root: ``JEET_DATA_ROOT`` > repro_env > sibling map_exports."""
+    env = os.environ.get('JEET_DATA_ROOT')
+    if env:
+        return Path(env)
+    try:
+        from jeet_acloss_rbf.repro_env import data_root
+        return Path(data_root())
+    except ImportError:
+        return HERE.parent / 'map_exports' / 'e10'
+
+
+MAP_E10 = _map_e10()
 
 MODELS = {
     'halfsc': dict(

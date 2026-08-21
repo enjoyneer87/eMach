@@ -1,0 +1,118 @@
+# package_manifest.txt — source -> destination map for JEET-repro
+#
+# Read by make_package.py (same directory).  One entry per line:
+#     @ROOT/relative/path -> package/relative/path [flag,flag]
+# A destination ending in '/' is a directory; the file keeps its basename.
+# A source may contain glob characters (then the destination must be a
+# directory).  __pycache__ and *.pyc never match.
+#
+# Roots: @TOOLS @JEET @E10 @PKG (worktree defaults) and @EMACH_E10
+# (no default — pass --root EMACH_E10=<path>).
+# Flags: allow-abs   skip the private-path leak scan (Map_Summary JSONs
+#                    carry a diagnostic backup_dir field)
+#        no-outputs  insist the notebook ships without outputs
+#        zenodo-sha  the source must equal the Zenodo-deposited file
+#                    (verified against --zenodo-manifest)
+
+# ── package metadata (authored in @PKG, copied verbatim) ────────────────
+@PKG/README.md          -> README.md
+@PKG/LICENSE            -> LICENSE
+@PKG/CITATION.cff       -> CITATION.cff
+@PKG/.zenodo.json       -> .zenodo.json
+@PKG/.gitignore         -> .gitignore
+@PKG/.gitattributes     -> .gitattributes
+@PKG/requirements.txt   -> requirements.txt
+@PKG/repro.py           -> repro.py
+
+# ── calibration library ─────────────────────────────────────────────────
+@TOOLS/jeet_acloss_rbf/*.py -> jeet_acloss_rbf/
+
+# ── notebooks (01–03; 04 needs Motor-CAD and stays private) ─────────────
+@JEET/notebooks/01_standalone_figs.ipynb        -> notebooks/ [no-outputs]
+@JEET/notebooks/02_dataset_figs_and_audit.ipynb -> notebooks/ [no-outputs]
+@JEET/notebooks/03_geometry_field_and_lab_figs.ipynb -> notebooks/ [no-outputs]
+
+# ── figure scripts (current EN manuscript numbering) ────────────────────
+# Fig 1
+@JEET/run_fig2_acdc_ratio.py    -> scripts/
+# Fig 2 (slot J panels, shared color scale)
+@JEET/run_fig1_shared_scale.py  -> scripts/
+# Fig 3
+@JEET/run_fig11_mvp_field.py    -> scripts/
+# Fig 4
+@JEET/run_fig4_ts_hyb_ratio.py  -> scripts/
+# Fig 5
+@JEET/run_workflow_fig.py       -> scripts/
+# Fig 6
+@JEET/run_af_transfer_fig.py    -> scripts/
+# Fig 7 (transfer_ablation) + Fig C.1 (form_convergence)
+@JEET/run_manuscript_figs78.py  -> scripts/
+# Fig 8
+@JEET/run_geometry_fig.py       -> scripts/
+# Fig 9
+@JEET/run_flux_torque_fig.py    -> scripts/
+# Fig 10
+@JEET/run_fig10_validation.py   -> scripts/
+# Fig 11 (MATLAB)
+@JEET/plotFig15Effmaps.m        -> scripts/
+# Fig A.1
+@JEET/run_figA1_eddy_factors.py -> scripts/
+# Fig B.1
+@JEET/run_fig_hybrid_variants.py -> scripts/
+# Fig C.2
+@JEET/run_ref_ablation.py       -> scripts/
+# Appendix B denominator swap
+@JEET/run_open_denominator_refit.py -> scripts/
+# Table C (calibration-form comparison)
+@JEET/run_form_study.py         -> scripts/
+# loaded by run_fig1_shared_scale.py from its own directory
+@JEET/run_kernel_dim_study.py   -> scripts/
+
+# ── raw-data reduction (needs the Zenodo deposit or the author tree) ────
+@JEET/run_cut_fig1_slot_reduction.py -> scripts/from_raw/
+# loaded by run_cut_fig1_slot_reduction.py from its own directory
+@JEET/run_kernel_dim_study.py   -> scripts/from_raw/
+
+# ── verification checks (Section 5.1 self-consistency) ──────────────────
+@JEET/check_conductor_currents.py -> checks/
+@JEET/check_parseval.py           -> checks/
+@JEET/check_torque_methods.py     -> checks/
+@JEET/check_similarity_pairs.py   -> checks/
+@JEET/check_field_similarity.py   -> checks/
+
+# ── data: AF dataset (one Map_Summary per machine) ──────────────────────
+@E10/Ref/JEET_ACLoss_Ref_Map_Summary.json       -> data/e10/Ref/ [allow-abs]
+@E10/HalfSC/JEET_ACLoss_HalfSC_Map_Summary.json -> data/e10/HalfSC/ [allow-abs]
+@E10/SC/JEET_ACLoss_SC_Map_Summary.json         -> data/e10/SC/ [allow-abs]
+
+# ── data: Fig 1 / Fig 4 loss-comparison summary ─────────────────────────
+@JEET/../JEET_ACLoss_Comparison_20260609_223109.mat -> data/JEET_ACLoss_Comparison_20260609_223109.mat
+
+# ── data: Fig 2 reduced slot fields + Fig 3 field snapshots ─────────────
+@E10/fields/reduced/slotcut_Ref_TS.npz -> data/e10/fields/reduced/
+@E10/fields/reduced/slotcut_Ref_MS.npz -> data/e10/fields/reduced/
+@E10/fields/reduced/slotcut_SC_TS.npz  -> data/e10/fields/reduced/
+@E10/fields/reduced/slotcut_SC_MS.npz  -> data/e10/fields/reduced/
+@E10/fields/fields_Ref_16k_36deg_OnLoadTorque.npz        -> data/e10/fields/
+@E10/fields/fields_Ref_Hybrid_16k_36deg_OnLoadTorque.npz -> data/e10/fields/
+@E10/fields/fields_SC_4k_36deg_OnLoadTorque.npz          -> data/e10/fields/
+@E10/fields/fields_SC_Hybrid_4k_36deg_OnLoadTorque.npz   -> data/e10/fields/
+
+# ── data: Fig 8 geometry + Fig 9 flux/torque scaling ────────────────────
+@E10/e10_2d.dxf                     -> data/e10/
+@E10/lab_scaling_comparison_e10.mat -> data/e10/
+
+# ── data: Fig B.1 evaluation variants + Appendix B refit input ──────────
+@E10/Ref/line_sampled_hybrid_Ref_80C.json -> data/e10/Ref/
+@E10/Ref/meshb_hybrid_losses_Ref.json     -> data/e10/Ref/
+@E10/Ref/bvp_denominator_Ref.json         -> data/e10/Ref/
+@E10/Ref_spdsweep/line_sampled_hybrid_Ref_spdsweep_80C.json -> data/e10/Ref_spdsweep/
+@E10/SC/line_sampled_hybrid_SC_80C.json   -> data/e10/SC/
+
+# ── data: Fig 11 efficiency maps (Zenodo-deposited .mat, too large for
+#          the worktree — sourced from the eMach checkout, SHA-verified) ─
+@EMACH_E10/effmaps/MotorLAB_elecdata_SC_hyb.mat     -> data/e10/effmaps/ [zenodo-sha]
+@EMACH_E10/effmaps/MotorLAB_elecdata_SC_fullfea.mat -> data/e10/effmaps/ [zenodo-sha]
+
+# ── data: shipped verification results (checks read these by default) ───
+@E10/checks/* -> data/e10/checks/

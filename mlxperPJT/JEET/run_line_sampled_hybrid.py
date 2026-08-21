@@ -29,12 +29,12 @@ import time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.abspath(os.path.join(HERE, "..", "..", "tools")))
-sys.path.insert(0, os.path.join(HERE, "acloss_ref_methods"))
+sys.path.insert(0, HERE)
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 import numpy as np                                          # noqa: E402
-from mesh_b_vs_mcad import (                                # noqa: E402
+from acloss_ref_methods.mesh_b_vs_mcad import (             # noqa: E402
     prox_24, prox_g2, prox_g2_volpe_prime, mcad_reference,
     POLE_PAIRS, SECTORS)
 from run_meshb_hybrid_all import (                          # noqa: E402
@@ -121,7 +121,7 @@ def op_line_losses(meta, BX, BY, f_e, w_c, h_c, n_lines, ratio):
             acc[f"line_msq_fund_{k}"] += KERNELS[k](
                 f_m[:1], b2t_msq[:1], b2r_msq[:1], w_c, h_c)
         # 전환-캡 /24 (Volpe 2019 III-C 재현): delta(f_t)=h_c 위에서 f^2 -> f_t*f
-        import mesh_b_vs_mcad as _mb
+        from acloss_ref_methods import mesh_b_vs_mcad as _mb
         f_t = 1.0 / (np.pi * 4e-7 * np.pi * _mb.SIGMA * h_c ** 2)
         cap = np.minimum(1.0, f_t / f_m)
         acc.setdefault("line_msq_P24c6_translim", 0.0)
@@ -153,7 +153,7 @@ SWEEP_CONFIGS = [(15, 1.0), (15, 1.12), (25, 1.0), (25, 1.12), (25, 1.25),
 
 def op_sweep_losses(meta, BX, BY, f_e, w_c, h_c, configs):
     """한 OP: (n_lines, ratio) 구성별 translim P24c6 [기계 W] — 파싱 1회 공유."""
-    import mesh_b_vs_mcad as _mb
+    from acloss_ref_methods import mesh_b_vs_mcad as _mb
     n = BX.shape[0]
     f_m = np.arange(1, n // 2 + 1) * f_e
     f_t = 1.0 / (np.pi * 4e-7 * np.pi * _mb.SIGMA * h_c ** 2)
@@ -227,7 +227,7 @@ def main() -> int:
     tag = a.tag or a.model
 
     if abs(a.temp - 20.0) > 0.1:
-        import mesh_b_vs_mcad as _mb
+        from acloss_ref_methods import mesh_b_vs_mcad as _mb
         scale = 1.0 / (1.0 + 3.93e-3 * (a.temp - 20.0))
         _mb.SIGMA *= scale
         _mb._SIGMA_V *= scale
@@ -248,8 +248,8 @@ def main() -> int:
           f"OP {len(dirs)}개, 표본선 {a.n_lines}개 (r={a.ratio})", flush=True)
 
     from pathlib import Path
-    from volpe_hybrid_acloss import calc_skin_loss
-    import mesh_b_vs_mcad as _mb
+    from acloss_ref_methods.volpe_hybrid_acloss import calc_skin_loss
+    from acloss_ref_methods import mesh_b_vs_mcad as _mb
     refs = {}
     rows, t0 = [], time.time()
 

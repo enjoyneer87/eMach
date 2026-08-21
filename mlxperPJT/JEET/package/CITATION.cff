@@ -1,0 +1,52 @@
+cff-version: 1.2.0
+message: >-
+  If you use this reproduction package, please cite the paper below
+  (preferred-citation). The raw-data deposit has its own DOI.
+type: software
+title: >-
+  JEET-repro: reproduction package for sparse AC-loss calibration ---
+  evaluation variants, denominator swap, and figure pipeline
+authors:
+  - family-names: Kang
+    given-names: Do Hyun
+version: 1.0.0
+date-released: "2026-08-21"
+repository-code: "https://github.com/enjoyneer87/JEET-repro"
+license: MIT
+identifiers:
+  - type: doi
+    value: 10.5281/zenodo.21775297
+    description: >-
+      Zenodo deposit of the raw element-level field exports and
+      efficiency-map data this package reduces (reference [31] of the
+      paper; resolves after publication of the deposit).
+keywords:
+  - hairpin winding
+  - AC copper loss
+  - proximity loss
+  - finite element analysis
+  - traction motor
+  - geometric scaling
+  - efficiency map
+preferred-citation:
+  type: article
+  title: >-
+    Efficient AC Winding Loss Calibration via Sparse Full Finite-Element
+    Analysis and Separable Radial Basis Function for Scaled Traction
+    Motor Design
+  authors:
+    - family-names: Kang
+      given-names: Do Hyun
+    - family-names: Kang
+      given-names: Seung-Gu
+    - family-names: Kim
+      given-names: Nam-Ho
+    - family-names: Lee
+      given-names: Seung-Chang
+    - family-names: Jung
+      given-names: Seok-Won
+    - family-names: Jung
+      given-names: Sang-Yong
+  journal: Journal of Electrical Engineering & Technology
+  year: 2026
+  status: submitted

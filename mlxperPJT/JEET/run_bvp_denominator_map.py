@@ -43,15 +43,17 @@ import numpy as np
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.abspath(os.path.join(HERE, "..", "..", "tools")))
-sys.path.insert(0, os.path.join(HERE, "acloss_ref_methods"))
+sys.path.insert(0, HERE)
 
 from jeet_acloss_rbf.field_metrics import (          # noqa: E402
     _locate_blocks, _parse_regions, _build_block_dict, slot_conductor_codes)
-from mesh_b_vs_mcad import (                         # noqa: E402
+from acloss_ref_methods.mesh_b_vs_mcad import (      # noqa: E402
     mcad_reference, L_ACTIVE, POLE_PAIRS, SECTORS)
 
-BACKFILL = r"D:\KangDH\Thesis\e10\_txt_backfill"
-E10 = os.path.join(HERE, "map_exports", "e10")
+from jeet_acloss_rbf.repro_env import data_root      # noqa: E402
+
+BACKFILL = os.path.join(os.environ.get("JEET_FEA_ROOT", ""), "_txt_backfill")
+E10 = data_root()
 SLOTS = range(1, 7)
 SIGMA, MU0 = 4.709e7, 4e-7 * np.pi
 SPEEDS = (2000, 4000, 8000, 16000)

@@ -32,7 +32,9 @@ from jeet_acloss_rbf.field_metrics import (                 # noqa: E402
     _locate_blocks, _parse_regions, _build_block_dict,
     slot_conductor_codes, _tangential_b)
 
-ROOT = r"D:\KangDH\Thesis\e10\SLFEA_Half\ACLossCalcExport_Map"
+# HalfSC Hybrid raw sweep — author tree only (not in the Zenodo deposit)
+ROOT = os.path.join(os.environ.get("JEET_FEA_ROOT", ""),
+                    "SLFEA_Half", "ACLossCalcExport_Map")
 OUT = os.path.join(HERE, "map_exports", "e10", "HalfSC", "fth_per_op.json")
 BLOCK_PICK = [1, 17, 33, 49, 65, 81, 97, 113]     # 128 중 8개 등간격
 SLOTS = range(1, 7)                               # energy_split 관습

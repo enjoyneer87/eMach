@@ -9,7 +9,7 @@
   - 'Proposed' 라벨 통일: 방법 박스 "Proposed: Exponent Separable RBF"
   - 캡션 규칙: 그림 내부 텍스트는 박스 라벨(다이어그램 고유 요소)만.
 
-산출: E:/KDH/Overleaf/JEET-2024_rev1/fig/proposed_framework_v3.pdf
+산출: <JEET_FIGDIR>/proposed_framework_v3.pdf
 """
 import os
 import sys
@@ -17,7 +17,10 @@ import sys
 import matplotlib
 
 # 출력 폴더는 JEET_FIGDIR 로 덮어쓸 수 있다 (배포 레포/CI 용).
-_FIGDIR = os.environ.get('JEET_FIGDIR', r'E:\KDH\Overleaf\JEET-2024_rev1\fig')
+sys.path.insert(0, os.path.abspath(os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), '..', '..', 'tools')))
+from jeet_acloss_rbf.repro_env import fig_dir
+_FIGDIR = fig_dir()
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from matplotlib.patches import FancyArrowPatch, FancyBboxPatch

@@ -21,21 +21,25 @@ from pathlib import Path
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.abspath(os.path.join(HERE, "..", "..", "tools")))
-sys.path.insert(0, os.path.join(HERE, "acloss_ref_methods"))
+sys.path.insert(0, HERE)
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 import numpy as np                                          # noqa: E402
 from run_meshb_hybrid_all import (                          # noqa: E402
     load_series, DIMS, MCAD_JSON, N_COND_MACHINE, N_PARALLEL)
-from mesh_b_vs_mcad import (                                # noqa: E402
+from acloss_ref_methods.mesh_b_vs_mcad import (             # noqa: E402
     prox_24, prox_g2, prox_g2_volpe_prime, mcad_reference,
     L_ACTIVE, POLE_PAIRS, SECTORS)
-from volpe_hybrid_acloss import calc_skin_loss              # noqa: E402
+from acloss_ref_methods.volpe_hybrid_acloss import (        # noqa: E402
+    calc_skin_loss)
 
-CAMPAIGN = r"D:\KangDH\Thesis\e10\_txt_backfill\HalfSC_campaign"
-SWEEP = r"D:\KangDH\Thesis\e10\SLFEA_Half\ACLossCalcExport_Map"
-OUT = os.path.join(HERE, "map_exports", "e10", "HalfSC",
+from jeet_acloss_rbf.repro_env import data_root             # noqa: E402
+
+_FEA = os.environ.get("JEET_FEA_ROOT", "")
+CAMPAIGN = os.path.join(_FEA, "_txt_backfill", "HalfSC_campaign")
+SWEEP = os.path.join(_FEA, "SLFEA_Half", "ACLossCalcExport_Map")
+OUT = os.path.join(data_root(), "HalfSC",
                    "meshb_hybrid_losses_HalfSC_campaign.json")
 W_C, H_C = DIMS["HalfSC"]
 SPEEDS = [2000, 4000, 8000, 16000]

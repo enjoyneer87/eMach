@@ -15,7 +15,7 @@ end
 % 출력 폴더는 JEET_FIGDIR 로 덮어쓸 수 있다 (배포 레포/CI 용).
 figDir = getenv('JEET_FIGDIR');
 if isempty(figDir)
-    figDir = 'E:\KDH\Overleaf\JEET-2024_rev1\fig';
+    figDir = fullfile(scriptDir, 'fig_out');
 end
 if ~isfolder(figDir), mkdir(figDir); end
 

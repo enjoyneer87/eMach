@@ -32,13 +32,17 @@ if hasattr(sys.stdout, "reconfigure"):
 
 import numpy as np                                          # noqa: E402
 from run_meshb_hybrid_all import load_series, DIMS          # noqa: E402
-from mesh_b_vs_mcad import prox_g2_volpe_prime, SECTORS     # noqa: E402
+from acloss_ref_methods.mesh_b_vs_mcad import (             # noqa: E402
+    prox_g2_volpe_prime, SECTORS)
 from scan_fth_per_op import fth_of_file                     # noqa: E402
 
-SCALED = r"D:\KangDH\Thesis\e10\_txt_backfill\HalfSC_scaledSC"
-CAMPAIGN = r"D:\KangDH\Thesis\e10\_txt_backfill\HalfSC_campaign"
-SWEEP = r"D:\KangDH\Thesis\e10\SLFEA_Half\ACLossCalcExport_Map"
-OUT = os.path.join(HERE, "map_exports", "e10", "HalfSC",
+from jeet_acloss_rbf.repro_env import data_root             # noqa: E402
+
+_FEA = os.environ.get("JEET_FEA_ROOT", "")
+SCALED = os.path.join(_FEA, "_txt_backfill", "HalfSC_scaledSC")
+CAMPAIGN = os.path.join(_FEA, "_txt_backfill", "HalfSC_campaign")
+SWEEP = os.path.join(_FEA, "SLFEA_Half", "ACLossCalcExport_Map")
+OUT = os.path.join(data_root(), "HalfSC",
                    "scaled_vs_solved_compare.json")
 F_E_16K = 16000 * 4 / 60.0
 W_C, H_C = DIMS["HalfSC"]
@@ -65,7 +69,7 @@ def analyze_file(path):
     반환 dict: amp1_r/amp1_t (도체별 기본파), b2sum (도체별 조화합),
     volpe_W (기계 근접손실), f_theta, brms (요소별 주기 RMS |B|), meta.
     """
-    from mesh_b_vs_mcad import POLE_PAIRS as _PP
+    from acloss_ref_methods.mesh_b_vs_mcad import POLE_PAIRS as _PP
     meta, BX, BY = load_series(path)
     n = BX.shape[0]
     f_m = np.arange(1, n // 2 + 1) * F_E_16K

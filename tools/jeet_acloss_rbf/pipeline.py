@@ -30,12 +30,11 @@ from .AcLossJsonReader import AcLossJsonReader
 from .RbfModelBuilder import RbfModelBuilder
 from .AcLossEvaluator import AcLossEvaluator
 from .SeparableRbfModel import SeparableRbfModel
+from .repro_env import data_root as _data_root
 
 #: Dataset root. Override with JEET_DATA_ROOT so the package can run from a
 #: distribution checkout that carries only the Map_Summary JSONs.
-_E10 = os.environ.get(
-    'JEET_DATA_ROOT',
-    r'D:\KangDH\EveryMotor\eMach\mlxperPJT\JEET\map_exports\e10')
+_E10 = _data_root()
 
 #: Adopted configuration of the paper (rev3): base kernel at 16 kRPM,
 #: exponent separable model AF = f(w) * g(I, beta)**p(w), Ref = donor with

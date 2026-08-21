@@ -12,7 +12,10 @@ import os
 import sys
 
 # 출력 폴더는 JEET_FIGDIR 로 덮어쓸 수 있다 (배포 레포/CI 용).
-_FIGDIR = os.environ.get('JEET_FIGDIR', r'E:\KDH\Overleaf\JEET-2024_rev1\fig')
+sys.path.insert(0, os.path.abspath(os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), '..', '..', 'tools')))
+from jeet_acloss_rbf.repro_env import fig_dir, results_dir
+_FIGDIR = fig_dir()
 
 sys.path.insert(0, os.path.abspath(os.path.join(
     os.path.dirname(os.path.abspath(__file__)),
@@ -28,7 +31,7 @@ from jeet_acloss_rbf.manuscript_figs import (plot_form_convergence,
 from jeet_acloss_rbf.cost_accuracy import sweep_cost_accuracy
 
 FIGDIR = _FIGDIR
-DRIVE = r"J:\내 드라이브\EveryMotor_JEET_data\results"
+DRIVE = results_dir()   # JEET_RESULTS_DIR 로 덮어쓸 수 있다
 SWEEP_JSON = os.path.join(DRIVE, "cost_accuracy.json")
 
 

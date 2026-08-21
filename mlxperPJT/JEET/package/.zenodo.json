@@ -1,0 +1,28 @@
+{
+  "upload_type": "software",
+  "title": "JEET-repro: reproduction package for sparse AC-loss calibration --- evaluation variants, denominator swap, and figure pipeline",
+  "creators": [
+    {"name": "Kang, Do Hyun"}
+  ],
+  "description": "Code and reduced data to reproduce every figure, the Section 5.1 self-consistency checks, and the headline error numbers of the paper 'Efficient AC Winding Loss Calibration via Sparse Full Finite-Element Analysis and Separable Radial Basis Function for Scaled Traction Motor Design' (submitted to the Journal of Electrical Engineering & Technology). The package supplements the raw-data deposit 10.5281/zenodo.21775297, which holds the full per-operating-point solver exports; this repository carries the calibration library, the figure and verification scripts, and the reduced inputs they read.",
+  "access_right": "open",
+  "license": "MIT",
+  "language": "eng",
+  "version": "1.0.0",
+  "keywords": [
+    "hairpin winding",
+    "AC copper loss",
+    "proximity loss",
+    "finite element analysis",
+    "traction motor",
+    "geometric scaling",
+    "efficiency map"
+  ],
+  "related_identifiers": [
+    {
+      "relation": "isSupplementTo",
+      "identifier": "10.5281/zenodo.21775297",
+      "resource_type": "dataset"
+    }
+  ]
+}

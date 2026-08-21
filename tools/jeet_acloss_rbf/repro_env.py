@@ -15,7 +15,7 @@ Environment variables, all optional:
                      holds a ``fea/`` directory in the Zenodo layout
                      (``fea/{Model}_{Mode}_Speed_{rpm}RPM_{I}A_{beta}deg.txt.gz``),
                      raw exports are resolved from there.
-``JEET_FEA_ROOT``    author's raw tree (``D:\\KangDH\\Thesis\\e10``) holding
+``JEET_FEA_ROOT``    author's raw pre-deposit tree holding
                      ``_txt_backfill/<Model>/<Mode>_Speed_...deg/FEA_data.txt.gz``.
 ``JEET_FIGDIR``      where figures are written (default ``<root>/fig_out``).
 ``JEET_RESULTS_DIR`` where long sweeps cache their JSON (default

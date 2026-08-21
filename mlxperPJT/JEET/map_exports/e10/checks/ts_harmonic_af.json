@@ -133,7 +133,14 @@
   "total_ratio": 1.6579487284509495,
   "n_blocks_ts": 127,
   "n_blocks_hy": 128,
-  "span_periods_ts": 0.9843399999999999
+  "span_periods_ts": 0.9843399999999999,
+  "p_direct_Wpm": 6134.062209835208,
+  "p_harm_Wpm": 6128.696021772994,
+  "parseval_closure_pct": -0.08748180045533571,
+  "files": [
+   "FullFEA_Speed_16000RPM_460.0A_36.0deg",
+   "Hybrid_Speed_16000RPM_460.0A_36.0deg"
+  ]
  },
  "Ref_8k": {
   "n": [
@@ -269,7 +276,14 @@
   "total_ratio": 1.760833185618079,
   "n_blocks_ts": 127,
   "n_blocks_hy": 128,
-  "span_periods_ts": 0.9843399999999999
+  "span_periods_ts": 0.9843399999999999,
+  "p_direct_Wpm": 1813.8483250513789,
+  "p_harm_Wpm": 1815.908066792202,
+  "parseval_closure_pct": 0.11355644859472047,
+  "files": [
+   "FullFEA_Speed_8000RPM_460.0A_36.0deg",
+   "Hybrid_Speed_8000RPM_460.0A_36.0deg"
+  ]
  },
  "SC_16k": {
   "n": [
@@ -405,7 +419,14 @@
   "total_ratio": 1.618181637739614,
   "n_blocks_ts": 127,
   "n_blocks_hy": 128,
-  "span_periods_ts": 0.9843399999999999
+  "span_periods_ts": 0.9843399999999999,
+  "p_direct_Wpm": 52357.898519870454,
+  "p_harm_Wpm": 52091.64159637681,
+  "parseval_closure_pct": -0.5085324870183539,
+  "files": [
+   "FullFEA_Speed_16000RPM_920.0A_36.0deg",
+   "Hybrid_Speed_16000RPM_920.0A_36.0deg"
+  ]
  },
  "SC_8k": {
   "n": [
@@ -541,13 +562,20 @@
   "total_ratio": 1.6341135218307947,
   "n_blocks_ts": 127,
   "n_blocks_hy": 128,
-  "span_periods_ts": 0.9843399999999999
+  "span_periods_ts": 0.9843399999999999,
+  "p_direct_Wpm": 18926.629886939423,
+  "p_harm_Wpm": 18867.74567101703,
+  "parseval_closure_pct": -0.31111833577422976,
+  "files": [
+   "FullFEA_Speed_8000RPM_920.0A_36.0deg",
+   "Hybrid_Speed_8000RPM_920.0A_36.0deg"
+  ]
  },
  "_meta": {
   "slot": 1,
   "sigma": 47090000.0,
   "pole_pairs": 4,
   "nh": 24,
-  "note": "P_n = Parseval 응답주파수 분해, 슬롯1 근접(유도) 성분 대리. HYB 는 단일 g(eta_n)|B_n|^2 (생산 하이브리드 관습)."
+  "note": "P_n = Parseval order decomposition of the slot-1 induced (proximity) loss; HYB uses a single g(eta_n)|B_n|^2 (production-hybrid convention). parseval_closure_pct = 100 (p_harm / p_direct - 1)."
  }
 }

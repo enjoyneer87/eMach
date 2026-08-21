@@ -22,14 +22,20 @@ from typing import Dict, Optional
 
 import numpy as np
 
+from .repro_env import data_root as _data_root
+
 __all__ = ["operating_beta_band", "region_mask", "run_form_study"]
 
 # Ref 36 = n_base 24 + 4x3. AF 밴드 해제로 앵커 후보가 24가 되었다.
 _DEFAULT_BUDGET = {"Ref": 36, "HalfSC": 27, "SC": 27}
 _DEFAULT_NS_OWN = {"Ref": 4, "HalfSC": 3, "SC": 3}
 _PLACEMENTS = ("random", "structured")
-_EFFMAP = (r"D:\KangDH\EveryMotor\eMach\mlxperPJT\JEET"
-           r"\efficiency_map_results.mat")
+# 효율맵 .mat 은 기탁/패키지 밖(6 MB) — JEET_EFFMAP 으로 지정하거나
+# 데이터 루트의 조부모(JEET/ 또는 패키지 루트)에 두면 찾는다.
+_EFFMAP = os.environ.get(
+    'JEET_EFFMAP',
+    os.path.join(os.path.dirname(os.path.dirname(_data_root())),
+                 'efficiency_map_results.mat'))
 
 
 # ── 운전영역 ──────────────────────────────────────────────────────────
