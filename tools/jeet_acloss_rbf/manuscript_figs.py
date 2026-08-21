@@ -2708,20 +2708,24 @@ _SECTOR_DEG = 45.0               # e10: 8 poles, so one sector is one pole
 _SECTOR_FOLDS = [0, 1, 2, -1, 3, -2, 4, -3, 5]
 
 
-def _diff_row(ref_npz, sc_npz, k_r, window_deg=(-40.0, 0.0)):
+def _diff_row(ref_npz, sc_npz, k_r, window_deg=(-66.7, -21.8)):
     """Everything one row of the similarity-error figure needs.
 
     The stored sector is folded into a single angular window so that the
     rotor sits inside the stator bore, the way a solver assembles a
     cross-section from a periodic model.
 
-    window_deg : the window to draw.  It has to be narrow enough that the
-        rotor reaches it in one fold, or the picture carries a seam where
-        two folds meet -- exact in the field, but the region codes change
-        across it and every region-wise step then treats it as an
-        interface.  e10 at block 91 stores the rotor at -130..-85 and the
-        stator at -45..0 degrees, so one +90-degree fold covers -40..0
-        and that is the widest seamless window.
+    window_deg : the window to draw.  The default is the window Fig 3
+        already shows, so the two figures present the same cross-section.
+        e10 stores its rotor sector at -66.76..-21.72 degrees with the
+        rotor at rest, and the snapshots are taken at block 65, which is
+        64 steps of 0.703125 degrees on -- exactly one pole pitch, and so
+        half an electrical period.  One +45-degree fold therefore puts
+        the rotor back where Fig 3 has it while the eddy currents stay
+        fully developed, which the static first block cannot offer.  The
+        rotor reaches the whole window in that single fold; the stator
+        needs two, but they meet at -45 degrees, which is the model's own
+        periodic boundary and so cuts nothing.
     """
     dr, ds = np.load(ref_npz), np.load(sc_npz)
     # 상사 변환: 좌표(노드까지)는 k_r 배, B 는 불변.
@@ -2830,7 +2834,42 @@ def _diff_row(ref_npz, sc_npz, k_r, window_deg=(-40.0, 0.0)):
     }
     return dict(X=X, Y=Y, B_r=B_r, B_s=B_s, dB=dB, ok=ok, stats=stats,
                 r_nodes=r_nodes, r_tri=r_tri, s_nodes=s_nodes, s_tri=s_tri,
-                reg_s=code_s, centres=centres)
+                reg_s=code_s, centres=centres,
+                window_deg=window_deg, r_lim=(r0, r1))
+
+
+def _draw_mesh_overlay(ax, nodes, tri, window_deg, r_lim, colour='k',
+                       lw=0.06, alpha=0.5):
+    """Draw a folded periodic mesh over a field panel.
+
+    The panel shows one angular window assembled from whole-sector copies
+    of the stored mesh, so the overlay has to be assembled the same way.
+    Each fold is rotated into place and only the triangles whose centroid
+    falls in the window are kept; the copies tile the window rather than
+    overlapping, so no triangle is drawn twice except on a seam.
+    """
+    from matplotlib.tri import Triangulation
+    t0, t1 = np.radians(min(window_deg)), np.radians(max(window_deg))
+    r0, r1 = r_lim
+    for k in _SECTOR_FOLDS:
+        a = np.radians(_SECTOR_DEG * k)
+        c, s_ = np.cos(a), np.sin(a)
+        xy = np.column_stack([nodes[:, 0] * c - nodes[:, 1] * s_,
+                              nodes[:, 0] * s_ + nodes[:, 1] * c])
+        P = xy[tri]
+        r = np.hypot(P[:, :, 0], P[:, :, 1])
+        th = np.arctan2(P[:, :, 1], P[:, :, 0])
+        # 세 꼭짓점이 모두 창 안인 삼각형만 — 중심으로 고르면 걸친
+        # 삼각형이 창 밖으로 삐져나온다.
+        keep = ((th > t0) & (th < t1) & (r > r0) & (r < r1)).all(axis=1)
+        if not keep.any():
+            continue
+        t = tri[keep]
+        used, inv = np.unique(t, return_inverse=True)
+        ax.triplot(Triangulation(xy[used, 0], xy[used, 1],
+                                 inv.reshape(t.shape)),
+                   color=colour, lw=lw, alpha=alpha, zorder=2,
+                   rasterized=True)
 
 
 def _zoom_box(row, half_mm=3.4):
@@ -2900,7 +2939,10 @@ def _draw_mesh_zoom(ax, row, box, aspect=1.9, legend=False):
 def plot_field_diff_panels(rows, out_path: str,
                            figsize: Optional[Tuple[float, float]] = None,
                            raster_dpi: int = 600,
-                           show_mesh: bool = True) -> Dict:
+                           show_mesh: bool = True,
+                           mesh_overlay: bool = True,
+                           mesh_lw: float = 0.06,
+                           mesh_alpha: float = 0.5) -> Dict:
     """Similarity-transfer error as a field, one row per solver level.
 
     ``rows`` is a sequence of ``(label, ref_npz, sc_npz, k_r)``.  The Ref
@@ -2910,7 +2952,9 @@ def plot_field_diff_panels(rows, out_path: str,
     transferred |B|, the directly solved |B| on the same scale, and the
     vector difference |B_ref - B_sc|; with ``show_mesh`` a fourth panel
     zooms on one conductor to show the two meshes and the common raster
-    the comparison lives on.  Colour scales are shared across rows and
+    the comparison lives on.  ``mesh_overlay`` draws each field panel's
+    own mesh over it, so the two discretisations are visible where the
+    fields are.  Colour scales are shared across rows and
     sit above the panels.  The MVP is not drawn: the export quantises A
     at 1e-4 Wb/m, so its difference is four quanta of structureless
     noise.
@@ -2952,6 +2996,14 @@ def plot_field_diff_panels(rows, out_path: str,
                 h_b = h
             elif j == 2:
                 h_d = h
+            # 각 패널이 실제로 쓴 메시를 그 위에 얹는다: (a) 는 상사
+            # 변환한 Ref 메시, (b) 는 직접 푼 SC 메시. 차분 패널은 어느
+            # 한쪽 것도 아니므로 비워 둔다.
+            if mesh_overlay and j < 2:
+                nodes, t = ((d['r_nodes'], d['r_tri']) if j == 0
+                            else (d['s_nodes'], d['s_tri']))
+                _draw_mesh_overlay(ax, nodes, t, d['window_deg'], d['r_lim'],
+                                   lw=mesh_lw, alpha=mesh_alpha)
             ax.set_aspect('equal')
             ax.set_xticks([])
             ax.set_yticks([])
