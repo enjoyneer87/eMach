@@ -185,9 +185,10 @@ def main_hybrid(pl, plt, built):
                 ax.set_yticks(ticks)
                 ax.set_aspect('equal', adjustable='box')
                 ax.tick_params(labelsize=6.2)
-                if r == 0:
-                    ax.tick_params(labelbottom=False)
-                else:
+                # 두 행은 전류 눈금이 다르다(Ref -600, SC -1200). 아래 행
+                # 숫자를 빌려 읽을 수 없으므로 위 행도 제 눈금을 단다.
+                # 축 제목은 행마다 한 번이면 충분해 아래 행에만 둔다.
+                if r != 0:
                     ax.set_xlabel('$i_d$ [A, pk]', fontsize=7.2, labelpad=1)
                 if c > 0:
                     ax.tick_params(labelleft=False)
@@ -243,7 +244,10 @@ def main_hybrid(pl, plt, built):
                        labelspacing=0.18, borderpad=0.1)
         axr.tick_params(labelsize=6.2)
         axr.set_xlabel(r'$\log_{10}\kappa$', fontsize=7.2, labelpad=1)
-        axr.set_ylabel(r'$\log_{10} AF$', fontsize=7.2, labelpad=1)
+        # y 제목을 왼쪽에 두면 옆 3-D 패널의 i_q 눈금 위로 올라탄다.
+        # 오른쪽은 컬러바까지 비어 있으므로 그쪽에 단다(눈금은 왼쪽 유지).
+        axr.set_ylabel(r'$\log_{10} AF$', fontsize=7.2, labelpad=2)
+        axr.yaxis.set_label_position('right')
         axr.grid(True, ls=':', lw=0.4, color='#dddddd')
         axr.set_axisbelow(True)
 
@@ -261,6 +265,8 @@ def main_hybrid(pl, plt, built):
              ha='center', va='bottom', fontsize=8.6, color='#111111')
 
     # 직선 화살표. 두 쌍 모두 두 열 왼쪽으로 가므로 서로 평행하다.
+    # 화살촉은 양쪽에 둔다 — 두 속도는 상사로 서로 대응하는 관계이지
+    # 한쪽이 다른 쪽으로 변환되는 관계가 아니다(세미나 6, 1:06:29).
     for src, dst in TRANSFER:
         cs, cd = SPEEDS.index(src), SPEEDS.index(dst)
         x0 = (ML + cs * (PW + HG) + PW / 2) / FW
@@ -269,7 +275,7 @@ def main_hybrid(pl, plt, built):
         y1 = (FH - MT - PH - VG + 0.05) / FH
         fig.add_artist(FancyArrowPatch(
             (x0, y0), (x1, y1), transform=fig.transFigure,
-            arrowstyle='-|>', mutation_scale=9, lw=1.3,
+            arrowstyle='<|-|>', mutation_scale=9, lw=1.3,
             color=PAIR_COLOR[src], zorder=9, shrinkA=0, shrinkB=0))
 
     cax = fig.add_axes([(FW - MR + 0.30) / FW, MB / FH,

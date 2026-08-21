@@ -336,14 +336,21 @@ class AcLossPipeline:
 
         ea, e3, es = AcLossEvaluator.evaluate_errors(ds, model_3d, model)
         _, _, e_sc = AcLossEvaluator.evaluate_errors(ds, model_3d, model_sc)
+
+        def _w(err_pct):
+            return float(np.sum(np.abs(err_pct) * ds.f_ac_arr)
+                         / np.sum(ds.f_ac_arr))
+
         if eval_all_load_points:
-            def _w(err_pct):
-                return float(np.sum(np.abs(err_pct) * ds.f_ac_arr)
-                             / np.sum(ds.f_ac_arr))
             wmae, wmae_sc = _w(es), _w(e_sc)
         else:
             _, wmae = self._metrics_of(scale, model)
             _, wmae_sc = self._metrics_of(scale, model_sc)
+        # 두 패널이 같은 지표를 쓰게 한다. 종전에는 왼쪽이 계열마다 MAE 와
+        # wMAE 를 섞어 쓰고 오른쪽은 전부 MAE 라, 같은 계열이 패널에 따라
+        # 4.3 % 와 12.5 % 로 달리 읽혔다. 원고가 정확도를 말할 때 쓰는
+        # 지표는 wMAE 이므로 그쪽으로 맞춘다.
+        wmae_a, wmae_3 = _w(ea), _w(e3)
         n_own = plan['n_base'] + (
             plan['n_spd'] * 3 if plan['mode'] == 'own' else plan['n_spd'])
         tag = (f'{n_own} pts' if plan['mode'] == 'own'
@@ -366,16 +373,20 @@ class AcLossPipeline:
                       corr_sc.max()) * 1.06]
         ax.plot(lim, lim, 'k--', lw=0.9, label='Perfect fit')
         ax.scatter(f_ac, h_ac, c='#999999', s=14, alpha=0.55, zorder=2,
-                   label=f'Hybrid, uncorrected (MAE {np.abs(ea).mean():.1f}%)')
+                   label=f'Hybrid, uncorrected (wMAE {wmae_a:.1f}%)')
         ax.scatter(f_ac, corr_3d, c='#2c6fad', s=20, alpha=0.7, marker='D',
-                   zorder=3, label=f'3D TPS RBF, {len(ds_fit)} pts')
+                   zorder=3,
+                   label=f'3D TPS RBF, {len(ds_fit)} pts '
+                         f'(wMAE {wmae_3:.1f}%)')
         ax.scatter(f_ac, corr_sc, c='#2e7d32', s=22, alpha=0.75, marker='^',
                    zorder=4,
                    label=f'Scalar separable (wMAE {wmae_sc:.1f}%)')
         ax.scatter(f_ac, corr_sep, c='#e65100', s=26, alpha=0.85, marker='o',
                    zorder=5,
                    label=f'Proposed, {tag} (wMAE {wmae:.1f}%)')
-        ax.set_xlabel('TS-FEA AC loss [kW]')
+        # 패널 태그는 x 라벨 아래 줄에 둔다 — 그림 내부 제목은 쓰지 않고
+        # 무엇을 보이는지는 캡션이 말한다 (Fig 2, Fig 11 과 같은 방식).
+        ax.set_xlabel('Full-FEA AC loss [kW]\n(a)')
         ax.set_ylabel('Predicted AC loss [kW]')
         ax.set_xlim(lim)
         ax.set_ylim(lim)
@@ -403,11 +414,13 @@ class AcLossPipeline:
             box.set_alpha(a)
         ax2.axhline(0, color='k', ls='--', lw=0.8)
         ax2.set_ylabel('Relative error [%]')
+        ax2.set_xlabel('(b)')
         ax2.grid(True, axis='y', ls=':', lw=0.45, color='#cccccc')
         ax2.set_axisbelow(True)
         ax2.spines[['top', 'right']].set_visible(False)
-        for x, arr in zip([1, 2, 3, 4], [ea, e3, e_sc, es]):
-            ax2.text(x, np.max(arr) + 3, f'MAE {np.abs(arr).mean():.1f}%',
+        for x, arr, w in zip([1, 2, 3, 4], [ea, e3, e_sc, es],
+                             [wmae_a, wmae_3, wmae_sc, wmae]):
+            ax2.text(x, np.max(arr) + 3, f'wMAE {w:.1f}%',
                      ha='center', fontsize=6.5, fontweight='bold')
 
         os.makedirs(os.path.dirname(os.path.abspath(out_path)), exist_ok=True)

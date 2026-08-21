@@ -2705,37 +2705,119 @@ def _parula():
 
 
 _SECTOR_DEG = 45.0               # e10: 8 poles, so one sector is one pole
-_SECTOR_FOLDS = [0, 1, 2, -1, 3, -2, 4, -3, 5]
 
 
-def _diff_row(ref_npz, sc_npz, k_r, window_deg=(-66.7, -21.8)):
+def _angular_gap(x, y, min_gap_deg=8.0):
+    """Angle that separates a periodic export's rotor and stator windows.
+
+    The export keeps the rotor at its solved angular position, so at a
+    given step the rotor window and the stator window sit at different
+    angles with nothing in between (e10 at block 65: -111.8..-66.7
+    against -45..0). The split is the middle of the widest empty run of
+    a 1-degree histogram, or None when the two windows touch.
+    """
+    th = np.degrees(np.arctan2(y, x))
+    th = th[np.isfinite(th)]
+    edges = np.arange(np.floor(th.min()), np.ceil(th.max()) + 1.0)
+    cnt, _ = np.histogram(th, bins=edges)
+    best = run = start = best_start = 0
+    for k, c in enumerate(cnt):
+        if c == 0:
+            if run == 0:
+                start = k
+            run += 1
+            if run > best:
+                best, best_start = run, start
+        else:
+            run = 0
+    return None if best < min_gap_deg else float(edges[best_start] + 0.5 * best)
+
+
+def _align_rotor(d, sector_deg=_SECTOR_DEG, tol_deg=0.05):
+    """Turn the rotor back to the position it holds at rest.
+
+    Only the rotor is touched.  The stator keeps the angle it was stored
+    at, so the two sectors end up where a periodic-model post-processor
+    puts them -- each at its own start angle, the way Fig 3 draws them --
+    rather than both crammed into one window.
+
+    The turn is a symmetry operation, not an interpolation, and only
+    because the snapshot was taken at a step that is a whole number of
+    pole pitches from rest: 64 steps of 0.703125 degrees is exactly one.
+    The coordinates rotate, the field vector rotates with them, and each
+    pole pitch flips its sign.  A snapshot at any other step cannot be
+    aligned this way and is refused rather than quietly interpolated.
+
+    Returns ``(node_xy, tri, reg, bx, by, area, r_bore, rotor_el)``;
+    ``r_bore`` is the outer radius of the rotor side, which is where the
+    sliding surface lies, and ``rotor_el`` marks the elements that were
+    turned.
+    """
+    nodes = np.asarray(d['node_xy'], float).copy()
+    tri = np.asarray(d['tri'], int)
+    x, y = d['x_mm'], d['y_mm']
+    bx, by = d['bx_T'].copy(), d['by_T'].copy()
+    cut = _angular_gap(x, y)
+    if cut is None:
+        return (nodes, tri, d['reg'], bx, by, d['area_mm2'], None,
+                np.zeros(len(x), bool))
+
+    th_el = np.degrees(np.arctan2(y, x))
+    rotor_el = th_el < cut
+    r_bore = float(np.hypot(x[rotor_el], y[rotor_el]).max())
+
+    turned = float(d['rotate_deg'][0]) * (int(d['block'][0]) - 1)
+    n_sector = -turned / sector_deg
+    if abs(n_sector - round(n_sector)) * sector_deg > tol_deg:
+        raise ValueError(
+            f'the rotor has turned {turned:.4f} deg, which is not a whole '
+            f'number of {sector_deg} deg pole pitches, so it cannot be '
+            f'aligned by symmetry; pick a snapshot that is (block 1 or 65 '
+            f'for a 128-step period)')
+    n_sector = int(round(n_sector))
+
+    a = np.radians(sector_deg * n_sector)
+    c, s_ = np.cos(a), np.sin(a)
+    th_nd = np.degrees(np.arctan2(nodes[:, 1], nodes[:, 0]))
+    rotor_nd = np.isfinite(th_nd) & (th_nd < cut)
+    nodes[rotor_nd] = np.column_stack([
+        nodes[rotor_nd, 0] * c - nodes[rotor_nd, 1] * s_,
+        nodes[rotor_nd, 0] * s_ + nodes[rotor_nd, 1] * c])
+    sign = (-1.0) ** n_sector
+    bx[rotor_el], by[rotor_el] = (
+        sign * (d['bx_T'][rotor_el] * c - d['by_T'][rotor_el] * s_),
+        sign * (d['bx_T'][rotor_el] * s_ + d['by_T'][rotor_el] * c))
+    return nodes, tri, d['reg'], bx, by, d['area_mm2'], r_bore, rotor_el
+
+
+def _diff_row(ref_npz, sc_npz, k_r, window_deg=None):
     """Everything one row of the similarity-error figure needs.
 
-    The stored sector is folded into a single angular window so that the
-    rotor sits inside the stator bore, the way a solver assembles a
-    cross-section from a periodic model.
-
-    window_deg : the window to draw.  The default is the window Fig 3
-        already shows, so the two figures present the same cross-section.
-        e10 stores its rotor sector at -66.76..-21.72 degrees with the
-        rotor at rest, and the snapshots are taken at block 65, which is
-        64 steps of 0.703125 degrees on -- exactly one pole pitch, and so
-        half an electrical period.  One +45-degree fold therefore puts
-        the rotor back where Fig 3 has it while the eddy currents stay
-        fully developed, which the static first block cannot offer.  The
-        rotor reaches the whole window in that single fold; the stator
-        needs two, but they meet at -45 degrees, which is the model's own
-        periodic boundary and so cuts nothing.
+    Each 45-degree sector is drawn where the export puts it, with only
+    the rotor turned back to rest.  Nothing is interpolated across the
+    air gap or into the empty angle between the sectors: the field is
+    sampled through the mesh connectivity, so a raster cell that no
+    element covers stays NaN.
     """
     dr, ds = np.load(ref_npz), np.load(sc_npz)
+    r_nodes, r_tri, r_reg, r_bx, r_by, r_area, r_bore, r_rot = _align_rotor(dr)
+    s_nodes, s_tri, s_reg, s_bx, s_by, s_area, s_bore, s_rot = _align_rotor(ds)
     # 상사 변환: 좌표(노드까지)는 k_r 배, B 는 불변.
-    r_nodes, r_tri = dr['node_xy'] * k_r, dr['tri']
-    s_nodes, s_tri = ds['node_xy'], ds['tri']
-    rr = np.hypot(dr['x_mm'], dr['y_mm']) * k_r
-    rs = np.hypot(ds['x_mm'], ds['y_mm'])
+    r_nodes = r_nodes * k_r
+    r_area = r_area * k_r ** 2
+    bore = s_bore if s_bore is not None else (r_bore or 0.0) * k_r
 
-    # 창 하나짜리 극좌표 격자. 두 모델이 같은 격자를 쓰므로 어느 쪽
-    # 메시도 특별대우를 받지 않는다.
+    # 두 메시를 제3의 공통 극좌표 격자로 보낸다 — 한쪽을 다른 쪽 메시에
+    # 얹으면 요소 간 결맞음이 0.43 인데 공통 격자에서는 0.89 로 구조가 산다.
+    def extent(nodes, tri):
+        P = nodes[tri].reshape(-1, 2)
+        return (np.hypot(P[:, 0], P[:, 1]),
+                np.degrees(np.arctan2(P[:, 1], P[:, 0])))
+
+    rr, tr = extent(r_nodes, r_tri)
+    rs, ts = extent(s_nodes, s_tri)
+    if window_deg is None:
+        window_deg = (min(tr.min(), ts.min()), max(tr.max(), ts.max()))
     n_r, n_t = _DIFF_RASTER
     r0, r1 = max(rr.min(), rs.min()), min(rr.max(), rs.max())
     R, T = np.meshgrid(np.linspace(r0, r1, n_r),
@@ -2743,20 +2825,28 @@ def _diff_row(ref_npz, sc_npz, k_r, window_deg=(-66.7, -21.8)):
                        indexing='ij')
     X, Y = R * np.cos(T), R * np.sin(T)
 
-    def sample(nodes, tri, d, scale_area):
-        # 값은 솔버 등고선처럼 메시 연결 정보 위에서 영역별로 뽑는다.
-        # 영역별로 나누지 않으면 구리/철 계면이 요소 하나만큼 번지고,
-        # 밀도가 다른 두 메시는 다르게 번져서 필드가 아니라 메시를
-        # 비교하게 된다.
-        bx, by = periodic_vector_to_raster(
-            nodes, tri, d['bx_T'], d['by_T'], X, Y,
-            _SECTOR_DEG, _SECTOR_FOLDS, region=d['reg'])
-        code, base = periodic_region_to_raster(
-            nodes, tri, d['reg'], X, Y, _SECTOR_DEG, _SECTOR_FOLDS)
-        return bx, by, code, base
+    # 값은 솔버 등고선처럼 메시 연결 정보 위에서 영역별로 뽑는다. 영역별로
+    # 나누지 않으면 구리/철 계면이 요소 하나만큼 번지고, 밀도가 다른 두
+    # 메시는 다르게 번져서 필드가 아니라 메시를 비교하게 된다.
+    # 회전자와 고정자를 한 삼각분할에 넣으면 미끄럼면에서 두 메시의
+    # 노드가 겹쳐 점 위치 탐색이 무너진다. 따로 뽑아 겹쳐 놓으면 공극을
+    # 가로지르는 요소가 생길 여지 자체가 없다.
+    def on(nodes, tri, reg, area, rot, v, kind):
+        m = rot if kind == 'rotor' else ~rot
+        if not m.any():
+            return np.full(X.shape, np.nan)
+        return mesh_field_to_raster(nodes, tri[m], v[m], X, Y, area[m],
+                                    region=reg[m])
 
-    Bx_r, By_r, code_r, base_r = sample(r_nodes, r_tri, dr, k_r ** 2)
-    Bx_s, By_s, code_s, base_s = sample(s_nodes, s_tri, ds, 1.0)
+    def both(nodes, tri, reg, area, rot, v):
+        a = on(nodes, tri, reg, area, rot, v, 'rotor')
+        b = on(nodes, tri, reg, area, rot, v, 'stator')
+        return np.where(np.isfinite(a), a, b)
+
+    Bx_r = both(r_nodes, r_tri, r_reg, r_area, r_rot, r_bx)
+    By_r = both(r_nodes, r_tri, r_reg, r_area, r_rot, r_by)
+    Bx_s = both(s_nodes, s_tri, s_reg, s_area, s_rot, s_bx)
+    By_s = both(s_nodes, s_tri, s_reg, s_area, s_rot, s_by)
     B_r, B_s = np.hypot(Bx_r, By_r), np.hypot(Bx_s, By_s)
     # 성분을 각각 빼서 참 벡터차를 만든다. |B_1| - |B_2| (크기의 차) 가
     # 아니고, A 를 미분하지도 않는다 — 내보낸 A 는 1e-4 Wb/m 로 양자화돼
@@ -2764,7 +2854,20 @@ def _diff_row(ref_npz, sc_npz, k_r, window_deg=(-66.7, -21.8)):
     dB = np.hypot(Bx_r - Bx_s, By_r - By_s)
     ok = np.isfinite(dB)
 
-    # 계면 띠: 이웃 셀과 코드가 다른 곳 한 칸 양옆까지, 두 메시 합집합.
+    # 영역 코드는 평균하면 안 되니 요소 조회로 올린다. 번호는 두 모델이
+    # 다르게 매기므로(같은 도체가 Ref 264, SC 266) 모델 간 비교는 코드가
+    # 아니라 도체 플래그로 하고, 계면은 각 모델 자신의 코드 변화로 잡는다.
+    def codes_of(nodes, tri, reg, rot):
+        out = np.full(X.shape, -1, int)
+        for m in (rot, ~rot):
+            if not m.any():
+                continue
+            got = mesh_element_to_raster(nodes, tri[m], reg[m], X, Y)
+            out = np.where((out < 0) & (got >= 0), got, out)
+        return out
+
+    code_r = codes_of(r_nodes, r_tri, r_reg, r_rot)
+    code_s = codes_of(s_nodes, s_tri, s_reg, s_rot)
     edge = np.zeros_like(ok)
     for arr in (code_r, code_s):
         edge[1:, :] |= arr[1:, :] != arr[:-1, :]
@@ -2772,14 +2875,16 @@ def _diff_row(ref_npz, sc_npz, k_r, window_deg=(-66.7, -21.8)):
         edge[:, 1:] |= arr[:, 1:] != arr[:, :-1]
         edge[:, :-1] |= arr[:, 1:] != arr[:, :-1]
     interior = ok & ~edge
-    # 번호는 두 모델이 다르게 매기므로(같은 도체가 Ref 264, SC 266) 모델
-    # 간 비교는 코드가 아니라 도체 플래그로 한다.
-    cond = (ok & np.isin(base_s, ds['conductor_codes'])
-            & np.isin(base_r, dr['conductor_codes']))
+    cond = (ok & np.isin(code_s, ds['conductor_codes'])
+            & np.isin(code_r, dr['conductor_codes']))
+    rotor = ok & (R < bore)
+    stator = ok & ~rotor
 
     def block(m):
         # 셀 평균 |dB| / 셀 평균 |B| 가 아니라 L2 노름 비 — 경계의 소수
         # 셀이 평균을 끌지 않도록 에너지 무게로 잰다.
+        if not m.any():
+            return {'n': 0}
         b_rms = float(np.sqrt(np.nanmean(B_s[m] ** 2)))
         d_rms = float(np.sqrt(np.nanmean(dB[m] ** 2)))
         return {
@@ -2794,11 +2899,9 @@ def _diff_row(ref_npz, sc_npz, k_r, window_deg=(-66.7, -21.8)):
         }
 
     # 도체별 평균 벡터의 차 — 원고의 진폭 지표처럼 도체 평균 수준에서
-    # 재는 값이라 화소 단위 비와 급이 다르다. 같은 셀을 양쪽에 쓰므로
-    # 도체 경계를 두 메시가 달리 놓는 문제가 평균 안에서 사라진다.
+    # 재는 값이라 화소 단위 비와 급이 다르다.
     codes = np.unique(code_s[cond])
     counts = np.array([(cond & (code_s == c)).sum() for c in codes])
-    # 창 가장자리에 걸쳐 잘린 도체는 평균이 반쪽이라 뺀다.
     whole = counts > 0.75 * np.median(counts)
     cb_r, cb_s, centres = [], [], []
     for c in codes[whole]:
@@ -2817,12 +2920,6 @@ def _diff_row(ref_npz, sc_npz, k_r, window_deg=(-66.7, -21.8)):
         'dBbar_rel_max_pct': float(100 * np.max(d_c / b_c)),
         'Bbar_mean_T': float(np.mean(b_c)),
     }
-    # 접힌 복제 번호가 곧 회전자/고정자 구분이다: 고정자는 저장된
-    # 섹터(k=0)에서, 회전자는 창을 덮는 복제에서 온다.
-    lo, span = int(ds['reg'].min()), int(ds['reg'].max()) - int(ds['reg'].min()) + 1
-    slot = np.where(code_s >= 0, (code_s - lo) // span, -1)
-    stator = ok & (slot == 0)
-    rotor = ok & (slot > 0)
     stats = {
         'all': block(ok),
         'rotor': block(rotor),
@@ -2840,36 +2937,29 @@ def _diff_row(ref_npz, sc_npz, k_r, window_deg=(-66.7, -21.8)):
 
 def _draw_mesh_overlay(ax, nodes, tri, window_deg, r_lim, colour='k',
                        lw=0.06, alpha=0.5):
-    """Draw a folded periodic mesh over a field panel.
+    """Draw the mesh a field panel was sampled from, over that panel.
 
-    The panel shows one angular window assembled from whole-sector copies
-    of the stored mesh, so the overlay has to be assembled the same way.
-    Each fold is rotated into place and only the triangles whose centroid
-    falls in the window are kept; the copies tile the window rather than
-    overlapping, so no triangle is drawn twice except on a seam.
+    ``nodes`` are the aligned coordinates the panel actually used, so the
+    rotor half is already turned back to rest; nothing is folded here.
+    Only triangles wholly inside the drawn window are kept, since one
+    picked by its centroid can reach outside it.
     """
     from matplotlib.tri import Triangulation
     t0, t1 = np.radians(min(window_deg)), np.radians(max(window_deg))
     r0, r1 = r_lim
-    for k in _SECTOR_FOLDS:
-        a = np.radians(_SECTOR_DEG * k)
-        c, s_ = np.cos(a), np.sin(a)
-        xy = np.column_stack([nodes[:, 0] * c - nodes[:, 1] * s_,
-                              nodes[:, 0] * s_ + nodes[:, 1] * c])
-        P = xy[tri]
-        r = np.hypot(P[:, :, 0], P[:, :, 1])
-        th = np.arctan2(P[:, :, 1], P[:, :, 0])
-        # 세 꼭짓점이 모두 창 안인 삼각형만 — 중심으로 고르면 걸친
-        # 삼각형이 창 밖으로 삐져나온다.
-        keep = ((th > t0) & (th < t1) & (r > r0) & (r < r1)).all(axis=1)
-        if not keep.any():
-            continue
-        t = tri[keep]
-        used, inv = np.unique(t, return_inverse=True)
-        ax.triplot(Triangulation(xy[used, 0], xy[used, 1],
-                                 inv.reshape(t.shape)),
-                   color=colour, lw=lw, alpha=alpha, zorder=2,
-                   rasterized=True)
+    P = nodes[tri]
+    r = np.hypot(P[:, :, 0], P[:, :, 1])
+    th = np.arctan2(P[:, :, 1], P[:, :, 0])
+    # 세 꼭짓점이 모두 창 안인 삼각형만 — 중심으로 고르면 걸친 삼각형이
+    # 창 밖으로 삐져나온다.
+    keep = ((th > t0) & (th < t1) & (r > r0) & (r < r1)).all(axis=1)
+    if not keep.any():
+        return
+    t = tri[keep]
+    used, inv = np.unique(t, return_inverse=True)
+    ax.triplot(Triangulation(nodes[used, 0], nodes[used, 1],
+                             inv.reshape(t.shape)),
+               color=colour, lw=lw, alpha=alpha, zorder=2, rasterized=True)
 
 
 def _zoom_box(row, half_mm=3.4):
@@ -3004,6 +3094,8 @@ def plot_field_diff_panels(rows, out_path: str,
                             else (d['s_nodes'], d['s_tri']))
                 _draw_mesh_overlay(ax, nodes, t, d['window_deg'], d['r_lim'],
                                    lw=mesh_lw, alpha=mesh_alpha)
+                # 두 조각을 한 번에 그려도 되는 이유: triplot 은 점 위치
+                # 탐색을 하지 않아 미끄럼면의 중복 노드를 개의치 않는다.
             ax.set_aspect('equal')
             ax.set_xticks([])
             ax.set_yticks([])
