@@ -126,7 +126,7 @@ after calibration — the paper's headline **27–45% → 0.6–0.8%**:
 
 The variants inherit their low-speed calibration from Ref through the
 similarity mapping, which is what cuts the two-model computation time by
-about 71% against exhaustive Full-FEA. Point `JEET_TEX` at the manuscript
+about 70% against exhaustive Full-FEA. Point `JEET_TEX` at the manuscript
 source and the audit also greps the printed text for these strings.
 
 ## Data
