@@ -67,12 +67,13 @@ _MSQ = r"$\langle B\rangle^{2}$"     # 평균 후 제곱 — 표본선
 _SQM = r"$\langle B^{2}\rangle$"     # 제곱 후 평균 — 전면적
 
 SERIES = [  # (key, label, color, style, marker)
-    ("mcad_prox_W", "Hybrid analytical-FEA (Volpe et al.)", "#111111",
+    ("mcad_prox_W", "Hybrid analytical-FEA", "#111111",
      "-", "o"),
     ("line_msq_P24c6_translim",
      "Line-sampled " + _MSQ + " /24 c6 + transition cap",
      "#2e7d32", "-", "s"),
-    ("line_msq_P24_cuboid6", "Line-sampled " + _MSQ + " /24, cuboid-6",
+    ("line_msq_P24_cuboid6",
+     "Line-sampled " + _MSQ + " /24, cuboid-6",
      "#b71c1c", "--", "s"),
     ("full_P24_cuboid6", "Full-area " + _SQM + " /24, cuboid-6",
      "#e65100", ":", "d"),
@@ -141,9 +142,17 @@ def main() -> int:
         print("  %-26s %.2f~%.2f"
               % ("함의 AF (2-D BVP)", (ts / y_bvp).min(),
                  (ts / y_bvp).max()))
+    # 범례를 축 안 상단에 앉히기 위한 여백 — 데이터는 아래 58%% 를 쓴다.
+    ymax = [np.nanmax(ts)] + [np.nanmax(v) for v in tot.values()]
+    if not np.all(np.isnan(y_bvp)):
+        ymax.append(np.nanmax(y_bvp))
+    ymax = float(np.nanmax(ymax))
+    y_lo = ax.get_ylim()[0]
+    ax.set_ylim(y_lo, y_lo + (ymax - y_lo) / 0.58)
+
     # (a) 는 이 각도에서 그려진다 — 두 패널이 만나는 조건을 표시한다.
     ax.axvline(BETA_FIX, color="#999999", lw=0.7, ls=(0, (2, 2)), zorder=0)
-    ax.text(BETA_FIX, ax.get_ylim()[1], " panel (a)", ha="left", va="top",
+    ax.text(BETA_FIX, y_lo, " panel (a)", ha="left", va="bottom",
             fontsize=6.2, color="#666666")
     ax.set_xlabel(r"Current phase angle $\beta$ [deg]")
     ax.set_ylabel("Machine AC winding loss [kW]")
@@ -152,9 +161,9 @@ def main() -> int:
     ax.set_axisbelow(True)
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)
-    ax.legend(fontsize=6.0, frameon=False, loc="upper center",
-              bbox_to_anchor=(0.48, -0.16), ncol=2, columnspacing=0.5,
-              handlelength=1.3)
+    # 1 단 — 범례 항목 뒤에 참조 번호를 넣을 폭을 남긴다 (저자 후편집).
+    ax.legend(fontsize=6.0, frameon=False, loc="upper left", ncol=1,
+              labelspacing=0.30, handlelength=1.5, borderaxespad=0.25)
     fig.savefig(OUT)
     print("저장:", OUT)
 

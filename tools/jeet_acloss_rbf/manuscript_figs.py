@@ -593,7 +593,8 @@ def plot_form_convergence(pipeline, out_path: str,
                           n_seeds: int = 10,
                           show_titles: bool = True,
                           placement: str = 'random',
-                          adopted_by_scale=None) -> str:
+                          adopted_by_scale=None,
+                          legend_out: Optional[str] = None) -> str:
     """Scalar vs exponent separable convergence: full-map wMAE vs n_base.
 
     Own-sampling protocol (16-kRPM base kernel + n_spd calibration points
@@ -603,9 +604,9 @@ def plot_form_convergence(pipeline, out_path: str,
     capped at 10^3 for display.
 
     Seminar-3: the swept grid is evenly spaced and the x ticks are exactly
-    the evaluated counts (marker = actual run); the adopted base-kernel
-    size (24 for all three) is starred on the exponent curve under the
-    same own-sampling protocol.
+    the evaluated counts (marker = actual run).  The legend is written
+    separately to ``legend_out`` so the multi-panel float carries it once,
+    above the panels, instead of a box inside each.
     """
     import contextlib
     import io
@@ -678,17 +679,6 @@ def plot_form_convergence(pipeline, out_path: str,
             ys = [eval_wmae(nb, expo) for nb in nbs]
             ax.plot(nbs, ys, lw=1.2, ms=4.2, **sty)
 
-        # 채택 base-kernel 규모 별표 (동일 자체 샘플링 프로토콜의 지점 강조)
-        nb_a = min(int(adopted_by.get(scale, nbs[-1])), pool)
-        y_a = eval_wmae(nb_a, True)
-        if np.isfinite(y_a):
-            ax.plot([nb_a], [y_a], marker='*', ms=10, ls='none',
-                    color='#e65100', mec='#4d2600', mew=0.5, zorder=5,
-                    label=r'adopted $n_{base}$')
-            if nb_a not in nbs:
-                ax.annotate(f'{nb_a}', (nb_a, y_a), textcoords='offset points',
-                            xytext=(0, 6), ha='center', fontsize=7.8,
-                            color='#4d2600')
         ax.set_xticks(list(nbs))
 
         ax.axhline(hyb_w, color='#888888', ls=':', lw=0.9,
@@ -699,9 +689,6 @@ def plot_form_convergence(pipeline, out_path: str,
         ax.set_xlabel(r'$n_{base}$ (16-kRPM base points)')
         if k == 0:
             ax.set_ylabel(r'wMAE [%] (log)')
-            ax.legend(fontsize=7.5, loc='upper right', frameon=True,
-                      framealpha=0.85, edgecolor='none',
-                      handlelength=1.7, labelspacing=0.3, borderpad=0.3)
         if show_titles:
             tag = chr(ord('a') + k)
             ax.set_title(f'({tag}) {scale} '
@@ -709,6 +696,17 @@ def plot_form_convergence(pipeline, out_path: str,
                          f'{ns}/speed)', fontsize=11.6)
         ax.grid(True, which='both', ls=':', lw=0.4, color='#dddddd')
         ax.set_axisbelow(True)
+
+    if legend_out:
+        handles, labels = axes[0].get_legend_handles_labels()
+        lf = plt.figure(figsize=(6.5, 0.24))
+        lf.legend(handles, labels, loc='center', ncol=len(labels),
+                  frameon=False, fontsize=7.5, handlelength=1.9,
+                  columnspacing=1.8, borderpad=0.0)
+        os.makedirs(os.path.dirname(os.path.abspath(legend_out)),
+                    exist_ok=True)
+        lf.savefig(legend_out, bbox_inches='tight', pad_inches=0.01)
+        plt.close(lf)
 
     os.makedirs(os.path.dirname(os.path.abspath(out_path)), exist_ok=True)
     fig.savefig(out_path)
