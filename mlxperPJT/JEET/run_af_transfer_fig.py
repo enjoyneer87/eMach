@@ -208,6 +208,7 @@ def main_hybrid(pl, plt, built):
 
         # ---- 5번째 열: 로그 공간 회귀 --------------------------------
         axr = fig.add_axes(rect(r, len(SPEEDS), False))
+        p_by_spd, fit_xy = {}, {}
         for spd in SPEEDS:
             sel = np.abs(np.asarray(ds.speeds_k) - spd) < 0.1
             cand = np.where(sel)[0]
@@ -219,9 +220,11 @@ def main_hybrid(pl, plt, built):
             f_s = float(np.polyval(m.p_coeffs, spd))
             p_s = (1.0 if m.q_coeffs is None
                    else float(np.polyval(m.q_coeffs, spd)))
+            p_by_spd[spd] = p_s
             xs = np.linspace(lk.min(), lk.max(), 20)
-            axr.plot(xs, np.log10(max(f_s, 1e-6)) + p_s * xs,
-                     '-', lw=1.1, color=SPD_COLOR[spd], zorder=3)
+            ys = np.log10(max(f_s, 1e-6)) + p_s * xs
+            fit_xy[spd] = (xs, ys)
+            axr.plot(xs, ys, '-', lw=1.1, color=SPD_COLOR[spd], zorder=3)
             tsel = sorted(tr & set(cand.tolist()))
             if tsel:
                 kt = np.clip(np.asarray(
@@ -242,6 +245,27 @@ def main_hybrid(pl, plt, built):
                        fontsize=5.0, loc='upper left', frameon=False,
                        handlelength=1.0, handletextpad=0.4,
                        labelspacing=0.18, borderpad=0.1)
+        # 부채꼴을 눈으로 보이게 채운다. 앵커 속도가 늘 아래 끝이고
+        # (p=1 이 최소) 속도가 낮아질수록 위로 열리므로, 두 극단 선
+        # 사이를 채우면 벌어짐의 방향과 크기가 함께 드러난다. Ref 는
+        # 얇은 띠, 변형체는 넓은 쐐기가 된다.
+        if len(fit_xy) >= 2:
+            s_lo = min(p_by_spd, key=lambda k: p_by_spd[k])
+            s_hi = max(p_by_spd, key=lambda k: p_by_spd[k])
+            x_lo, y_lo = fit_xy[s_lo]
+            x_hi, y_hi = fit_xy[s_hi]
+            axr.fill_between(x_lo, y_lo, np.interp(x_lo, x_hi, y_hi),
+                             color='#555555', alpha=0.10, lw=0, zorder=1)
+
+        # 부채꼴의 크기를 수로 적는다. 선마다 붙이면 Ref 패널에서 위
+        # 두 선이 패널 높이의 4 % 밖에 안 떨어져 글자가 겹친다.
+        if p_by_spd:
+            lo, hi = min(p_by_spd.values()), max(p_by_spd.values())
+            axr.text(0.96, 0.045, '$p$ %.2f–%.2f' % (lo, hi),
+                     transform=axr.transAxes, ha='right', va='bottom',
+                     fontsize=5.8, color='#111111',
+                     bbox=dict(fc='white', ec='#bbbbbb', lw=0.3,
+                               alpha=0.9, pad=1.4))
         axr.tick_params(labelsize=6.2)
         axr.set_xlabel(r'$\log_{10}\kappa$', fontsize=7.2, labelpad=1)
         # y 제목을 왼쪽에 두면 옆 3-D 패널의 i_q 눈금 위로 올라탄다.
