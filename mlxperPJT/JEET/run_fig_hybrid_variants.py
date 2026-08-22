@@ -40,7 +40,7 @@ SRC_TS = os.path.join(REF, "meshb_hybrid_losses_Ref.json")
 SRC_BVP = os.path.join(REF, "bvp_denominator_Ref.json")
 BVP_STYLE = dict(color="#111111", ls="-.", marker="D", ms=2.8,
                  lw=1.1, zorder=3,
-                 label="2-D frequency-domain BVP")
+                 label="2-D frequency-domain solution")
 OUT = os.path.join(_FIGDIR, 'hybrid_variants_compare.pdf')
 # 속도 패널 (b=36deg 고정, 2/4/8/16k) — subfloat (a) 용 별도 PDF
 SRC_SPD = os.path.join(os.path.dirname(REF), 'Ref_spdsweep',
@@ -70,7 +70,7 @@ SERIES = [  # (key, label, color, style, marker)
     ("mcad_prox_W", "Hybrid analytical-FEA (Volpe et al.)", "#111111",
      "-", "o"),
     ("line_msq_P24c6_translim",
-     "Line-sampled " + _MSQ + " /24 c6 + transition cap (emulation)",
+     "Line-sampled " + _MSQ + " /24 c6 + transition cap",
      "#2e7d32", "-", "s"),
     ("line_msq_P24_cuboid6", "Line-sampled " + _MSQ + " /24, cuboid-6",
      "#b71c1c", "--", "s"),
@@ -126,7 +126,7 @@ def main() -> int:
     fig, ax = plt.subplots(figsize=(3.5, 3.5))
     # TS 진리값 — 굵은 회색 밴드로 배경에 먼저
     ax.plot(beta, ts, "-", color="#888888", lw=2.6, alpha=0.55, zorder=1,
-            label="TS-FEA (truth)")
+            label="Full-FEA")
     tot = {}
     for key, lbl, col, ls, mk in SERIES:
         y = np.array([r.get(key) or np.nan for r in sel]) / 1e3 + skin
@@ -141,6 +141,10 @@ def main() -> int:
         print("  %-26s %.2f~%.2f"
               % ("함의 AF (2-D BVP)", (ts / y_bvp).min(),
                  (ts / y_bvp).max()))
+    # (a) 는 이 각도에서 그려진다 — 두 패널이 만나는 조건을 표시한다.
+    ax.axvline(BETA_FIX, color="#999999", lw=0.7, ls=(0, (2, 2)), zorder=0)
+    ax.text(BETA_FIX, ax.get_ylim()[1], " panel (a)", ha="left", va="top",
+            fontsize=6.2, color="#666666")
     ax.set_xlabel(r"Current phase angle $\beta$ [deg]")
     ax.set_ylabel("Machine AC winding loss [kW]")
     ax.set_xticks(beta)
@@ -187,7 +191,7 @@ def main() -> int:
 
         fig2, ax2 = plt.subplots(figsize=(3.5, 2.6))
         ax2.plot(xs, ts2, "-", color="#888888", lw=2.6, alpha=0.55,
-                 zorder=1, label="TS-FEA (truth)")
+                 zorder=1, label="Full-FEA")
         for key, lbl, col, ls, mk in SERIES:
             y = np.array([r.get(key) or np.nan for r in rs]) / 1e3 + sk2
             ax2.plot(xs, y, ls, color=col, marker=mk, ms=3.0, zorder=2)
@@ -200,8 +204,13 @@ def main() -> int:
         ax2.set_xticks([2, 4, 8, 16])
         ax2.set_xticklabels(["2", "4", "8", "16"])
         ax2.minorticks_off()
-        ax2.set_xlabel("Speed [kRPM]")
-        ax2.set_ylabel("Machine AC winding loss [kW]")
+        # (b) 는 이 속도에서 그려진다.
+        ax2.axvline(SPD / 1000.0, color="#999999", lw=0.7, ls=(0, (2, 2)),
+                    zorder=0)
+        ax2.text(SPD / 1000.0, ax2.get_ylim()[0], "panel (b) ", ha="right",
+                 va="bottom", fontsize=6.2, color="#666666")
+        ax2.set_xlabel("Speed [kRPM] (log)")
+        ax2.set_ylabel("Machine AC winding loss [kW] (log)")
         ax2.yaxis.grid(True, linestyle=":", linewidth=0.45, color="#cccccc")
         ax2.set_axisbelow(True)
         ax2.spines["top"].set_visible(False)
