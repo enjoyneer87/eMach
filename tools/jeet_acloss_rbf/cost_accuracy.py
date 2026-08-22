@@ -130,7 +130,10 @@ def sweep_cost_accuracy(pipeline,
                                                 n_probe_transfer=pipeline.cfg[
                                                     "n_probe_transfer"],
                                                 exponent=True,
-                                                placement=placement)
+                                                placement=placement,
+                                                donor_dataset=pipeline.
+                                                load_dataset(pipeline.cfg[
+                                                    "donor_scale"]))
                                 ws.append(_wmae(ds, m))
                             except Exception:
                                 continue

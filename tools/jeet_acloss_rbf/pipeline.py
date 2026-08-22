@@ -202,7 +202,8 @@ class AcLossPipeline:
             plan['n_base'], plan['n_spd'], seed,
             base_speed=self.cfg['base_speed'],
             n_probe_transfer=self.cfg['n_probe_transfer'],
-            exponent=expo, placement='structured')
+            exponent=expo, placement='structured',
+            donor_dataset=self.load_dataset(self.cfg['donor_scale']))
 
     def pick_representative_seed(self, scale: str) -> int:
         """Seed in [0, n_seeds_pick) whose wMAE is closest to the mean."""
@@ -456,7 +457,9 @@ class AcLossPipeline:
                             base_speed=self.cfg['base_speed'],
                             n_probe_transfer=self.cfg['n_probe_transfer'],
                             exponent=bool(self.cfg.get('exponent', False)),
-                            placement=placement)
+                            placement=placement,
+                            donor_dataset=self.load_dataset(
+                                self.cfg['donor_scale']))
                     except np.linalg.LinAlgError:
                         continue
                     ws.append(self._metrics_of(scale, m)[1])

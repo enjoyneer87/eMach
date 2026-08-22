@@ -35,6 +35,7 @@ matplotlib.use("Agg")
 from jeet_acloss_rbf.pipeline import AcLossPipeline
 from jeet_acloss_rbf.RbfModelBuilder import RbfModelBuilder
 from jeet_acloss_rbf.manuscript_figs import _journal_rc
+from matplotlib.patches import Rectangle
 
 SPEEDS = (2.0, 4.0, 8.0, 16.0)
 ROWS = (("Ref", 1.0), ("SC", 2.0))
@@ -195,16 +196,27 @@ def main_hybrid(pl, plt, built):
                 if c == 0:
                     ax.set_ylabel('%s\n$i_q$ [A, pk]' % scale,
                                   fontsize=7.4, labelpad=1)
-                hue = None
-                if r == 0 and spd in PAIR_COLOR:
-                    hue = PAIR_COLOR[spd]
-                for s_, d_ in TRANSFER:
-                    if r == 1 and abs(d_ - spd) < 1e-9:
-                        hue = PAIR_COLOR[s_]
-                if hue:
-                    for sp in ax.spines.values():
-                        sp.set_color(hue)
-                        sp.set_linewidth(1.6)
+            hue = None
+            if r == 0 and spd in PAIR_COLOR:
+                hue = PAIR_COLOR[spd]
+            for s_, d_ in TRANSFER:
+                if r == 1 and abs(d_ - spd) < 1e-9:
+                    hue = PAIR_COLOR[s_]
+            if hue and is3d:
+                # 3-D 칸에는 spine 이 없다 — 2-D 칸이 차지하는 자리에
+                # 테두리를 직접 그려 같은 짝 표시를 준다.
+                x0, y0, w0, h0 = rect(r, c, False)
+                # 3-D 축 라벨이 칸 경계 위에 놓여 테두리에 물리므로 3 pt 띄운다.
+                px, py = 3.0 / (72.0 * FW), 1.5 / (72.0 * FH)
+                fig.add_artist(Rectangle((x0 - px, y0 - py),
+                                         w0 + 2 * px, h0 + 2 * py,
+                                         transform=fig.transFigure,
+                                         fill=False, edgecolor=hue,
+                                         linewidth=1.6, zorder=6))
+            elif hue:
+                for sp in ax.spines.values():
+                    sp.set_color(hue)
+                    sp.set_linewidth(1.6)
 
         # ---- 5번째 열: 로그 공간 회귀 --------------------------------
         axr = fig.add_axes(rect(r, len(SPEEDS), False))
