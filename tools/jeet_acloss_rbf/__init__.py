@@ -10,6 +10,7 @@ from .pipeline import AcLossPipeline, DEFAULT_CONFIG
 from .manuscript_figs import (
     extract_mes_fields,
     plot_field_panels,
+    plot_field_panels_split,
     plot_motor_geometry_dxf,
     plot_af_map_dq,
     plot_af_surface_3d,
@@ -65,6 +66,7 @@ __all__ = [
     "DEFAULT_CONFIG",
     "extract_mes_fields",
     "plot_field_panels",
+    "plot_field_panels_split",
     "plot_motor_geometry_dxf",
     "plot_af_map_dq",
     "plot_af_surface_3d",

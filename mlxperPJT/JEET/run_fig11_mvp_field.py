@@ -30,7 +30,7 @@ _FIGDIR = fig_dir()
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.abspath(os.path.join(HERE, "..", "..", "tools")))
 
-from jeet_acloss_rbf import plot_field_panels  # noqa: E402
+from jeet_acloss_rbf import plot_field_panels_split  # noqa: E402
 
 # 데이터 루트는 JEET_DATA_ROOT 로 덮어쓸 수 있다 (배포 레포/CI 용).
 # 이 그림이 읽는 것은 아래 CASES 의 npz 네 개(합 1.2 MB)뿐이다.
@@ -43,11 +43,16 @@ OUT = os.path.join(_FIGDIR, 'Bfield_MVP_mesh.pdf')
 # 모델(Ref/SC) 식별은 그룹 헤더가 담당, 열 제목은 기법만 (compact 규칙)
 # SC 는 4 kRPM = Ref 16 kRPM 의 상사 대응 운전점 (ω ∝ 1/k_r²) — 두 열이
 # 진짜 상사쌍이 되어 A/k_r 공통 스케일 일치가 법칙의 직접 검증이 된다.
+# 저자 결정 2026-08-24 — 요소를 면으로 칠하려면 메시 연결 정보가 필요하다.
+# fieldvec_* 가 그것을 담고 있고 스텝 65(정착 구간)라, 스텝 1(정적 선해석,
+# 와전류 미발달)을 쓰던 fields_*_OnLoadTorque 보다 Full-FEA 패널이 옳고
+# Fig. 9 와 같은 순간이 된다.  두 export 는 회전자가 정확히 64스텝(-45 deg)
+# 어긋나 있었다.
 CASES = [
-    ("fields_Ref_Hybrid_16k_36deg_OnLoadTorque.npz", "Hybrid", 1.0),
-    ("fields_Ref_16k_36deg_OnLoadTorque.npz",        "Full-FEA", 1.0),
-    ("fields_SC_Hybrid_4k_36deg_OnLoadTorque.npz",   "Hybrid", 2.0),
-    ("fields_SC_4k_36deg_OnLoadTorque.npz",          "Full-FEA", 2.0),
+    ("fieldvec_MS_Ref.npz",   "Hybrid", 1.0),
+    ("fieldvec_Full_Ref.npz", "Full-FEA", 1.0),
+    ("fieldvec_MS_SC.npz",    "Hybrid", 2.0),
+    ("fieldvec_Full_SC.npz",  "Full-FEA", 2.0),
 ]
 
 
@@ -61,17 +66,19 @@ def main() -> int:
         cases.append((p, title))
         k_r.append(kr)
 
-    out = plot_field_panels(
+    # 저자 지시 2026-08-24 — 좌 4 = |B|, 우 4 = A/k_r.  물리량이 열 묶음을,
+    # 모델이 행을 잡는다.  패널 내용은 그대로고 컬러바와 Ref/SC 라벨만 이동.
+    out = plot_field_panels_split(
         cases, OUT,
-        k_r=k_r,          # A/k_r 공통 스케일
-        show_axes=True,   # mm 눈금 박스
-        compact_labels=True,          # 행 식별 최좌측 1회, 열 제목 1줄
-        group_labels=["Ref", "SC"],   # 모델 식별 = 그룹 헤더 (유지)
+        k_r=k_r,                      # A/k_r 공통 스케일
+        group_labels=["Ref", "SC"],   # 모델 식별 = 행 라벨
         # 세미나 6: Ref 20 mm / SC 50 mm 로 갈리던 눈금을 한 규칙으로.
         # 저자 결정 2026-08-21 — Ref 50 / SC 100, 곧 k_r 배. 두 모델의 눈금이
         # 종이 위 같은 자리에 오고 x 축의 기존 눈금과도 일치한다.
         tick_step=[50.0, 50.0, 100.0, 100.0],
-        tag_pos="bottom",             # (a)~(h) 를 패널 아래로 (저자 선호)
+        # 메시는 |B| 패널에만 겹친다 (저자 결정 2026-08-24).  A/k_r 은
+        # 대부분이 0 근처의 옅은 색이라 검은 선이 필드보다 강해진다.
+        mesh_lw=0.04,
     )
     print(f"저장: {out}")
     print(f"  크기: {os.path.getsize(out) / 1024:.0f} KB")

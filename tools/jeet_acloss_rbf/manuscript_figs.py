@@ -3030,7 +3030,9 @@ def plot_field_diff_panels(rows, out_path: str,
                            show_mesh: bool = True,
                            mesh_overlay: bool = True,
                            mesh_lw: float = 0.06,
-                           mesh_alpha: float = 0.5) -> Dict:
+                           mesh_alpha: float = 0.5,
+                           cell_aspect: float = 1.48,   # 잘라 낸 부채꼴의 실제 비
+                           tick_step_mm: Optional[float] = 50.0) -> Dict:
     """Similarity-transfer error as a field, one row per solver level.
 
     ``rows`` is a sequence of ``(label, ref_npz, sc_npz, k_r)``.  The Ref
@@ -3064,7 +3066,8 @@ def plot_field_diff_panels(rows, out_path: str,
 
     fig, axes = plt.subplots(
         n_row, n_col,
-        figsize=figsize or (2.1 * n_col, 1.28 * n_row + 0.85),
+        figsize=figsize or (2.1 * n_col,
+                            2.1 / cell_aspect * n_row + 0.95),
         layout='constrained')
     axes = np.asarray(axes).reshape(n_row, n_col)
 
@@ -3094,9 +3097,26 @@ def plot_field_diff_panels(rows, out_path: str,
                                    lw=mesh_lw, alpha=mesh_alpha)
                 # 두 조각을 한 번에 그려도 되는 이유: triplot 은 점 위치
                 # 탐색을 하지 않아 미끄럼면의 중복 노드를 개의치 않는다.
+            # pcolormesh 는 마스킹된 셀까지 포함해 축을 잡는다.  유효한
+            # 셀의 경계로 잘라 부채꼴 바깥의 빈 자리를 없앤다.
+            m = d['ok']
+            if m.any():
+                pad = 0.02 * max(X[m].ptp(), Y[m].ptp())
+                ax.set_xlim(X[m].min() - pad, X[m].max() + pad)
+                ax.set_ylim(Y[m].min() - pad, Y[m].max() + pad)
             ax.set_aspect('equal')
-            ax.set_xticks([])
-            ax.set_yticks([])
+            if tick_step_mm:
+                from matplotlib.ticker import MultipleLocator
+                ax.xaxis.set_major_locator(MultipleLocator(tick_step_mm))
+                ax.yaxis.set_major_locator(MultipleLocator(tick_step_mm))
+                ax.tick_params(labelsize=6.4, length=2.0, pad=1.2)
+                # 눈금 숫자는 왼쪽 열과 아래 행에만 — 나머지는 같은 자다.
+                ax.tick_params(labelbottom=(i == n_row - 1), labelleft=(j == 0))
+                # 축 이름은 달지 않는다 — xlabel 은 패널 태그가, ylabel 은
+                # 행 이름이 쓴다.  단위(mm)는 캡션이 말한다.
+            else:
+                ax.set_xticks([])
+                ax.set_yticks([])
         if show_mesh:
             _draw_mesh_zoom(axes[i, 3], d, box, legend=(i == 0))
             # 확대 위치를 차분 패널에 상자로 표시
@@ -3145,3 +3165,148 @@ def plot_field_diff_panels(rows, out_path: str,
                   f"||dB||/||B|| {w['dB_L2_pct']:5.2f} %  "
                   f"share of sum dB^2 {w['share_of_sum_dB2_pct']:5.1f} %")
     return stats
+
+
+def plot_field_panels_split(
+    cases,
+    out_path,
+    k_r,
+    group_labels,
+    tick_step,
+    point_size: float = 0.35,
+    raster_dpi: int = 600,
+    mesh_lw: float = 0.0,
+):
+    """2x4 figure split by quantity: left block |B|, right block A/k_r.
+
+    ``plot_field_panels`` puts the quantity on the row axis and the model on
+    the column axis. This one swaps them, so each quantity owns a 2x2 block
+    with a single colourbar of its own and the models read down the rows
+    (author, 2026-08-24). The panels themselves are unchanged.
+
+    cases : sequence of (npz_path, method_title), ordered model-major, i.e.
+        [Ref-A, Ref-B, SC-A, SC-B]. Two methods per model.
+    k_r : per-case radial factor, used to normalise A.
+    group_labels : one per model, drawn as a rotated label beside its row.
+    tick_step : per-case tick interval in mm; only the model matters, so the
+        two entries of a model should agree.
+    """
+    plt = _journal_rc()
+    from matplotlib.ticker import MultipleLocator
+
+    D = [(np.load(p), t) for p, t in cases]
+    n = len(D)
+    if n % 2:
+        raise ValueError("expected two methods per model, got %d cases" % n)
+    n_model, n_meth = n // 2, 2
+
+    b_max = max(np.percentile(d['b_T'], 99.5) for d, _ in D)
+    a_vals = [d['a_Wbm'] / float(k_r[i]) for i, (d, _) in enumerate(D)]
+    a_lim = max(np.percentile(np.abs(v), 99.5) for v in a_vals)
+
+    # 요소를 면으로 칠한다.  중심에 점을 찍으면 요소 수가 다른 패널끼리
+    # 잉크 양이 달라져 같은 필드가 다르게 읽힌다.  값은 요소당 하나이므로
+    # flat 음영이 곧 내보낸 해상도이고 보간이 들어가지 않는다.
+    # 회전자는 Fig. 9 와 같은 대칭 조작으로 쉼 위치에 되돌린다.  |B| 는
+    # 크기라 불변이고, A 는 극 피치 하나마다 부호가 뒤집힌다.
+    # tri 는 1-based 이고 node_xy[0] 은 NaN 더미다 (Motor-CAD 관습).
+    from matplotlib.tri import Triangulation
+    T = []
+    for i, (d, _) in enumerate(D):
+        nodes, tri, _reg, _bx, _by, _ar, _rb, rotor_el = _align_rotor(d)
+        n_sec = int(round(-float(d['rotate_deg'][0])
+                          * (int(d['block'][0]) - 1) / _SECTOR_DEG))
+        if n_sec % 2:
+            a_vals[i] = a_vals[i].copy()
+            a_vals[i][rotor_el] *= -1.0
+        T.append(Triangulation(nodes[1:, 0], nodes[1:, 1], tri - 1))
+    a_lim = max(np.percentile(np.abs(v), 99.5) for v in a_vals)
+
+    fig, axes = plt.subplots(n_model, 2 * n_meth,
+                             figsize=(2.05 * 2 * n_meth, 3.35),
+                             layout='constrained')
+    axes = np.atleast_2d(axes)
+
+    h_b = h_a = None
+    for i, (d, _) in enumerate(D):
+        r, c = i // n_meth, i % n_meth
+        st = float(tick_step[i])
+        for q in (0, 1):
+            ax = axes[r, c + q * n_meth]
+            if q == 0:
+                h_b = ax.tripcolor(T[i], facecolors=d['b_T'],
+                                   cmap='jet', shading='flat',
+                                   vmin=0, vmax=b_max, rasterized=True,
+                                   linewidth=0)
+                if mesh_lw:
+                    # 이산화를 같이 보인다.  |B| 는 색이 진해 메시선이
+                    # 얹혀도 필드가 살아 있다.  A/k_r 은 대부분이 0 근처의
+                    # 옅은 색이라 선이 필드보다 강해지므로 겹치지 않는다.
+                    ax.triplot(T[i], color='k', lw=mesh_lw, alpha=0.4,
+                               rasterized=True)
+            else:
+                h_a = ax.tripcolor(T[i], facecolors=a_vals[i],
+                                   cmap='RdBu_r', shading='flat',
+                                   vmin=-a_lim, vmax=a_lim,
+                                   rasterized=True, linewidth=0)
+            ax.set_aspect('equal')
+            ax.tick_params(labelsize=7.6, length=2.2, pad=1.5)
+            for sp in ax.spines.values():
+                sp.set_visible(True)
+            ax.xaxis.set_major_locator(MultipleLocator(st))
+            ax.yaxis.set_major_locator(MultipleLocator(st))
+            # 태그는 좌->우, 위->아래 순서로 붙는다.
+            tag = '(%s)' % chr(97 + r * (2 * n_meth) + c + q * n_meth)
+            if r == n_model - 1:
+                ax.set_xlabel('x [mm]\n%s' % tag, fontsize=8.2, labelpad=1.5)
+            else:
+                # Ref 와 SC 는 x 범위가 다르므로 위 행도 눈금을 단다.
+                ax.set_xlabel('x [mm]\n%s' % tag, fontsize=8.2, labelpad=1.5)
+            if c + q * n_meth == 0:
+                ax.set_ylabel('y [mm]', fontsize=8.2, labelpad=1.5)
+            else:
+                ax.tick_params(labelleft=False)
+
+    cb = fig.colorbar(h_b, ax=list(axes[:, :n_meth].ravel()), shrink=0.72)
+    cb.set_label('|B| [T]', fontsize=9.4)
+    cb.ax.tick_params(labelsize=8.7)
+    cb = fig.colorbar(h_a, ax=list(axes[:, n_meth:].ravel()), shrink=0.72)
+    cb.set_label(r'$A/k_r$ [Wb/m]', fontsize=9.4)
+    cb.ax.tick_params(labelsize=8.7)
+
+    fig.draw_without_rendering()
+    try:
+        rnd = fig.canvas.get_renderer()
+    except Exception:
+        rnd = None
+
+    # 상단 그룹 머리글 = 물리량.  열 묶음마다 하나.
+    for q, lab in enumerate(('$|B|$', '$A/k_r$')):
+        pos = [axes[0, c + q * n_meth].get_position()
+               for c in range(n_meth)]
+        xc = 0.5 * (pos[0].x0 + pos[-1].x1)
+        ytop = max(p.y1 for p in pos)
+        fig.text(xc, min(ytop + 0.018, 0.996), lab, ha='center', va='bottom',
+                 fontsize=12, fontweight='bold')
+
+    # 모델 식별은 행 왼쪽에 회전 라벨로.
+    x0 = min(axes[r, 0].get_position().x0 for r in range(n_model))
+    dx = 0.052
+    if rnd is not None:
+        try:
+            lo = min(axes[r, 0].yaxis.get_tightbbox(rnd).x0
+                     for r in range(n_model)) / fig.bbox.width
+            dx = max(0.018, x0 - lo + 0.012)
+        except Exception:
+            pass
+    for r in range(n_model):
+        p = axes[r, 0].get_position()
+        lbl = '%s ($k_r{=}%g$)' % (group_labels[r],
+                                   float(k_r[r * n_meth]))
+        fig.text(x0 - dx, 0.5 * (p.y0 + p.y1), lbl, rotation=90,
+                 ha='center', va='center', fontsize=11, fontweight='bold')
+
+    os.makedirs(os.path.dirname(os.path.abspath(out_path)), exist_ok=True)
+    fig.savefig(out_path, dpi=raster_dpi, bbox_inches='tight')
+    plt.close(fig)
+    return out_path
