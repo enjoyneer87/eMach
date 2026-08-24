@@ -42,6 +42,10 @@ BVP_STYLE = dict(color="#111111", ls="-.", marker="D", ms=2.8,
                  lw=1.1, zorder=3,
                  label="2-D frequency-domain solution")
 OUT = os.path.join(_FIGDIR, 'hybrid_variants_compare.pdf')
+# ⚠ 원고가 싣는 것은 이 파일이 아니라 `hybrid_variants_compare_annot.pdf`
+# 다.  (b) 의 범례에 인용번호를 손으로 넣은 판본이고, 원본은 같은 폴더의
+# `_annot.svg` 다.  여기서 다시 그려도 원고는 흔들리지 않는다.  다만 축이나
+# 범례를 바꿨다면 svg 를 열어 다시 내보내야 원고에 반영된다.
 Y_TOP = 80.0        # (b) 의 세로축 상단 [kW] — 저자 지시 2026-08-24
 # 속도 패널 (b=36deg 고정, 2/4/8/16k) — subfloat (a) 용 별도 PDF
 SRC_SPD = os.path.join(os.path.dirname(REF), 'Ref_spdsweep',
