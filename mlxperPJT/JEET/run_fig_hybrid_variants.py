@@ -42,6 +42,7 @@ BVP_STYLE = dict(color="#111111", ls="-.", marker="D", ms=2.8,
                  lw=1.1, zorder=3,
                  label="2-D frequency-domain solution")
 OUT = os.path.join(_FIGDIR, 'hybrid_variants_compare.pdf')
+Y_TOP = 80.0        # (b) 의 세로축 상단 [kW] — 저자 지시 2026-08-24
 # 속도 패널 (b=36deg 고정, 2/4/8/16k) — subfloat (a) 용 별도 PDF
 SRC_SPD = os.path.join(os.path.dirname(REF), 'Ref_spdsweep',
                        'line_sampled_hybrid_Ref_spdsweep_80C.json')
@@ -142,13 +143,10 @@ def main() -> int:
         print("  %-26s %.2f~%.2f"
               % ("함의 AF (2-D BVP)", (ts / y_bvp).min(),
                  (ts / y_bvp).max()))
-    # 범례를 축 안 상단에 앉히기 위한 여백 — 데이터는 아래 58%% 를 쓴다.
-    ymax = [np.nanmax(ts)] + [np.nanmax(v) for v in tot.values()]
-    if not np.all(np.isnan(y_bvp)):
-        ymax.append(np.nanmax(y_bvp))
-    ymax = float(np.nanmax(ymax))
+    # 축을 80 kW 에서 끊는다 (저자 지시).  범례는 반투명 배경을 달고
+    # 데이터 위에 앉으므로 상단 여백을 비워 둘 필요가 없다.
     y_lo = ax.get_ylim()[0]
-    ax.set_ylim(y_lo, y_lo + (ymax - y_lo) / 0.58)
+    ax.set_ylim(y_lo, Y_TOP)
 
     # (a) 는 이 각도에서 그려진다 — 두 패널이 만나는 조건을 표시한다.
     ax.axvline(BETA_FIX, color="#999999", lw=0.7, ls=(0, (2, 2)), zorder=0)
@@ -162,8 +160,13 @@ def main() -> int:
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)
     # 1 단 — 범례 항목 뒤에 참조 번호를 넣을 폭을 남긴다 (저자 후편집).
-    ax.legend(fontsize=6.0, frameon=False, loc="upper left", ncol=1,
-              labelspacing=0.30, handlelength=1.5, borderaxespad=0.25)
+    leg = ax.legend(fontsize=6.0, frameon=True, loc="upper left", ncol=1,
+                    labelspacing=0.30, handlelength=1.5, borderaxespad=0.4)
+    leg.get_frame().set_facecolor("white")
+    leg.get_frame().set_alpha(0.72)
+    leg.get_frame().set_edgecolor("#cccccc")
+    leg.get_frame().set_linewidth(0.4)
+    leg.set_zorder(5)
     fig.savefig(OUT)
     print("저장:", OUT)
 
