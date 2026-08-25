@@ -338,11 +338,13 @@ def build_lineup(D, plt):
     """
     from matplotlib.colors import TwoSlopeNorm
 
+    # truth AF 행은 싣지 않는다 (저자 결정 2026-08-25).  같은 평면의 AF
+    # 면은 Fig. 6 이 이미 그린다.  SC 자체 표본의 위치는 proposed 행에
+    # 얹는다 --- 그 행이 그 점들로 적합된 행이라 그게 논리적 자리다.
     blocks = ((r"target SC  ($k_r{=}2$),  27 own Full-FEA points",
-               (("$AF$, Full-FEA", "sc", None, None),
-                ("uncorrected", "sc", None, None),
+               (("uncorrected", "sc", None, None),
                 ("screening from Ref", "sc", "af_from_ref", "ref"),
-                ("proposed plan, 27 pts", "sc", "af_own", None))),
+                ("proposed plan, 27 pts", "sc", "af_own", "own"))),
               (r"target HalfSC  ($k_r{=}1.5$),  no Full-FEA of its own",
                (("screening, nearest donor", "halfsc", "af_mixed",
                  "mixed"),)))
@@ -356,11 +358,10 @@ def build_lineup(D, plt):
     FH = MT + PW * n_r + VG * (n_r - 1) + BG + MB
     fig = plt.figure(figsize=(FW, FH))
     norm = TwoSlopeNorm(vmin=-ERR_CLIP, vcenter=0.0, vmax=ERR_CLIP)
-    af_lv = np.linspace(D["sc_af_true"].min(), D["sc_af_true"].max(), 13)
     # 모든 패널이 쓰는 하나의 절대 축.  가장 큰 기계에 맞춘다.
     glim = 1.07 * np.sqrt(2.0) * max(D[p + "_irms"].max()
                                      for _, p, _, _ in rows)
-    tp = tpa = None
+    tp = None
     r = 0
 
     for b, (btitle, brows) in enumerate(blocks):
@@ -379,18 +380,7 @@ def build_lineup(D, plt):
                 x, y = dq(D[p + "_irms"][m], D[p + "_phase"][m])
                 ax = fig.add_axes([(ML + c * (PW + HG)) / FW,
                                    y0 / FH, PW / FW, PW / FH])
-                if key is None and dnr is None and lab.startswith("$AF$"):
-                    tpa = panel_af(ax, x, y, af_true[m], af_lv)
-                    style(ax, glim, False)
-                    ax.set_title("%g kRPM" % spd, fontsize=8, pad=3)
-                    own = np.abs(D["sc_train_speeds_k"] - spd) < 0.1
-                    if own.any():
-                        donor_overlay(ax, *dq(D["sc_train_irms"][own],
-                                              D["sc_train_phase"][own]))
-                        ax.text(0.5, -0.05, "%d own pts" % int(own.sum()),
-                                transform=ax.transAxes, ha="center",
-                                va="top", fontsize=6.0, color="#bf360c")
-                else:
+                if True:
                     v = (np.ones(int(m.sum())) if key is None
                          else D["%s_%s" % (p, key)][m])
                     # 혼합 행은 속도마다 도너가 다르다.  그걸 각주에
@@ -398,6 +388,17 @@ def build_lineup(D, plt):
                     dn = dnr
                     if dnr == "mixed":
                         dn = str(D[p + "_mixed_donor"][c])
+                    elif dnr == "own":
+                        dn = None
+                        own = np.abs(D[p + "_train_speeds_k"] - spd) < 0.1
+                        if own.any():
+                            donor_overlay(ax_own_pts := ax, *dq(
+                                D[p + "_train_irms"][own],
+                                D[p + "_train_phase"][own]))
+                            ax.text(0.5, -0.05,
+                                    "%d own pts" % int(own.sum()),
+                                    transform=ax.transAxes, ha="center",
+                                    va="top", fontsize=6.0, color="#bf360c")
                     framed = False
                     if dn is not None:
                         lo, hi = D["%s_reach_%s" % (p, dn)]
@@ -424,26 +425,23 @@ def build_lineup(D, plt):
                         ax.text(0.5, -0.05, "%s%.3g k, %s" % (pre, w_d, note),
                                 transform=ax.transAxes, ha="center",
                                 va="top", fontsize=6.0, color="0.35")
+                if r == 0:
+                    ax.set_title("%g kRPM" % spd, fontsize=8, pad=3)
                 if c == 0:
                     ax.set_ylabel(lab, fontsize=7.4, labelpad=3)
                     if r == 0:
                         # 절대 축이라는 것을 눈금 하나로 못박는다.  이게
-                        # 없으면 원호 크기 차이가 우연으로 읽힌다.  각주가
-                        # 없는 행에 둬야 눈금·축 이름과 겹치지 않는다.
+                        # 없으면 원호 크기 차이가 우연으로 읽힌다.
                         pk = -np.sqrt(2.0) * D["sc_irms"].max()
                         axis_key(ax)
                         ax.set_xticks([pk, 0.0])
                         ax.set_xticklabels(["%.0f A" % pk, "0"], fontsize=6)
             r += 1
 
-    xb = (FW - MR + 0.12) / FW
-    cb = fig.colorbar(tpa, cax=fig.add_axes(
-        [xb, (FH - MT - PW) / FH, 0.14 / FW, PW / FH]))
-    cb.set_label("$AF$", fontsize=8)
-    cb.ax.tick_params(labelsize=7)
+    # AF 행이 빠졌으니 컬러바도 오차 하나뿐이다.
     cb2 = fig.colorbar(tp, extend="both", cax=fig.add_axes(
-        [xb, MB / FH, 0.14 / FW,
-         (PW * (n_r - 1) + VG * (n_r - 2) + BG) / FH]))
+        [(FW - MR + 0.12) / FW, MB / FH, 0.14 / FW,
+         (FH - MT - MB) / FH]))
     cb2.set_label("prediction error [%]", fontsize=8)
     cb2.ax.tick_params(labelsize=7)
     return fig
