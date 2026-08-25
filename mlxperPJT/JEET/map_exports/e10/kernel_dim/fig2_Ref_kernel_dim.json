@@ -1,0 +1,20 @@
+{
+ "slot_id": 1,
+ "n_blocks": 32,
+ "every": 4,
+ "freq_hz": 1066.67,
+ "vlim_A_mm2": 130.1947242723155,
+ "n_strips": 20,
+ "panels": {
+  "a": "TS-FEA",
+  "b": "1-D, 2-point boundary",
+  "c": "1-D, 20 strips (Motor-CAD style)",
+  "d": "2-D"
+ },
+ "mean_sq_A_mm2": {
+  "ts_fea": 7493.49471095048,
+  "kernel_1d_2pt": 512.3768152326644,
+  "kernel_1d_strips": 1511.4983715122862,
+  "kernel_2d": 2668.159704127364
+ }
+}
