@@ -45,6 +45,10 @@ from jeet_acloss_rbf.pipeline import AcLossPipeline   # noqa: E402
 K_H, K_S = 1.5, 2.0
 OUT = os.path.join(HERE, "map_exports", "e10", "SC",
                    "sc_extrapolation_eval.json")
+# 점별 배열.  JSON 은 집계만 담아서 오차가 dq 평면 어디에 몰리는지 알 수
+# 없다.  부록 B 의 패널 그림(run_dq_error_panels.py)이 이 파일을 읽는다.
+NPZ = os.path.join(HERE, "map_exports", "e10", "SC",
+                   "sc_extrapolation_points.npz")
 
 
 def err_stats(f_ac, pred):
@@ -170,6 +174,20 @@ def main() -> int:
     json.dump(res, open(OUT, "w", encoding="utf-8"),
               ensure_ascii=False, indent=1)
     print(f"\n저장: {OUT}")
+
+    np.savez(NPZ,
+             speeds_k=np.asarray(ds.speeds_k, float),
+             irms=np.asarray(ds.irms_arr, float),
+             phase=np.asarray(ds.phase_arr, float),
+             f_ac=np.asarray(f_ac, float), h_ac=np.asarray(h_ac, float),
+             af_true=np.asarray(ds.af_arr, float),
+             af_via_ref=np.asarray(af_D, float),
+             af_via_half=np.asarray(af_C, float),
+             af_zeroshot=np.asarray(af_E, float),
+             af_plus3=np.asarray(af_F, float),
+             af_own27=np.asarray(pred_B / h_ac, float),
+             anchor_idx=np.asarray(anchor_idx, int))
+    print(f"저장: {NPZ}")
     return 0
 
 
