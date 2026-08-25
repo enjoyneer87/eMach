@@ -1,0 +1,26 @@
+{
+ "meta": {
+  "grid": [
+   33,
+   151
+  ],
+  "n_valid": 4563,
+  "trajectory": "FullFEA-LAB elecdata",
+  "bookkeeping": "Total_Loss - CuAC (shared)",
+  "interp": "3-D linear on log-loss over 120 pts"
+ },
+ "delta_eta": {
+  "uncalibrated": {
+   "mean_abs_pp": 0.4154239707339821,
+   "mean_signed_pp": -0.37916157183905774,
+   "p95_abs_pp": 1.301049832179079,
+   "max_abs_pp": 2.1281620269767263
+  },
+  "calibrated": {
+   "mean_abs_pp": 0.20002813904305766,
+   "mean_signed_pp": -0.10665320660111365,
+   "p95_abs_pp": 0.5376547568767664,
+   "max_abs_pp": 1.1490669803225495
+  }
+ }
+}
