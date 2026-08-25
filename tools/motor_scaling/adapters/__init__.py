@@ -5,3 +5,4 @@ __all__ = [
     'RbfJsonReader',
     'MatlabMatReader'
 ]
+from .LabElecdata import LabElecdata

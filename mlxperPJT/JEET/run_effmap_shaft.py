@@ -29,11 +29,9 @@ sys.path.insert(0, os.path.abspath(os.path.join(HERE, "..", "..")))
 
 import numpy as np                                        # noqa: E402
 from scipy.io import loadmat                              # noqa: E402
-from scipy.interpolate import (LinearNDInterpolator,      # noqa: E402
-                               NearestNDInterpolator)
 
-from tools.motor_scaling.morphisms.ShaftMapSolver import (  # noqa: E402
-    ShaftMapSolver, polar_flux_tables)
+from tools.motor_scaling import (ShaftMapSolver,          # noqa: E402
+                                 polar_flux_tables, LabElecdata)
 from run_effmap_offline import loss_interpolants, EFFDIR   # noqa: E402
 
 FLUX_MAT = os.path.join(HERE, "map_exports", "e10",
@@ -48,29 +46,6 @@ R_TEMP = 1.0 + 0.00393 * (80.0 - 20.0)
 R_DC_SC = R_DC20_REF * R_TEMP / 4.0        # k_a/k_r^2, k_r=2
 
 
-def aux_tables(F):
-    """(속도, 축토크) -> 철손/자석손/기계손 [W].  LAB 유효 노드에서 보간."""
-    g = lambda k: np.asarray(F[k], float)                  # noqa: E731
-    sp, ts = g("Speed"), g("Shaft_Torque")
-    m = (sp > 0) & np.isfinite(ts) & (ts > 0)
-    pts = np.column_stack([sp[m], ts[m]])
-    chans = {}
-    for key, name in (("fe", "Iron_Loss"), ("mag", "Magnet_Loss"),
-                      ("mech", "Mechanical_Loss")):
-        v = g(name)[m]
-        lin = LinearNDInterpolator(pts, v)
-        nn = NearestNDInterpolator(pts, v)
-        chans[key] = (lin, nn)
-
-    def aux(w, t):
-        out = {}
-        for key, (lin, nn) in chans.items():
-            x = lin(w, t)
-            out[key] = float(nn(w, t) if np.isnan(x) else x)
-        return out
-    return aux
-
-
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--full", action="store_true")
@@ -83,22 +58,17 @@ def main() -> int:
     print("자속맵 scaledS  Is 최대 %.0f A_pk (i_max %.0f)" % (is_top,
                                                               I_MAX_PK))
 
-    F = loadmat(os.path.join(EFFDIR, "MotorLAB_elecdata_SC_fullfea.mat"))
-    g = lambda k: np.asarray(F[k], float)                  # noqa: E731
-    # LAB 격자는 (속도 33행, 토크 151열).  솔버는 속도를 열로 받으므로
-    # 전치해 넘긴다.
-    sp_ax = g("Speed")[:, 0]
-    TS = g("Shaft_Torque").T
-    eta_lab = g("Efficiency").T
-    eta_lab = eta_lab / 100.0 if np.nanmax(eta_lab) > 1.5 else eta_lab
+    lab = LabElecdata(os.path.join(EFFDIR,
+                                   "MotorLAB_elecdata_SC_fullfea.mat"))
+    sp_ax = lab.speeds_rpm
+    TS = lab.shaft_torque
+    eta_lab = lab.efficiency
     cols = np.arange(sp_ax.size) if a.full else np.arange(0, sp_ax.size, 4)
     cols = cols[sp_ax[cols] > 0]
     print("속도 열 %d개 (%s)" % (cols.size, "full" if a.full else "coarse"))
 
-    # DC 저항 정합 확인 --- LAB CuDC = 3 I^2 R
-    Ir = np.hypot(g("Id_RMS"), g("Iq_RMS"))
-    mm = (Ir > 100) & np.isfinite(g("Stator_Copper_Loss_DC"))
-    r_lab = np.median(g("Stator_Copper_Loss_DC")[mm] / (3 * Ir[mm] ** 2))
+    # DC 저항 --- LAB 실측 (스케일 법칙은 활성부만, end-winding 비 1.29)
+    r_lab = lab.r_dc_measured()
     # 스케일값/LAB 비 1.28 = 원고 §5.2 의 end-winding 비 1.29 --- 스케일
     # 법칙은 활성부 저항만 따르므로 효율 북키핑은 LAB 실측 R 을 쓴다.
     print("R_dc: 스케일(활성부) %.5f / LAB(총) %.5f Ohm --- LAB 채택"
@@ -121,7 +91,7 @@ def main() -> int:
                         float)
         return h_itp(w, I, b) * af
 
-    aux = aux_tables(F)
+    aux = lab.aux_tables()
     res = {}
     for tag, cu in (("truth", cu_truth), ("hybrid", cu_hyb),
                     ("cal", cu_cal)):
@@ -134,9 +104,8 @@ def main() -> int:
                                      np.isfinite(res[tag]["eta"]).sum()))
 
     # 검증 1 --- truth 궤적 vs LAB (peak -> RMS 변환)
-    idq_sign = -1.0 if np.nanmean(g("Id_RMS")) > 0 else 1.0  # 크기 저장 대비
-    idL = g("Id_RMS").T[:, cols] * idq_sign * np.sqrt(2.0)
-    iqL = g("Iq_RMS").T[:, cols] * np.sqrt(2.0)
+    idL_all, iqL_all = lab.idq_pk()
+    idL, iqL = idL_all[:, cols], iqL_all[:, cols]
     v = np.isfinite(res["truth"]["eta"]) & np.isfinite(eta_lab[:, cols]) \
         & (TS[:, cols] > 10)
     dI = np.hypot(res["truth"]["id"][v] - idL[v],

@@ -9,3 +9,4 @@ __all__ = [
     'MtpaFwSolver',
     'generate_efficiency_map'
 ]
+from .ShaftMapSolver import ShaftMapSolver, polar_flux_tables
