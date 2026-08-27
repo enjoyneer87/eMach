@@ -158,3 +158,32 @@ JMAG COM 객체(app)가 그 세션 안에 산다.
   다름 — 드라이버에 양쪽 경로 주석. JMAG COM 은 GUI 를 띄우므로 라이선스
   좌석 1개를 점유한다.
 - 저대역/고대역 경계 선택 민감도 — M3 에서 경계 스윕.
+
+## 4c. M2 P1+P2 실행 결과 (2026-08-28) — **통과**
+
+실행 경로는 4b 의 REF 가 아니라 **SCL 프로젝트** (`SCL_..._FqMap_MSFp`) —
+til18k 스터디에 2024 결과가 살아 있어, 같은 프로젝트 안 복제로 메시·FP
+참조를 그대로 상속받았다 (REF 외부참조 재구축의 120153 메시 동일성 오류
+우회). 복제 스터디 `SC_e10_WirePeriodic_Load_Fq_PWMPilot_carrier`.
+
+- **주파수 리스트 = DataManager point array** (`frequency_vs_nonlinear`,
+  [f, maxNoiter]) 를 `GetStep().SetTableProperty('Nonlinear', ds)` 로 바인딩.
+  스텝 속성 직접 쓰기는 팬텀 (4b 의 "비어 있는 Frequency 표" 수수께끼 해소 —
+  til18k 는 데이터셋 `4k_16k` 사본을 물고 있었다).
+- 실행: {1066.67 앵커, 2k, 5k, 10k, 20k} Hz × 30케이스(6I×5β, 케이스별
+  온로드 FP). **케이스당 5.5 s, 전체 160 s.** 앵커 상대차 ≤3.6e-7 (30/30).
+- **P2 판정 — 가설 H1 생존**: 국소 지수 프로파일이 30케이스 한 곡선으로
+  컬랩스 (지수=1 교차 f_T 2685~2702 Hz, 스프레드 0.6%; 20 kHz 에서 √f
+  극한 0.47). 정규화 프로파일 캐리어 대역 스프레드 <1%, 레벨 P/I² 는
+  92→460 A 에서 −6% 단조 (포화 효과) → **단일 캐리어 커널 + 약한 I-보정**.
+- 부수: 관측 f_T 가 캡 커널 f_t 의 **접선 치수** 후보(1.5~1.9 kHz)와 1.4배
+  이내 — 반경 치수(0.32~0.39 kHz)는 8배 이탈. §12.16 치수 모호성 판정.
+- 산출: `run_pwm_pilot_score.py` / `pwm_pilot_score.json` /
+  `pwm_pilot_opmap.csv` / `fig/pwm_pilot_score.png` /
+  `PWMPilot/From38100/*_PWMPilot_carrier.csv`.
+
+**남은 것**: P3 (REF/SCL 비 — REF 는 MS 프로젝트
+`e10MS_ConductorModel_REF_Periodic16k.jproj` 안에서
+`DuplicateStudyWithType("Frequency2D")` + FP CurrentProject 참조, 즉
+`deve10_FqFPSCL.m` 2024 레시피 그대로가 메시 동일성 보장 경로),
+P4 (MQS 과도 1점 교차), 20 kHz 메시 수렴 확인.
