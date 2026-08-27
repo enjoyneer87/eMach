@@ -76,6 +76,14 @@
 | MQS 과도 원형 | `Calc/deve10_JMAG_MQS_ACLoss*.m` |
 | MS 도체 모델 (FP 참조해) | `E:\KDH\e10\MSConductorModel\*_FPMag.jproj` |
 | MATLAB | R2026a CLI + `tools/jmag/callJmag.m` (Designer 23.1 COM) |
+| **MQS 과도 전체 구축 (P4)** | `tools/jmag/dev_e10_ACLoss.mlx` — Transient2D 'Sin' 스터디, FEM 도체, 3상 정현 회로(`mkJmag3phaseConductorSinCircuit` + 진폭/주파수/위상 주입) |
+| **PWM 회로 템플릿 (P4/M3)** | `tools/jmag/circuit/PWM_CurrentControl.jcir` + `loadJMAG_PWMInput.m` — PWM 전류제어 회로를 스터디에 로드하는 기성 헬퍼 |
+| 파형역 하이브리드 커널 | `tools/loss/ACLOSS/devcalcHybridACLossWave.mlx` — [P_rect, P_1DInstant, P_1DrectG1, …] 시간역 평가 (대역분할 분모의 시간역 판) |
+| MCAD↔JMAG 교차검증 선례 | `tools/loss/VeriCalcHybridACLossModelwithSlotB.mlx` (2024) |
+
+**MLX 읽기** — 라이브 스크립트는 ZIP 컨테이너라 `matlab/document.xml` 에서
+코드를 추출하면 된다. 추출기: `tools/jmag/mlx2m.py` (2026-08-27 추가).
+관련 mlx 18종의 역할 지도는 이 표와 mlx2m 스캔으로 재생성 가능.
 
 **M2 파일럿** — 드라이버 작성 완료: `Other/deve10_FqFP_PWMPilot.m`
 
@@ -83,7 +91,10 @@
   {5, 10, 20} kHz ± 0.5 kHz. 총 24 **선형** 해석 — Fq 는 점당 분 단위라
   파일럿 전체가 **1시간 미만** (Motor-CAD PWM 과도 추정 20~40h 대비 격감).
 - P1 실행성 → P2 AF_hi(f) 평탄성(진짜 H1 선별) → P3 REF/SCL 비(H2)
-  → P4 MQS 과도 1점 교차(선형 중첩 직접 판정, `deve10_JMAG_MQS_ACLoss` 계보).
+  → P4 MQS 과도 1점 교차(선형 중첩 직접 판정). P4 경로가 예상보다 짧다 —
+  `dev_e10_ACLoss.mlx` 의 'Sin' 스터디에 `loadJMAG_PWMInput` 으로
+  `PWM_CurrentControl.jcir` 를 로드하면 PWM 전류 구동 과도가 되고, 2톤
+  검증은 그 회로의 지령 파형만 바꾸면 된다.
 - 후처리 `run_pwm_pilot_score.py` (export CSV → AF_hi 채점) — P1 통과 후 작성.
 
 **M3 본 캠페인** (파일럿 통과 시): 운전점 확장은 (I,β) 격자 × 주파수인데
