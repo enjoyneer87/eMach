@@ -36,8 +36,11 @@ OPMAP = os.path.join(HERE, 'pwm_pilot_opmap.csv')  # case,speed,beta,Irms (COM �
 MU0 = 4e-7 * math.pi
 SIGMA_20C = 5.8e7
 SIGMA_80C = 4.694e7
-DIM_RADIAL = 3.711e-3   # 도체 반경 방향 치수 (스크립트 DIMS 첫 값)
-DIM_TANGENT = 1.686e-3  # 접선 치수 (원고 표기 w_c 1.7 mm)
+# SC(=SCL) 기계 도체 치수 — .mot 정본 (e10_SC_fullfea_Lab30.mot).
+# 주의: (3.711, 1.686) 은 Ref 기계 치수다. 패밀리는 양 치수 모두 k_r 스케일
+# (Ref 1x / HalfSC 1.5x / SC 2x) — 2026-08-28 P3 에서 .mot 로 확정.
+DIM_RADIAL = 7.422e-3   # SC Copper_Width (반경 방향)
+DIM_TANGENT = 3.372e-3  # SC Copper_Height (접선)
 
 
 def parse_wide_totals(path, item='Joule Loss'):
