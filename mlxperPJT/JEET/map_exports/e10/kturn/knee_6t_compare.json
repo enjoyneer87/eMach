@@ -1,0 +1,89 @@
+{
+ "Ref": {
+  "anchor_pool": 24,
+  "knee_curve": {
+   "6": {
+    "wmae_pct": 30.56,
+    "own_pts": 15
+   },
+   "10": {
+    "wmae_pct": 4.09,
+    "own_pts": 19
+   },
+   "14": {
+    "wmae_pct": 3.62,
+    "own_pts": 23
+   },
+   "18": {
+    "wmae_pct": 3.07,
+    "own_pts": 27
+   },
+   "22": {
+    "wmae_pct": 2.28,
+    "own_pts": 31
+   },
+   "24": {
+    "wmae_pct": 0.81,
+    "own_pts": 33
+   }
+  }
+ },
+ "HalfSC": {
+  "anchor_pool": 24,
+  "knee_curve": {
+   "6": {
+    "wmae_pct": 30.44,
+    "own_pts": 15
+   },
+   "10": {
+    "wmae_pct": 5.62,
+    "own_pts": 19
+   },
+   "14": {
+    "wmae_pct": 5.33,
+    "own_pts": 23
+   },
+   "18": {
+    "wmae_pct": 4.92,
+    "own_pts": 27
+   },
+   "22": {
+    "wmae_pct": 1.29,
+    "own_pts": 31
+   },
+   "24": {
+    "wmae_pct": 0.91,
+    "own_pts": 33
+   }
+  }
+ },
+ "SC": {
+  "anchor_pool": 24,
+  "knee_curve": {
+   "6": {
+    "wmae_pct": 31.35,
+    "own_pts": 15
+   },
+   "10": {
+    "wmae_pct": 6.05,
+    "own_pts": 19
+   },
+   "14": {
+    "wmae_pct": 5.02,
+    "own_pts": 23
+   },
+   "18": {
+    "wmae_pct": 4.63,
+    "own_pts": 27
+   },
+   "22": {
+    "wmae_pct": 1.89,
+    "own_pts": 31
+   },
+   "24": {
+    "wmae_pct": 0.8,
+    "own_pts": 33
+   }
+  }
+ }
+}
