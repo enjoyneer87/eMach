@@ -85,6 +85,29 @@
 코드를 추출하면 된다. 추출기: `tools/jmag/mlx2m.py` (2026-08-27 추가).
 관련 mlx 18종의 역할 지도는 이 표와 mlx2m 스캔으로 재생성 가능.
 
+**메인 코드 계보** (저자 확인 2026-08-27: 브랜치 = `devVeriACLoss`, 당시
+`JEET*.mlx` 를 메인처럼 써서 함수들을 호출):
+
+- 오케스트레이터: `JEETResult_rev1.mlx` — 속도당 1실행. MCAD 기계정보 →
+  JMAG e10MS(정자기) → 메시 추출 → 하이브리드 계산 → e10MQS(과도, 회로) →
+  FP Method → MCAD/JMAG/Pyleecan 비교. 후속판 `JEETResult_summary*.mlx`.
+- ⚠ **클론 분기 주의**: 이 mlx 들은 `D:\KangDH\Emlab_emach` 클론에만 추적된다.
+  두 클론이 같은 브랜치 이름(devVeriACLoss)인데 이력이 갈라져 있다 —
+  Emlab HEAD 5a57fe90(07-26)은 EveryMotor 저장소에 없고, EveryMotor 쪽은
+  3cd1cd7(06-01)에서 JEET mlx 들을 삭제했다. **파일럿 참조는 Emlab 경로로.**
+  2024년 JMAG TS 결과 원본도 Emlab 쪽 `mlxperPJT/JEET/From38100/`
+  (`JEET_ref_e10_WirePeriodic_Load_18k_*` — 18k rgh 케이스, jlog·MPTool 포함).
+- 파일럿에서 MCAD 의존은 기계정보 취득뿐 — 상수(460 A, β 36°, 4극쌍)와
+  보관 .mat(`From38100REF_TSFEA.mat`, `e10MS_ConductorModel.mat`)으로 대체.
+- FP Method 스텁이 "MS > FP > **Noload & Armature Only**" 를 언급 — 2024년
+  FP 참조가 분리판으로도 만들어졌다는 뜻. **온로드 총자계 참조 확인 관문**
+  (5절 첫 항목)이 그래서 필수다.
+
+**오픈소스 폴백** (저자 지정): JMAG 라이선스까지 막히면 **GetDP(ONELAB) 또는
+Elmer** — 둘 다 비선형 과도 와전류 full FEA 가 가능해 FP-Fq 와 MQS 교차까지
+대체할 수 있다. FEMM 은 시간조화·고정 μ 한정이라 P4(과도 교차)를 못 세워
+후보에서 제외.
+
 **M2 파일럿** — 드라이버 작성 완료: `Other/deve10_FqFP_PWMPilot.m`
 
 - 주파수 12점/기계: 저대역 앵커 {0.5, 1, 2} kHz + 캐리어 3대역
