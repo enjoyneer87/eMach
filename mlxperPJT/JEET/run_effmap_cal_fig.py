@@ -83,8 +83,13 @@ def main() -> int:
                           lw=0.5, alpha=0.9))
     cb = fig.colorbar(tp, ax=[axes[1], axes[2]], location="top", pad=0.04,
                       fraction=0.09, aspect=36, extend="both")
+    # 우측 화살촉이 Δη 라벨을 덮어, 바 길이를 12% 줄이고 좌측 정렬한다
+    # (저자 지적 2026-08-28). list-axes 컬러바는 shrink 가 안 먹어
+    # set_position 으로 직접 줄인다.
+    bp = cb.ax.get_position()
+    cb.ax.set_position([bp.x0, bp.y0, bp.width * 0.86, bp.height])
     cb.ax.tick_params(labelsize=6.5)
-    cb.ax.text(1.02, 0.5, r"$\Delta\eta$ [%p]", transform=cb.ax.transAxes,
+    cb.ax.text(1.075, 0.5, r"$\Delta\eta$ [%p]", transform=cb.ax.transAxes,
                ha="left", va="center", fontsize=7.5)
 
     for ax, tag in zip(axes, "abc"):
