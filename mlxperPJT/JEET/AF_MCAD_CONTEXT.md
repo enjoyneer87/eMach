@@ -5,6 +5,24 @@
 
 ---
 
+## 📦 보관 상태 (2026-07-13, JEET 논문 제출 완료)
+
+본 워크스트림은 논문 제출에 따라 **동결/보관** 상태. git 태그 `jeet-submitted-20260713` 참조.
+
+**완료된 것:** SLFEA Lab v261 재빌드(920Arms/전류6×감마5) 및 Emag Hybrid 대비 120점 전수 검증
+(2k~8k ±1.4%, 16k −3~6% — 구조적 원인 규명 완료, `figures/lab_vs_emag_ac_scaling_explained.pdf`),
+Custom Loss 등록 도구(`+mcad/addLabInternalCustomLoss.m` 등 3종), Lab베이스 AF 재피팅 B-poly10
+(`map_exports/e10/SC/lab_af/AF_LabBase_poly10_formula.txt`, median 4.8%).
+
+**재개 지점 (리비전 대응 시):**
+1. 적용 수식 선택 미결: B-poly10(권장) vs 기존 RBF 30k자 vs 병행 비교
+2. `runAFCustomLossLab.m` 실행: 재빌드된 SLFEA.mot → customLoss.mot 복사 →
+   Custom Loss 등록(`OpPointSpec_MotorLAB=3`으로 체크포인트) → baseline/AF 효율맵 → Δη 비교
+   (LabLink Custom link 경로는 불필요해짐 — 내장 Lab 베이스가 Hybrid와 일치 확정)
+3. 검증 데이터: `map_exports/e10/SC/lab_af/runtime_vs_json_hybrid_full.csv`
+
+---
+
 ## 1. 핵심 발견 — 수식이 이미 JSON에 있음
 
 `map_exports/e10/SC/AF_RBF_model_SC.json` 안에 Motor-CAD 입력용 수식이 이미 추출되어 있음:
