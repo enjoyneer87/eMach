@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "motor-scaling"
+version = "0.1.0"
+description = "Motor map scaling ladder: geometric (k_R, k_A) scaling of dq flux/loss maps, AF sparse AC-loss correction, MTPA/FW and shaft-torque trajectory solvers, efficiency-map generation (JEET / PhD thesis reference implementation)"
+requires-python = ">=3.9"
+authors = [{ name = "KangDH" }]
+dependencies = ["numpy>=1.17", "scipy>=1.5"]
+
+[project.optional-dependencies]
+matlab = ["scipy>=1.5"]          # MatlabMatReader (.mat SyR-e maps)
+test = ["pytest>=6"]
+
+[tool.setuptools]
+package-dir = { "" = "." }
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["motor_scaling", "motor_scaling.*"]
