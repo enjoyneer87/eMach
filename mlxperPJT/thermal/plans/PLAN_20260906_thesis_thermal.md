@@ -62,6 +62,13 @@ JEET 맵 FullFEA 행의 `fea_per_turn_raw`(턴별 AC 손실, T1=공극측…T6=�
 
 ### D5. Icepak — 추가 작업 없음.
 
+### D6. (소, 3장용) C67 회전자 원심 해석 결과 추출 — PyDPF/PyMAPDL
+`E:\KDH\251114_C67_test\C67_stress_files\dp0\SYS-5\MECH\file.rst`(34.8 MB, 이 파일은 학위논문 PC 에 있음 → moa 로 복사 필요, 또는
+moa 의 `C67_stress.wbpj` 재솔브 13 s) 에서 (a) von Mises 응력 컨투어 + 최대값·위치, (b) 반경방향 변위 컨투어를 PNG 로,
+수치는 `thesis_out/c67_stress.json`(`_soltype: static`, rpm 18000, 요소 0.3 mm, μ 0.2/bonded, E 192.5 GPa·ρ 7650).
+3장 `fig:rotor_stress` 와 TODO (i) 안전계수(20PN1150F 항복강도 데이터시트 값은 논문 쪽에서 채움)에 쓴다.
+가능하면 속도 스윕 4점(12/15/18/21 krpm)의 최대 von Mises·δ_r 도 같은 JSON 에 — 3장 "응력–속도 곡선" TODO (ii).
+
 ## 2. 학위논문 쪽에서 주는 값 (필요 시 참조)
 - e10 기준 손실(R1 파이프라인, kfe 0.97, Br 80 °C=1.2157 T): 15 krpm/250 A: DC 9,279 · AC(하이브리드) 15,204 · 철손 1,856+74 · 자석(정적) 3,385 W.
   16 krpm/460 A/36°: DC 31,416 · AC(하이브리드) 54,730 · 철손 2,619+89 · 자석(정적) 8,132 W. 자석은 ×0.17 하면 과도 FEA/Motor-CAD와 만난다.
