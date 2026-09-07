@@ -198,3 +198,7 @@ mlxperPJT/thermal/freeflow/viz/
 mlxperPJT/thermal/viz_real/
 mlxperPJT/thermal/viz_real_aniso/
 mlxperPJT/thermal/viz_ring/
+
+# --- thesis_out 산출물은 *.png / *.csv 규칙에서 제외 (PLAN_20260906 8행) ---
+!mlxperPJT/thermal/thesis_out/*.png
+!mlxperPJT/thermal/thesis_out/*.csv

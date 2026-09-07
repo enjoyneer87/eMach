@@ -1,0 +1,402 @@
+{
+  "_soltype": "static",
+  "_loss_source": "n/a (structural, centrifugal body load only)",
+  "_htc": "n/a (structural)",
+  "_model": "C67 rotor centrifugal -- Workbench Static Structural (dp0/SYS-5/MECH)",
+  "_generated": "2026-09-07T19:29:44",
+  "_script": "mlxperPJT/thermal/plans/PLAN_20260906_assets/d6_c67_stress.py",
+  "_argv": [
+    "--mech-dir",
+    "C:\\work\\_thermal_kit_20260907\\c67\\C67_stress_extract\\SYS-5\\MECH",
+    "--repo",
+    "D:\\KDH\\NvidiaNemo\\eMach",
+    "--rpm",
+    "18000",
+    "--out",
+    "D:\\KDH\\NvidiaNemo\\eMach\\mlxperPJT\\thermal\\thesis_out",
+    "--log",
+    "C:\\work\\_thermal_kit_20260907\\c67\\d6_final.log"
+  ],
+  "_python": "3.10.11",
+  "_wallclock_s": 3.547,
+  "_source": {
+    "rst": "C:\\work\\_thermal_kit_20260907\\c67\\C67_stress_extract\\SYS-5\\MECH\\file.rst",
+    "mech_dir": "C:\\work\\_thermal_kit_20260907\\c67\\C67_stress_extract\\SYS-5\\MECH",
+    "probe": {
+      "dpf": null,
+      "mapdl_reader": "0.56.0",
+      "mapdl": "0.73.2",
+      "pyvista": "0.47.0",
+      "numpy": "2.2.6",
+      "matplotlib": "3.10.8"
+    },
+    "reader": "ansys.mapdl.reader.read_binary",
+    "reader_version": "0.56.0",
+    "n_sets": 1,
+    "set_used": [
+      1,
+      1
+    ],
+    "set_used_note": "load step 1 / substep 1; the reader APIs are 0-based (rsets index 0), MAPDL SET is 1-based",
+    "rst_bytes": 26607616,
+    "rst_sha256": "5339e3c37a7ac597495ae3286f846affcc8ce52ac5afadbd9c2d0f8e4739ff1b",
+    "reader_attempts": [],
+    "route": "rst",
+    "averaging": "nodal (principal_nodal_stress column 4 = SEQV)",
+    "model_dim": "2D"
+  },
+  "_units": {
+    "stress": "MPa",
+    "displacement": "mm",
+    "length": "mm",
+    "speed": "rpm",
+    "omega": "rad/s",
+    "native_stress_detected": "MPa",
+    "native_length_detected": "mm",
+    "stress_scale_applied": 1.0,
+    "length_scale_applied": 1.0
+  },
+  "_model_meta": {
+    "rpm": 18000.0,
+    "omega_rad_s": 1884.955592153876,
+    "omega_formula": "omega = rpm*2*pi/60; MAPDL load = OMEGA,,,omega_z",
+    "rotation_axis": "Z",
+    "rotation_center_mm": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "element_size_mm": 0.3,
+    "element_size_source": "MotorCAD MechanicalMeshLength_RotorLam (#4978) / WB Mesh Element Size -- CLI value, not read from the result file",
+    "contact": "bonded",
+    "friction_or_adhesion_coefficient": 0.2,
+    "contact_param_source": "MotorCAD AdhesionFactor_Magnets (#4988, default 0.2) -- CLI value",
+    "E_GPa": 192.5,
+    "E_source": "MotorCAD YoungsCoefficient_RotorLam = 192500 MPa (RotorStress_e10.ipynb cell 15; pyMCAD2Maxwell.ipynb cell 19)",
+    "poisson": 0.3,
+    "poisson_source": "MotorCAD PoissonsRatio_RotorLam (#5006)",
+    "rho_kg_m3": 7650.0,
+    "rho_source": "20PN1150F mass_density, 251114_C67_test_Moa_Max3D.py L237/L355; cross-checked by KETI/Discovery.json Material Data.20pn1150f",
+    "rotor_lam_material": "20PN1150F",
+    "magnet_material": "NEOREC48DUH",
+    "magnet_rho_kg_m3": 7550.0,
+    "rotor_OD_mm": 150.0,
+    "shaft_dia_mm": 70.0,
+    "airgap_mm": 0.8,
+    "rotor_lam_length_mm": 96.0,
+    "poles": 8,
+    "slots": 48,
+    "L1_bridge_mm": 3.0,
+    "L1_post_mm": 3.0,
+    "L2_bridge_mm": 1.5,
+    "L2_post_mm": 0.9,
+    "sleeve_mm": 0.0,
+    "banding_mm": 0.0,
+    "shaft_hole_mm": 0.0,
+    "geometry_source": "251114_C67_test_Moa_Max3D.py L54-L120",
+    "yield_MPa": null,
+    "yield_MPa_source": "UNKNOWN.  20PN1150F datasheet yield strength is not in this repo.  Motor-CAD's 305 MPa (#5007) is a program default placeholder -- do NOT record it as measured.  The thesis side fills this in (PLAN D6 TODO (i)).",
+    "_meta_provenance": "251114_C67_test_Moa_Max3D.py L54-L120 (geometry, rho); MotorCAD YoungsCoefficient_RotorLam/PoissonsRatio_RotorLam (E, nu); AdhesionFactor_Magnets #4988 (mu)",
+    "_meta_caveat": "element size, contact, mu, E, nu and rho are CLI arguments echoed here for the record; a .rst does not carry them.  Only the MotorCAD route can read them back from the model."
+  },
+  "at_rated": {
+    "rpm": 18000.0,
+    "omega_rad_s": 1884.955592153876,
+    "max_von_mises_MPa": 499.03439558422565,
+    "max_von_mises_node": 245,
+    "max_von_mises_loc_mm": {
+      "x": 58.09247801,
+      "y": 23.55893373,
+      "z": 0.0,
+      "r": 62.68779274976002,
+      "theta_deg": 22.07461575022902
+    },
+    "max_radial_disp_mm": 0.03136415449831288,
+    "max_radial_disp_node": 107725,
+    "max_radial_disp_loc_mm": {
+      "x": 56.94277197,
+      "y": 30.61805186,
+      "z": 0.0,
+      "r": 64.65248935137043,
+      "theta_deg": 28.26685966705181
+    },
+    "min_radial_disp_mm": 0.0,
+    "max_total_disp_mm": 0.0315020645903801,
+    "max_total_disp_node": 193110,
+    "mean_von_mises_MPa": 46.58569275676799,
+    "delta_r_definition": "u_r = ux*cos(theta) + uy*sin(theta), theta = atan2(y, x), rotation axis = Z (signed projection, NOT sqrt(ux^2+uy^2))",
+    "n_nodes": 124105,
+    "per_region": {
+      "bore": {
+        "n_nodes": 277,
+        "max_svm_MPa": 84.19470101197112,
+        "mean_svm_MPa": 65.44349731808259,
+        "r_mm_range": [
+          0.0,
+          35.035
+        ],
+        "max_ur_mm": 0.0
+      },
+      "annulus": {
+        "n_nodes": 124105,
+        "max_svm_MPa": 499.03439558422565,
+        "mean_svm_MPa": 46.58569275676799,
+        "r_mm_range": [
+          34.965,
+          75.07499999999999
+        ],
+        "max_ur_mm": 0.03136415449831288
+      },
+      "rim": {
+        "n_nodes": 16227,
+        "max_svm_MPa": 455.45874518114493,
+        "mean_svm_MPa": 63.254294723755535,
+        "r_mm_range": [
+          71.25,
+          75.07499999999999
+        ],
+        "max_ur_mm": 0.0313547332778138
+      }
+    },
+    "_region_method": "radial bands on sqrt(x^2+y^2) -- the reader route carries no component or material identity, so 'rotor lamination' vs 'magnet' cannot be separated without the MAPDL database.  Bands are [0, r_shaft], [r_shaft, r_rotor], [0.95*r_rotor, r_rotor].",
+    "max_rim_radial_disp_mm": 0.0313547332778138,
+    "airgap_consumed_pct": 3.9193416597267254,
+    "airgap_consumed_basis": "max u_r over the rim band [0.95*r_rotor, r_rotor]",
+    "yield_MPa": null,
+    "safety_factor": null,
+    "safety_factor_note": "safety_factor = yield_MPa / max_von_mises_MPa.  20PN1150F yield strength is NOT known -- Motor-CAD's 305 MPa (ActiveXParametersMotorCADv261.txt #5007) is a program default, not a datasheet value for this steel.  The thesis side fills this in (PLAN D6 TODO (i)); pass --yield-MPa to compute it here."
+  },
+  "sweep": {
+    "_method": "analytic_omega2_scaling_from_18000rpm",
+    "_method_requested": "scale",
+    "_method_options": [
+      "resolve",
+      "analytic_omega2_scaling_from_<ref>rpm"
+    ],
+    "_reference_rpm": 18000.0,
+    "_scaling_identity": "sigma(n) = sigma(n_ref)*(n/n_ref)^2 and delta_r(n) = delta_r(n_ref)*(n/n_ref)^2 -- EXACT, not an approximation, for a linear elastic body under a pure centrifugal body load with homogeneous displacement BCs.",
+    "_scaling_valid_if": "linear elastic material; bonded (not frictional) contact; no interference fit / sleeve / banding / thermal preload; NLGEOM and spin softening off",
+    "_scaling_invalid_for": "frictional contact (open/close state changes with speed), any plasticity, and ANY Neuber/Glinka plastic-corrected value -- scale the ELASTIC value first, then re-apply the correction at each speed",
+    "_c67_status": "C67 has Sleeve_Thickness = Banding_Thickness = Shaft_Hole_Diameter = 0 mm (Max3D L118-L120), so there is no speed-independent constant term.  Whether the magnet-to-lam interface is bonded or frictional (AdhesionFactor_Magnets = 0.2) decides whether the scaling is exact.",
+    "points": [
+      {
+        "rpm": 12000.0,
+        "omega_rad_s": 1256.6370614359173,
+        "scale_n2": 0.4444444444444444,
+        "hoop_analytic_inner_MPa": 58.65032154556153,
+        "hoop_analytic_outer_MPa": 24.100389594932082,
+        "ur_analytic_outer_mm": 0.009389762179843669,
+        "max_von_mises_MPa": 221.7930647041003,
+        "max_radial_disp_mm": 0.013939624221472392,
+        "max_von_mises_node": 245,
+        "max_radial_disp_node": 107725,
+        "source": "omega^2 scaling from 18000 rpm",
+        "yield_MPa": null,
+        "safety_factor": null
+      },
+      {
+        "rpm": 15000.0,
+        "omega_rad_s": 1570.7963267948967,
+        "scale_n2": 0.6944444444444445,
+        "hoop_analytic_inner_MPa": 91.6411274149399,
+        "hoop_analytic_outer_MPa": 37.65685874208138,
+        "ur_analytic_outer_mm": 0.014671503406005733,
+        "max_von_mises_MPa": 346.55166360015676,
+        "max_radial_disp_mm": 0.021780662846050614,
+        "max_von_mises_node": 245,
+        "max_radial_disp_node": 107725,
+        "source": "omega^2 scaling from 18000 rpm",
+        "yield_MPa": null,
+        "safety_factor": null
+      },
+      {
+        "rpm": 18000.0,
+        "omega_rad_s": 1884.955592153876,
+        "scale_n2": 1.0,
+        "hoop_analytic_inner_MPa": 131.96322347751345,
+        "hoop_analytic_outer_MPa": 54.2258765885972,
+        "ur_analytic_outer_mm": 0.021126964904648257,
+        "max_von_mises_MPa": 499.03439558422565,
+        "max_radial_disp_mm": 0.03136415449831288,
+        "max_von_mises_node": 245,
+        "max_radial_disp_node": 107725,
+        "source": "omega^2 scaling from 18000 rpm",
+        "yield_MPa": null,
+        "safety_factor": null
+      },
+      {
+        "rpm": 21000.0,
+        "omega_rad_s": 2199.114857512855,
+        "scale_n2": 1.3611111111111114,
+        "hoop_analytic_inner_MPa": 179.61660973328216,
+        "hoop_analytic_outer_MPa": 73.8074431344795,
+        "ur_analytic_outer_mm": 0.028756146675771227,
+        "max_von_mises_MPa": 679.2412606563073,
+        "max_radial_disp_mm": 0.04269009917825921,
+        "max_von_mises_node": 245,
+        "max_radial_disp_node": 107725,
+        "source": "omega^2 scaling from 18000 rpm",
+        "yield_MPa": null,
+        "safety_factor": null
+      }
+    ]
+  },
+  "figures": {
+    "von_mises": "mlxperPJT/thermal/thesis_out/c67_stress_vonmises.png",
+    "radial_disp": "mlxperPJT/thermal/thesis_out/c67_stress_ur.png",
+    "sweep": "mlxperPJT/thermal/thesis_out/c67_stress_vs_speed.png"
+  },
+  "_figures_meta": {
+    "von_mises": {
+      "path": "D:\\KDH\\NvidiaNemo\\eMach\\mlxperPJT\\thermal\\thesis_out\\c67_stress_vonmises.png",
+      "bytes": 114090,
+      "dpi": 150.0,
+      "method": "dpi",
+      "ok": true,
+      "colors": null,
+      "max_bytes": 307200,
+      "attempts": [
+        "dpi=150 -> 114090 B"
+      ],
+      "figsize": [
+        5.6,
+        4.4799999999999995
+      ],
+      "backend": "pyvista off_screen + matplotlib title composite",
+      "n_plotted": 124105,
+      "clim": [
+        0.04956418178905655,
+        415.20967264647913
+      ],
+      "cmap": "jet"
+    },
+    "radial_disp": {
+      "path": "D:\\KDH\\NvidiaNemo\\eMach\\mlxperPJT\\thermal\\thesis_out\\c67_stress_ur.png",
+      "bytes": 91711,
+      "dpi": 150.0,
+      "method": "dpi",
+      "ok": true,
+      "colors": null,
+      "max_bytes": 307200,
+      "attempts": [
+        "dpi=150 -> 91711 B"
+      ],
+      "figsize": [
+        5.6,
+        4.4799999999999995
+      ],
+      "backend": "pyvista off_screen + matplotlib title composite",
+      "n_plotted": 124105,
+      "clim": [
+        0.0,
+        0.03135562111262987
+      ],
+      "cmap": "jet"
+    },
+    "sweep": {
+      "path": "D:\\KDH\\NvidiaNemo\\eMach\\mlxperPJT\\thermal\\thesis_out\\c67_stress_vs_speed.png",
+      "bytes": 168225,
+      "dpi": 300.0,
+      "method": "dpi",
+      "ok": true,
+      "colors": null,
+      "max_bytes": 307200,
+      "attempts": [
+        "dpi=300 -> 168225 B"
+      ],
+      "backend": "matplotlib"
+    }
+  },
+  "_sanity": {
+    "analytic": {
+      "a_mm": 35.0,
+      "b_mm": 75.0,
+      "model": "free-free rotating annulus, plane stress, sigma_theta(a) = (3+nu)/4*rho*w^2*[b^2 + (1-nu)/(3+nu)*a^2]",
+      "sigma_theta_inner_MPa": 131.96322347751345,
+      "sigma_theta_outer_MPa": 54.2258765885972,
+      "u_r_outer_um": 21.126964904648258,
+      "note": "free-free rotating annulus, plane stress, homogeneous isotropic; no bridges/posts/magnets -> FE max von Mises is expected to be 2-4x the bore hoop stress"
+    },
+    "formula_self_check": [
+      {
+        "key": "omega_rad_s",
+        "expected": 1884.9555921538758,
+        "got": 1884.955592153876,
+        "rel_err": 1.2062548125254228e-16,
+        "ok": true
+      },
+      {
+        "key": "sigma_theta_inner_MPa",
+        "expected": 131.9632,
+        "got": 131.96322347751345,
+        "rel_err": 1.7790954941645112e-07,
+        "ok": true
+      },
+      {
+        "key": "sigma_theta_outer_MPa",
+        "expected": 54.2259,
+        "got": 54.2258765885972,
+        "rel_err": 4.3173839070218005e-07,
+        "ok": true
+      },
+      {
+        "key": "u_r_outer_um",
+        "expected": 21.127,
+        "got": 21.126964904648258,
+        "rel_err": 1.6611611559225981e-06,
+        "ok": true
+      }
+    ],
+    "gate": {
+      "passed": true,
+      "von_mises_ok": true,
+      "radial_disp_ok": true,
+      "expected_svm_band_MPa": [
+        263.9264469550269,
+        527.8528939100538
+      ],
+      "expected_ur_band_mm": [
+        0.02,
+        0.05
+      ],
+      "band_definition": "von Mises in [2.0, 4.0] x analytic bore hoop; delta_r in [20, 50] um scaled by (n/18000)^2",
+      "measured_max_von_mises_MPa": 499.03439558422565,
+      "measured_max_radial_disp_mm": 0.03136415449831288,
+      "warnings": []
+    }
+  },
+  "_blockers": {
+    "max3d_script": "251114_C67_test_Moa_Max3D.py is a Maxwell 3D TRANSIENT ELECTROMAGNETIC build script at 5600 rpm (header L1-L2, InsertDesign L27, MachineRPM L129).  It cannot regenerate this .rst -- do not try.",
+    "mapdl_needs_db": "MAPDL /POST1 cannot read a lone .rst; it needs file.db / a .cdb / ds.dat.  Copy the whole MECH folder.  ansys.mapdl.reader.read_binary CAN read a lone rst.",
+    "dpf_absent": "ansys.dpf.core has ZERO uses in this repo and is not in the moa venv inventory.  It is probed, never required.",
+    "motorcad_fallback": "if neither the rst nor the wbpj reaches moa, use tools/motorCAD/pyMCAD/stress.py + mlxperPJT/KETI/RotorStress_e10.ipynb with the C67 .mot: mc.set_variable('ShaftSpeed', n); mc.do_mechanical_calculation(); get_stress_data(mc) gives MaxStress_RotorLam / MaxDisplacement_RotorLam / SafetyFactor_RotorLam directly (2D plane stress -- label _soltype accordingly).",
+    "gitignore_png": {
+      "checked": [
+        "D:\\KDH\\NvidiaNemo\\eMach\\mlxperPJT\\thermal\\thesis_out\\c67_stress_vonmises.png",
+        "D:\\KDH\\NvidiaNemo\\eMach\\mlxperPJT\\thermal\\thesis_out\\c67_stress_ur.png",
+        "D:\\KDH\\NvidiaNemo\\eMach\\mlxperPJT\\thermal\\thesis_out\\c67_stress_vs_speed.png",
+        "D:\\KDH\\NvidiaNemo\\eMach\\mlxperPJT\\thermal\\thesis_out\\c67_stress.json"
+      ],
+      "ignored": [
+        {
+          "path": "D:\\KDH\\NvidiaNemo\\eMach\\mlxperPJT\\thermal\\thesis_out\\c67_stress_vonmises.png",
+          "rule": ".gitignore:203:!mlxperPJT/thermal/thesis_out/*.png\t\"D:\\\\KDH\\\\NvidiaNemo\\\\eMach\\\\mlxperPJT\\\\thermal\\\\thesis_out\\\\c67_stress_vonmises.png\""
+        },
+        {
+          "path": "D:\\KDH\\NvidiaNemo\\eMach\\mlxperPJT\\thermal\\thesis_out\\c67_stress_ur.png",
+          "rule": ".gitignore:203:!mlxperPJT/thermal/thesis_out/*.png\t\"D:\\\\KDH\\\\NvidiaNemo\\\\eMach\\\\mlxperPJT\\\\thermal\\\\thesis_out\\\\c67_stress_ur.png\""
+        },
+        {
+          "path": "D:\\KDH\\NvidiaNemo\\eMach\\mlxperPJT\\thermal\\thesis_out\\c67_stress_vs_speed.png",
+          "rule": ".gitignore:203:!mlxperPJT/thermal/thesis_out/*.png\t\"D:\\\\KDH\\\\NvidiaNemo\\\\eMach\\\\mlxperPJT\\\\thermal\\\\thesis_out\\\\c67_stress_vs_speed.png\""
+        }
+      ],
+      "skipped": [],
+      "git_available": true,
+      "fix_patch": "!mlxperPJT/thermal/thesis_out/*.png",
+      "fix_note": "append the line above to the ROOT .gitignore (it lives outside plans/, so moa applies it), or commit with `git add -f <png>`; verify with `git ls-files`"
+    }
+  },
+  "_warnings": [],
+  "_sweep_method": "analytic_omega2_scaling_from_18000rpm"
+}
