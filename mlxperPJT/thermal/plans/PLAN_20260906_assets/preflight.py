@@ -603,8 +603,11 @@ def check_gitignore(rep, repo):
     ignored, clean, unknown = [], [], []
     for a in ARTEFACTS:
         rel = OUT_REL + "/" + a
-        rc, out, err = _git(repo, ["check-ignore", "-v", "--", rel])
+        # 판정은 -v 없이. -v 를 붙이면 negation(!) 매칭에도 exit 0 이 나와서
+        # 커밋 가능한 PNG 를 '무시됨' 으로 오독한다 (moa 2026-09-07 실측).
+        rc, _o, err = _git(repo, ["check-ignore", "--", rel])
         if rc == 0:
+            _rc2, out, _e2 = _git(repo, ["check-ignore", "-v", "--", rel])
             ignored.append((rel, out))
         elif rc == 1:
             clean.append(rel)

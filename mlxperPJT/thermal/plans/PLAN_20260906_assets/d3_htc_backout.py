@@ -64,7 +64,7 @@ fresh solve -> 그 결과로 HTC 역산을 다시 해서 `thesis_out/htc_backout
 ----
 --out (기본 <repo>/mlxperPJT/thermal/thesis_out/htc_backout_horizontal.json)
 기존 htc_backout.json 과 **같은 구조**를 유지하고(T_profile_0to3mm 의 선두 null 포함)
-거기에 _soltype / _loss_source / _htc / _gravity / _delta_vs_vertical_gravity 를 덧붙인다.
+거기에 _soltype / _loss_source / _htc / _gravity / _delta_vs_legacy_backout 를 덧붙인다.
 
 CLI
 ---
@@ -115,8 +115,20 @@ REGION_CIRCUIT_NODE = {"Stator": "JACKET", "Winding": "SPRAY"}
 REGION_HTC_KEY = {"Stator": "htc_jkt", "Winding": "htc_spray"}
 
 # HANDOFF_20260722.md §10-4 / CLAUDE.md 의 미수정 모델링 오류
-GRAVITY_OLD = (0.0, 0.0, -9.81)      # 축방향 = 수직취부 (틀림)
-GRAVITY_NEW = (0.0, -9.81, 0.0)      # 반경방향 = 수평취부 (맞음)
+# 2026-09-07 실측 정정 -- HANDOFF_20260722.md §10-4 가 틀렸다.
+# 그 문서는 "바이너리에서 -9.81 단일 축값 확인"만 하고 축을 -Z 로 단정했으나,
+# Project_thermal.freeflow 를 열어 API 로 읽으면 실제 값은 X 축이다:
+#     physics.GetGravityXDirection() -> -9.81
+#     physics.GetGravityYDirection() ->   0.0
+#     physics.GetGravityZDirection() ->   0.0
+# 그리고 Geometry/Stator.stl 의 경계상자가 198 x 198 x 150 mm (dz = 적층장 150 mm,
+# z[-0.207,-0.058] = MAPDL Z_ST0/Z_ST1) 이므로 회전축은 Z, X·Y 가 반경평면이다.
+# 따라서 -X 중력은 이미 축에 수직 = 수평취부 조건이 처음부터 맞게 들어가 있었다.
+# 고칠 중력 오류가 없고, 8 s 재솔브도 불필요하다.
+GRAVITY_MEASURED = (-9.81, 0.0, 0.0)  # 실측 (반경방향 -X) = 수평취부 (맞음)
+AXIS_OF_ROTATION = "Z"
+GRAVITY_OLD = (0.0, 0.0, -9.81)      # HANDOFF §10-4 가 주장한 값 (사실이 아님)
+GRAVITY_NEW = GRAVITY_MEASURED       # 실제로 프로젝트에 들어 있는 값
 GRAVITY_CITE = ("HANDOFF_20260722.md §10-4: e10 is horizontally mounted but the "
                 "FreeFlow gravity vector was set along the motor axis (-Z). D3 fixes it "
                 "to a radial direction (-Y) and re-solves from t=0.")
@@ -634,11 +646,13 @@ def wall_distances(parts, geom_dir, regions=REGIONS, log=print):
 def build_output(per_region, oil, t_reached_s, wall_src, legacy, args, extra_notes=None):
     """기존 htc_backout.json 구조 + D3 메타데이터."""
     out = {}
-    out["_note"] = ("FreeFlow %.4gs HORIZONTAL-gravity resolved-flow HTC back-out vs MAPDL "
-                    "circuit assumptions. Order-of-magnitude cross-check; SPH near-wall "
-                    "resolution + transient(%.4gs) caveats. Supersedes "
-                    "freeflow/data/htc_backout.json, which was solved with the wrong "
-                    "(axial) gravity vector." % (t_reached_s, t_reached_s))
+    out["_note"] = ("FreeFlow %.4gs resolved-flow HTC back-out vs MAPDL circuit "
+                    "assumptions, under VERIFIED horizontal (radial -X) gravity. "
+                    "Order-of-magnitude cross-check; SPH near-wall resolution + "
+                    "transient(%.4gs) caveats. Supersedes freeflow/data/htc_backout.json, "
+                    "which came from the 6.53 s frame; this one is the full run. Both were "
+                    "computed under the SAME, correct gravity -- see _gravity."
+                    % (t_reached_s, t_reached_s))
     out["_soltype"] = "transient+%gs" % (float(t_reached_s),)
     out["_loss_source"] = wall_src["loss_source"]
     out["_htc"] = {
@@ -655,12 +669,24 @@ def build_output(per_region, oil, t_reached_s, wall_src, legacy, args, extra_not
                  % NU_LAMINAR),
     }
     out["_gravity"] = {
-        "old_vector_m_s2": list(GRAVITY_OLD),
-        "new_vector_m_s2": list(GRAVITY_NEW),
-        "old_description": "axial (-Z), i.e. vertically mounted -- WRONG for e10",
-        "new_description": "radial (-Y), i.e. horizontally mounted -- correct",
-        "citation": GRAVITY_CITE,
-        "fixed_by": "d3_freeflow_gravity_fix.py -> Project_thermal_horizontal.freeflow",
+        "vector_m_s2": list(GRAVITY_MEASURED),
+        "axis_of_rotation": AXIS_OF_ROTATION,
+        "is_perpendicular_to_axis": True,
+        "description": ("radial (-X), i.e. horizontally mounted -- CORRECT, and it was "
+                        "already correct in the project as found. Nothing was changed."),
+        "changed": False,
+        "measured_how": ("read live from Project_thermal.freeflow via "
+                         "physics.GetGravity{X,Y,Z}Direction() -> (-9.81, 0, 0); "
+                         "axis identified from Geometry/Stator.stl bounds "
+                         "198 x 198 x 150 mm with the 150 mm span on Z"),
+        "handoff_correction": ("HANDOFF_20260722.md §10-4 reported this vector as axial "
+                               "(0,0,-9.81) and listed a gravity fix + 8 s re-solve as "
+                               "pending work. That report is WRONG: it located the -9.81 "
+                               "magnitude in the binary but assumed the axis. The D3 "
+                               "gravity fix and its ~5 h GPU re-solve are NOT needed. "
+                               "The Icepak model is a separate setup and is not covered "
+                               "by this check."),
+        "claimed_by_handoff_m_s2": list(GRAVITY_OLD),
     }
     out["oil_props"] = {"rho": oil["rho"], "cp": oil["cp"], "k": oil["k"], "mu": oil["mu"],
                         "Pr": round(prandtl(oil["mu"], oil["cp"], oil["k"]), 1)}
@@ -693,9 +719,11 @@ def build_output(per_region, oil, t_reached_s, wall_src, legacy, args, extra_not
         cmp_block["_interpretation"] = (
             "Chapter 5 cites this only as an order-of-magnitude comparison against the "
             "assumed 1000/2000 W/m2K, so a percent-level shift does not overturn the "
-            "conclusion. The point of D3 is to stop citing a result computed with the "
-            "wrong gravity direction.")
-        out["_delta_vs_vertical_gravity"] = cmp_block
+            "conclusion. NOTE: this is NOT a gravity comparison -- both files share the "
+            "same, correct radial gravity. The difference is the reached time "
+            "(6.53 s legacy vs this run) and that delta is recomputed per run from the "
+            "first populated near-wall bin instead of being held fixed.")
+        out["_delta_vs_legacy_backout"] = cmp_block
 
     out["_provenance"] = {
         "script": os.path.basename(__file__),
@@ -1037,8 +1065,8 @@ def main(argv=None):
             json.dump(doc, f, indent=2, ensure_ascii=False)
         log("=" * 100)
         log("wrote %s (%d bytes)" % (out_path, os.path.getsize(out_path)))
-        if "_delta_vs_vertical_gravity" in doc:
-            for reg, c in doc["_delta_vs_vertical_gravity"]["per_region"].items():
+        if "_delta_vs_legacy_backout" in doc:
+            for reg, c in doc["_delta_vs_legacy_backout"]["per_region"].items():
                 log("  %-8s h_grad %.1f -> %.1f W/m2K  (%+.2f %%)"
                     % (reg, c["h_grad_old"], c["h_grad_new"], c["h_grad_pct_change"]))
         log("DONE-OK")

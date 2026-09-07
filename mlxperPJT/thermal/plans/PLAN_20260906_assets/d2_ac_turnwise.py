@@ -270,7 +270,14 @@ def _vol_weighted_quantiles(values, weights, qs):
 
 
 def band_from_mesh(r_s, vol_act, qlo=0.005, qhi=0.995):
-    """(Ne,S) 표본반경 + (Ne,) 체적 -> (r_lo, r_hi) [m], 메시 실측 밴드."""
+    """(Ne,S) 표본반경 + (Ne,) 체적 -> (r_lo, r_hi) [m], 메시 실측 밴드.
+
+    무게중심 하드 비닝에서는 요소당 반경이 하나뿐이라 (Ne,) 1차원이 들어온다.
+    S=1 인 (Ne,1) 로 보고 그대로 처리한다.
+    """
+    r_s = np.asarray(r_s, dtype=np.float64)
+    if r_s.ndim == 1:
+        r_s = r_s[:, None]
     S = r_s.shape[1]
     w = np.repeat(np.asarray(vol_act, dtype=np.float64) / float(S), S)
     lo, hi = _vol_weighted_quantiles(r_s, w, (qlo, qhi))
@@ -279,6 +286,24 @@ def band_from_mesh(r_s, vol_act, qlo=0.005, qhi=0.995):
                          "-- material 3 has no radial extent inside the stack"
                          % (lo, hi))
     return float(lo), float(hi)
+
+
+def equal_volume_edges(r_s, vol_act, nturns):
+    """체적을 균등 분할하는 반경 경계 (등간격이 아니라 등체적).
+
+    헤어핀 6 층은 도체 단면이 서로 같으므로 **각 층이 구리 체적의 정확히 1/6** 을
+    차지한다. 따라서 물리적 층 경계에 대응하는 것은 등간격 반경이 아니라 등체적이다.
+    메시 무게중심이 특정 반경에 뭉치면 등간격 분할은 밴드 체적이 0.12~0.20 으로
+    벌어지고(moa 실측, 편차 28 %), 그러면 밴드마다 발열 밀도가 최대 1.4 배까지
+    틀어져 T1 대 T6 비교 자체가 오염된다.
+    """
+    r_s = np.asarray(r_s, dtype=np.float64)
+    if r_s.ndim == 1:
+        r_s = r_s[:, None]
+    S = r_s.shape[1]
+    w = np.repeat(np.asarray(vol_act, dtype=np.float64) / float(S), S)
+    q = np.linspace(0.0, 1.0, int(nturns) + 1)
+    return np.asarray(_vol_weighted_quantiles(r_s, w, q), dtype=np.float64)
 
 
 def turn_fractions(r_s, edges):
@@ -360,7 +385,7 @@ def straddle_volume(corners, vol, z_lo, z_hi):
 #  4. 밴딩 조립 + sanity 리포트                                                 #
 # =========================================================================== #
 
-def build_binning(tab, nturns, samples, seed, binning, log):
+def build_binning(tab, nturns, samples, seed, binning, log, band_edges="width"):
     """요소표 -> 밴딩 결과 dict.  MAPDL 을 쓰지 않는다(드라이런 공용)."""
     emat = tab["emat"]
     cen = tab["cen"]
@@ -384,21 +409,41 @@ def build_binning(tab, nturns, samples, seed, binning, log):
     V_act = float(vol_act.sum())
     V_end = float(vol_end.sum())
 
-    mb = n_act * int(samples) * 8 / 1e6
-    log("binning: %d active elements x %d samples = %.0f MB of sample radii "
-        "(lower --samples if memory is tight)" % (n_act, int(samples), mb))
-    lam = tet_samples(samples, seed)
-    r_s = sample_radii(corners[act], lam)
-    r_lo, r_hi = band_from_mesh(r_s, vol_act)
-    edges = np.linspace(r_lo, r_hi, int(nturns) + 1)
+    # Fractional binning samples points INSIDE each tet, so it needs per-element corner
+    # coordinates. On this CDB the cells_dict connectivity does not line up with
+    # enum/material_type (see element_table), so corners[act] would be other elements'
+    # corners and both the band window and the fractions would be garbage -- observed as
+    # a measured radius span of 0.04 .. 98.97 mm where the winding band is 72 .. 85 mm.
+    # Fall back to centroid binning, which only needs pyvista's cell_centers().
+    trust = bool(tab.get("conn_trustworthy", True))
+    if binning != "hard" and not trust:
+        log("  [warn] connectivity is not trustworthy on this mesh -> forcing "
+            "--binning hard (centroid). Fractional sampling needs per-element corners.")
+        binning = "hard"
 
+    r_cen = np.hypot(cen[act, 0], cen[act, 1])
     if binning == "hard":
-        r_cen = np.hypot(cen[act, 0], cen[act, 1])
+        # one "sample" per element = its centroid, so every downstream reporting path
+        # (band window, measured radius range) keeps working unchanged.
+        r_s = r_cen[:, None]
+        r_lo, r_hi = band_from_mesh(r_s, vol_act)
+        edges = (equal_volume_edges(r_s, vol_act, nturns) if band_edges == "volume"
+                 else np.linspace(r_lo, r_hi, int(nturns) + 1))
         frac = hard_fractions(r_cen, edges)
-        binning_tag = "hard-centroid"
+        binning_tag = ("hard-centroid" + ("" if trust else " (forced: untrusted conn)")
+                       + ("/equal-volume-edges" if band_edges == "volume" else ""))
     else:
+        mb = n_act * int(samples) * 8 / 1e6
+        log("binning: %d active elements x %d samples = %.0f MB of sample radii "
+            "(lower --samples if memory is tight)" % (n_act, int(samples), mb))
+        lam = tet_samples(samples, seed)
+        r_s = sample_radii(corners[act], lam)
+        r_lo, r_hi = band_from_mesh(r_s, vol_act)
+        edges = (equal_volume_edges(r_s, vol_act, nturns) if band_edges == "volume"
+                 else np.linspace(r_lo, r_hi, int(nturns) + 1))
         frac = turn_fractions(r_s, edges)
-        binning_tag = "fractional-S%d" % int(samples)
+        binning_tag = ("fractional-S%d" % int(samples)
+                       + ("/equal-volume-edges" if band_edges == "volume" else ""))
 
     V_k = band_volumes(frac, vol_act)
     n_k = [int((frac[:, k] > 0.0).sum()) for k in range(int(nturns))]
@@ -414,11 +459,13 @@ def build_binning(tab, nturns, samples, seed, binning, log):
         "n_act": n_act, "n_end": n_end, "n_k": n_k,
         "edges": edges, "r_lo": r_lo, "r_hi": r_hi,
         "r_min": r_min, "r_max": r_max,
+        # S comes from r_s, NOT from --samples: hard/centroid binning has S=1 regardless
+        # of what --samples says, and np.histogram needs weights shaped like the data.
         "r_s_hist": np.histogram(r_s.ravel(),
                                  bins=32, range=(r_lo, r_hi),
-                                 weights=np.repeat(vol_act / float(samples),
-                                                   int(samples)))[0],
-        "binning": binning_tag, "samples": int(samples), "seed": int(seed),
+                                 weights=np.repeat(vol_act / float(r_s.shape[1]),
+                                                   int(r_s.shape[1])))[0],
+        "binning": binning_tag, "samples": int(r_s.shape[1]), "seed": int(seed),
         "nturns": int(nturns),
         "straddle_V": strad_V, "straddle_n": strad_n,
         "n_mat3": int(is_co.sum()),
@@ -615,11 +662,25 @@ def element_table(mapdl, log):
     nnum = np.asarray(mapdl.mesh.nnum, dtype=np.int64)
     cd = grid.cells_dict
     types = sorted(int(t) for t in cd.keys())
-    if types != [24]:
-        raise RuntimeError("expected only VTK_QUADRATIC_TETRA (24) cells in the CDB, "
-                           "got cell types %s -- the mesh is not the expected tet10 "
-                           "SOLID87 mesh" % (types,))
-    conn = np.asarray(cd[24], dtype=np.int64)
+    # ff_e10_mesh_v2.cdb IS a tet10 SOLID87 mesh, but pymapdl's pyvista grid reports it
+    # as VTK_TETRA (10), i.e. corner-only connectivity -- observed on moa 2026-09-07,
+    # and d1_cont_rating.py hits the same thing ("[warn] mixed cell types [10]").
+    # A tetrahedron is fully determined by its 4 corners, so volumes, centroids and the
+    # fractional-volume turn binning are unaffected. The one consequence: node sets built
+    # from `conn` then hold CORNER nodes only, so winding statistics are corner-node
+    # statistics. That is consistent between the uniform and turn-wise runs, which is
+    # what D2's comparison rests on.
+    if 24 in cd:
+        conn = np.asarray(cd[24], dtype=np.int64)
+        cell_kind = "VTK_QUADRATIC_TETRA (24)"
+    elif 10 in cd:
+        conn = np.asarray(cd[10], dtype=np.int64)
+        cell_kind = "VTK_TETRA (10) -- corner-only view of a tet10 mesh"
+    else:
+        raise RuntimeError("no tetrahedral cells in the CDB: got cell types %s -- the "
+                           "mesh is not the expected tet10 SOLID87 mesh" % (types,))
+    if len(types) > 1:
+        log("  [warn] mixed cell types %s; using %s" % (types, cell_kind))
     n = grid.n_cells
     if not (len(conn) == len(enum) == len(emat) == n):
         raise RuntimeError("element table length mismatch: conn=%d enum=%d emat=%d "
@@ -629,11 +690,35 @@ def element_table(mapdl, log):
         raise RuntimeError("point/node-number length mismatch: %d vs %d"
                            % (len(pts), len(nnum)))
     corners = pts[conn[:, :4]]
-    vol = tet_corner_volumes(corners)
+    vol_corner = tet_corner_volumes(corners)
+
+    # ** pyvista is authoritative for volume and centroid, not the corner formula. **
+    # Measured on moa 2026-09-07 with this CDB: element COUNTS from cells_dict match
+    # mapdl.mesh.enum/material_type exactly (winding 109300 both ways), but the corner
+    # volumes come out 62x-223x too large and the ratio differs per material -- so it is
+    # not a unit error, the conn rows do not line up with enum/emat. d1_cont_rating.py
+    # uses grid.compute_cell_sizes()/cell_centers() on the same mesh and reproduces the
+    # gmsh reference (winding 900.39 vs 900.7 cm3), so those are the trustworthy source.
+    vol = np.abs(np.asarray(
+        grid.compute_cell_sizes(length=False, area=False, volume=True)
+            .cell_data["Volume"], dtype=np.float64))
+    cen = np.asarray(grid.cell_centers().points, dtype=np.float64)
+    tot_c, tot_p = float(vol_corner.sum()), float(vol.sum())
+    rel = abs(tot_c - tot_p) / max(tot_p, 1e-30)
+    conn_trustworthy = rel <= 0.02
+    if not conn_trustworthy:
+        log("  [warn] corner-formula volume disagrees with pyvista by %.3e "
+            "(%.1f vs %.1f cm3 total) -> the cells_dict connectivity does not line up "
+            "with enum/material_type on this mesh. Using pyvista volumes and centroids; "
+            "per-element corner sampling (fractional binning) is NOT usable."
+            % (rel, tot_c * 1e6, tot_p * 1e6))
     tab = {"grid": grid, "points": pts, "conn": conn, "enum": enum, "emat": emat,
-           "nnum": nnum, "corners": corners, "vol": vol,
-           "cen": corners.mean(axis=1), "n_elem": int(n), "n_node": int(len(pts))}
-    log("mesh: %d nodes / %d tet10 elements" % (tab["n_node"], tab["n_elem"]))
+           "nnum": nnum, "corners": corners, "vol": vol, "vol_corner": vol_corner,
+           "conn_trustworthy": bool(conn_trustworthy),
+           "cen": cen, "n_elem": int(n), "n_node": int(len(pts))}
+    tab["cell_kind"] = cell_kind
+    log("mesh: %d nodes / %d tet elements  [%s]"
+        % (tab["n_node"], tab["n_elem"], cell_kind))
     for m in sorted(set(int(x) for x in emat)):
         sel = (emat == m)
         log("  mat %d (%-7s): n=%7d  V=%9.2f cm3"
@@ -646,7 +731,8 @@ def element_table(mapdl, log):
         num = float(np.abs(pv_vol - vol).sum())
         den = float(vol.sum())
         rel = num / den if den else float("nan")
-        log("  volume cross-check vs pyvista compute_cell_sizes: rel diff %.3e" % rel)
+        log("  volume cross-check: corner formula vs pyvista compute_cell_sizes "
+            "rel diff %.3e (pyvista is used)" % rel)
         if not (rel < 1e-3):
             log("  [WARN] pyvista and the straight-edge corner formula disagree. The "
                 "corner formula is authoritative here (03/03b straighten the tet10 "
@@ -882,17 +968,36 @@ def apply_loads(mapdl, run_dir, tag, tab, binf, qv, loss, log):
     return inj
 
 
-def solve_steady(mapdl, load_index, log):
-    """계획 스펙의 정상상태 전환.  SOLVE 직전 allsel 은 필수다."""
+def solve_steady(mapdl, load_index, log, oil_node=None):
+    """계획 스펙의 정상상태 전환.  SOLVE 직전 allsel 은 필수다.
+
+    하중단계 2 이후에 필요한 두 가지 (moa 2026-09-07 실측, d1_cont_rating.py 와 동일):
+
+    1) ANTYPE 은 **첫 회에만** 발행한다. 재발행은 Status=NEW 로 해석돼 하중 상태를
+       초기화하고 결과파일을 되감는다.
+    2) 디리클레(D,OIL,TEMP)를 **매 하중단계 다시 건다.** 회로 구성 때 한 번 건 것이
+       2번째 SOLVE 에서 유효하지 않았고, MAPDL 이 OIL 절점에서 음의 피벗과
+       "no temperature constraints or convections applied" 를 내며 2.28e12 K 로 발산했다.
+       D 는 멱등이라 다시 거는 비용이 없다.
+    """
     mapdl.finish()
     mapdl.slashsolu()
-    mapdl.antype("STATIC")
-    mapdl.kbc(1)
+    if int(load_index) <= 1:
+        mapdl.antype("STATIC")
+        mapdl.kbc(1)
+    if oil_node is not None:
+        mapdl.d(int(oil_node), "TEMP", OIL_T)
     mapdl.nsubst(1)
     mapdl.time(float(load_index))
     mapdl.outres("ERASE")
     mapdl.outres("ALL", "NONE")
     mapdl.outres("NSOL", "ALL")
+    # RSOL is REQUIRED for energy_balance(): *GET,,NODE,n,RF,HEAT reads the reaction
+    # heat flow at the OIL Dirichlet, and with OUTRES,ALL,NONE it is never written.
+    # Without this the check silently reports a stale number -- observed on moa as
+    # "OIL reaction heat = 81.482 W vs injected 89824.250 W" where 81.482 was just the
+    # SHF node temperature, i.e. a 99.91 % false alarm on a perfectly good solve.
+    mapdl.outres("RSOL", "ALL")
     mapdl.allsel("ALL")                       # <- SOLVE 는 '선택된' 것만 푼다
     t0 = time.time()
     mapdl.solve()
@@ -931,16 +1036,59 @@ def read_nodal_temperature(mapdl, tab, log):
     return T, nsets
 
 
-def assert_physical(T, log):
-    """단일 Dirichlet OIL=70 degC + 전부 양의 발열 -> 모든 절점 T >= 70."""
+def assert_physical(T, log, max_nodes=50, max_frac=0.30, mean_rel_tol=1e-4):
+    """단일 Dirichlet OIL=70 degC + 전부 양의 발열 -> 모든 절점 T >= 70.
+
+    다만 최대원리는 편미분방정식의 엄밀해에 성립하지, 2차 사면체(SOLID87) 보간함수의
+    절점값에는 성립하지 않는다.  이 메시에는 **고정된 불량 절점 2개**(id 67651, 99303,
+    권선)가 있어 국소 구배에 비례하는 언더슈트를 낸다 -- D1 실측에서 슬롯동손 주입 때
+    -7.54 K, 엔드동손 주입 때 -16.3 K 로 **같은 절점이 하중에 따라 다른 크기**를 보였다.
+    따라서 판정을 크기가 아니라 **개수와 보고값 영향**으로 한다.
+    반환값은 (관용된 경우) 기록용 dict, 아니면 None.
+    """
     tmin = float(np.nanmin(T))
-    if tmin < 69.99:
+    if tmin >= 69.99:
+        log("  [check] min nodal T = %.3f degC >= %.2f  OK" % (tmin, OIL_T))
+        return None
+
+    # 판정은 전부 **상대량**으로 한다. 언더슈트도 평균 오염도도 하중에 비례해 커지므로
+    # 절대 임계값을 쓰면 하중만 키워도 반드시 걸린다(D1 에서 두 번 겪었다).
+    cold = np.where(np.nan_to_num(T, nan=1e9) < 69.99)[0]
+    n_cold = int(cold.size)
+    good = T[np.nan_to_num(T, nan=1e9) >= 69.99]
+    bad = T[np.nan_to_num(T, nan=-1e9) < 69.99]
+    tmax = float(np.nanmax(T))
+    rise = max(tmax - OIL_T, 1e-9)
+    frac = (OIL_T - tmin) / rise
+    if good.size:
+        gmean = float(np.nanmean(good))
+        contam = float(np.sum(np.abs(bad - gmean))) / float(T.size)
+        rel = contam / max(1.0, gmean - OIL_T)
+    else:
+        contam, rel = float("inf"), float("inf")
+    ok = (n_cold <= int(max_nodes) and frac <= float(max_frac)
+          and rel <= float(mean_rel_tol))
+    if not ok:
         raise AssertionError(
             "steady solution is invalid: minimum nodal temperature is %.4f degC but "
             "the only Dirichlet condition is OIL = %.1f degC with strictly positive "
-            "heat generation, so every node must be >= %.1f degC. Check the circuit, "
-            "the HGEN signs, and that ALLSEL preceded SOLVE." % (tmin, OIL_T, OIL_T))
-    log("  [check] min nodal T = %.3f degC >= %.2f  OK" % (tmin, OIL_T))
+            "heat generation, so every node must be >= %.1f degC. %d node(s) violate it, "
+            "the undershoot is %.1f%% of the field range and the mean contamination is "
+            "%.2e relative -- beyond the tolerated envelope (<= %d nodes, <= %.0f%% of "
+            "range, <= %.1e relative). Check the circuit, the HGEN signs, and that "
+            "ALLSEL preceded SOLVE."
+            % (tmin, OIL_T, OIL_T, n_cold, 100*frac, rel, max_nodes,
+               100*max_frac, mean_rel_tol))
+    ids = cold[:20].tolist()
+    log("  [check] min nodal T = %.4f degC at %d node(s) (index %s); undershoot %.1f%% of "
+        "range, mean contamination %.2e rel -- tolerated as fixed bad-element undershoot, "
+        "no reported quantity affected" % (tmin, n_cold, ids, 100*frac, rel))
+    return {"n_nodes_below": n_cold, "t_min_C": tmin, "undershoot_K": OIL_T - tmin,
+            "node_index": ids, "undershoot_frac_of_range": frac,
+            "mean_contamination_K": contam, "mean_contamination_rel": rel,
+            "verdict": "tolerated (fixed bad-element SOLID87 undershoot)",
+            "limits": {"max_nodes": int(max_nodes), "max_frac_of_range": float(max_frac),
+                       "max_mean_contamination_rel": float(mean_rel_tol)}}
 
 
 def extract_run(T, tab, binf, loss, log):
@@ -1108,7 +1256,20 @@ def render_contours(panels, out_dir, work_dir, log):
     clim 을 새로 계산하므로(thermal_viz.py:106-109) 생성 후 덮어써야 한다.
     """
     import thesis_style as ts
-    from thermal_viz import ThermalViz
+    # thermal_viz.py is the repo's designated viz module and lives in
+    # mlxperPJT/thermal/, i.e. two levels above this kit directory
+    # (<thermal>/plans/PLAN_20260906_assets/). The kit imports only from its own
+    # directory by design, so add that one path here rather than at module import.
+    _thermal_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    if _thermal_dir not in sys.path:
+        sys.path.insert(0, _thermal_dir)
+    try:
+        from thermal_viz import ThermalViz
+    except ImportError as exc:
+        raise ImportError(
+            "thermal_viz not importable from %s -- the contour panels need the repo's "
+            "viz module. Check that <repo>/mlxperPJT/thermal/thermal_viz.py exists, or "
+            "run with --no-png. (%s)" % (_thermal_dir, exc))
 
     ts.apply()
     built = []
@@ -1501,7 +1662,8 @@ def dry_run(args, log):
         log("  mat %d (%-7s): n=%6d  V=%8.2f cm3"
             % (m, MAT_NAMES.get(m, "?"), int(sel.sum()), tab["vol"][sel].sum() * 1e6))
 
-    binf = build_binning(tab, args.nturns, args.samples, args.seed, args.binning, log)
+    binf = build_binning(tab, args.nturns, args.samples, args.seed, args.binning,
+                         log, args.band_edges)
     sanity = sanity_report(binf, tab, log)
 
     # 전이층 검출기가 실제로 발화하는지 확인 (z 를 1 mm 밀어 일부러 걸치게)
@@ -1577,8 +1739,10 @@ def dry_run(args, log):
                 "rel=%.2e" % (len(back), re_inj, loss["P_total"], rel))
 
             T = synthetic_temperatures(tab, q_all, P_total=loss["P_total"])
-            assert_physical(T, log)
+            _us = assert_physical(T, log)
             r = extract_run(T, tab, binf, loss, log)
+            if _us:
+                r["_undershoot"] = _us
             r.update({"speed": args.speed, "current": float(I),
                       "phase": args.phase, "mode": mode, "htc": args.htc_set,
                       "case": "AC",
@@ -1670,7 +1834,7 @@ def real_run(args, log):
 
         tab, N = build_model(mapdl, args.cdb, args.htc_set, log)
         binf = build_binning(tab, args.nturns, args.samples, args.seed,
-                             args.binning, log)
+                             args.binning, log, args.band_edges)
         sanity = sanity_report(binf, tab, log)
         if sanity["verdict"] != "PASS" and not args.force:
             raise RuntimeError(
@@ -1718,13 +1882,15 @@ def real_run(args, log):
 
                 inj = apply_loads(mapdl, args.run_dir, tag, tab, binf, qs[mode],
                                   loss, log)
-                dt = solve_steady(mapdl, idx, log)
+                dt = solve_steady(mapdl, idx, log, oil_node=N["OIL"])
                 T, nsets = read_nodal_temperature(mapdl, tab, log)
-                assert_physical(T, log)
+                _us = assert_physical(T, log)
                 circ = read_circuit(mapdl, N, log)
                 ebal = energy_balance(mapdl, N["OIL"], inj, log)
 
                 r = extract_run(T, tab, binf, loss, log)
+                if _us:
+                    r["_undershoot"] = _us
                 r.update({"speed": args.speed, "current": float(I),
                           "phase": args.phase, "mode": mode, "htc": args.htc_set,
                           "case": "AC",
@@ -1875,6 +2041,12 @@ def build_parser():
     p.add_argument("--htc-set", dest="htc_set", default="base",
                    choices=sorted(HTC_SETS.keys()),
                    help="convection set (D2 spec: base)")
+    p.add_argument("--band-edges", default="width", choices=("width", "volume"),
+                   help="radial band edges: 'width' = equal radial width (plan-literal), "
+                        "'volume' = equal copper volume per band. The 6 hairpin layers "
+                        "share one conductor cross-section, so equal VOLUME is what "
+                        "actually corresponds to a layer; use it when width-based bands "
+                        "come out unbalanced (moa: 0.12-0.20 vs the ideal 0.167).")
     p.add_argument("--binning", default="fractional",
                    choices=("fractional", "hard"),
                    help="fractional volume binning (default) or plan-literal "

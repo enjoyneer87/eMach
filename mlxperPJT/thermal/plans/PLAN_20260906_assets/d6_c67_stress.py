@@ -1418,7 +1418,13 @@ def check_gitignore(paths, repo, log):
             continue
         out["checked"].append(p)
         try:
-            r = subprocess.run(["git", "-C", repo, "check-ignore", "-v", p],
+            # ** verdict WITHOUT -v **. With -v, git check-ignore exits 0 whenever ANY
+            # pattern matched -- including a NEGATION (!...). Once .gitignore carries
+            # `!mlxperPJT/thermal/thesis_out/*.png`, the -v form reports a perfectly
+            # committable PNG as ignored. Measured on moa 2026-09-07: -q -> exit 1
+            # (committable), -v -> exit 0 (ignored), same file. -v is used afterwards
+            # only to fetch the rule text.
+            r = subprocess.run(["git", "-C", repo, "check-ignore", p],
                                stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             out["git_available"] = True
             # git check-ignore exit codes: 0 = ignored, 1 = NOT ignored,
@@ -1426,7 +1432,9 @@ def check_gitignore(paths, repo, log):
             # outside the repo, or this is not a git work tree.  Reporting 128 as
             # "not ignored" would be a false all-clear, so it is a SKIP, not a pass.
             if r.returncode == 0:
-                rule = r.stdout.decode("utf-8", "replace").strip()
+                _v = subprocess.run(["git", "-C", repo, "check-ignore", "-v", p],
+                                    stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                rule = _v.stdout.decode("utf-8", "replace").strip()
                 out["ignored"].append({"path": p, "rule": rule})
                 log("  GITIGNORE WARN: %s is ignored by %s" % (os.path.basename(p),
                                                                rule))

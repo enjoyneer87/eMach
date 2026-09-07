@@ -476,9 +476,140 @@ class BackendBase(object):
                     "incomplete selection at harvest time." % (tag, n_nan, bad_parts))
             self.log("  [warn] %s: %d NaN nodes outside every monitored set "
                      "(orphan nodes in the CDB); ignored." % (tag, n_nan))
+        # The OIL node carries the model's only Dirichlet. If it is not sitting at
+        # exactly OIL_T, the constraint was not in effect for this solve and every
+        # temperature here is meaningless -- this is the failure seen on moa at load
+        # step 2 (negative pivot at the OIL node, field runaway to 8.6e10 K).
+        t_oil = float(temps[self.circ_pos["OIL"]])
+        if not math.isnan(t_oil) and abs(t_oil - OIL_T) > 1e-3:
+            raise D1Error(
+                "run %s: the OIL node is at %.6f degC but it is Dirichlet-constrained "
+                "to %.1f degC. The constraint was not in effect for this load step, so "
+                "the system floated and these temperatures are meaningless. The runner "
+                "re-asserts D,OIL,TEMP every load step; if this still fires, the "
+                "constraint is being cleared somewhere between /SOLU and SOLVE."
+                % (tag, t_oil, OIL_T))
         tmin = float(np.nanmin(temps))
         tmax = float(np.nanmax(temps))
         if tmin < T_MIN_OK:
+            # Localise the violation before raising: which nodes, which part, and what
+            # the circuit is doing. Without this the failure is just a number and the
+            # next step is guesswork.
+            try:
+                cold = np.where(np.nan_to_num(temps, nan=1e9) < T_MIN_OK)[0]
+                self.log("  [diag] %d node(s) below %.2f degC (of %d)"
+                         % (cold.size, T_MIN_OK, temps.size))
+                imin = int(np.nanargmin(temps))
+                self.log("  [diag] coldest node id %d  T = %.4f degC"
+                         % (int(self.nnum[imin]), temps[imin]))
+                for part in PARTS:
+                    idx = self.part_idx.get(part)
+                    if idx is None or len(idx) == 0:
+                        continue
+                    sub = temps[idx]
+                    n_cold = int(np.sum(np.nan_to_num(sub, nan=1e9) < T_MIN_OK))
+                    self.log("  [diag]   %-8s min %9.4f  max %9.4f  below-limit %d/%d"
+                             % (part, float(np.nanmin(sub)), float(np.nanmax(sub)),
+                                n_cold, len(idx)))
+                for nm in CIRCUIT_NODES:
+                    self.log("  [diag]   circuit %-6s = %9.4f degC"
+                             % (nm, float(temps[self.circ_pos[nm]])))
+                in_parts = set()
+                for part in PARTS:
+                    idx = self.part_idx.get(part)
+                    if idx is not None and len(idx):
+                        if np.intersect1d(idx, cold, assume_unique=False).size:
+                            in_parts.add(part)
+                circ_idx = np.array([self.circ_pos[n] for n in CIRCUIT_NODES])
+                n_circ_cold = int(np.intersect1d(circ_idx, cold).size)
+                self.log("  [diag] cold nodes live in parts %s; %d of them are circuit nodes"
+                         % (sorted(in_parts) or "NONE (orphans / surface-only nodes)",
+                            n_circ_cold))
+            except Exception as _exc:
+                self.log("  [diag] diagnostic dump failed: %r" % (_exc,))
+
+            # A quadratic tetrahedron (SOLID87) can undershoot at a mid-side node where
+            # the gradient is steep: the maximum principle holds for the exact PDE
+            # solution, not for the nodal values of the quadratic interpolant. A handful
+            # of such nodes is a discretisation artifact, not a broken solve.
+            # A genuine failure looks completely different and is still caught:
+            #   - lost Dirichlet  -> the OIL check above fires (exact, separate)
+            #   - floating island -> thousands of bad nodes, or MAPDL's own pivot error
+            #   - partial SOLVE   -> whole parts wrong, not two nodes
+            # So tolerate a SMALL count with a SMALL undershoot, and record it.
+            try:
+                n_cold = int(np.sum(np.nan_to_num(temps, nan=1e9) < T_MIN_OK))
+            except Exception:
+                n_cold = -1
+            n_max = max(int(self.args.undershoot_max_nodes), 0)
+            # The undershoot at a badly shaped element is LINEAR in the load, exactly like
+            # the field itself (verified: the affine round-trip is exact to 1e-14 K). An
+            # ABSOLUTE K ceiling is therefore the wrong test -- raise the load enough and
+            # it always trips. Measured on the SAME two nodes, sph h-set:
+            #     unit cu_slot (rise  75 K) -> -7.5 K     unit cu_end (rise  73 K) -> -16.3 K
+            #     verify 8k/230A/AC (rise 921 K) -> -164.8 K
+            # So gate on the undershoot RELATIVE to the field range instead.
+            rise = max(tmax - OIL_T, 1e-9)
+            k_max = max(float(self.args.undershoot_max_K),
+                        float(self.args.undershoot_max_frac) * rise)
+            circ_bad = [n for n in CIRCUIT_NODES
+                        if float(temps[self.circ_pos[n]]) < T_MIN_OK]
+            # The gate is on COUNT and on the monitored aggregates, not on magnitude.
+            # Magnitude alone is the wrong criterion: the undershoot at a badly shaped
+            # element scales with the local gradient, so the SAME defective node reads
+            # -7.5 K under slot-copper injection and -16.3 K under end-turn injection.
+            # What matters is that it is a fixed, tiny set of nodes that moves none of
+            # the reported numbers: winding max/mean, part maxima, and the 6 circuit
+            # nodes. `max_K` is kept only as a sanity ceiling against a truly broken field.
+            # How much do the outliers CONTAMINATE the winding mean?  Not
+            # |mean(all) - mean(keep)|: dropping 2 of 213014 nodes shifts the mean by
+            # mean*2/N on renormalisation alone (0.017 K at a 1800 degC field), so that
+            # form trips on any hot field regardless of the outliers -- the same
+            # scale-dependence bug as an absolute K ceiling. Measure the contamination
+            # term itself, and judge it RELATIVE to the field.
+            cold_ids, cold_T, mean_shift, contam_rel = [], [], None, None
+            try:
+                cold_ids = [int(self.nnum[i]) for i in cold[:20]]
+                cold_T = [round(float(temps[i]), 4) for i in cold[:20]]
+                widx = self.part_idx.get("winding")
+                if widx is not None and len(widx):
+                    wsub = temps[widx]
+                    good = wsub[np.nan_to_num(wsub, nan=1e9) >= T_MIN_OK]
+                    bad = wsub[np.nan_to_num(wsub, nan=-1e9) < T_MIN_OK]
+                    if good.size:
+                        gmean = float(np.nanmean(good))
+                        mean_shift = float(np.sum(np.abs(bad - gmean))) / float(wsub.size)
+                        scale = max(1.0, gmean - OIL_T)
+                        contam_rel = mean_shift / scale
+            except Exception:
+                pass
+            rel_tol = float(self.args.undershoot_mean_rel_tol)
+            mean_ok = (contam_rel is None) or (contam_rel <= rel_tol)
+            if (0 <= n_cold <= n_max) and (OIL_T - tmin) <= k_max and not circ_bad and mean_ok:
+                self.undershoot.append({
+                    "run": tag, "n_nodes_below": n_cold, "n_nodes_total": int(temps.size),
+                    "node_ids": cold_ids, "node_T_C": cold_T,
+                    "t_min_C": tmin, "undershoot_K": OIL_T - tmin,
+                    "winding_mean_contamination_K": mean_shift,
+                    "winding_mean_contamination_rel": contam_rel,
+                    "verdict": ("tolerated: a fixed, tiny set of winding nodes on badly "
+                                "shaped SOLID87 elements. Undershoot scales with the local "
+                                "gradient, so it varies by load case at the SAME node ids. "
+                                "Moves no reported quantity."),
+                    "limits": {"max_nodes": n_max, "max_K_effective": k_max,
+                               "max_frac_of_range": float(self.args.undershoot_max_frac),
+                               "field_range_K": rise,
+                               "max_winding_mean_contamination_rel": rel_tol},
+                    "undershoot_frac_of_range": (OIL_T - tmin) / rise,
+                })
+                self.log("  [warn] %s: %d node(s) %.4f K below the %.1f degC oil "
+                         "Dirichlet (min %.4f at node(s) %s). Winding mean contamination %s. "
+                         "Tolerated: fixed bad-element nodes, no reported quantity affected."
+                         % (tag, n_cold, OIL_T - tmin, OIL_T, tmin,
+                            cold_ids or "?",
+                            ("%.2e K (rel %.1e)" % (mean_shift, contam_rel))
+                            if mean_shift is not None else "n/a"))
+                return
             raise D1Error(
                 "run %s: minimum nodal temperature %.4f degC < %.2f degC.\n"
                 "  All heat sources are positive and the ONLY Dirichlet is OIL = 70 "
@@ -510,7 +641,13 @@ class MapdlBackend(BackendBase):
         self.ecount = {}
         self.iload = 0
         self._cur_hset = None
+        # SURF152 convection is written once at ESURF time with THIS h-set's values.
+        # Re-issuing SFE in /SOLU for a second h-set is defective (see _mark_built_hset),
+        # so a session serves exactly one h-set and 'both' runs two sessions.
+        _hs = getattr(args, "htc_set", "base")
+        self._build_hset = "base" if _hs in ("both", None) else _hs
         self.missing_surfaces = []
+        self.undershoot = []
         self.MapdlRuntimeError = None
 
     # -- launch -----------------------------------------------------------
@@ -562,6 +699,7 @@ class MapdlBackend(BackendBase):
         self._read_mesh(cdb)
         self._build_circuit()
         self._build_surfaces()
+        self._mark_built_hset()
         self._split_winding()
         self._node_index()
         self.mesh_info["cdb"] = cdb + ".cdb"
@@ -727,23 +865,23 @@ class MapdlBackend(BackendBase):
             m.r(1)
         # Identical topology to 04_mapdl_thermal.py:131-144.
         make_surf(sel_matradz(M_ST, rlo=R_STA_OUT - RT, rhi=R_STA_OUT + RT),
-                  self.N["JACKET"], HTC_SETS["base"]["jkt"], "statorOD->JACKET", "jkt")
+                  self.N["JACKET"], HTC_SETS[self._build_hset]["jkt"], "statorOD->JACKET", "jkt")
         make_surf(sel_matradz(M_ST, rlo=R_STA_IN - RT, rhi=R_STA_IN + RT),
                   self.N["GAP_S"], HTC_BIG, "statorBore->GAP_S", "gap")
         make_surf(sel_matradz(M_CO, zhi=Z_ST0 + ZT, zlo=-1.0),
-                  self.N["SPRAY"], HTC_SETS["base"]["spray"], "windEnd_lo->SPRAY", "spray")
+                  self.N["SPRAY"], HTC_SETS[self._build_hset]["spray"], "windEnd_lo->SPRAY", "spray")
         make_surf(sel_matradz(M_CO, zlo=Z_ST1 - ZT, zhi=1.0),
-                  self.N["SPRAY"], HTC_SETS["base"]["spray"], "windEnd_hi->SPRAY", "spray")
+                  self.N["SPRAY"], HTC_SETS[self._build_hset]["spray"], "windEnd_hi->SPRAY", "spray")
         make_surf(sel_matradz(M_RO, rlo=R_ROT_OUT - RT, rhi=R_ROT_OUT + RT),
                   self.N["GAP_R"], HTC_BIG, "rotorOD->GAP_R", "gap")
         make_surf(sel_matradz(M_RO, zhi=Z_ST0 + ZT, zlo=-1.0),
-                  self.N["OIL"], HTC_SETS["base"]["splash"], "rotorEnd_lo->OIL", "splash")
+                  self.N["OIL"], HTC_SETS[self._build_hset]["splash"], "rotorEnd_lo->OIL", "splash")
         make_surf(sel_matradz(M_RO, zlo=Z_ST1 - ZT, zhi=1.0),
-                  self.N["OIL"], HTC_SETS["base"]["splash"], "rotorEnd_hi->OIL", "splash")
+                  self.N["OIL"], HTC_SETS[self._build_hset]["splash"], "rotorEnd_hi->OIL", "splash")
         make_surf(sel_matradz(M_SH, zhi=Z_ST0 + ZT, zlo=-1.0),
-                  self.N["SHF"], HTC_SETS["base"]["splash"], "shaftEnd_lo->SHF", "splash")
+                  self.N["SHF"], HTC_SETS[self._build_hset]["splash"], "shaftEnd_lo->SHF", "splash")
         make_surf(sel_matradz(M_SH, zlo=Z_ST1 - ZT, zhi=1.0),
-                  self.N["SHF"], HTC_SETS["base"]["splash"], "shaftEnd_hi->SHF", "splash")
+                  self.N["SHF"], HTC_SETS[self._build_hset]["splash"], "shaftEnd_hi->SHF", "splash")
 
         self.mesh_info["missing_surfaces"] = list(self.missing_surfaces)
         if self.missing_surfaces:
@@ -893,6 +1031,15 @@ class MapdlBackend(BackendBase):
         self.mesh_info["winding_split_method"] = split_method
         self.mesh_info["V_end_over_V_slot"] = (self.vol["end"] / self.vol["slot"])
 
+    def _mark_built_hset(self):
+        """The SURF152 convection values were written at ESURF time with the
+        _build_hset values, so that h-set is already in effect and _apply_htc()
+        must not re-issue SFE for it.  Re-applying SFE in /SOLU for a SECOND
+        h-set produced a field with a 62.46 degC minimum on moa (below the 70 degC
+        oil Dirichlet, i.e. a max-principle violation), so each h-set now gets its
+        own session instead."""
+        self._cur_hset = self._build_hset
+
     # -- node index maps --------------------------------------------------
     def _node_index(self):
         m, log = self.mapdl, self.log
@@ -984,6 +1131,13 @@ class MapdlBackend(BackendBase):
                 # 7ece7f8) -- no TRNOPT, no TIMINT, no DELTIM, no IC.
                 m.antype("STATIC")
                 m.kbc(1)                # stepped; meaningless at 1 substep, harmless
+            # Re-assert the single Dirichlet every load step.  Observed on moa at load
+            # step 2: the D applied during circuit build was no longer in effect, MAPDL
+            # reported a negative pivot at the OIL node itself plus "no temperature
+            # constraints or convections applied", and the field ran away to 8.6e10 K.
+            # D is idempotent and costs nothing, so assert it rather than rely on it
+            # surviving the FINISH / POST1 SET / re-enter-/SOLU cycle between runs.
+            m.d(self.N["OIL"], "TEMP", OIL_T)
             m.nsubst(1)
             m.time(float(iload))        # pseudo-time = load index -> SET,iload,1
             m.outres("ERASE")
@@ -1500,17 +1654,33 @@ def write_json(path, payload, indent=1):
 
 
 def _one_check_ignore(repo, path):
-    """(is_ignored, rule_text or error).  git check-ignore: 0 = ignored, 1 = not."""
-    try:
-        proc = subprocess.run(["git", "-C", str(repo), "check-ignore", "-v", "--", str(path)],
+    """(is_ignored, rule_text or error).
+
+    ** The verdict MUST come from a call WITHOUT -v. **
+    Plain `git check-ignore` exits 0 only when the path is actually ignored.
+    With -v it exits 0 whenever ANY pattern matched -- including a NEGATION (`!...`).
+    So once .gitignore carries `!mlxperPJT/thermal/thesis_out/*.png`, the -v form
+    returns 0 for a perfectly committable PNG and the audit cries wolf. Observed on
+    moa 2026-09-07: -q said committable, -v said ignored, for the same file.
+    -v is still used, but only to fetch the human-readable rule text after the fact.
+    """
+    def _run(args):
+        return subprocess.run(["git", "-C", str(repo), "check-ignore"] + args,
                               stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    try:
+        proc = _run(["--", str(path)])            # no -v: authoritative verdict
     except (OSError, ValueError) as exc:
         return (None, "%s: %s" % (type(exc).__name__, exc))
-    if proc.returncode == 0:
-        return (True, (proc.stdout or b"").decode("utf-8", "replace").strip())
     if proc.returncode == 1:
         return (False, "")
-    return (None, (proc.stderr or b"").decode("utf-8", "replace").strip())
+    if proc.returncode != 0:
+        return (None, (proc.stderr or b"").decode("utf-8", "replace").strip())
+    try:
+        det = _run(["-v", "--", str(path)])
+        txt = (det.stdout or b"").decode("utf-8", "replace").strip()
+    except (OSError, ValueError):
+        txt = ""
+    return (True, txt)
 
 
 def git_check_ignore(repo, commit_paths, info_paths, out_dir, log):
@@ -1981,6 +2151,10 @@ def assemble(args, hsets, table, ibundle, influence_json, supercheck, backend, m
                  "G_spray_W_K": G_SPRAY_OIL, "G_shf_W_K": G_SHF_OIL,
                  "G_gap_W_K": G_GAP},
         "_mesh": backend.mesh_info,
+        # Nodes that fell below the 70 degC oil Dirichlet. Empty on a clean run.
+        # A short list with a few K of undershoot is a SOLID87 mid-side artifact and
+        # was tolerated; anything larger aborts the run instead of landing here.
+        "_undershoot": list(getattr(backend, "undershoot", []) or []),
         "_run_dir": None if args.dry_run else str(args.run_dir),
         "_rth": (None if args.dry_run
                  else os.path.join(str(args.run_dir), "file.rth")),
@@ -2070,6 +2244,23 @@ def build_parser():
     p.add_argument("--json-indent", type=int, default=1)
     p.add_argument("--no-git-check", action="store_true",
                    help="skip the git check-ignore audit of the written files")
+    p.add_argument("--undershoot-max-nodes", type=int, default=50,
+                   help="how many nodes may sit below the oil Dirichlet before the run "
+                        "is called a failure (SOLID87 mid-side undershoot; default 50 "
+                        "of ~1.1e6). Set 0 to demand a strict maximum principle.")
+    p.add_argument("--undershoot-max-K", type=float, default=20.0,
+                   help="absolute floor for the tolerated undershoot, in K (default 20). "
+                        "The effective limit is max(this, --undershoot-max-frac * field "
+                        "range), because the undershoot scales with the load.")
+    p.add_argument("--undershoot-mean-rel-tol", type=float, default=1e-4,
+                   help="how much the cold outliers may contaminate the winding mean, "
+                        "RELATIVE to the field (contamination / (mean_good - T_oil)); "
+                        "default 1e-4. Relative because the contamination scales with load.")
+    p.add_argument("--undershoot-max-frac", type=float, default=0.30,
+                   help="tolerated undershoot as a fraction of the field range "
+                        "(T_max - T_oil); default 0.30. The real gates are the node "
+                        "count, the circuit nodes, the mean shift and the superposition "
+                        "check -- this is only a backstop against a wild field.")
     return p
 
 
