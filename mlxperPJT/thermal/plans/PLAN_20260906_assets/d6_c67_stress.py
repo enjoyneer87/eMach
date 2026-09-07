@@ -737,10 +737,20 @@ def read_rst_mapdl_reader(rst, log):
 
     dnum, U = res.nodal_solution(0)
     U = _np.asarray(U, dtype=float)
-    if U.ndim != 2 or U.shape[1] < 3:
-        raise RuntimeError("nodal_solution returned shape %r; expected (n, >=3) "
-                           "ux/uy/uz -- is this a structural result file?"
+    if U.ndim != 2 or U.shape[1] < 2:
+        raise RuntimeError("nodal_solution returned shape %r; expected (n, >=2) "
+                           "ux/uy[/uz] -- is this a structural result file?"
                            % (U.shape,))
+    # 2 DOF/node = 2D plane model (Motor-CAD mechanical is 2D).  The rotation axis is Z,
+    # so u_r = ux*cos(th) + uy*sin(th) is unchanged; there simply is no uz.  Pad it with
+    # zeros so everything downstream keeps working on an (n, 3) array.
+    if U.shape[1] == 2:
+        model_dim = "2D"
+        log("  mapdl.reader: 2 DOF/node -> 2D plane model; uz padded with zeros "
+            "(u_r = ux*cos(th) + uy*sin(th) is unaffected)")
+        U = _np.column_stack([U[:, 0], U[:, 1], _np.zeros(len(U), dtype=float)])
+    else:
+        model_dim = "3D"
     u_raw = _align_to(mesh_nnum, _np.asarray(dnum), U[:, :3], 3,
                       log=log, label="displacement")
 
@@ -752,6 +762,7 @@ def read_rst_mapdl_reader(rst, log):
 
     return {"nnum": mesh_nnum, "xyz_raw": coords, "svm_raw": svm_raw,
             "u_raw": u_raw, "grid": grid, "n_sets": n_sets,
+            "model_dim": model_dim,
             "reader": "ansys.mapdl.reader.read_binary",
             "averaging": "nodal (principal_nodal_stress column 4 = SEQV)"}
 
@@ -1667,6 +1678,10 @@ def main(argv=None):
         source["reader"] = raw.get("reader")
         source["n_sets"] = raw.get("n_sets")
         source["averaging"] = raw.get("averaging")
+        # 2D vs 3D matters for the reader: a Motor-CAD mechanical result is a 2D plane
+        # model (2 DOF/node), so uz is absent and padded with zeros.  Record it so the
+        # thesis side knows the displacement field is planar.
+        source["model_dim"] = raw.get("model_dim", "unknown")
 
         # ---- (c) 단위 판별 + 파생 --------------------------------------------
         log.rule("units / derived fields")
@@ -1710,10 +1725,17 @@ def main(argv=None):
         log.rule("speed sweep")
         method = args.sweep_method
         if method is None:
-            method = "resolve" if (mech_dir and not args.dry_run) else "scale"
-            log("  --sweep-method not given -> defaulting to '%s' (%s)"
-                % (method, "MECH folder present" if method == "resolve"
-                   else "only a result file is available"))
+            # Default to 'scale' whenever a reference result was actually read.
+            # omega^2 scaling is EXACT for a linear elastic body under a pure centrifugal
+            # load, and it cannot double-apply the rotational velocity.  A Workbench
+            # ds.dat usually already carries its own rotational velocity, so re-solving
+            # with an added OMEGA superposes the two and inflates stress by (2w)^2/w^2 = 4x.
+            # Observed on C67 SYS-5: rst 499 MPa vs re-solve 1996 MPa at the same 18 krpm.
+            method = "scale"
+            log("  --sweep-method not given -> defaulting to 'scale' "
+                "(omega^2 from the reference solve; exact for linear elastic + bonded, "
+                "and immune to the ds.dat double-OMEGA trap). "
+                "Pass --sweep-method resolve to force a real re-solve.")
         resolved = None
         if method == "resolve":
             if args.dry_run:
@@ -1748,6 +1770,35 @@ def main(argv=None):
                          "omega^2 scaling" % (type(exc).__name__, str(exc)[:220]))
                     warnings_all.append(w)
                     log("  WARN: " + w)
+
+                # Cross-check the re-solve against the reference result at the SAME rpm.
+                # They must agree.  A ratio near 4 means the deck already carried its own
+                # rotational velocity and our OMEGA superposed on it ((2w)^2/w^2 = 4).
+                if resolved:
+                    ref_rpm = float(args.rpm)
+                    match = None
+                    for k in resolved:
+                        if abs(k - ref_rpm) < 1e-6:
+                            match = resolved[k]
+                            break
+                    if match is not None:
+                        try:
+                            a = float(rated["von_mises_max_MPa"])
+                            b = float(match["von_mises_max_MPa"])
+                            ratio = (b / a) if a else float("nan")
+                            log("  re-solve cross-check @%.0f rpm: reference %.4f MPa vs "
+                                "re-solve %.4f MPa (ratio %.3f)" % (ref_rpm, a, b, ratio))
+                            if not (0.95 <= ratio <= 1.05):
+                                w = ("re-solve DISAGREES with the reference result at the same "
+                                     "%.0f rpm: %.4f vs %.4f MPa (ratio %.3f). A ratio near 4.0 "
+                                     "means ds.dat already defines a rotational velocity and the "
+                                     "re-solve added another on top. Use --sweep-method scale, or "
+                                     "zero the existing OMEGA in the deck."
+                                     % (ref_rpm, a, b, ratio))
+                                warnings_all.append(w)
+                                log("  WARN: " + w)
+                        except Exception:
+                            pass
         if method == "scale":
             log("  omega^2 scaling from the %.0f rpm solve.  This is EXACT for a "
                 "linear elastic body under a pure centrifugal load with bonded "
