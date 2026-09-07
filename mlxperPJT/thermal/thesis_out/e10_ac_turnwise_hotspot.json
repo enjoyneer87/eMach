@@ -1,0 +1,916 @@
+{
+  "_model": "JAC279 hybrid steady (3D FEM + oil circuit), per-element HGEN from radial banding of material 3",
+  "_loss_source": "JEET_ACLoss_Ref_Map_Summary.json phase36 FullFEA -- fea_per_turn_raw (DC+AC per turn, active length only) for the slot region, ts_dc_end_kW for the end region, speed-scaled iron/magnet",
+  "_soltype": "steady",
+  "_htc": {
+    "jkt": 1000.0,
+    "spray": 2000.0,
+    "splash": 250.0
+  },
+  "_htc_set": "base",
+  "_htc_measured": {
+    "jkt": 192.8,
+    "spray": 186.3,
+    "source": "freeflow/data/htc_backout.json (SPH near-wall gradient)",
+    "note": "plan line 17 says 193/186, plan D1 spec lines 35/40 say 190/190; this run uses the D1 spec value and records the measurement here"
+  },
+  "_loss_model_caveat": "Iron and magnet losses use the plan's speed-only rule fe_s=1856*(n/15000)^1.5, fe_r=74*(n/15000)^1.5, pm=3385*0.17*(n/15000)^2 -- current independent. At 16 krpm / 460 A the plan section 2 R1 values are fe_s 2619 W (rule is 22 % low), fe_r 89 W, pm 1382 W (rule is 53 % low). At these copper loss levels fe+pm is under 4 % of the total so the D2 comparison is insensitive to it, but the absolute temperatures inherit the bias.",
+  "_physical_warning": "Absolute temperatures at these operating points are NON-PHYSICAL. At 16 krpm / 460 A the total copper loss is 87.0 kW versus 3.35 kW in the validated hybrid run (winding 152.2 degC), a factor of 26. The model is exactly linear (constant k, constant h, single Dirichlet OIL node at 70 degC), so the uniform-vs-turnwise DIFFERENCE scales exactly with the injected total and the comparison remains valid. Cite the normalized K/kW sensitivities and the temperature-rise ratio, not the absolute degC.",
+  "_operating": {
+    "speed_rpm": 16000,
+    "phase_deg": 36.0,
+    "currents_Arms": [
+      230.05,
+      460.0
+    ],
+    "modes": [
+      "uniform",
+      "turnwise"
+    ],
+    "n_turns": 6,
+    "case": "AC (fea_per_turn_raw already contains DC+AC)"
+  },
+  "_binning": "hard-centroid (forced: untrusted conn)/equal-volume-edges",
+  "_binning_note": "turn index is recovered by radial banding of material-3 elements inside the stack z-band; there is no turn identity in the mesh (03_stl_to_cdb.py writes only NBLOCK/EBLOCK). Bands are 6 equal-width annular shells between the volume-weighted 0.5 / 99.5 percentile radii MEASURED from the mesh. T1 = smallest radius = airgap side, T6 = yoke side.",
+  "_band_mm": {
+    "r_lo": 73.14115464131659,
+    "r_hi": 84.45538991773304,
+    "r_min_sample": 72.58352965990264,
+    "r_max_sample": 85.09374488369959,
+    "edges": [
+      72.58352965990264,
+      74.4953834117617,
+      77.32361065207962,
+      78.8242685826375,
+      80.34192592250879,
+      83.17389308127954,
+      85.09374488369959
+    ],
+    "bin_width": 1.8857058794027441,
+    "expected_mm": [
+      72.3,
+      85.1
+    ]
+  },
+  "_V_cm3": {
+    "mat3_total": 900.3865366610303,
+    "active": 418.3867771320708,
+    "end": 481.99975952895943,
+    "end_over_active": 1.152043481949737,
+    "per_bin": [
+      69.73093572303058,
+      69.72718729708093,
+      69.64507114850004,
+      69.8131882184855,
+      69.731471056985,
+      69.73892368798896
+    ],
+    "per_bin_frac": [
+      0.1666662034613461,
+      0.16665724422516912,
+      0.16646097571701077,
+      0.16686279785665356,
+      0.16666748298064185,
+      0.16668529575917906
+    ]
+  },
+  "_mesh": {
+    "n_elem_total": 737265,
+    "n_node_total": 1113924,
+    "n_elem_mat3": 109300,
+    "n_elem_active": 43200,
+    "n_elem_end": 66100,
+    "n_elem_per_bin": [
+      11876,
+      6330,
+      3938,
+      4017,
+      6176,
+      10863
+    ],
+    "straddle_n_elem": 0,
+    "straddle_V_cm3": 0.0,
+    "straddle_frac_of_active": 0.0,
+    "samples_per_tet": 1,
+    "sample_seed": 20260907,
+    "cdb": "D:\\KDH\\simVary\\Ansys_Thermal\\ff_e10_mesh_v2.cdb"
+  },
+  "_sanity": {
+    "verdict": "PASS",
+    "checks": [
+      {
+        "check": "band_volume_balance",
+        "ok": true,
+        "detail": "max deviation from 1/6 is 0.1 % (limit 25 %); ratios ['0.1667', '0.1667', '0.1665', '0.1669', '0.1667', '0.1667']"
+      },
+      {
+        "check": "no_empty_band",
+        "ok": true,
+        "detail": "empty bands: none"
+      },
+      {
+        "check": "transition_layer",
+        "ok": true,
+        "detail": "straddling volume is 0.0 % of V_active (limit 20 %)"
+      },
+      {
+        "check": "band_within_window",
+        "ok": true,
+        "detail": "measured band 73.141 .. 84.455 mm vs allowed window 71.5 .. 88.0 mm"
+      },
+      {
+        "check": "band_population_soft",
+        "ok": true,
+        "detail": "smallest band holds 3938 elements (soft floor 100)"
+      }
+    ],
+    "band_volume_ratios": [
+      0.1666662034613461,
+      0.16665724422516912,
+      0.16646097571701077,
+      0.16686279785665356,
+      0.16666748298064185,
+      0.16668529575917906
+    ],
+    "straddle_frac_of_active": 0.0
+  },
+  "_geometry_m": {
+    "R_STA_OUT": 0.099,
+    "R_STA_IN": 0.0713,
+    "R_ROT_OUT": 0.07027,
+    "R_SHAFT": 0.023455,
+    "Z_ST0": -0.2075,
+    "Z_ST1": -0.0575,
+    "STACK": 0.15,
+    "ZC": -0.1325
+  },
+  "runs": [
+    {
+      "per_part_T_C": {
+        "stator": {
+          "max": 626.9781091327565,
+          "min": 384.64104617546553,
+          "mean_nodal": 474.66891081666427,
+          "mean_volwt": 461.54193602596297
+        },
+        "magnet": {
+          "max": 862.75885991644,
+          "min": 150.91435713251607,
+          "mean_nodal": 370.44473895961585,
+          "mean_volwt": 336.88015281100724
+        },
+        "winding": {
+          "max": 637.8220086913532,
+          "min": 383.699739911841,
+          "mean_nodal": 529.2906506186998,
+          "mean_volwt": 522.2982836050684
+        },
+        "shaft": {
+          "max": 951.8555068538867,
+          "min": 152.38233081044623,
+          "mean_nodal": 339.82480274825224,
+          "mean_volwt": 313.1743680635364
+        },
+        "rotor": {
+          "max": 960.2295564192614,
+          "min": 88.5924809942367,
+          "mean_nodal": 367.90142738579794,
+          "mean_volwt": 393.27306532378265
+        }
+      },
+      "turn_T_C": {
+        "mean": [
+          545.5806660965222,
+          529.6093185297751,
+          510.97932572418534,
+          517.1949773724239,
+          531.8007306143919,
+          542.971261425017
+        ],
+        "max": [
+          637.8220086913532,
+          626.9781091327565,
+          622.5088284709225,
+          637.8220086913532,
+          637.8220086913532,
+          632.1535457906809
+        ],
+        "labels": [
+          "T1",
+          "T2",
+          "T3",
+          "T4",
+          "T5",
+          "T6"
+        ],
+        "note": "T1 = airgap side (smallest radius), T6 = yoke side. 'mean' is the fractional-volume-weighted element mean and is the quantity to quote; 'max' is the hottest node of ANY element that overlaps the band, so adjacent bands can share a hotspot element and report nearly equal maxima."
+      },
+      "T_C": {
+        "winding_max": 637.8220086913532,
+        "winding_mean_nodal": 529.2906506186998,
+        "winding_mean_volwt": 522.2982836050684,
+        "winding_active_max": 637.8220086913532,
+        "winding_active_mean_volwt": 529.6910204535316,
+        "stator_max": 626.9781091327565,
+        "magnet_max": 862.75885991644,
+        "rotor_max": 960.2295564192614,
+        "shaft_max": 951.8555068538867,
+        "global_min": 88.5924809942367
+      },
+      "airgap_side_vs_yoke_side_K": 2.6094046715052173,
+      "airgap_side_vs_yoke_side_max_K": 5.668462900672239,
+      "K_per_kW": {
+        "winding_max_per_kW_total": 21.483782709090413,
+        "winding_max_per_kW_active": 29.834374688252016,
+        "turn_mean_per_kW_active": [
+          24.987851068880524,
+          24.148688161685712,
+          23.169835321722044,
+          23.49641667532716,
+          24.26382883645367,
+          24.850748322788696
+        ],
+        "magnet_max_per_kW_total": 29.994362364366733
+      },
+      "speed": 16000,
+      "current": 230.05,
+      "phase": 36.0,
+      "mode": "uniform",
+      "htc": "base",
+      "case": "AC",
+      "P_W": {
+        "cu_active_total": 19032.47561327124,
+        "cu_active_dc": 7856.4235631704105,
+        "cu_active_ac": 11176.0520501008,
+        "cu_end": 4616.870510537221,
+        "fe_s": 2044.6597946484526,
+        "fe_r": 81.52199612283701,
+        "pm": 654.7342222222222,
+        "total": 26430.262136801968
+      },
+      "P_turn_W": [
+        8118.33101748195,
+        3645.1625071155,
+        2436.8729037426,
+        1849.9430800102,
+        1548.14179897316,
+        1434.02430594783
+      ],
+      "injected_W": {
+        "active": 19032.47561327124,
+        "end": 4616.870510537222,
+        "grand_total": 26430.262136801968
+      },
+      "circuit_T": {
+        "OIL": 70.0,
+        "JACKET": 207.498,
+        "SPRAY": 147.401,
+        "GAP_S": 590.525,
+        "GAP_R": 336.033,
+        "SHF": 74.35
+      },
+      "energy_balance": {
+        "oil_reaction_W": -26430.262401775675,
+        "injected_W": 26430.262136801968,
+        "rel_err": 1.002539080839127e-08
+      },
+      "nsets": 1,
+      "solve_s": 55.1,
+      "rth": "C:\\Users\\moa\\AppData\\Local\\Temp\\d2_ac_turnwise_run\\d2_uniform_230A.rth"
+    },
+    {
+      "per_part_T_C": {
+        "stator": {
+          "max": 644.0881010509289,
+          "min": 384.35504687705816,
+          "mean_nodal": 474.9787200280491,
+          "mean_volwt": 460.72806385347513
+        },
+        "magnet": {
+          "max": 869.8654927721278,
+          "min": 151.05271966092016,
+          "mean_nodal": 377.8839747400101,
+          "mean_volwt": 342.5371579106226
+        },
+        "winding": {
+          "max": 657.9019890464702,
+          "min": 384.0664554748229,
+          "mean_nodal": 542.4082734156792,
+          "mean_volwt": 535.1450145011995
+        },
+        "shaft": {
+          "max": 902.9636815282698,
+          "min": 152.55628260177303,
+          "mean_nodal": 344.1471997306985,
+          "mean_volwt": 315.6344526456888
+        },
+        "rotor": {
+          "max": 931.7291898138619,
+          "min": 88.37243804445973,
+          "mean_nodal": 376.0657063795776,
+          "mean_volwt": 400.4760007057043
+        }
+      },
+      "turn_T_C": {
+        "mean": [
+          564.4184866354444,
+          545.2796776288973,
+          523.167054427406,
+          530.9320788885764,
+          547.8086691313114,
+          561.0637779217028
+        ],
+        "max": [
+          653.1353993928684,
+          647.9546082567064,
+          647.547945237113,
+          655.8368313134763,
+          653.1353993928684,
+          657.9019890464702
+        ],
+        "labels": [
+          "T1",
+          "T2",
+          "T3",
+          "T4",
+          "T5",
+          "T6"
+        ],
+        "note": "T1 = airgap side (smallest radius), T6 = yoke side. 'mean' is the fractional-volume-weighted element mean and is the quantity to quote; 'max' is the hottest node of ANY element that overlaps the band, so adjacent bands can share a hotspot element and report nearly equal maxima."
+      },
+      "T_C": {
+        "winding_max": 657.9019890464702,
+        "winding_mean_nodal": 542.4082734156792,
+        "winding_mean_volwt": 535.1450145011995,
+        "winding_active_max": 657.9019890464702,
+        "winding_active_mean_volwt": 545.4469790364586,
+        "stator_max": 644.0881010509289,
+        "magnet_max": 869.8654927721278,
+        "rotor_max": 931.7291898138619,
+        "shaft_max": 902.9636815282698,
+        "global_min": 88.37243804445973
+      },
+      "airgap_side_vs_yoke_side_K": 3.3547087137416156,
+      "airgap_side_vs_yoke_side_max_K": -4.766589653601841,
+      "K_per_kW": {
+        "winding_max_per_kW_total": 22.24351714725769,
+        "winding_max_per_kW_active": 30.88941244388247,
+        "turn_mean_per_kW_active": [
+          25.97762354628681,
+          24.9720366013493,
+          23.810200188115054,
+          24.218188335266856,
+          25.104914297020724,
+          25.80136120491266
+        ],
+        "magnet_max_per_kW_total": 30.26324478478709
+      },
+      "speed": 16000,
+      "current": 230.05,
+      "phase": 36.0,
+      "mode": "turnwise",
+      "htc": "base",
+      "case": "AC",
+      "P_W": {
+        "cu_active_total": 19032.47561327124,
+        "cu_active_dc": 7856.4235631704105,
+        "cu_active_ac": 11176.0520501008,
+        "cu_end": 4616.870510537221,
+        "fe_s": 2044.6597946484526,
+        "fe_r": 81.52199612283701,
+        "pm": 654.7342222222222,
+        "total": 26430.262136801968
+      },
+      "P_turn_W": [
+        8118.33101748195,
+        3645.1625071155,
+        2436.8729037426,
+        1849.9430800102,
+        1548.14179897316,
+        1434.02430594783
+      ],
+      "injected_W": {
+        "active": 19032.475613271232,
+        "end": 4616.870510537222,
+        "grand_total": 26430.26213680196
+      },
+      "circuit_T": {
+        "OIL": 70.0,
+        "JACKET": 207.013,
+        "SPRAY": 147.528,
+        "GAP_S": 618.727,
+        "GAP_R": 345.848,
+        "SHF": 74.506
+      },
+      "energy_balance": {
+        "oil_reaction_W": -26430.26228763855,
+        "injected_W": 26430.26213680196,
+        "rel_err": 5.706965321585342e-09
+      },
+      "nsets": 1,
+      "solve_s": 55.5,
+      "rth": "C:\\Users\\moa\\AppData\\Local\\Temp\\d2_ac_turnwise_run\\d2_turnwise_230A.rth"
+    },
+    {
+      "per_part_T_C": {
+        "stator": {
+          "max": 1953.5939629575748,
+          "min": 1112.6486531859703,
+          "mean_nodal": 1419.6310231550026,
+          "mean_volwt": 1374.437573085804
+        },
+        "magnet": {
+          "max": 2804.295605400324,
+          "min": 376.66485602448597,
+          "mean_nodal": 1106.4275970875708,
+          "mean_volwt": 997.6149636227387
+        },
+        "winding": {
+          "max": 1990.6514676887043,
+          "min": 1109.488546678905,
+          "mean_nodal": 1608.4390130420384,
+          "mean_volwt": 1584.638250275716
+        },
+        "shaft": {
+          "max": 3126.244957349863,
+          "min": 382.0292535757815,
+          "mean_nodal": 1017.7375251775532,
+          "mean_volwt": 927.2969257202302
+        },
+        "rotor": {
+          "max": 3155.1716847638986,
+          "min": 139.5382572667064,
+          "mean_nodal": 971.0077216986916,
+          "mean_volwt": 1078.3531366991142
+        }
+      },
+      "turn_T_C": {
+        "mean": [
+          1665.04675874586,
+          1610.1829342822382,
+          1546.1060207369537,
+          1567.5585590338526,
+          1617.6907754426247,
+          1655.9633704699252
+        ],
+        "max": [
+          1990.6514676887043,
+          1953.5939629575748,
+          1935.6724544399517,
+          1990.6514676887043,
+          1990.6514676887043,
+          1969.1215159156227
+        ],
+        "labels": [
+          "T1",
+          "T2",
+          "T3",
+          "T4",
+          "T5",
+          "T6"
+        ],
+        "note": "T1 = airgap side (smallest radius), T6 = yoke side. 'mean' is the fractional-volume-weighted element mean and is the quantity to quote; 'max' is the hottest node of ANY element that overlaps the band, so adjacent bands can share a hotspot element and report nearly equal maxima."
+      },
+      "T_C": {
+        "winding_max": 1990.6514676887043,
+        "winding_mean_nodal": 1608.4390130420384,
+        "winding_mean_volwt": 1584.638250275716,
+        "winding_active_max": 1990.6514676887043,
+        "winding_active_mean_volwt": 1610.4303900871887,
+        "stator_max": 1953.5939629575748,
+        "magnet_max": 2804.295605400324,
+        "rotor_max": 3155.1716847638986,
+        "shaft_max": 3126.244957349863,
+        "global_min": 139.5382572667064
+      },
+      "airgap_side_vs_yoke_side_K": 9.083388275934794,
+      "airgap_side_vs_yoke_side_max_K": 21.52995177308162,
+      "K_per_kW": {
+        "winding_max_per_kW_total": 21.382326851615552,
+        "winding_max_per_kW_active": 28.00441607522181,
+        "turn_mean_per_kW_active": [
+          23.25687603545609,
+          22.45692383506748,
+          21.522638475164275,
+          21.835431201196418,
+          22.56639330999265,
+          23.124434002671155
+        ],
+        "magnet_max_per_kW_total": 30.44050590499002
+      },
+      "speed": 16000,
+      "current": 460.0,
+      "phase": 36.0,
+      "mode": "uniform",
+      "htc": "base",
+      "case": "AC",
+      "P_W": {
+        "cu_active_total": 68583.8784329479,
+        "cu_active_dc": 31412.035361502007,
+        "cu_active_ac": 37171.8430714458,
+        "cu_end": 18459.4553196349,
+        "fe_s": 2044.6597946484526,
+        "fe_r": 81.52199612283701,
+        "pm": 654.7342222222222,
+        "total": 89824.24976557631
+      },
+      "P_turn_W": [
+        22168.6409191256,
+        12658.9913861999,
+        9844.56884268454,
+        8426.75213680952,
+        7776.73265260619,
+        7708.19249552215
+      ],
+      "injected_W": {
+        "active": 68583.8784329479,
+        "end": 18459.4553196349,
+        "grand_total": 89824.24976557631
+      },
+      "circuit_T": {
+        "OIL": 70.0,
+        "JACKET": 526.5,
+        "SPRAY": 363.091,
+        "GAP_S": 1818.206,
+        "GAP_R": 763.326,
+        "SHF": 81.14
+      },
+      "energy_balance": {
+        "oil_reaction_W": -89824.25072247474,
+        "injected_W": 89824.24976557631,
+        "rel_err": 1.0653007697694655e-08
+      },
+      "nsets": 1,
+      "solve_s": 55.2,
+      "rth": "C:\\Users\\moa\\AppData\\Local\\Temp\\d2_ac_turnwise_run\\d2_uniform_460A.rth"
+    },
+    {
+      "per_part_T_C": {
+        "stator": {
+          "max": 1985.951715695197,
+          "min": 1113.1718648387764,
+          "mean_nodal": 1420.2892113074352,
+          "mean_volwt": 1372.6221188508662
+        },
+        "magnet": {
+          "max": 2805.7680068506247,
+          "min": 376.9801545935631,
+          "mean_nodal": 1122.7521083395782,
+          "mean_volwt": 1010.0177732787415
+        },
+        "winding": {
+          "max": 2025.5913727536054,
+          "min": 1110.2744780883002,
+          "mean_nodal": 1637.2031952528175,
+          "mean_volwt": 1612.797288572115
+        },
+        "shaft": {
+          "max": 2973.8326364657796,
+          "min": 382.423758920731,
+          "mean_nodal": 1027.1927745282749,
+          "mean_volwt": 932.6651577147369
+        },
+        "rotor": {
+          "max": 3067.678582754604,
+          "min": 139.0452331499295,
+          "mean_nodal": 988.9190583781084,
+          "mean_volwt": 1094.1435989661925
+        }
+      },
+      "turn_T_C": {
+        "mean": [
+          1706.3553682819008,
+          1644.5401662783386,
+          1572.8260263847637,
+          1597.6779565136078,
+          1652.7921693594258,
+          1695.6377486422878
+        ],
+        "max": [
+          2024.2197378723358,
+          1989.2461495977263,
+          1981.8192534134814,
+          2024.2197378723358,
+          2024.2197378723358,
+          2025.5913727536054
+        ],
+        "labels": [
+          "T1",
+          "T2",
+          "T3",
+          "T4",
+          "T5",
+          "T6"
+        ],
+        "note": "T1 = airgap side (smallest radius), T6 = yoke side. 'mean' is the fractional-volume-weighted element mean and is the quantity to quote; 'max' is the hottest node of ANY element that overlaps the band, so adjacent bands can share a hotspot element and report nearly equal maxima."
+      },
+      "T_C": {
+        "winding_max": 2025.5913727536054,
+        "winding_mean_nodal": 1637.2031952528175,
+        "winding_mean_volwt": 1612.797288572115,
+        "winding_active_max": 2025.5913727536054,
+        "winding_active_mean_volwt": 1644.9780623899765,
+        "stator_max": 1985.951715695197,
+        "magnet_max": 2805.7680068506247,
+        "rotor_max": 3067.678582754604,
+        "shaft_max": 2973.8326364657796,
+        "global_min": 139.0452331499295
+      },
+      "airgap_side_vs_yoke_side_K": 10.717619639613076,
+      "airgap_side_vs_yoke_side_max_K": -1.3716348812695287,
+      "K_per_kW": {
+        "winding_max_per_kW_total": 21.771307613003344,
+        "winding_max_per_kW_active": 28.513863861833357,
+        "turn_mean_per_kW_active": [
+          23.859183902550935,
+          22.957875848589,
+          21.912234488955377,
+          22.27459268007373,
+          23.078195714855458,
+          23.702913655307754
+        ],
+        "magnet_max_per_kW_total": 30.45689793113155
+      },
+      "speed": 16000,
+      "current": 460.0,
+      "phase": 36.0,
+      "mode": "turnwise",
+      "htc": "base",
+      "case": "AC",
+      "P_W": {
+        "cu_active_total": 68583.8784329479,
+        "cu_active_dc": 31412.035361502007,
+        "cu_active_ac": 37171.8430714458,
+        "cu_end": 18459.4553196349,
+        "fe_s": 2044.6597946484526,
+        "fe_r": 81.52199612283701,
+        "pm": 654.7342222222222,
+        "total": 89824.24976557631
+      },
+      "P_turn_W": [
+        22168.6409191256,
+        12658.9913861999,
+        9844.56884268454,
+        8426.75213680952,
+        7776.73265260619,
+        7708.19249552215
+      ],
+      "injected_W": {
+        "active": 68583.87843294788,
+        "end": 18459.4553196349,
+        "grand_total": 89824.2497655763
+      },
+      "circuit_T": {
+        "OIL": 70.0,
+        "JACKET": 525.428,
+        "SPRAY": 363.379,
+        "GAP_S": 1880.071,
+        "GAP_R": 784.858,
+        "SHF": 81.482
+      },
+      "energy_balance": {
+        "oil_reaction_W": -89824.25046628815,
+        "injected_W": 89824.2497655763,
+        "rel_err": 7.800920759842108e-09
+      },
+      "nsets": 1,
+      "solve_s": 55.3,
+      "rth": "C:\\Users\\moa\\AppData\\Local\\Temp\\d2_ac_turnwise_run\\d2_turnwise_460A.rth"
+    }
+  ],
+  "comparison": {
+    "230.05": {
+      "current_Arms": 230.05,
+      "P_active_W": 19032.47561327124,
+      "P_end_W": 4616.870510537221,
+      "P_total_W": 26430.262136801968,
+      "winding_max_C": {
+        "uniform": 637.8220086913532,
+        "turnwise": 657.9019890464702
+      },
+      "delta_winding_max_K": 20.079980355117073,
+      "T_rise_ratio_max": 1.0353631596658166,
+      "delta_winding_mean_volwt_K": 12.846730896131135,
+      "turn_mean_C": {
+        "uniform": [
+          545.5806660965222,
+          529.6093185297751,
+          510.97932572418534,
+          517.1949773724239,
+          531.8007306143919,
+          542.971261425017
+        ],
+        "turnwise": [
+          564.4184866354444,
+          545.2796776288973,
+          523.167054427406,
+          530.9320788885764,
+          547.8086691313114,
+          561.0637779217028
+        ]
+      },
+      "delta_turn_mean_K": [
+        18.837820538922188,
+        15.670359099122152,
+        12.187728703220671,
+        13.737101516152507,
+        16.007938516919467,
+        18.09251649668579
+      ],
+      "airgap_side_vs_yoke_side_K": {
+        "uniform": 2.6094046715052173,
+        "turnwise": 3.3547087137416156
+      },
+      "K_per_kW_active": {
+        "uniform_winding_max": 29.834374688252016,
+        "turnwise_winding_max": 30.88941244388247,
+        "delta_winding_max": 1.055037755630456,
+        "uniform_turn_mean": [
+          24.987851068880524,
+          24.148688161685712,
+          23.169835321722044,
+          23.49641667532716,
+          24.26382883645367,
+          24.850748322788696
+        ],
+        "turnwise_turn_mean": [
+          25.97762354628681,
+          24.9720366013493,
+          23.810200188115054,
+          24.218188335266856,
+          25.104914297020724,
+          25.80136120491266
+        ],
+        "delta_turn_mean": [
+          0.9897724774062856,
+          0.8233484396635874,
+          0.6403648663930107,
+          0.7217716599396929,
+          0.8410854605670542,
+          0.9506128821239618
+        ]
+      },
+      "K_per_kW_total": {
+        "uniform_winding_max": 21.483782709090413,
+        "turnwise_winding_max": 22.24351714725769,
+        "delta_winding_max": 0.759734438167276
+      },
+      "headline": "uniform injection under-predicts the winding hotspot by 20.08 K (1.055 K/kW of active copper loss); the airgap-side turn T1 runs 3.35 K hotter than the yoke-side turn T6 under turn-wise injection versus 2.61 K under uniform"
+    },
+    "460": {
+      "current_Arms": 460.0,
+      "P_active_W": 68583.8784329479,
+      "P_end_W": 18459.4553196349,
+      "P_total_W": 89824.24976557631,
+      "winding_max_C": {
+        "uniform": 1990.6514676887043,
+        "turnwise": 2025.5913727536054
+      },
+      "delta_winding_max_K": 34.93990506490104,
+      "T_rise_ratio_max": 1.018191694668553,
+      "delta_winding_mean_volwt_K": 28.159038296398876,
+      "turn_mean_C": {
+        "uniform": [
+          1665.04675874586,
+          1610.1829342822382,
+          1546.1060207369537,
+          1567.5585590338526,
+          1617.6907754426247,
+          1655.9633704699252
+        ],
+        "turnwise": [
+          1706.3553682819008,
+          1644.5401662783386,
+          1572.8260263847637,
+          1597.6779565136078,
+          1652.7921693594258,
+          1695.6377486422878
+        ]
+      },
+      "delta_turn_mean_K": [
+        41.308609536040876,
+        34.35723199610038,
+        26.720005647810012,
+        30.119397479755207,
+        35.101393916801044,
+        39.674378172362594
+      ],
+      "airgap_side_vs_yoke_side_K": {
+        "uniform": 9.083388275934794,
+        "turnwise": 10.717619639613076
+      },
+      "K_per_kW_active": {
+        "uniform_winding_max": 28.00441607522181,
+        "turnwise_winding_max": 28.513863861833357,
+        "delta_winding_max": 0.5094477866115517,
+        "uniform_turn_mean": [
+          23.25687603545609,
+          22.45692383506748,
+          21.522638475164275,
+          21.835431201196418,
+          22.56639330999265,
+          23.124434002671155
+        ],
+        "turnwise_turn_mean": [
+          23.859183902550935,
+          22.957875848589,
+          21.912234488955377,
+          22.27459268007373,
+          23.078195714855458,
+          23.702913655307754
+        ],
+        "delta_turn_mean": [
+          0.6023078670948434,
+          0.5009520135215197,
+          0.3895960137911017,
+          0.4391614788773124,
+          0.5118024048628056,
+          0.5784796526366014
+        ]
+      },
+      "K_per_kW_total": {
+        "uniform_winding_max": 21.382326851615552,
+        "turnwise_winding_max": 21.771307613003344,
+        "delta_winding_max": 0.38898076138779164
+      },
+      "headline": "uniform injection under-predicts the winding hotspot by 34.94 K (0.509 K/kW of active copper loss); the airgap-side turn T1 runs 10.72 K hotter than the yoke-side turn T6 under turn-wise injection versus 9.08 K under uniform"
+    }
+  },
+  "figures": [
+    {
+      "path": "D:\\KDH\\NvidiaNemo\\eMach\\mlxperPJT\\thermal\\thesis_out\\e10_ac_turnwise_zcut_uniform_460A.png",
+      "bytes": 239455,
+      "mode": "uniform",
+      "current": 460.0,
+      "source_render": "contour_z0.png",
+      "clim_C": [
+        70.0,
+        3155.1716847638986
+      ],
+      "ok": true
+    },
+    {
+      "path": "D:\\KDH\\NvidiaNemo\\eMach\\mlxperPJT\\thermal\\thesis_out\\e10_ac_turnwise_zcut_turnwise_460A.png",
+      "bytes": 239931,
+      "mode": "turnwise",
+      "current": 460.0,
+      "source_render": "contour_z0.png",
+      "clim_C": [
+        70.0,
+        3155.1716847638986
+      ],
+      "ok": true
+    }
+  ],
+  "_provenance": {
+    "dry_run": false,
+    "cdb": "D:\\KDH\\simVary\\Ansys_Thermal\\ff_e10_mesh_v2.cdb",
+    "run_dir": "C:\\Users\\moa\\AppData\\Local\\Temp\\d2_ac_turnwise_run",
+    "git_check": {
+      "ran": true,
+      "ignored": [],
+      "detail": [],
+      "patch": "!mlxperPJT/thermal/thesis_out/*.png",
+      "help": "The repository root .gitignore has `*.png` (line 39) and `*.csv` (line 183), so the figures written to mlxperPJT/thermal/thesis_out/ are silently untracked. JSON and .py pass. Fix: append this single line to the END of the root .gitignore (a later negation wins), then `git add -f` is not needed:\n    !mlxperPJT/thermal/thesis_out/*.png\n.gitignore lives outside plans/, so the thesis-side session cannot write it -- moa applies this patch and commits it."
+    },
+    "n_elem_total": 737265,
+    "n_node_total": 1113924,
+    "map": "D:\\KDH\\NvidiaNemo\\eMach\\mlxperPJT\\JEET\\map_exports\\e10\\Ref\\JEET_ACLoss_Ref_Map_Summary.json",
+    "host": "DESKTOP-513NQ4P",
+    "python": "3.10.11",
+    "numpy": "2.2.6",
+    "nproc": 4,
+    "generated": "2026-09-07T22:30:50"
+  },
+  "_invariant_W": {
+    "230.05": {
+      "uniform": {
+        "injected_active_W": 19032.47561327124,
+        "injected_end_W": 4616.870510537222,
+        "rel_err_active": 0.0,
+        "rel_err_end": 1.969937644335403e-16
+      },
+      "turnwise": {
+        "injected_active_W": 19032.475613271232,
+        "injected_end_W": 4616.870510537222,
+        "rel_err_active": 3.8229170823736356e-16,
+        "rel_err_end": 1.969937644335403e-16
+      }
+    },
+    "460": {
+      "uniform": {
+        "injected_active_W": 68583.8784329479,
+        "injected_end_W": 18459.4553196349,
+        "rel_err_active": 0.0,
+        "rel_err_end": 0.0
+      },
+      "turnwise": {
+        "injected_active_W": 68583.87843294788,
+        "injected_end_W": 18459.4553196349,
+        "rel_err_active": 2.1217690747241365e-16,
+        "rel_err_end": 0.0
+      }
+    }
+  },
+  "_dry_run": false
+}

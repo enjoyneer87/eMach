@@ -1,0 +1,5347 @@
+{
+ "_model": "JAC279 hybrid steady",
+ "_soltype": "steady",
+ "_loss_source": "JEET_ACLoss_Ref_Map_Summary.json phase36",
+ "_htc": "base: jkt 1000 / spray 2000 / splash 250 W/m2K (assumed); sph: jkt 190 / spray 190 / splash 250 W/m2K (SPH near-wall gradient backout, plan D1 spec); gap interfaces fixed at h = 10000 W/m2K (numerical device, not swept); oil bulk 70 degC (single Dirichlet).",
+ "_htc_sets": {
+  "base": {
+   "jkt": 1000.0,
+   "spray": 2000.0,
+   "splash": 250.0
+  },
+  "sph": {
+   "jkt": 190.0,
+   "spray": 190.0,
+   "splash": 250.0
+  }
+ },
+ "_htc_meta": {
+  "sph_source": "freeflow/data/htc_backout.json h_grad",
+  "jkt_backout": 192.8,
+  "spray_backout": 186.3,
+  "rounded_to": 190.0,
+  "plan_line17_says": "193 (jacket) / 186 (spray)",
+  "plan_D1_spec_says": "190 / 190 (plan lines 35 and 40)",
+  "decision": "Ran 190/190 because the plan's D1 spec and its output skeleton both say 190/190 and that skeleton goes straight into the thesis table. The measured backout values are recorded here so the discrepancy is on the record.",
+  "warning": "The SPH backout came from the 6.53 s run whose gravity was set along the axis (-Z) instead of radially (HANDOFF section 10-4). D3 replaces it; until then the sph h-set is an order-of-magnitude statement, not a calibrated number.",
+  "splash_scope": "splash = 250 W/m2K applies to BOTH rotor end faces -> OIL and shaft end faces -> SHF (04_mapdl_thermal.py:140-144), and is the same in both h-sets.",
+  "htc_big": "bore -> GAP_S and rotorOD -> GAP_R use h = 1e4 W/m2K. That is a numerical device: the real gap resistance is the COMBIN14 between GAP_S and GAP_R. It is not part of any h-set and was not swept."
+ },
+ "_loss_model_caveat": "Iron and magnet losses are the plan's speed-only rule (fe_s = 1856*(n/15000)^1.5, fe_r = 74*(n/15000)^1.5, pm = 3385*0.17*(n/15000)^2), i.e. they do NOT vary with current. Against the plan section 2 R1 values at 16 krpm / 460 A (fe_s 2619, fe_r 89, pm 1382 W) the rule reads fe_s about 22 percent low and pm about 53 percent low. At 16 krpm / 460 A iron+magnet is only ~3 percent of the total heat so the effect on T_w is small, but at 16 krpm / 115 A it is ~32 percent and the I_cont there inherits that error. Copper (cu_slot, cu_end, ac_slot) is read straight from the JEET map and carries no such assumption.",
+ "_mode": "super",
+ "_dry_run": false,
+ "_aborted": null,
+ "_generated": "2026-09-07T21:26:54",
+ "_script": "d1_cont_rating.py",
+ "_repo": "D:\\KDH\\NvidiaNemo\\eMach",
+ "_map": "D:\\KDH\\NvidiaNemo\\eMach\\mlxperPJT\\JEET\\map_exports\\e10\\Ref\\JEET_ACLoss_Ref_Map_Summary.json",
+ "_map_records": 240,
+ "_phase_deg": 36.0,
+ "_limits_C": {
+  "winding": 180.0,
+  "magnet": 150.0
+ },
+ "_oil": {
+  "T_C": 70.0,
+  "mdot_kg_s": 0.11,
+  "G_jkt_W_K": 132.0,
+  "G_spray_W_K": 88.00000000000001,
+  "G_shf_W_K": 40.0,
+  "G_gap_W_K": 2.879942865440815
+ },
+ "_mesh": {
+  "n_node": 1113924,
+  "n_elem": 737265,
+  "expected_n_node": 1113924,
+  "expected_n_elem": 737265,
+  "elem_type": "SOLID87 tet10",
+  "missing_surfaces": [],
+  "volumes_cm3": {
+   "cu_slot": 418.3867771320708,
+   "cu_end": 481.99975952895943,
+   "winding_total": 900.3865366610303,
+   "stator": 1766.2564499469515,
+   "magnet": 295.5976188960006,
+   "rotor": 1772.0752866934401
+  },
+  "element_counts": {
+   "cu_all": 109300,
+   "cu_slot": 43200,
+   "cu_end": 66100,
+   "cu_slot_numpy": 43200,
+   "cu_end_numpy": 66100,
+   "stator": 119030,
+   "magnet": 91260,
+   "rotor": 372359,
+   "shaft": 45316
+  },
+  "winding_split_method": "ESEL,R,CENT,Z",
+  "V_end_over_V_slot": 1.152043481949737,
+  "cdb": "D:\\KDH\\simVary\\Ansys_Thermal\\ff_e10_mesh_v2.cdb"
+ },
+ "_run_dir": {
+  "base": "C:\\Users\\moa\\AppData\\Local\\Temp\\e10_d1_20260907_211917_67072",
+  "sph": "C:\\Users\\moa\\AppData\\Local\\Temp\\e10_d1_20260907_215603_67440"
+ },
+ "_rth": {
+  "base": "C:\\Users\\moa\\AppData\\Local\\Temp\\e10_d1_20260907_211917_67072\\file.rth",
+  "sph": "C:\\Users\\moa\\AppData\\Local\\Temp\\e10_d1_20260907_215603_67440\\file.rth"
+ },
+ "_timing": {
+  "base": {
+   "setup_s": 25.95,
+   "unit_solves_s": 307.0,
+   "verify_s": 123.15,
+   "runs_s": 0.75,
+   "total_s": 457.62,
+   "n_solves": 7,
+   "solves": [
+    {
+     "load_index": 1,
+     "tag": "unit[base] cu_slot",
+     "solve_time_s": 53.96106290817261
+    },
+    {
+     "load_index": 2,
+     "tag": "unit[base] cu_end",
+     "solve_time_s": 53.77989625930786
+    },
+    {
+     "load_index": 3,
+     "tag": "unit[base] fe_s",
+     "solve_time_s": 53.73953676223755
+    },
+    {
+     "load_index": 4,
+     "tag": "unit[base] fe_r",
+     "solve_time_s": 53.955169916152954
+    },
+    {
+     "load_index": 5,
+     "tag": "unit[base] pm",
+     "solve_time_s": 53.7934844493866
+    },
+    {
+     "load_index": 6,
+     "tag": "verify 8000 rpm / 230.050 A / AC / base",
+     "solve_time_s": 53.85914063453674
+    },
+    {
+     "load_index": 7,
+     "tag": "verify 2000 rpm / 460.000 A / DC / base",
+     "solve_time_s": 53.83388638496399
+    }
+   ]
+  },
+  "sph": {
+   "setup_s": 29.15,
+   "unit_solves_s": 312.03,
+   "verify_s": 125.11,
+   "runs_s": 0.75,
+   "total_s": 467.81,
+   "n_solves": 7,
+   "solves": [
+    {
+     "load_index": 1,
+     "tag": "unit[sph] cu_slot",
+     "solve_time_s": 54.65608215332031
+    },
+    {
+     "load_index": 2,
+     "tag": "unit[sph] cu_end",
+     "solve_time_s": 54.82052135467529
+    },
+    {
+     "load_index": 3,
+     "tag": "unit[sph] fe_s",
+     "solve_time_s": 54.777857542037964
+    },
+    {
+     "load_index": 4,
+     "tag": "unit[sph] fe_r",
+     "solve_time_s": 54.743289947509766
+    },
+    {
+     "load_index": 5,
+     "tag": "unit[sph] pm",
+     "solve_time_s": 54.823291540145874
+    },
+    {
+     "load_index": 6,
+     "tag": "verify 8000 rpm / 230.050 A / AC / sph",
+     "solve_time_s": 54.78954529762268
+    },
+    {
+     "load_index": 7,
+     "tag": "verify 2000 rpm / 460.000 A / DC / sph",
+     "solve_time_s": 54.807844161987305
+    }
+   ]
+  }
+ },
+ "_notes": [
+  "G_GAP = 2.880 W/K uses the model's GAP_G = 0.7 mm, while the drawn air gap is 1.0 mm (bore 142.54/2 = 0.07127 minus rotor OD 0.07027). Kept identical to 04_mapdl_thermal.py:56 so this study stays comparable with the validated hybrid run; a physical 1.0 mm would give 2.016 W/K.",
+  "bore -> GAP_S and rotorOD -> GAP_R use h = 1e4 W/m2K. That is a numerical device: the real gap resistance is the COMBIN14 between GAP_S and GAP_R. It is not part of any h-set and was not swept.",
+  "splash = 250 W/m2K applies to BOTH rotor end faces -> OIL and shaft end faces -> SHF (04_mapdl_thermal.py:140-144), and is the same in both h-sets.",
+  "MASS71 thermal capacitance is OFF: in a steady solve [C] is not assembled, so it would be inert. Removing it floats nothing -- JACKET, SPRAY and SHF are each tied to OIL by a COMBIN14.",
+  "Stator/winding interface nodes are counted in BOTH parts' max/mean, the same convention as the validated hybrid run (152.2 / 126.0 degC), so the numbers stay comparable.",
+  "At the plan's own operating points the losses are enormous (16 krpm / 460 A Case AC is ~87 kW of copper against the 3.35 kW validated run), so absolute temperatures land in the hundreds to thousands of degC with temperature-independent material properties. That is the finding -- the point cannot be run continuously -- not a solver bug. Quote the normalized K/kW sensitivities alongside any absolute temperature.",
+  "Temperatures come from 5 unit solves per h-set plus 2 direct verification solves, not from 32 brute-force solves. The model is exactly linear (constant KXX, constant h, constant circuit conductances, no radiation, one Dirichlet), so the reconstruction is exact and was verified to 0.05 K.",
+  "이 파일은 merge_d1_hsets.py 가 두 개의 단일 h 세트 실행을 합친 것이다. 한 세션에서 h 세트를 바꾸면 SURF152 대류 재적용 경로가 최저온도 62.46 degC (오일 디리클레 70 degC 미만 = 최대원리 위반) 를 만들어, h 세트마다 별도 세션으로 돌렸다."
+ ],
+ "runs": [
+  {
+   "speed": 2000,
+   "current": 115.075,
+   "case": "DC",
+   "htc": "base",
+   "P_W": {
+    "cu_slot": 1965.8138088778298,
+    "cu_end": 1155.2212950891842,
+    "ac_slot": 0.0,
+    "fe_s": 90.36205037596339,
+    "fe_r": 3.6027972671450925,
+    "pm": 10.230222222222222
+   },
+   "T_C": {
+    "winding_max": 159.81328482779736,
+    "winding_mean": 108.40793149804169,
+    "stator_max": 126.45012135507241,
+    "magnet_max": 89.51553176961269,
+    "rotor_max": 89.52751378091305,
+    "winding_min": 73.46861304344138,
+    "stator_mean": 114.17947396837272,
+    "magnet_mean": 88.84815749031922,
+    "rotor_mean": 88.2286035145381,
+    "shaft_max": 88.21871721047995
+   },
+   "circuit_T": {
+    "OIL": 70.0,
+    "JACKET": 83.52706031654925,
+    "SPRAY": 85.15270267898384,
+    "GAP_S": 121.63680639943212,
+    "GAP_R": 89.55721702513594,
+    "SHF": 70.31352825137395
+   },
+   "_source": "reconstructed",
+   "_argmax_nodes": {
+    "winding": 324577,
+    "stator": 318332,
+    "magnet": 434859,
+    "rotor": 554522,
+    "shaft": 440479
+   },
+   "P_total_W": 3225.230173832345
+  },
+  {
+   "speed": 2000,
+   "current": 115.075,
+   "case": "DC",
+   "htc": "sph",
+   "P_W": {
+    "cu_slot": 1965.8138088778298,
+    "cu_end": 1155.2212950891842,
+    "ac_slot": 0.0,
+    "fe_s": 90.36205037596339,
+    "fe_r": 3.6027972671450925,
+    "pm": 10.230222222222222
+   },
+   "T_C": {
+    "winding_max": 231.48114288142756,
+    "winding_mean": 174.4776746718747,
+    "stator_max": 198.06695758902566,
+    "magnet_max": 114.02202994387736,
+    "rotor_max": 114.05625420096416,
+    "winding_min": 35.75499919155542,
+    "stator_mean": 186.23532714400284,
+    "magnet_mean": 112.4432099193212,
+    "rotor_mean": 111.0184531112024,
+    "shaft_max": 110.92655644273816
+   },
+   "circuit_T": {
+    "OIL": 70.0,
+    "JACKET": 82.53195452829192,
+    "SPRAY": 85.1379358412809,
+    "GAP_S": 192.28802757690153,
+    "GAP_R": 114.14730025274733,
+    "SHF": 70.70427680434955
+   },
+   "_source": "reconstructed",
+   "_argmax_nodes": {
+    "winding": 331981,
+    "stator": 318332,
+    "magnet": 434859,
+    "rotor": 556171,
+    "shaft": 440479
+   },
+   "P_total_W": 3225.230173832345
+  },
+  {
+   "speed": 2000,
+   "current": 115.075,
+   "case": "AC",
+   "htc": "base",
+   "P_W": {
+    "cu_slot": 1965.8138088778298,
+    "cu_end": 1155.2212950891842,
+    "ac_slot": 62.96290500939809,
+    "fe_s": 90.36205037596339,
+    "fe_r": 3.6027972671450925,
+    "pm": 10.230222222222222
+   },
+   "T_C": {
+    "winding_max": 162.579743413527,
+    "winding_mean": 109.2307202888827,
+    "stator_max": 128.14648280196735,
+    "magnet_max": 90.04729739270265,
+    "rotor_max": 90.0597615866856,
+    "winding_min": 73.49213165841289,
+    "stator_mean": 115.48475327394998,
+    "magnet_mean": 89.36014568494144,
+    "rotor_mean": 88.72311964184142,
+    "shaft_max": 88.71145379783363
+   },
+   "circuit_T": {
+    "OIL": 70.0,
+    "JACKET": 83.92551153521569,
+    "SPRAY": 85.2378038455697,
+    "GAP_S": 123.16986470860127,
+    "GAP_R": 90.09079635729489,
+    "SHF": 70.32200709018099
+   },
+   "_source": "reconstructed",
+   "_argmax_nodes": {
+    "winding": 324577,
+    "stator": 318332,
+    "magnet": 434859,
+    "rotor": 554522,
+    "shaft": 440479
+   },
+   "P_total_W": 3288.193078841743
+  },
+  {
+   "speed": 2000,
+   "current": 115.075,
+   "case": "AC",
+   "htc": "sph",
+   "P_W": {
+    "cu_slot": 1965.8138088778298,
+    "cu_end": 1155.2212950891842,
+    "ac_slot": 62.96290500939809,
+    "fe_s": 90.36205037596339,
+    "fe_r": 3.6027972671450925,
+    "pm": 10.230222222222222
+   },
+   "T_C": {
+    "winding_max": 236.23925194747926,
+    "winding_mean": 176.5103143705623,
+    "stator_max": 201.75313857078544,
+    "magnet_max": 115.23048905284448,
+    "rotor_max": 115.26581258468327,
+    "winding_min": 35.280073875777546,
+    "stator_mean": 189.53654711548074,
+    "magnet_mean": 113.60672401389452,
+    "rotor_mean": 112.14226121880093,
+    "shaft_max": 112.04632047308057
+   },
+   "circuit_T": {
+    "OIL": 70.0,
+    "JACKET": 82.88787576783378,
+    "SPRAY": 85.24520770932565,
+    "GAP_S": 195.77196523260432,
+    "GAP_R": 115.3598810896903,
+    "SHF": 70.72354531202458
+   },
+   "_source": "reconstructed",
+   "_argmax_nodes": {
+    "winding": 331981,
+    "stator": 318332,
+    "magnet": 434859,
+    "rotor": 556171,
+    "shaft": 440479
+   },
+   "P_total_W": 3288.193078841743
+  },
+  {
+   "speed": 2000,
+   "current": 230.05,
+   "case": "DC",
+   "htc": "base",
+   "P_W": {
+    "cu_slot": 7856.4235631704105,
+    "cu_end": 4616.870510537221,
+    "ac_slot": 0.0,
+    "fe_s": 90.36205037596339,
+    "fe_r": 3.6027972671450925,
+    "pm": 10.230222222222222
+   },
+   "T_C": {
+    "winding_max": 423.078496602758,
+    "winding_mean": 220.7869314159986,
+    "stator_max": 289.60857699372184,
+    "magnet_max": 141.1024850532352,
+    "rotor_max": 141.16134304538258,
+    "winding_min": 83.78048465738217,
+    "stator_mean": 241.0368211885149,
+    "magnet_mean": 138.51648867006742,
+    "rotor_mean": 136.20195728056055,
+    "shaft_max": 136.0194365671598
+   },
+   "circuit_T": {
+    "OIL": 70.0,
+    "JACKET": 122.16105790238632,
+    "SPRAY": 130.30419899636058,
+    "GAP_S": 270.35985978267837,
+    "GAP_R": 141.32011948702507,
+    "SHF": 71.13606630659095
+   },
+   "_source": "reconstructed",
+   "_argmax_nodes": {
+    "winding": 324577,
+    "stator": 318332,
+    "magnet": 434859,
+    "rotor": 556171,
+    "shaft": 440479
+   },
+   "P_total_W": 12577.489143572962
+  },
+  {
+   "speed": 2000,
+   "current": 230.05,
+   "case": "DC",
+   "htc": "sph",
+   "P_W": {
+    "cu_slot": 7856.4235631704105,
+    "cu_end": 4616.870510537221,
+    "ac_slot": 0.0,
+    "fe_s": 90.36205037596339,
+    "fe_r": 3.6027972671450925,
+    "pm": 10.230222222222222
+   },
+   "T_C": {
+    "winding_max": 700.2489738510565,
+    "winding_mean": 479.46799060154905,
+    "stator_max": 566.5872318511808,
+    "magnet_max": 235.90923572082494,
+    "rotor_max": 236.05433466775216,
+    "winding_min": -65.08662840482063,
+    "stator_mean": 519.7473674199863,
+    "magnet_mean": 229.7971864147292,
+    "rotor_mean": 224.3676173882885,
+    "shaft_max": 223.8678283277287
+   },
+   "circuit_T": {
+    "OIL": 70.0,
+    "JACKET": 118.41389285576294,
+    "SPRAY": 130.09326411113335,
+    "GAP_S": 543.6838028045472,
+    "GAP_R": 236.45023040201286,
+    "SHF": 72.64773069749032
+   },
+   "_source": "reconstructed",
+   "_argmax_nodes": {
+    "winding": 331981,
+    "stator": 318332,
+    "magnet": 434859,
+    "rotor": 556171,
+    "shaft": 440479
+   },
+   "P_total_W": 12577.489143572962
+  },
+  {
+   "speed": 2000,
+   "current": 230.05,
+   "case": "AC",
+   "htc": "base",
+   "P_W": {
+    "cu_slot": 7856.4235631704105,
+    "cu_end": 4616.870510537221,
+    "ac_slot": 251.921941628907,
+    "fe_s": 90.36205037596339,
+    "fe_r": 3.6027972671450925,
+    "pm": 10.230222222222222
+   },
+   "T_C": {
+    "winding_max": 434.1474207295743,
+    "winding_mean": 224.07900553024456,
+    "stator_max": 296.3959174022117,
+    "magnet_max": 143.23014146045352,
+    "rotor_max": 143.2909348751171,
+    "winding_min": 83.87458538458273,
+    "stator_mean": 246.25939624250853,
+    "magnet_mean": 140.56501327453182,
+    "rotor_mean": 138.18057410166276,
+    "shaft_max": 137.99093324094275
+   },
+   "circuit_T": {
+    "OIL": 70.0,
+    "JACKET": 123.75530779660369,
+    "SPRAY": 130.64469870992994,
+    "GAP_S": 276.49380525134086,
+    "GAP_R": 143.4550327562028,
+    "SHF": 71.16999113160828
+   },
+   "_source": "reconstructed",
+   "_argmax_nodes": {
+    "winding": 324577,
+    "stator": 318332,
+    "magnet": 434859,
+    "rotor": 556171,
+    "shaft": 440479
+   },
+   "P_total_W": 12829.41108520187
+  },
+  {
+   "speed": 2000,
+   "current": 230.05,
+   "case": "AC",
+   "htc": "sph",
+   "P_W": {
+    "cu_slot": 7856.4235631704105,
+    "cu_end": 4616.870510537221,
+    "ac_slot": 251.921941628907,
+    "fe_s": 90.36205037596339,
+    "fe_r": 3.6027972671450925,
+    "pm": 10.230222222222222
+   },
+   "T_C": {
+    "winding_max": 719.2867243205262,
+    "winding_mean": 487.60081959743076,
+    "stator_max": 581.336072775561,
+    "magnet_max": 240.74442185247963,
+    "rotor_max": 240.8939191261656,
+    "winding_min": -66.9868600993656,
+    "stator_mean": 532.9559343505416,
+    "magnet_mean": 234.45254229091947,
+    "rotor_mean": 228.86410497002052,
+    "shaft_max": 228.348135083714
+   },
+   "circuit_T": {
+    "OIL": 70.0,
+    "JACKET": 119.83797533288131,
+    "SPRAY": 130.5224713924041,
+    "GAP_S": 557.6234445445161,
+    "GAP_R": 241.3019080490192,
+    "SHF": 72.72482624867337
+   },
+   "_source": "reconstructed",
+   "_argmax_nodes": {
+    "winding": 331981,
+    "stator": 318332,
+    "magnet": 434859,
+    "rotor": 556171,
+    "shaft": 440479
+   },
+   "P_total_W": 12829.41108520187
+  },
+  {
+   "speed": 2000,
+   "current": 345.025,
+   "case": "DC",
+   "htc": "base",
+   "P_W": {
+    "cu_slot": 17671.830747378466,
+    "cu_end": 10384.948518719126,
+    "ac_slot": 0.0,
+    "fe_s": 90.36205037596339,
+    "fe_r": 3.6027972671450925,
+    "pm": 10.230222222222222
+   },
+   "T_C": {
+    "winding_max": 861.7521414024262,
+    "winding_mean": 408.0418488453911,
+    "stator_max": 561.4763028217444,
+    "magnet_max": 227.06081076009275,
+    "rotor_max": 227.19786073910493,
+    "winding_min": 100.96295352630503,
+    "stator_mean": 452.41672398496047,
+    "magnet_mean": 221.27785209837225,
+    "rotor_mean": 216.13901317913442,
+    "shaft_max": 215.66883514461048
+   },
+   "circuit_T": {
+    "OIL": 70.0,
+    "JACKET": 186.53612827304985,
+    "SPRAY": 205.53924932512678,
+    "GAP_S": 518.1741587305098,
+    "GAP_R": 227.57162584927318,
+    "SHF": 72.50664529131797
+   },
+   "_source": "reconstructed",
+   "_argmax_nodes": {
+    "winding": 324577,
+    "stator": 318332,
+    "magnet": 434859,
+    "rotor": 556171,
+    "shaft": 440479
+   },
+   "P_total_W": 28160.974335962917
+  },
+  {
+   "speed": 2000,
+   "current": 345.025,
+   "case": "DC",
+   "htc": "sph",
+   "P_W": {
+    "cu_slot": 17671.830747378466,
+    "cu_end": 10384.948518719126,
+    "ac_slot": 0.0,
+    "fe_s": 90.36205037596339,
+    "fe_r": 3.6027972671450925,
+    "pm": 10.230222222222222
+   },
+   "T_C": {
+    "winding_max": 1481.3475914384792,
+    "winding_mean": 987.6673558554642,
+    "stator_max": 1180.6453172443246,
+    "magnet_max": 439.0074895771904,
+    "rotor_max": 439.33733683924976,
+    "winding_min": -233.11704923781144,
+    "stator_mean": 1075.471921021467,
+    "magnet_mean": 425.34180947332163,
+    "rotor_mean": 413.2391006092819,
+    "shaft_max": 412.05964847770593
+   },
+   "circuit_T": {
+    "OIL": 70.0,
+    "JACKET": 178.20326100837548,
+    "SPRAY": 205.00144348030508,
+    "GAP_S": 1129.2076722403697,
+    "GAP_R": 440.24119760400885,
+    "SHF": 75.88606969813627
+   },
+   "_source": "reconstructed",
+   "_argmax_nodes": {
+    "winding": 331981,
+    "stator": 318332,
+    "magnet": 434859,
+    "rotor": 556171,
+    "shaft": 440479
+   },
+   "P_total_W": 28160.974335962917
+  },
+  {
+   "speed": 2000,
+   "current": 345.025,
+   "case": "AC",
+   "htc": "base",
+   "P_W": {
+    "cu_slot": 17671.830747378466,
+    "cu_end": 10384.948518719126,
+    "ac_slot": 509.277448008455,
+    "fe_s": 90.36205037596339,
+    "fe_r": 3.6027972671450925,
+    "pm": 10.230222222222222
+   },
+   "T_C": {
+    "winding_max": 884.1287291464507,
+    "winding_mean": 414.6970019960744,
+    "stator_max": 575.1973760226338,
+    "magnet_max": 231.36201381648684,
+    "rotor_max": 231.50297638458713,
+    "winding_min": 101.15318458714304,
+    "stator_mean": 462.97451692007695,
+    "magnet_mean": 225.4190847992575,
+    "rotor_mean": 220.1389225110571,
+    "shaft_max": 219.65435061138285
+   },
+   "circuit_T": {
+    "OIL": 70.0,
+    "JACKET": 189.75901355396263,
+    "SPRAY": 206.2275928018917,
+    "GAP_S": 530.574349338381,
+    "GAP_R": 231.88749914882004,
+    "SHF": 72.57522664710321
+   },
+   "_source": "reconstructed",
+   "_argmax_nodes": {
+    "winding": 324577,
+    "stator": 318332,
+    "magnet": 434859,
+    "rotor": 556171,
+    "shaft": 440479
+   },
+   "P_total_W": 28670.251783971373
+  },
+  {
+   "speed": 2000,
+   "current": 345.025,
+   "case": "AC",
+   "htc": "sph",
+   "P_W": {
+    "cu_slot": 17671.830747378466,
+    "cu_end": 10384.948518719126,
+    "ac_slot": 509.277448008455,
+    "fe_s": 90.36205037596339,
+    "fe_r": 3.6027972671450925,
+    "pm": 10.230222222222222
+   },
+   "T_C": {
+    "winding_max": 1519.8337070670864,
+    "winding_mean": 1004.1084263288452,
+    "stator_max": 1210.4611086695727,
+    "magnet_max": 448.7821492906436,
+    "rotor_max": 449.1208880712928,
+    "winding_min": -236.95849767126384,
+    "stator_mean": 1102.1739431428714,
+    "magnet_mean": 434.7529300167229,
+    "rotor_mean": 422.329058021564,
+    "shaft_max": 421.1168952432311
+   },
+   "circuit_T": {
+    "OIL": 70.0,
+    "JACKET": 181.08214120837306,
+    "SPRAY": 205.86911537684122,
+    "GAP_S": 1157.3876121280232,
+    "GAP_R": 450.0491960445207,
+    "SHF": 76.04192363172153
+   },
+   "_source": "reconstructed",
+   "_argmax_nodes": {
+    "winding": 331981,
+    "stator": 318332,
+    "magnet": 434859,
+    "rotor": 556171,
+    "shaft": 440479
+   },
+   "P_total_W": 28670.251783971373
+  },
+  {
+   "speed": 2000,
+   "current": 460.0,
+   "case": "DC",
+   "htc": "base",
+   "P_W": {
+    "cu_slot": 31412.035361502007,
+    "cu_end": 18459.4553196349,
+    "ac_slot": 0.0,
+    "fe_s": 90.36205037596339,
+    "fe_r": 3.6027972671450925,
+    "pm": 10.230222222222222
+   },
+   "T_C": {
+    "winding_max": 1475.8342192268024,
+    "winding_mean": 670.1726837862192,
+    "stator_max": 942.0532988391403,
+    "magnet_max": 347.3905088901853,
+    "rotor_max": 347.63701677334194,
+    "winding_min": 125.01601965020996,
+    "stator_mean": 748.3191823577098,
+    "magnet_mean": 337.13224777523357,
+    "rotor_mean": 328.03977121025997,
+    "shaft_max": 327.1669129428321
+   },
+   "circuit_T": {
+    "OIL": 70.0,
+    "JACKET": 276.6522714285399,
+    "SPRAY": 310.85785366528245,
+    "GAP_S": 865.0797032429266,
+    "GAP_R": 348.31173611188046,
+    "SHF": 74.42526520555502
+   },
+   "_source": "reconstructed",
+   "_argmax_nodes": {
+    "winding": 324577,
+    "stator": 318332,
+    "magnet": 434859,
+    "rotor": 556171,
+    "shaft": 440479
+   },
+   "P_total_W": 49975.68575100224,
+   "_direct_check_C": {
+    "winding_max": 1475.8342191197903,
+    "stator_max": 942.0532987304608,
+    "magnet_max": 347.39050826353355,
+    "rotor_max": 347.6370161429842,
+    "shaft_max": 327.1669123626942,
+    "winding_mean": 670.1726837244481,
+    "OIL": 70.0,
+    "JACKET": 276.6522714002368,
+    "SPRAY": 310.85785364060877,
+    "GAP_S": 865.0797031135958,
+    "GAP_R": 348.31173548740236,
+    "SHF": 74.4252651954784
+   },
+   "_direct_check_max_err_K": 6.303577606558974e-07
+  },
+  {
+   "speed": 2000,
+   "current": 460.0,
+   "case": "DC",
+   "htc": "sph",
+   "P_W": {
+    "cu_slot": 31412.035361502007,
+    "cu_end": 18459.4553196349,
+    "ac_slot": 0.0,
+    "fe_s": 90.36205037596339,
+    "fe_r": 3.6027972671450925,
+    "pm": 10.230222222222222
+   },
+   "T_C": {
+    "winding_max": 2574.776995643697,
+    "winding_mean": 1699.0757704336204,
+    "stator_max": 2040.2412137684582,
+    "magnet_max": 723.3167915129739,
+    "rotor_max": 723.905260715457,
+    "winding_min": -468.3362633074172,
+    "stator_mean": 1853.408987948446,
+    "magnet_mean": 699.0770790950987,
+    "rotor_mean": 677.6329027741823,
+    "shaft_max": 675.5020168926701
+   },
+   "circuit_T": {
+    "OIL": 70.0,
+    "JACKET": 261.9000589861295,
+    "SPRAY": 309.86247394879615,
+    "GAP_S": 1948.8596358843697,
+    "GAP_R": 725.5202018587355,
+    "SHF": 80.41929380628737
+   },
+   "_source": "reconstructed",
+   "_argmax_nodes": {
+    "winding": 331981,
+    "stator": 318332,
+    "magnet": 434859,
+    "rotor": 556171,
+    "shaft": 440479
+   },
+   "P_total_W": 49975.68575100224,
+   "_direct_check_C": {
+    "winding_max": 2574.7769957028727,
+    "stator_max": 2040.2412138284358,
+    "magnet_max": 723.3167911569744,
+    "rotor_max": 723.905260357101,
+    "shaft_max": 675.5020165630432,
+    "winding_mean": 1699.075770461758,
+    "OIL": 70.0,
+    "JACKET": 261.9000589919058,
+    "SPRAY": 309.8624739487085,
+    "GAP_S": 1948.8596359481448,
+    "GAP_R": 725.5202015042507,
+    "SHF": 80.41929380053669
+   },
+   "_direct_check_max_err_K": 3.58355919161113e-07
+  },
+  {
+   "speed": 2000,
+   "current": 460.0,
+   "case": "AC",
+   "htc": "base",
+   "P_W": {
+    "cu_slot": 31412.035361502007,
+    "cu_end": 18459.4553196349,
+    "ac_slot": 819.63091343849,
+    "fe_s": 90.36205037596339,
+    "fe_r": 3.6027972671450925,
+    "pm": 10.230222222222222
+   },
+   "T_C": {
+    "winding_max": 1511.847090254162,
+    "winding_mean": 680.8834845045676,
+    "stator_max": 964.1359883534316,
+    "magnet_max": 354.31286330384114,
+    "rotor_max": 354.5656681062522,
+    "winding_min": 125.32217744056327,
+    "stator_mean": 765.3108899252519,
+    "magnet_mean": 343.79714596513287,
+    "rotor_mean": 334.47722362880984,
+    "shaft_max": 333.5811998807835
+   },
+   "circuit_T": {
+    "OIL": 70.0,
+    "JACKET": 281.8391816619146,
+    "SPRAY": 311.96567337107643,
+    "GAP_S": 885.0365648602746,
+    "GAP_R": 355.2577008087772,
+    "SHF": 74.53564001108965
+   },
+   "_source": "reconstructed",
+   "_argmax_nodes": {
+    "winding": 324577,
+    "stator": 318332,
+    "magnet": 434859,
+    "rotor": 556171,
+    "shaft": 440479
+   },
+   "P_total_W": 50795.316664440725
+  },
+  {
+   "speed": 2000,
+   "current": 460.0,
+   "case": "AC",
+   "htc": "sph",
+   "P_W": {
+    "cu_slot": 31412.035361502007,
+    "cu_end": 18459.4553196349,
+    "ac_slot": 819.63091343849,
+    "fe_s": 90.36205037596339,
+    "fe_r": 3.6027972671450925,
+    "pm": 10.230222222222222
+   },
+   "T_C": {
+    "winding_max": 2636.716534161905,
+    "winding_mean": 1725.5360224292672,
+    "stator_max": 2088.2267361125814,
+    "magnet_max": 739.0481247986272,
+    "rotor_max": 739.6509040074383,
+    "winding_min": -474.51868882174153,
+    "stator_mean": 1896.3832112673977,
+    "magnet_mean": 714.2233325913652,
+    "rotor_mean": 692.262276460531,
+    "shaft_max": 690.0787460777055
+   },
+   "circuit_T": {
+    "OIL": 70.0,
+    "JACKET": 266.5333275850659,
+    "SPRAY": 311.25890473893594,
+    "GAP_S": 1994.2124194428825,
+    "GAP_R": 741.3051904778793,
+    "SHF": 80.67012506230904
+   },
+   "_source": "reconstructed",
+   "_argmax_nodes": {
+    "winding": 331981,
+    "stator": 318332,
+    "magnet": 434859,
+    "rotor": 556171,
+    "shaft": 440479
+   },
+   "P_total_W": 50795.316664440725
+  },
+  {
+   "speed": 4000,
+   "current": 115.075,
+   "case": "DC",
+   "htc": "base",
+   "P_W": {
+    "cu_slot": 1965.8138088778298,
+    "cu_end": 1155.2212950891842,
+    "ac_slot": 0.0,
+    "fe_s": 255.58247433105657,
+    "fe_r": 10.190249515354626,
+    "pm": 40.92088888888889
+   },
+   "T_C": {
+    "winding_max": 163.49705909727803,
+    "winding_mean": 110.10969438491247,
+    "stator_max": 130.21710816024634,
+    "magnet_max": 95.18160936098437,
+    "rotor_max": 95.17899247746931,
+    "winding_min": 73.51990285701174,
+    "stator_mean": 117.64505937330341,
+    "magnet_mean": 94.44933098976232,
+    "rotor_mean": 93.69040078489567,
+    "shaft_max": 93.78663643604196
+   },
+   "circuit_T": {
+    "OIL": 70.0,
+    "JACKET": 84.71191220227917,
+    "SPRAY": 85.31214144547904,
+    "GAP_S": 125.43530730087542,
+    "GAP_R": 95.16500242025879,
+    "SHF": 70.40939285470624
+   },
+   "_source": "reconstructed",
+   "_argmax_nodes": {
+    "winding": 324577,
+    "stator": 318332,
+    "magnet": 1055768,
+    "rotor": 528879,
+    "shaft": 439445
+   },
+   "P_total_W": 3427.728716702314
+  },
+  {
+   "speed": 4000,
+   "current": 115.075,
+   "case": "DC",
+   "htc": "sph",
+   "P_W": {
+    "cu_slot": 1965.8138088778298,
+    "cu_end": 1155.2212950891842,
+    "ac_slot": 0.0,
+    "fe_s": 255.58247433105657,
+    "fe_r": 10.190249515354626,
+    "pm": 40.92088888888889
+   },
+   "T_C": {
+    "winding_max": 240.9359350297573,
+    "winding_mean": 179.52964739989412,
+    "stator_max": 207.5974396523973,
+    "magnet_max": 121.63522586752164,
+    "rotor_max": 121.65933202819168,
+    "winding_min": 34.64508224160836,
+    "stator_mean": 195.47855097951657,
+    "magnet_mean": 119.9266719684928,
+    "rotor_mean": 118.29830410595478,
+    "shaft_max": 118.30597851612171
+   },
+   "circuit_T": {
+    "OIL": 70.0,
+    "JACKET": 83.57372806967012,
+    "SPRAY": 85.39173768534928,
+    "GAP_S": 201.72270940982517,
+    "GAP_R": 121.71675249456723,
+    "SHF": 70.83131326158232
+   },
+   "_source": "reconstructed",
+   "_argmax_nodes": {
+    "winding": 331981,
+    "stator": 318332,
+    "magnet": 493939,
+    "rotor": 554522,
+    "shaft": 440479
+   },
+   "P_total_W": 3427.728716702314
+  },
+  {
+   "speed": 4000,
+   "current": 115.075,
+   "case": "AC",
+   "htc": "base",
+   "P_W": {
+    "cu_slot": 1965.8138088778298,
+    "cu_end": 1155.2212950891842,
+    "ac_slot": 234.801184897156,
+    "fe_s": 255.58247433105657,
+    "fe_r": 10.190249515354626,
+    "pm": 40.92088888888889
+   },
+   "T_C": {
+    "winding_max": 173.81373291976564,
+    "winding_mean": 113.17803729222803,
+    "stator_max": 136.54317710012987,
+    "magnet_max": 97.16114592964219,
+    "rotor_max": 97.16114592964219,
+    "winding_min": 73.6076084459077,
+    "stator_mean": 122.51270529157117,
+    "magnet_mean": 96.35863671084854,
+    "rotor_mean": 95.53454969486475,
+    "shaft_max": 95.6241472969404
+   },
+   "circuit_T": {
+    "OIL": 70.0,
+    "JACKET": 86.19781597772645,
+    "SPRAY": 85.62950060715538,
+    "GAP_S": 131.1523863882463,
+    "GAP_R": 97.15482578385445,
+    "SHF": 70.44101212954985
+   },
+   "_source": "reconstructed",
+   "_argmax_nodes": {
+    "winding": 324577,
+    "stator": 318332,
+    "magnet": 528879,
+    "rotor": 528879,
+    "shaft": 439445
+   },
+   "P_total_W": 3662.5299015994697
+  },
+  {
+   "speed": 4000,
+   "current": 115.075,
+   "case": "AC",
+   "htc": "sph",
+   "P_W": {
+    "cu_slot": 1965.8138088778298,
+    "cu_end": 1155.2212950891842,
+    "ac_slot": 234.801184897156,
+    "fe_s": 255.58247433105657,
+    "fe_r": 10.190249515354626,
+    "pm": 40.92088888888889
+   },
+   "T_C": {
+    "winding_max": 258.679869278218,
+    "winding_mean": 187.10976476661367,
+    "stator_max": 221.34394105879474,
+    "magnet_max": 126.14122367783654,
+    "rotor_max": 126.17000257381102,
+    "winding_min": 32.8739913609437,
+    "stator_mean": 207.78945627833454,
+    "magnet_mean": 124.2656472430545,
+    "rotor_mean": 122.48920786463277,
+    "shaft_max": 122.4818011070642
+   },
+   "circuit_T": {
+    "OIL": 70.0,
+    "JACKET": 84.90102910131756,
+    "SPRAY": 85.79177579857291,
+    "GAP_S": 214.71500526314918,
+    "GAP_R": 126.2387074020687,
+    "SHF": 70.90316935577971
+   },
+   "_source": "reconstructed",
+   "_argmax_nodes": {
+    "winding": 331981,
+    "stator": 318332,
+    "magnet": 493939,
+    "rotor": 554522,
+    "shaft": 440479
+   },
+   "P_total_W": 3662.5299015994697
+  },
+  {
+   "speed": 4000,
+   "current": 230.05,
+   "case": "DC",
+   "htc": "base",
+   "P_W": {
+    "cu_slot": 7856.4235631704105,
+    "cu_end": 4616.870510537221,
+    "ac_slot": 0.0,
+    "fe_s": 255.58247433105657,
+    "fe_r": 10.190249515354626,
+    "pm": 40.92088888888889
+   },
+   "T_C": {
+    "winding_max": 426.7622708722387,
+    "winding_mean": 222.48869430286948,
+    "stator_max": 293.37556379889577,
+    "magnet_max": 146.7591017035835,
+    "rotor_max": 146.807570971533,
+    "winding_min": 83.83177447095254,
+    "stator_mean": 244.5024065934457,
+    "magnet_mean": 144.11766216951054,
+    "rotor_mean": 141.6637545509181,
+    "shaft_max": 141.5873472694807
+   },
+   "circuit_T": {
+    "OIL": 70.0,
+    "JACKET": 123.34590978811623,
+    "SPRAY": 130.4636377628558,
+    "GAP_S": 274.15836068412165,
+    "GAP_R": 146.9279048821479,
+    "SHF": 71.23193090992324
+   },
+   "_source": "reconstructed",
+   "_argmax_nodes": {
+    "winding": 324577,
+    "stator": 318332,
+    "magnet": 434859,
+    "rotor": 554522,
+    "shaft": 440479
+   },
+   "P_total_W": 12779.987686442933
+  },
+  {
+   "speed": 4000,
+   "current": 230.05,
+   "case": "DC",
+   "htc": "sph",
+   "P_W": {
+    "cu_slot": 7856.4235631704105,
+    "cu_end": 4616.870510537221,
+    "ac_slot": 0.0,
+    "fe_s": 255.58247433105657,
+    "fe_r": 10.190249515354626,
+    "pm": 40.92088888888889
+   },
+   "T_C": {
+    "winding_max": 709.7037659993863,
+    "winding_mean": 484.51996332956827,
+    "stator_max": 576.1177139145525,
+    "magnet_max": 243.52085124418687,
+    "rotor_max": 243.65713941096735,
+    "winding_min": -66.19654535476772,
+    "stator_mean": 528.9905912555,
+    "magnet_mean": 237.28064846390077,
+    "rotor_mean": 231.6474683830409,
+    "shaft_max": 231.24725040111224
+   },
+   "circuit_T": {
+    "OIL": 70.0,
+    "JACKET": 119.45566639714116,
+    "SPRAY": 130.3470659552017,
+    "GAP_S": 553.1184846374708,
+    "GAP_R": 244.0196826438328,
+    "SHF": 72.7747671547231
+   },
+   "_source": "reconstructed",
+   "_argmax_nodes": {
+    "winding": 331981,
+    "stator": 318332,
+    "magnet": 434859,
+    "rotor": 556171,
+    "shaft": 440479
+   },
+   "P_total_W": 12779.987686442933
+  },
+  {
+   "speed": 4000,
+   "current": 230.05,
+   "case": "AC",
+   "htc": "base",
+   "P_W": {
+    "cu_slot": 7856.4235631704105,
+    "cu_end": 4616.870510537221,
+    "ac_slot": 946.422930766226,
+    "fe_s": 255.58247433105657,
+    "fe_r": 10.190249515354626,
+    "pm": 40.92088888888889
+   },
+   "T_C": {
+    "winding_max": 468.3461184116563,
+    "winding_mean": 234.85639205622306,
+    "stator_max": 318.87431376873144,
+    "magnet_max": 154.7523030879604,
+    "rotor_max": 154.8080202544552,
+    "winding_min": 84.18529304678019,
+    "stator_mean": 264.12263005150436,
+    "magnet_mean": 151.81358038674875,
+    "rotor_mean": 149.09704249155067,
+    "shaft_max": 148.99388616773211
+   },
+   "circuit_T": {
+    "OIL": 70.0,
+    "JACKET": 129.33520412072954,
+    "SPRAY": 131.74283057455642,
+    "GAP_S": 297.2024298512419,
+    "GAP_R": 154.94836891986643,
+    "SHF": 71.35938004004281
+   },
+   "_source": "reconstructed",
+   "_argmax_nodes": {
+    "winding": 324577,
+    "stator": 318332,
+    "magnet": 434859,
+    "rotor": 554522,
+    "shaft": 440479
+   },
+   "P_total_W": 13726.41061720916
+  },
+  {
+   "speed": 4000,
+   "current": 230.05,
+   "case": "AC",
+   "htc": "sph",
+   "P_W": {
+    "cu_slot": 7856.4235631704105,
+    "cu_end": 4616.870510537221,
+    "ac_slot": 946.422930766226,
+    "fe_s": 255.58247433105657,
+    "fe_r": 10.190249515354626,
+    "pm": 40.92088888888889
+   },
+   "T_C": {
+    "winding_max": 781.2249819681513,
+    "winding_mean": 515.0734586064553,
+    "stator_max": 631.5263105727131,
+    "magnet_max": 261.68572803075,
+    "rotor_max": 261.83853987655004,
+    "winding_min": -73.33535524904556,
+    "stator_mean": 578.6126707965212,
+    "magnet_mean": 254.76993710472073,
+    "rotor_mean": 248.53991898794075,
+    "shaft_max": 248.07891271410546
+   },
+   "circuit_T": {
+    "OIL": 70.0,
+    "JACKET": 124.80567403415975,
+    "SPRAY": 131.95951626588106,
+    "GAP_S": 605.4870735109494,
+    "GAP_R": 262.24651492419275,
+    "SHF": 73.06440051110286
+   },
+   "_source": "reconstructed",
+   "_argmax_nodes": {
+    "winding": 331981,
+    "stator": 318332,
+    "magnet": 434859,
+    "rotor": 556171,
+    "shaft": 440479
+   },
+   "P_total_W": 13726.41061720916
+  },
+  {
+   "speed": 4000,
+   "current": 345.025,
+   "case": "DC",
+   "htc": "base",
+   "P_W": {
+    "cu_slot": 17671.830747378466,
+    "cu_end": 10384.948518719126,
+    "ac_slot": 0.0,
+    "fe_s": 255.58247433105657,
+    "fe_r": 10.190249515354626,
+    "pm": 40.92088888888889
+   },
+   "T_C": {
+    "winding_max": 865.4359156719069,
+    "winding_mean": 409.74361173226174,
+    "stator_max": 565.2432896269183,
+    "magnet_max": 232.717427410441,
+    "rotor_max": 232.84388824469897,
+    "winding_min": 101.01424333987539,
+    "stator_mean": 455.88230938989136,
+    "magnet_mean": 226.8790255978153,
+    "rotor_mean": 221.600810449492,
+    "shaft_max": 221.2367458469314
+   },
+   "circuit_T": {
+    "OIL": 70.0,
+    "JACKET": 187.72098015877975,
+    "SPRAY": 205.69868809162196,
+    "GAP_S": 521.9726596319531,
+    "GAP_R": 233.17941124439602,
+    "SHF": 72.60250989465027
+   },
+   "_source": "reconstructed",
+   "_argmax_nodes": {
+    "winding": 324577,
+    "stator": 318332,
+    "magnet": 434859,
+    "rotor": 556171,
+    "shaft": 440479
+   },
+   "P_total_W": 28363.47287883289
+  },
+  {
+   "speed": 4000,
+   "current": 345.025,
+   "case": "DC",
+   "htc": "sph",
+   "P_W": {
+    "cu_slot": 17671.830747378466,
+    "cu_end": 10384.948518719126,
+    "ac_slot": 0.0,
+    "fe_s": 255.58247433105657,
+    "fe_r": 10.190249515354626,
+    "pm": 40.92088888888889
+   },
+   "T_C": {
+    "winding_max": 1490.8023835868091,
+    "winding_mean": 992.7193285834835,
+    "stator_max": 1190.175799307696,
+    "magnet_max": 446.61910510055225,
+    "rotor_max": 446.9401415824649,
+    "winding_min": -234.22696618775848,
+    "stator_mean": 1084.7151448569807,
+    "magnet_mean": 432.8252715224933,
+    "rotor_mean": 420.51895160403404,
+    "shaft_max": 419.43907055108946
+   },
+   "circuit_T": {
+    "OIL": 70.0,
+    "JACKET": 179.24503454975368,
+    "SPRAY": 205.25524532437342,
+    "GAP_S": 1138.6423540732933,
+    "GAP_R": 447.8106498458288,
+    "SHF": 76.01310615536903
+   },
+   "_source": "reconstructed",
+   "_argmax_nodes": {
+    "winding": 331981,
+    "stator": 318332,
+    "magnet": 434859,
+    "rotor": 556171,
+    "shaft": 440479
+   },
+   "P_total_W": 28363.47287883289
+  },
+  {
+   "speed": 4000,
+   "current": 345.025,
+   "case": "AC",
+   "htc": "base",
+   "P_W": {
+    "cu_slot": 17671.830747378466,
+    "cu_end": 10384.948518719126,
+    "ac_slot": 1925.12500640885,
+    "fe_s": 255.58247433105657,
+    "fe_r": 10.190249515354626,
+    "pm": 40.92088888888889
+   },
+   "T_C": {
+    "winding_max": 950.0218889809157,
+    "winding_mean": 434.9008257458863,
+    "stator_max": 617.1104619061822,
+    "magnet_max": 248.97645005887554,
+    "rotor_max": 249.11770091205702,
+    "winding_min": 101.73333776207505,
+    "stator_mean": 495.79193286008615,
+    "magnet_mean": 242.53334263268255,
+    "rotor_mean": 236.72090953961407,
+    "shaft_max": 236.30243453689152
+   },
+   "circuit_T": {
+    "OIL": 70.0,
+    "JACKET": 199.90384250883062,
+    "SPRAY": 208.30070246571324,
+    "GAP_S": 568.8467498097154,
+    "GAP_R": 249.4938890323699,
+    "SHF": 72.8617549947659
+   },
+   "_source": "reconstructed",
+   "_argmax_nodes": {
+    "winding": 324577,
+    "stator": 318332,
+    "magnet": 434859,
+    "rotor": 556171,
+    "shaft": 440479
+   },
+   "P_total_W": 30288.59788524174
+  },
+  {
+   "speed": 4000,
+   "current": 345.025,
+   "case": "AC",
+   "htc": "sph",
+   "P_W": {
+    "cu_slot": 17671.830747378466,
+    "cu_end": 10384.948518719126,
+    "ac_slot": 1925.12500640885,
+    "fe_s": 255.58247433105657,
+    "fe_r": 10.190249515354626,
+    "pm": 40.92088888888889
+   },
+   "T_C": {
+    "winding_max": 1636.2841516994704,
+    "winding_mean": 1054.868390993784,
+    "stator_max": 1302.8827842391452,
+    "magnet_max": 483.5683984908094,
+    "rotor_max": 483.9230458951167,
+    "winding_min": -248.74806557864787,
+    "stator_mean": 1185.6517378842534,
+    "magnet_mean": 468.40034669473795,
+    "rotor_mean": 454.87999466613604,
+    "shaft_max": 453.67646375535077
+   },
+   "circuit_T": {
+    "OIL": 70.0,
+    "JACKET": 190.12751969639353,
+    "SPRAY": 208.53514093316576,
+    "GAP_S": 1245.1656395024163,
+    "GAP_R": 484.8859673068427,
+    "SHF": 76.60225123938069
+   },
+   "_source": "reconstructed",
+   "_argmax_nodes": {
+    "winding": 331981,
+    "stator": 318332,
+    "magnet": 434859,
+    "rotor": 556171,
+    "shaft": 440479
+   },
+   "P_total_W": 30288.59788524174
+  },
+  {
+   "speed": 4000,
+   "current": 460.0,
+   "case": "DC",
+   "htc": "base",
+   "P_W": {
+    "cu_slot": 31412.035361502007,
+    "cu_end": 18459.4553196349,
+    "ac_slot": 0.0,
+    "fe_s": 255.58247433105657,
+    "fe_r": 10.190249515354626,
+    "pm": 40.92088888888889
+   },
+   "T_C": {
+    "winding_max": 1479.5179934962828,
+    "winding_mean": 671.87444667309,
+    "stator_max": 945.8202856443144,
+    "magnet_max": 353.0471255405336,
+    "rotor_max": 353.283044278936,
+    "winding_min": 125.06730946378033,
+    "stator_mean": 751.7847677626406,
+    "magnet_mean": 342.7334212746768,
+    "rotor_mean": 333.5015684806176,
+    "shaft_max": 332.73482364515297
+   },
+   "circuit_T": {
+    "OIL": 70.0,
+    "JACKET": 277.8371233142698,
+    "SPRAY": 311.0172924317776,
+    "GAP_S": 868.87820414437,
+    "GAP_R": 353.9195215070033,
+    "SHF": 74.52112980888731
+   },
+   "_source": "reconstructed",
+   "_argmax_nodes": {
+    "winding": 324577,
+    "stator": 318332,
+    "magnet": 434859,
+    "rotor": 556171,
+    "shaft": 440479
+   },
+   "P_total_W": 50178.18429387221
+  },
+  {
+   "speed": 4000,
+   "current": 460.0,
+   "case": "DC",
+   "htc": "sph",
+   "P_W": {
+    "cu_slot": 31412.035361502007,
+    "cu_end": 18459.4553196349,
+    "ac_slot": 0.0,
+    "fe_s": 255.58247433105657,
+    "fe_r": 10.190249515354626,
+    "pm": 40.92088888888889
+   },
+   "T_C": {
+    "winding_max": 2584.231787792027,
+    "winding_mean": 1704.1277431616395,
+    "stator_max": 2049.7716958318297,
+    "magnet_max": 730.9284070363357,
+    "rotor_max": 731.5080654586721,
+    "winding_min": -469.4461802573642,
+    "stator_mean": 1862.6522117839604,
+    "magnet_mean": 706.5605411442706,
+    "rotor_mean": 684.9127537689347,
+    "shaft_max": 682.8814389660537
+   },
+   "circuit_T": {
+    "OIL": 70.0,
+    "JACKET": 262.9418325275077,
+    "SPRAY": 310.1162757928645,
+    "GAP_S": 1958.2943177172933,
+    "GAP_R": 733.0896541005554,
+    "SHF": 80.54633026352015
+   },
+   "_source": "reconstructed",
+   "_argmax_nodes": {
+    "winding": 331981,
+    "stator": 318332,
+    "magnet": 434859,
+    "rotor": 556171,
+    "shaft": 440479
+   },
+   "P_total_W": 50178.18429387221
+  },
+  {
+   "speed": 4000,
+   "current": 460.0,
+   "case": "AC",
+   "htc": "base",
+   "P_W": {
+    "cu_slot": 31412.035361502007,
+    "cu_end": 18459.4553196349,
+    "ac_slot": 3103.94043112465,
+    "fe_s": 255.58247433105657,
+    "fe_r": 10.190249515354626,
+    "pm": 40.92088888888889
+   },
+   "T_C": {
+    "winding_max": 1615.898655316071,
+    "winding_mean": 712.4362249739228,
+    "stator_max": 1029.4473813133027,
+    "magnet_max": 379.26206618129186,
+    "rotor_max": 379.52183133878964,
+    "winding_min": 126.22672832927282,
+    "stator_mean": 816.1323262160945,
+    "magnet_mean": 367.973375773428,
+    "rotor_mean": 357.88018635332804,
+    "shaft_max": 357.0257138947876
+   },
+   "circuit_T": {
+    "OIL": 70.0,
+    "JACKET": 297.4799407361314,
+    "SPRAY": 315.2126031732736,
+    "GAP_S": 944.454794334919,
+    "GAP_R": 380.2238742374476,
+    "SHF": 74.93911894992546
+   },
+   "_source": "reconstructed",
+   "_argmax_nodes": {
+    "winding": 324577,
+    "stator": 318332,
+    "magnet": 434859,
+    "rotor": 556171,
+    "shaft": 440479
+   },
+   "P_total_W": 53282.12472499686
+  },
+  {
+   "speed": 4000,
+   "current": 460.0,
+   "case": "AC",
+   "htc": "sph",
+   "P_W": {
+    "cu_slot": 31412.035361502007,
+    "cu_end": 18459.4553196349,
+    "ac_slot": 3103.94043112465,
+    "fe_s": 255.58247433105657,
+    "fe_r": 10.190249515354626,
+    "pm": 40.92088888888889
+   },
+   "T_C": {
+    "winding_max": 2818.7966812576974,
+    "winding_mean": 1804.3326581306014,
+    "stator_max": 2231.492761338879,
+    "magnet_max": 790.5029309107343,
+    "rotor_max": 791.1367812949438,
+    "winding_min": -492.85901181568465,
+    "stator_mean": 2025.3954991207968,
+    "magnet_mean": 763.919369168334,
+    "rotor_mean": 740.314159111972,
+    "shaft_max": 738.0834797006747
+   },
+   "circuit_T": {
+    "OIL": 70.0,
+    "JACKET": 280.4880103213227,
+    "SPRAY": 315.4045560635518,
+    "GAP_S": 2130.045207347297,
+    "GAP_R": 792.8673706025573,
+    "SHF": 81.49622766757149
+   },
+   "_source": "reconstructed",
+   "_argmax_nodes": {
+    "winding": 331981,
+    "stator": 318332,
+    "magnet": 434859,
+    "rotor": 556171,
+    "shaft": 440479
+   },
+   "P_total_W": 53282.12472499686
+  },
+  {
+   "speed": 8000,
+   "current": 115.075,
+   "case": "DC",
+   "htc": "base",
+   "P_W": {
+    "cu_slot": 1965.8138088778298,
+    "cu_end": 1155.2212950891842,
+    "ac_slot": 0.0,
+    "fe_s": 722.8964030077071,
+    "fe_r": 28.82237813716074,
+    "pm": 163.68355555555556
+   },
+   "T_C": {
+    "winding_max": 174.2387574449056,
+    "winding_mean": 115.06509883391139,
+    "stator_max": 141.19724532161314,
+    "magnet_max": 116.0194427419744,
+    "rotor_max": 115.98045909025524,
+    "winding_min": 73.6688956755099,
+    "stator_mean": 127.72554511605365,
+    "magnet_mean": 114.6281624828492,
+    "rotor_mean": 113.35257903788936,
+    "shaft_max": 113.80557462533588
+   },
+   "circuit_T": {
+    "OIL": 70.0,
+    "JACKET": 88.13937674558302,
+    "SPRAY": 85.7765465969068,
+    "GAP_S": 136.57681720555445,
+    "GAP_R": 115.32719235424806,
+    "SHF": 70.75403713947279
+   },
+   "_source": "reconstructed",
+   "_argmax_nodes": {
+    "winding": 331981,
+    "stator": 318332,
+    "magnet": 1059820,
+    "rotor": 488908,
+    "shaft": 439445
+   },
+   "P_total_W": 4036.4374406674374
+  },
+  {
+   "speed": 8000,
+   "current": 115.075,
+   "case": "DC",
+   "htc": "sph",
+   "P_W": {
+    "cu_slot": 1965.8138088778298,
+    "cu_end": 1155.2212950891842,
+    "ac_slot": 0.0,
+    "fe_s": 722.8964030077071,
+    "fe_r": 28.82237813716074,
+    "pm": 163.68355555555556
+   },
+   "T_C": {
+    "winding_max": 268.37485033450685,
+    "winding_mean": 194.1845669415517,
+    "stator_max": 235.25578650058245,
+    "magnet_max": 147.76258012945482,
+    "rotor_max": 147.71526322717068,
+    "winding_min": 31.424072376970173,
+    "stator_mean": 222.2782156655521,
+    "magnet_mean": 145.5525827845915,
+    "rotor_mean": 143.221675097811,
+    "shaft_max": 143.5671563059849
+   },
+   "circuit_T": {
+    "OIL": 70.0,
+    "JACKET": 86.58793053424492,
+    "SPRAY": 86.12803645814533,
+    "GAP_S": 229.17453720760793,
+    "GAP_R": 147.55573142077716,
+    "SHF": 71.26616452384215
+   },
+   "_source": "reconstructed",
+   "_argmax_nodes": {
+    "winding": 331981,
+    "stator": 318332,
+    "magnet": 1071288,
+    "rotor": 530238,
+    "shaft": 439445
+   },
+   "P_total_W": 4036.4374406674374
+  },
+  {
+   "speed": 8000,
+   "current": 115.075,
+   "case": "AC",
+   "htc": "base",
+   "P_W": {
+    "cu_slot": 1965.8138088778298,
+    "cu_end": 1155.2212950891842,
+    "ac_slot": 830.944054413246,
+    "fe_s": 722.8964030077071,
+    "fe_r": 28.82237813716074,
+    "pm": 163.68355555555556
+   },
+   "T_C": {
+    "winding_max": 210.75022642448133,
+    "winding_mean": 125.92373780054031,
+    "stator_max": 163.58473615010672,
+    "magnet_max": 122.90818088412271,
+    "rotor_max": 122.89115277864451,
+    "winding_min": 73.97927927797693,
+    "stator_mean": 144.951784568572,
+    "magnet_mean": 121.38505443673223,
+    "rotor_mean": 119.87888584874574,
+    "shaft_max": 120.30838987071928
+   },
+   "circuit_T": {
+    "OIL": 70.0,
+    "JACKET": 93.3978804800464,
+    "SPRAY": 86.8996572346322,
+    "GAP_S": 156.80913791697637,
+    "GAP_R": 122.36903029913151,
+    "SHF": 70.86593541821298
+   },
+   "_source": "reconstructed",
+   "_argmax_nodes": {
+    "winding": 331981,
+    "stator": 318332,
+    "magnet": 1068488,
+    "rotor": 553565,
+    "shaft": 439445
+   },
+   "P_total_W": 4867.381495080683
+  },
+  {
+   "speed": 8000,
+   "current": 115.075,
+   "case": "AC",
+   "htc": "sph",
+   "P_W": {
+    "cu_slot": 1965.8138088778298,
+    "cu_end": 1155.2212950891842,
+    "ac_slot": 830.944054413246,
+    "fe_s": 722.8964030077071,
+    "fe_r": 28.82237813716074,
+    "pm": 163.68355555555556
+   },
+   "T_C": {
+    "winding_max": 331.1693233356377,
+    "winding_mean": 221.01004254717557,
+    "stator_max": 283.9036398648336,
+    "magnet_max": 163.6370255702762,
+    "rotor_max": 163.62171177033983,
+    "winding_min": 25.156312536838115,
+    "stator_mean": 265.8456004169448,
+    "magnet_mean": 160.9078958688178,
+    "rotor_mean": 158.05297402169364,
+    "shaft_max": 158.34506968735226
+   },
+   "circuit_T": {
+    "OIL": 70.0,
+    "JACKET": 91.28515087045014,
+    "SPRAY": 87.5437417999538,
+    "GAP_S": 275.1533128139835,
+    "GAP_R": 163.55859591381173,
+    "SHF": 71.52045793497989
+   },
+   "_source": "reconstructed",
+   "_argmax_nodes": {
+    "winding": 331981,
+    "stator": 318332,
+    "magnet": 1093545,
+    "rotor": 468337,
+    "shaft": 439445
+   },
+   "P_total_W": 4867.381495080683
+  },
+  {
+   "speed": 8000,
+   "current": 230.05,
+   "case": "DC",
+   "htc": "base",
+   "P_W": {
+    "cu_slot": 7856.4235631704105,
+    "cu_end": 4616.870510537221,
+    "ac_slot": 0.0,
+    "fe_s": 722.8964030077071,
+    "fe_r": 28.82237813716074,
+    "pm": 163.68355555555556
+   },
+   "T_C": {
+    "winding_max": 437.5012583257334,
+    "winding_mean": 227.4440987518683,
+    "stator_max": 304.35570096026254,
+    "magnet_max": 167.14747988877258,
+    "rotor_max": 167.1391866750176,
+    "winding_min": 83.9807672894507,
+    "stator_mean": 254.5828923361959,
+    "magnet_mean": 164.29649366259744,
+    "rotor_mean": 161.32593280391177,
+    "shaft_max": 161.60624739218267
+   },
+   "circuit_T": {
+    "OIL": 70.0,
+    "JACKET": 126.77337433142009,
+    "SPRAY": 130.92804291428354,
+    "GAP_S": 285.2998705888007,
+    "GAP_R": 167.0900948161372,
+    "SHF": 71.57657519468978
+   },
+   "_source": "reconstructed",
+   "_argmax_nodes": {
+    "winding": 324577,
+    "stator": 318332,
+    "magnet": 1055768,
+    "rotor": 528879,
+    "shaft": 439445
+   },
+   "P_total_W": 13388.696410408054
+  },
+  {
+   "speed": 8000,
+   "current": 230.05,
+   "case": "DC",
+   "htc": "sph",
+   "P_W": {
+    "cu_slot": 7856.4235631704105,
+    "cu_end": 4616.870510537221,
+    "ac_slot": 0.0,
+    "fe_s": 722.8964030077071,
+    "fe_r": 28.82237813716074,
+    "pm": 163.68355555555556
+   },
+   "T_C": {
+    "winding_max": 737.1426813041356,
+    "winding_mean": 499.17488287122586,
+    "stator_max": 603.7760607627376,
+    "magnet_max": 269.5383623435043,
+    "rotor_max": 269.63298441720065,
+    "winding_min": -69.4175552194059,
+    "stator_mean": 555.7902559415355,
+    "magnet_mean": 262.90655927999944,
+    "rotor_mean": 256.5708393748972,
+    "shaft_max": 256.5083767906232
+   },
+   "circuit_T": {
+    "OIL": 70.0,
+    "JACKET": 122.46986886171595,
+    "SPRAY": 131.08336472799778,
+    "GAP_S": 580.5703124352535,
+    "GAP_R": 269.8586615700427,
+    "SHF": 73.20961841698292
+   },
+   "_source": "reconstructed",
+   "_argmax_nodes": {
+    "winding": 331981,
+    "stator": 318332,
+    "magnet": 493939,
+    "rotor": 554522,
+    "shaft": 440479
+   },
+   "P_total_W": 13388.696410408054
+  },
+  {
+   "speed": 8000,
+   "current": 230.05,
+   "case": "AC",
+   "htc": "base",
+   "P_W": {
+    "cu_slot": 7856.4235631704105,
+    "cu_end": 4616.870510537221,
+    "ac_slot": 3364.88233234727,
+    "fe_s": 722.8964030077071,
+    "fe_r": 28.82237813716074,
+    "pm": 163.68355555555556
+   },
+   "T_C": {
+    "winding_max": 585.347162464093,
+    "winding_mean": 271.41582250160724,
+    "stator_max": 395.013154917952,
+    "magnet_max": 195.54811568667137,
+    "rotor_max": 195.5654184531849,
+    "winding_min": 85.23765611926378,
+    "stator_mean": 324.34001795579354,
+    "magnet_mean": 191.6583193311799,
+    "rotor_mean": 187.7540110441913,
+    "shaft_max": 187.93919726226758
+   },
+   "circuit_T": {
+    "OIL": 70.0,
+    "JACKET": 148.06752309715426,
+    "SPRAY": 135.47604481896298,
+    "GAP_S": 367.2300295961003,
+    "GAP_R": 195.60580049107904,
+    "SHF": 72.0297038248944
+   },
+   "_source": "reconstructed",
+   "_argmax_nodes": {
+    "winding": 324577,
+    "stator": 318332,
+    "magnet": 451309,
+    "rotor": 554522,
+    "shaft": 439445
+   },
+   "P_total_W": 16753.578742755322,
+   "_direct_check_C": {
+    "winding_max": 585.3471624465441,
+    "stator_max": 395.01315490017953,
+    "magnet_max": 195.54811554517607,
+    "rotor_max": 195.56541831064004,
+    "shaft_max": 187.9391971312199,
+    "winding_mean": 271.41582249021,
+    "OIL": 70.0,
+    "JACKET": 148.06752309236762,
+    "SPRAY": 135.47604481311285,
+    "GAP_S": 367.23002957492304,
+    "GAP_R": 195.60580035001868,
+    "SHF": 72.02970382261614
+   },
+   "_direct_check_max_err_K": 1.425448772351956e-07
+  },
+  {
+   "speed": 8000,
+   "current": 230.05,
+   "case": "AC",
+   "htc": "sph",
+   "P_W": {
+    "cu_slot": 7856.4235631704105,
+    "cu_end": 4616.870510537221,
+    "ac_slot": 3364.88233234727,
+    "fe_s": 722.8964030077071,
+    "fe_r": 28.82237813716074,
+    "pm": 163.68355555555556
+   },
+   "T_C": {
+    "winding_max": 991.4269639202081,
+    "winding_mean": 607.8038193715478,
+    "stator_max": 800.7740432653972,
+    "magnet_max": 334.11454722151495,
+    "rotor_max": 334.2743772306214,
+    "winding_min": -94.79865547211614,
+    "stator_mean": 732.2150374150066,
+    "magnet_mean": 325.0874262473417,
+    "rotor_mean": 316.629727154019,
+    "shaft_max": 316.35113978789457
+   },
+   "circuit_T": {
+    "OIL": 70.0,
+    "JACKET": 141.4911178092158,
+    "SPRAY": 136.81621986687327,
+    "GAP_S": 766.7599468386195,
+    "GAP_R": 334.66176800490723,
+    "SHF": 74.23937174613326
+   },
+   "_source": "reconstructed",
+   "_argmax_nodes": {
+    "winding": 331981,
+    "stator": 318332,
+    "magnet": 434859,
+    "rotor": 554522,
+    "shaft": 440479
+   },
+   "P_total_W": 16753.578742755322,
+   "_direct_check_C": {
+    "winding_max": 991.4269639843396,
+    "stator_max": 800.7740433301622,
+    "magnet_max": 334.1145471842045,
+    "rotor_max": 334.2743771928841,
+    "shaft_max": 316.35113975332246,
+    "winding_mean": 607.8038194044914,
+    "OIL": 70.0,
+    "JACKET": 141.49111781551946,
+    "SPRAY": 136.81621986817214,
+    "GAP_S": 766.759946908219,
+    "GAP_R": 334.66176796788153,
+    "SHF": 74.23937174552111
+   },
+   "_direct_check_max_err_K": 6.959965048736194e-08
+  },
+  {
+   "speed": 8000,
+   "current": 345.025,
+   "case": "DC",
+   "htc": "base",
+   "P_W": {
+    "cu_slot": 17671.830747378466,
+    "cu_end": 10384.948518719126,
+    "ac_slot": 0.0,
+    "fe_s": 722.8964030077071,
+    "fe_r": 28.82237813716074,
+    "pm": 163.68355555555556
+   },
+   "T_C": {
+    "winding_max": 876.1749031254016,
+    "winding_mean": 414.6990161812608,
+    "stator_max": 576.2234267882851,
+    "magnet_max": 253.07958743906084,
+    "rotor_max": 253.1571417079897,
+    "winding_min": 101.16323615837355,
+    "stator_mean": 465.96279513264136,
+    "magnet_mean": 247.05785709090225,
+    "rotor_mean": 241.2629887024857,
+    "shaft_max": 241.25561215143054
+   },
+   "circuit_T": {
+    "OIL": 70.0,
+    "JACKET": 191.14844470208362,
+    "SPRAY": 206.16309324304973,
+    "GAP_S": 533.1141695366323,
+    "GAP_R": 253.3416011783853,
+    "SHF": 72.9471541794168
+   },
+   "_source": "reconstructed",
+   "_argmax_nodes": {
+    "winding": 324577,
+    "stator": 318332,
+    "magnet": 493939,
+    "rotor": 554522,
+    "shaft": 440479
+   },
+   "P_total_W": 28972.181602798013
+  },
+  {
+   "speed": 8000,
+   "current": 345.025,
+   "case": "DC",
+   "htc": "sph",
+   "P_W": {
+    "cu_slot": 17671.830747378466,
+    "cu_end": 10384.948518719126,
+    "ac_slot": 0.0,
+    "fe_s": 722.8964030077071,
+    "fe_r": 28.82237813716074,
+    "pm": 163.68355555555556
+   },
+   "T_C": {
+    "winding_max": 1518.2412988915585,
+    "winding_mean": 1007.3742481251411,
+    "stator_max": 1217.8341461558814,
+    "magnet_max": 472.62996925776974,
+    "rotor_max": 472.9153992224607,
+    "winding_min": -237.4479760523967,
+    "stator_mean": 1111.5148095430166,
+    "magnet_mean": 458.45118233859193,
+    "rotor_mean": 445.44232259589035,
+    "shaft_max": 444.70019694060045
+   },
+   "circuit_T": {
+    "OIL": 70.0,
+    "JACKET": 182.25923701432845,
+    "SPRAY": 205.99154409716948,
+    "GAP_S": 1166.0941818710762,
+    "GAP_R": 473.64962877203874,
+    "SHF": 76.44795741762886
+   },
+   "_source": "reconstructed",
+   "_argmax_nodes": {
+    "winding": 331981,
+    "stator": 318332,
+    "magnet": 434859,
+    "rotor": 554522,
+    "shaft": 440479
+   },
+   "P_total_W": 28972.181602798013
+  },
+  {
+   "speed": 8000,
+   "current": 345.025,
+   "case": "AC",
+   "htc": "base",
+   "P_W": {
+    "cu_slot": 17671.830747378466,
+    "cu_end": 10384.948518719126,
+    "ac_slot": 6892.36711366584,
+    "fe_s": 722.8964030077071,
+    "fe_r": 28.82237813716074,
+    "pm": 163.68355555555556
+   },
+   "T_C": {
+    "winding_max": 1179.0111235119207,
+    "winding_mean": 504.767325491942,
+    "stator_max": 761.9192082603153,
+    "magnet_max": 311.2828584071558,
+    "rotor_max": 311.4207696692449,
+    "winding_min": 103.73775092011101,
+    "stator_mean": 608.8479456600246,
+    "magnet_mean": 303.1037240132207,
+    "rotor_mean": 295.396238947116,
+    "shaft_max": 295.19406130445964
+   },
+   "circuit_T": {
+    "OIL": 70.0,
+    "JACKET": 234.7657472316709,
+    "SPRAY": 215.47887182447647,
+    "GAP_S": 700.9336288178149,
+    "GAP_R": 311.7509874821973,
+    "SHF": 73.87530814161023
+   },
+   "_source": "reconstructed",
+   "_argmax_nodes": {
+    "winding": 324577,
+    "stator": 318332,
+    "magnet": 493939,
+    "rotor": 554522,
+    "shaft": 440479
+   },
+   "P_total_W": 35864.548716463854
+  },
+  {
+   "speed": 8000,
+   "current": 345.025,
+   "case": "AC",
+   "htc": "sph",
+   "P_W": {
+    "cu_slot": 17671.830747378466,
+    "cu_end": 10384.948518719126,
+    "ac_slot": 6892.36711366584,
+    "fe_s": 722.8964030077071,
+    "fe_r": 28.82237813716074,
+    "pm": 163.68355555555556
+   },
+   "T_C": {
+    "winding_max": 2039.0977372213165,
+    "winding_mean": 1229.8814372561878,
+    "stator_max": 1621.3497172673053,
+    "magnet_max": 604.9164928800772,
+    "rotor_max": 605.3218746958489,
+    "winding_min": -289.43667681876326,
+    "stator_mean": 1472.8898122211008,
+    "magnet_mean": 585.8177052226109,
+    "rotor_mean": 568.4623459211651,
+    "shaft_max": 567.2775268246949
+   },
+   "circuit_T": {
+    "OIL": 70.0,
+    "JACKET": 221.2209057319224,
+    "SPRAY": 217.73428524646621,
+    "GAP_S": 1547.4707609956222,
+    "GAP_R": 606.3873460352382,
+    "SHF": 78.55722522553839
+   },
+   "_source": "reconstructed",
+   "_argmax_nodes": {
+    "winding": 331981,
+    "stator": 318332,
+    "magnet": 434859,
+    "rotor": 554522,
+    "shaft": 440479
+   },
+   "P_total_W": 35864.548716463854
+  },
+  {
+   "speed": 8000,
+   "current": 460.0,
+   "case": "DC",
+   "htc": "base",
+   "P_W": {
+    "cu_slot": 31412.035361502007,
+    "cu_end": 18459.4553196349,
+    "ac_slot": 0.0,
+    "fe_s": 722.8964030077071,
+    "fe_r": 28.82237813716074,
+    "pm": 163.68355555555556
+   },
+   "T_C": {
+    "winding_max": 1490.2569809497777,
+    "winding_mean": 676.8298511220889,
+    "stator_max": 956.800422805681,
+    "magnet_max": 373.4004968870765,
+    "rotor_max": 373.59594974533354,
+    "winding_min": 125.21630228227849,
+    "stator_mean": 761.8652535053906,
+    "magnet_mean": 362.9122527677637,
+    "rotor_mean": 353.1637467336114,
+    "shaft_max": 352.7536899496521
+   },
+   "circuit_T": {
+    "OIL": 70.0,
+    "JACKET": 281.26458785757364,
+    "SPRAY": 311.4816975832054,
+    "GAP_S": 880.019714049049,
+    "GAP_R": 374.08171144099254,
+    "SHF": 74.86577409365385
+   },
+   "_source": "reconstructed",
+   "_argmax_nodes": {
+    "winding": 324577,
+    "stator": 318332,
+    "magnet": 434859,
+    "rotor": 554522,
+    "shaft": 440479
+   },
+   "P_total_W": 50786.893017837334
+  },
+  {
+   "speed": 8000,
+   "current": 460.0,
+   "case": "DC",
+   "htc": "sph",
+   "P_W": {
+    "cu_slot": 31412.035361502007,
+    "cu_end": 18459.4553196349,
+    "ac_slot": 0.0,
+    "fe_s": 722.8964030077071,
+    "fe_r": 28.82237813716074,
+    "pm": 163.68355555555556
+   },
+   "T_C": {
+    "winding_max": 2611.6707030967764,
+    "winding_mean": 1718.7826627032969,
+    "stator_max": 2077.430042680015,
+    "magnet_max": 756.9392711935533,
+    "rotor_max": 757.4828083494109,
+    "winding_min": -472.66719012200235,
+    "stator_mean": 1889.4518764699958,
+    "magnet_mean": 732.1864519603689,
+    "rotor_mean": 709.8361247607911,
+    "shaft_max": 708.1425653555646
+   },
+   "circuit_T": {
+    "OIL": 70.0,
+    "JACKET": 265.95603499208255,
+    "SPRAY": 310.8525745656605,
+    "GAP_S": 1985.7461455150763,
+    "GAP_R": 758.9286330267653,
+    "SHF": 80.98118152577997
+   },
+   "_source": "reconstructed",
+   "_argmax_nodes": {
+    "winding": 331981,
+    "stator": 318332,
+    "magnet": 434859,
+    "rotor": 556171,
+    "shaft": 440479
+   },
+   "P_total_W": 50786.893017837334
+  },
+  {
+   "speed": 8000,
+   "current": 460.0,
+   "case": "AC",
+   "htc": "base",
+   "P_W": {
+    "cu_slot": 31412.035361502007,
+    "cu_end": 18459.4553196349,
+    "ac_slot": 11155.8530294853,
+    "fe_s": 722.8964030077071,
+    "fe_r": 28.82237813716074,
+    "pm": 163.68355555555556
+   },
+   "T_C": {
+    "winding_max": 1980.421870736091,
+    "winding_mean": 822.6126866434206,
+    "stator_max": 1257.3640480644015,
+    "magnet_max": 467.619452261493,
+    "rotor_max": 467.90033890238016,
+    "winding_min": 129.3833624272956,
+    "stator_mean": 993.136413774677,
+    "magnet_mean": 453.6270165034015,
+    "rotor_mean": 440.78278585009383,
+    "shaft_max": 440.0574277607851
+   },
+   "circuit_T": {
+    "OIL": 70.0,
+    "JACKET": 351.8627159807682,
+    "SPRAY": 326.5600378682964,
+    "GAP_S": 1151.6490675575883,
+    "GAP_R": 468.6220222517422,
+    "SHF": 76.36806626994178
+   },
+   "_source": "reconstructed",
+   "_argmax_nodes": {
+    "winding": 324577,
+    "stator": 318332,
+    "magnet": 434859,
+    "rotor": 554522,
+    "shaft": 440479
+   },
+   "P_total_W": 61942.74604732264
+  },
+  {
+   "speed": 8000,
+   "current": 460.0,
+   "case": "AC",
+   "htc": "sph",
+   "P_W": {
+    "cu_slot": 31412.035361502007,
+    "cu_end": 18459.4553196349,
+    "ac_slot": 11155.8530294853,
+    "fe_s": 722.8964030077071,
+    "fe_r": 28.82237813716074,
+    "pm": 163.68355555555556
+   },
+   "T_C": {
+    "winding_max": 3454.7189301633516,
+    "winding_mean": 2078.928525367541,
+    "stator_max": 2730.552595815991,
+    "magnet_max": 971.0556975205718,
+    "rotor_max": 971.7940056700905,
+    "winding_min": -556.8151026430176,
+    "stator_mean": 2474.366514927546,
+    "magnet_mean": 938.3394595901337,
+    "rotor_mean": 908.9539716873587,
+    "shaft_max": 906.5438771809856
+   },
+   "circuit_T": {
+    "OIL": 70.0,
+    "JACKET": 329.018643647267,
+    "SPRAY": 329.85914984878826,
+    "GAP_S": 2603.0349514414957,
+    "GAP_R": 973.775352714921,
+    "SHF": 84.39520188726186
+   },
+   "_source": "reconstructed",
+   "_argmax_nodes": {
+    "winding": 331981,
+    "stator": 318332,
+    "magnet": 434859,
+    "rotor": 556171,
+    "shaft": 440479
+   },
+   "P_total_W": 61942.74604732264
+  },
+  {
+   "speed": 16000,
+   "current": 115.075,
+   "case": "DC",
+   "htc": "base",
+   "P_W": {
+    "cu_slot": 1965.8138088778298,
+    "cu_end": 1155.2212950891842,
+    "ac_slot": 0.0,
+    "fe_s": 2044.6597946484526,
+    "fe_r": 81.52199612283701,
+    "pm": 654.7342222222222
+   },
+   "T_C": {
+    "winding_max": 205.90698273199754,
+    "winding_mean": 129.64946775109686,
+    "stator_max": 173.5557211144639,
+    "magnet_max": 193.5112203457608,
+    "rotor_max": 193.17055509758228,
+    "winding_min": 74.10600427903273,
+    "stator_mean": 157.350784342744,
+    "magnet_mean": 189.04779857098842,
+    "rotor_mean": 185.82114815484974,
+    "shaft_max": 187.50951260921164
+   },
+   "circuit_T": {
+    "OIL": 70.0,
+    "JACKET": 98.13849975256433,
+    "SPRAY": 87.14385960222367,
+    "GAP_S": 169.68067371723288,
+    "GAP_R": 189.55838770850102,
+    "SHF": 72.022831344489
+   },
+   "_source": "reconstructed",
+   "_argmax_nodes": {
+    "winding": 331981,
+    "stator": 318332,
+    "magnet": 1090433,
+    "rotor": 488025,
+    "shaft": 439445
+   },
+   "P_total_W": 5901.951116960526
+  },
+  {
+   "speed": 16000,
+   "current": 115.075,
+   "case": "DC",
+   "htc": "sph",
+   "P_W": {
+    "cu_slot": 1965.8138088778298,
+    "cu_end": 1155.2212950891842,
+    "ac_slot": 0.0,
+    "fe_s": 2044.6597946484526,
+    "fe_r": 81.52199612283701,
+    "pm": 654.7342222222222
+   },
+   "T_C": {
+    "winding_max": 348.77072159037857,
+    "winding_mean": 237.0980702611473,
+    "stator_max": 316.293696424579,
+    "magnet_max": 241.11211793396294,
+    "rotor_max": 240.9507939462854,
+    "winding_min": 21.986918077983027,
+    "stator_mean": 300.70263287591,
+    "magnet_mean": 235.87153911002437,
+    "rotor_mean": 231.04698554804216,
+    "shaft_max": 232.57255874067042
+   },
+   "circuit_T": {
+    "OIL": 70.0,
+    "JACKET": 95.38387023371617,
+    "SPRAY": 88.28435888992874,
+    "GAP_S": 309.8861027274837,
+    "GAP_R": 238.35673983531694,
+    "SHF": 72.79826123241197
+   },
+   "_source": "reconstructed",
+   "_argmax_nodes": {
+    "winding": 331981,
+    "stator": 318332,
+    "magnet": 1059820,
+    "rotor": 488908,
+    "shaft": 439445
+   },
+   "P_total_W": 5901.951116960526
+  },
+  {
+   "speed": 16000,
+   "current": 115.075,
+   "case": "AC",
+   "htc": "base",
+   "P_W": {
+    "cu_slot": 1965.8138088778298,
+    "cu_end": 1155.2212950891842,
+    "ac_slot": 2773.24732142224,
+    "fe_s": 2044.6597946484526,
+    "fe_r": 81.52199612283701,
+    "pm": 654.7342222222222
+   },
+   "T_C": {
+    "winding_max": 327.7627599182235,
+    "winding_mean": 165.88980338928732,
+    "stator_max": 248.2732049736217,
+    "magnet_max": 216.41638854189372,
+    "rotor_max": 216.1618338379128,
+    "winding_min": 75.14189892149803,
+    "stator_mean": 214.8427685096063,
+    "magnet_mean": 211.59869404069292,
+    "rotor_mean": 207.60247360734053,
+    "shaft_max": 209.2124357665324
+   },
+   "circuit_T": {
+    "OIL": 70.0,
+    "JACKET": 115.68857586038001,
+    "SPRAY": 90.89220288862234,
+    "GAP_S": 237.20535112614334,
+    "GAP_R": 213.06028066364996,
+    "SHF": 72.39628801722148
+   },
+   "_source": "reconstructed",
+   "_argmax_nodes": {
+    "winding": 331981,
+    "stator": 318332,
+    "magnet": 1066456,
+    "rotor": 488909,
+    "shaft": 439445
+   },
+   "P_total_W": 8675.198438382766
+  },
+  {
+   "speed": 16000,
+   "current": 115.075,
+   "case": "AC",
+   "htc": "sph",
+   "P_W": {
+    "cu_slot": 1965.8138088778298,
+    "cu_end": 1155.2212950891842,
+    "ac_slot": 2773.24732142224,
+    "fe_s": 2044.6597946484526,
+    "fe_r": 81.52199612283701,
+    "pm": 654.7342222222222
+   },
+   "T_C": {
+    "winding_max": 558.3451244946463,
+    "winding_mean": 326.62717631113946,
+    "stator_max": 478.65424081840973,
+    "magnet_max": 293.40645769735875,
+    "rotor_max": 293.4058467768138,
+    "winding_min": 1.0684842849425564,
+    "stator_mean": 446.10728728250365,
+    "magnet_mean": 287.11937060272373,
+    "rotor_mean": 280.54593772829895,
+    "shaft_max": 281.89333850125985
+   },
+   "circuit_T": {
+    "OIL": 70.0,
+    "JACKET": 111.06068222403675,
+    "SPRAY": 93.00922697971353,
+    "GAP_S": 463.33869152143603,
+    "GAP_R": 291.76575197600687,
+    "SHF": 73.64695678242833
+   },
+   "_source": "reconstructed",
+   "_argmax_nodes": {
+    "winding": 331981,
+    "stator": 318332,
+    "magnet": 1068434,
+    "rotor": 552545,
+    "shaft": 439445
+   },
+   "P_total_W": 8675.198438382766
+  },
+  {
+   "speed": 16000,
+   "current": 230.05,
+   "case": "DC",
+   "htc": "base",
+   "P_W": {
+    "cu_slot": 7856.4235631704105,
+    "cu_end": 4616.870510537221,
+    "ac_slot": 0.0,
+    "fe_s": 2044.6597946484526,
+    "fe_r": 81.52199612283701,
+    "pm": 654.7342222222222
+   },
+   "T_C": {
+    "winding_max": 469.15669117456935,
+    "winding_mean": 242.0284676690538,
+    "stator_max": 336.71417675311335,
+    "magnet_max": 244.00968658214322,
+    "rotor_max": 243.85955125475806,
+    "winding_min": 84.41787589297351,
+    "stator_mean": 284.20813156288625,
+    "magnet_mean": 238.7161297507366,
+    "rotor_mean": 233.79450192087214,
+    "shaft_max": 235.31018537605843
+   },
+   "circuit_T": {
+    "OIL": 70.0,
+    "JACKET": 136.7724973384014,
+    "SPRAY": 132.2953559196004,
+    "GAP_S": 318.40372710047916,
+    "GAP_R": 241.32129017039017,
+    "SHF": 72.845369399706
+   },
+   "_source": "reconstructed",
+   "_argmax_nodes": {
+    "winding": 331981,
+    "stator": 318332,
+    "magnet": 1059820,
+    "rotor": 526675,
+    "shaft": 439445
+   },
+   "P_total_W": 15254.210086701143
+  },
+  {
+   "speed": 16000,
+   "current": 230.05,
+   "case": "DC",
+   "htc": "sph",
+   "P_W": {
+    "cu_slot": 7856.4235631704105,
+    "cu_end": 4616.870510537221,
+    "ac_slot": 0.0,
+    "fe_s": 2044.6597946484526,
+    "fe_r": 81.52199612283701,
+    "pm": 654.7342222222222
+   },
+   "T_C": {
+    "winding_max": 817.5385525600076,
+    "winding_mean": 542.0883861908214,
+    "stator_max": 684.8139706867341,
+    "magnet_max": 361.5288551234265,
+    "rotor_max": 361.35851218872625,
+    "winding_min": -78.85470951839301,
+    "stator_mean": 634.2146731518934,
+    "magnet_mean": 353.2255156054324,
+    "rotor_mean": 344.39614982512813,
+    "shaft_max": 345.51372054543
+   },
+   "circuit_T": {
+    "OIL": 70.0,
+    "JACKET": 131.26580856118719,
+    "SPRAY": 133.23968715978117,
+    "GAP_S": 661.2818779551294,
+    "GAP_R": 360.6596699845825,
+    "SHF": 74.74171512555274
+   },
+   "_source": "reconstructed",
+   "_argmax_nodes": {
+    "winding": 331981,
+    "stator": 318332,
+    "magnet": 1071288,
+    "rotor": 530238,
+    "shaft": 439445
+   },
+   "P_total_W": 15254.210086701143
+  },
+  {
+   "speed": 16000,
+   "current": 230.05,
+   "case": "AC",
+   "htc": "base",
+   "P_W": {
+    "cu_slot": 7856.4235631704105,
+    "cu_end": 4616.870510537221,
+    "ac_slot": 11176.0520501008,
+    "fe_s": 2044.6597946484526,
+    "fe_r": 81.52199612283701,
+    "pm": 654.7342222222222
+   },
+   "T_C": {
+    "winding_max": 960.2295565186969,
+    "winding_mean": 388.0752606387578,
+    "stator_max": 637.8220087925097,
+    "magnet_max": 337.1106063210604,
+    "rotor_max": 337.0286649619884,
+    "winding_min": 88.59248100416693,
+    "stator_mean": 515.8980362277557,
+    "magnet_mean": 329.59514353323175,
+    "rotor_mean": 321.57218590052594,
+    "shaft_max": 322.7719119130062
+   },
+   "circuit_T": {
+    "OIL": 70.0,
+    "JACKET": 207.49845190764242,
+    "SPRAY": 147.40099736269886,
+    "GAP_S": 590.5248983926331,
+    "GAP_R": 336.03277764347257,
+    "SHF": 74.35038165760123
+   },
+   "_source": "reconstructed",
+   "_argmax_nodes": {
+    "winding": 331981,
+    "stator": 318332,
+    "magnet": 1094616,
+    "rotor": 530238,
+    "shaft": 439445
+   },
+   "P_total_W": 26430.26213680194
+  },
+  {
+   "speed": 16000,
+   "current": 230.05,
+   "case": "AC",
+   "htc": "sph",
+   "P_W": {
+    "cu_slot": 7856.4235631704105,
+    "cu_end": 4616.870510537221,
+    "ac_slot": 11176.0520501008,
+    "fe_s": 2044.6597946484526,
+    "fe_r": 81.52199612283701,
+    "pm": 654.7342222222222
+   },
+   "T_C": {
+    "winding_max": 1662.11322036342,
+    "winding_mean": 902.886336479859,
+    "stator_max": 1339.1190811655122,
+    "magnet_max": 575.5986645825776,
+    "rotor_max": 575.6870632567943,
+    "winding_min": -163.1549820082309,
+    "stator_mean": 1220.1883702766108,
+    "magnet_mean": 559.7517881787252,
+    "rotor_mean": 543.8745236862433,
+    "shaft_max": 544.2740682064602
+   },
+   "circuit_T": {
+    "OIL": 70.0,
+    "JACKET": 194.44259969340203,
+    "SPRAY": 152.2806761452909,
+    "GAP_S": 1279.6883598928468,
+    "GAP_R": 575.8953956329892,
+    "SHF": 78.16191698364284
+   },
+   "_source": "reconstructed",
+   "_argmax_nodes": {
+    "winding": 331981,
+    "stator": 318332,
+    "magnet": 451309,
+    "rotor": 554522,
+    "shaft": 439445
+   },
+   "P_total_W": 26430.26213680194
+  },
+  {
+   "speed": 16000,
+   "current": 345.025,
+   "case": "DC",
+   "htc": "base",
+   "P_W": {
+    "cu_slot": 17671.830747378466,
+    "cu_end": 10384.948518719126,
+    "ac_slot": 0.0,
+    "fe_s": 2044.6597946484526,
+    "fe_r": 81.52199612283701,
+    "pm": 654.7342222222222
+   },
+   "T_C": {
+    "winding_max": 907.8281480841889,
+    "winding_mean": 429.2833850984461,
+    "stator_max": 608.5819025811359,
+    "magnet_max": 328.7262732301581,
+    "rotor_max": 328.6707266123777,
+    "winding_min": 101.60034476189637,
+    "stator_mean": 495.58803435933186,
+    "magnet_mean": 321.4774931790414,
+    "rotor_mean": 313.7315578194461,
+    "shaft_max": 314.95950632178653
+   },
+   "circuit_T": {
+    "OIL": 70.0,
+    "JACKET": 201.14756770906493,
+    "SPRAY": 207.5304062483666,
+    "GAP_S": 566.2180260483105,
+    "GAP_R": 327.5727965326383,
+    "SHF": 74.21594838443303
+   },
+   "_source": "reconstructed",
+   "_argmax_nodes": {
+    "winding": 324577,
+    "stator": 318332,
+    "magnet": 1080228,
+    "rotor": 530238,
+    "shaft": 439445
+   },
+   "P_total_W": 30837.695279091102
+  },
+  {
+   "speed": 16000,
+   "current": 345.025,
+   "case": "DC",
+   "htc": "sph",
+   "P_W": {
+    "cu_slot": 17671.830747378466,
+    "cu_end": 10384.948518719126,
+    "ac_slot": 0.0,
+    "fe_s": 2044.6597946484526,
+    "fe_r": 81.52199612283701,
+    "pm": 654.7342222222222
+   },
+   "T_C": {
+    "winding_max": 1598.6371701474302,
+    "winding_mean": 1050.2877514447366,
+    "stator_max": 1298.872056079878,
+    "magnet_max": 564.1944339940147,
+    "rotor_max": 564.2708647617058,
+    "winding_min": -246.88513035138385,
+    "stator_mean": 1189.9392267533742,
+    "magnet_mean": 548.770138664025,
+    "rotor_mean": 533.2676330461213,
+    "shaft_max": 533.7053572708833
+   },
+   "circuit_T": {
+    "OIL": 70.0,
+    "JACKET": 191.0551767137997,
+    "SPRAY": 208.14786652895287,
+    "GAP_S": 1246.805747390952,
+    "GAP_R": 564.4506371865784,
+    "SHF": 77.9800541261987
+   },
+   "_source": "reconstructed",
+   "_argmax_nodes": {
+    "winding": 331981,
+    "stator": 318332,
+    "magnet": 451309,
+    "rotor": 554522,
+    "shaft": 439445
+   },
+   "P_total_W": 30837.695279091102
+  },
+  {
+   "speed": 16000,
+   "current": 345.025,
+   "case": "AC",
+   "htc": "base",
+   "P_W": {
+    "cu_slot": 17671.830747378466,
+    "cu_end": 10384.948518719126,
+    "ac_slot": 22921.2653024983,
+    "fe_s": 2044.6597946484526,
+    "fe_r": 81.52199612283701,
+    "pm": 654.7342222222222
+   },
+   "T_C": {
+    "winding_max": 1914.9590312542655,
+    "winding_mean": 728.8146751488925,
+    "stator_max": 1226.1320421022608,
+    "magnet_max": 521.7138921379186,
+    "rotor_max": 521.7457426746452,
+    "winding_min": 110.1621545009595,
+    "stator_mean": 970.7670822849467,
+    "magnet_mean": 507.8637032646665,
+    "rotor_mean": 493.75716732064336,
+    "shaft_max": 494.33711021813343
+   },
+   "circuit_T": {
+    "OIL": 70.0,
+    "JACKET": 346.20132740763336,
+    "SPRAY": 238.51097197314328,
+    "GAP_S": 1124.3186445540905,
+    "GAP_R": 521.8191298382518,
+    "SHF": 77.30261844395707
+   },
+   "_source": "reconstructed",
+   "_argmax_nodes": {
+    "winding": 331981,
+    "stator": 318332,
+    "magnet": 451309,
+    "rotor": 554522,
+    "shaft": 439445
+   },
+   "P_total_W": 53758.9605815894
+  },
+  {
+   "speed": 16000,
+   "current": 345.025,
+   "case": "AC",
+   "htc": "sph",
+   "P_W": {
+    "cu_slot": 17671.830747378466,
+    "cu_end": 10384.948518719126,
+    "ac_slot": 22921.2653024983,
+    "fe_s": 2044.6597946484526,
+    "fe_r": 81.52199612283701,
+    "pm": 654.7342222222222
+   },
+   "T_C": {
+    "winding_max": 3330.7980389147506,
+    "winding_mean": 1790.2579575693608,
+    "stator_max": 2640.803979699477,
+    "magnet_max": 1004.0671449926041,
+    "rotor_max": 1004.6020168961837,
+    "winding_min": -419.7788232359876,
+    "stator_mean": 2391.7284195623224,
+    "magnet_mean": 972.3404177184988,
+    "rotor_mean": 942.3831873478148,
+    "shaft_max": 941.3486597520532
+   },
+   "circuit_T": {
+    "OIL": 70.0,
+    "JACKET": 320.6261543730312,
+    "SPRAY": 247.19954221928575,
+    "GAP_S": 2515.1122096135578,
+    "GAP_R": 1005.8833674608056,
+    "SHF": 84.9946379726182
+   },
+   "_source": "reconstructed",
+   "_argmax_nodes": {
+    "winding": 331981,
+    "stator": 318332,
+    "magnet": 493939,
+    "rotor": 554522,
+    "shaft": 440479
+   },
+   "P_total_W": 53758.9605815894
+  },
+  {
+   "speed": 16000,
+   "current": 460.0,
+   "case": "DC",
+   "htc": "base",
+   "P_W": {
+    "cu_slot": 31412.035361502007,
+    "cu_end": 18459.4553196349,
+    "ac_slot": 0.0,
+    "fe_s": 2044.6597946484526,
+    "fe_r": 81.52199612283701,
+    "pm": 654.7342222222222
+   },
+   "T_C": {
+    "winding_max": 1521.9102259085653,
+    "winding_mean": 691.4142200392743,
+    "stator_max": 989.1588985985318,
+    "magnet_max": 448.5166056578019,
+    "rotor_max": 448.48965569892493,
+    "winding_min": 125.65341088580129,
+    "stator_mean": 791.490492732081,
+    "magnet_mean": 437.3318888559028,
+    "rotor_mean": 425.63231585057173,
+    "shaft_max": 426.4574754463961
+   },
+   "circuit_T": {
+    "OIL": 70.0,
+    "JACKET": 291.263710864555,
+    "SPRAY": 312.8490105885223,
+    "GAP_S": 913.1235705607274,
+    "GAP_R": 448.31290679524545,
+    "SHF": 76.13456829867009
+   },
+   "_source": "reconstructed",
+   "_argmax_nodes": {
+    "winding": 324577,
+    "stator": 318332,
+    "magnet": 1055768,
+    "rotor": 528879,
+    "shaft": 439445
+   },
+   "P_total_W": 52652.40669413042
+  },
+  {
+   "speed": 16000,
+   "current": 460.0,
+   "case": "DC",
+   "htc": "sph",
+   "P_W": {
+    "cu_slot": 31412.035361502007,
+    "cu_end": 18459.4553196349,
+    "ac_slot": 0.0,
+    "fe_s": 2044.6597946484526,
+    "fe_r": 81.52199612283701,
+    "pm": 654.7342222222222
+   },
+   "T_C": {
+    "winding_max": 2692.066574352648,
+    "winding_mean": 1761.6961660228924,
+    "stator_max": 2158.4679526040118,
+    "magnet_max": 848.4644550280199,
+    "rotor_max": 848.8379664068904,
+    "winding_min": -482.1043444209896,
+    "stator_mean": 1967.8762936803537,
+    "magnet_mean": 822.5054082858016,
+    "rotor_mean": 797.6614352110217,
+    "shaft_max": 797.147695766108
+   },
+   "circuit_T": {
+    "OIL": 70.0,
+    "JACKET": 274.75197469155376,
+    "SPRAY": 313.0088969974439,
+    "GAP_S": 2066.457711034952,
+    "GAP_R": 849.7296414413051,
+    "SHF": 82.5132782343498
+   },
+   "_source": "reconstructed",
+   "_argmax_nodes": {
+    "winding": 331981,
+    "stator": 318332,
+    "magnet": 493939,
+    "rotor": 554522,
+    "shaft": 440479
+   },
+   "P_total_W": 52652.40669413042
+  },
+  {
+   "speed": 16000,
+   "current": 460.0,
+   "case": "AC",
+   "htc": "base",
+   "P_W": {
+    "cu_slot": 31412.035361502007,
+    "cu_end": 18459.4553196349,
+    "ac_slot": 37171.8430714458,
+    "fe_s": 2044.6597946484526,
+    "fe_r": 81.52199612283701,
+    "pm": 654.7342222222222
+   },
+   "T_C": {
+    "winding_max": 3155.1716847832204,
+    "winding_mean": 1177.1696947830417,
+    "stator_max": 1990.6514677075627,
+    "magnet_max": 762.3655211122999,
+    "rotor_max": 762.6497475986484,
+    "winding_min": 139.53825728620237,
+    "stator_mean": 1562.0972095613117,
+    "magnet_mean": 739.5978789986561,
+    "rotor_mean": 717.5832014978189,
+    "shaft_max": 717.3576274091959
+   },
+   "circuit_T": {
+    "OIL": 70.0,
+    "JACKET": 526.5000959977398,
+    "SPRAY": 363.0907713372403,
+    "GAP_S": 1818.2057436165283,
+    "GAP_R": 763.3258052347145,
+    "SHF": 81.140278653301
+   },
+   "_source": "reconstructed",
+   "_argmax_nodes": {
+    "winding": 331981,
+    "stator": 318332,
+    "magnet": 493939,
+    "rotor": 554522,
+    "shaft": 440479
+   },
+   "P_total_W": 89824.24976557623
+  },
+  {
+   "speed": 16000,
+   "current": 460.0,
+   "case": "AC",
+   "htc": "sph",
+   "P_W": {
+    "cu_slot": 31412.035361502007,
+    "cu_end": 18459.4553196349,
+    "ac_slot": 37171.8430714458,
+    "fe_s": 2044.6597946484526,
+    "fe_r": 81.52199612283701,
+    "pm": 654.7342222222222
+   },
+   "T_C": {
+    "winding_max": 5501.14413349159,
+    "winding_mean": 2961.7196384012664,
+    "stator_max": 4334.703959606393,
+    "magnet_max": 1561.8832740672556,
+    "rotor_max": 1562.9312012523385,
+    "winding_min": -762.4892679901412,
+    "stator_mean": 3916.840222612524,
+    "magnet_mean": 1509.4172229239452,
+    "rotor_mean": 1461.1317533584481,
+    "shaft_max": 1458.2304842226526
+   },
+   "circuit_T": {
+    "OIL": 70.0,
+    "JACKET": 484.87964367489747,
+    "SPRAY": 376.33972717983477,
+    "GAP_S": 4123.293935303109,
+    "GAP_R": 1565.6093260835376,
+    "SHF": 93.88895957259533
+   },
+   "_source": "reconstructed",
+   "_argmax_nodes": {
+    "winding": 331981,
+    "stator": 318332,
+    "magnet": 434859,
+    "rotor": 554522,
+    "shaft": 440479
+   },
+   "P_total_W": 89824.24976557623
+  }
+ ],
+ "influence_coeffs": {
+  "base": {
+   "_units": "K per W. Multiply by 1000 for K/kW.",
+   "_definition": "G[q][s] = (T_q from the unit solve of source s - 70 degC) / unit_W",
+   "_unit_W": 1000.0,
+   "_ac_slot": "aliased to cu_slot: D1 injects the AC slot loss uniformly over the same CU_SLOT element set as the DC slot loss, so the two columns are identical by construction (exact, not an approximation). D2's turn-wise injection must NOT reuse this.",
+   "_exactness": {
+    "winding_mean": "exact linear functional (mean over a fixed node set)",
+    "*_max": "the row of the hot node at the reference point below. max over nodes is convex, not affine, so this row is only valid while the argmax node does not move. The runs table never uses these rows: it reconstructs the full nodal field and takes the max there.",
+    "circuit nodes": "exact (single nodes); OIL is Dirichlet so its row is 0"
+   },
+   "_reference_point": {
+    "speed": 16000,
+    "current": 460.0,
+    "case": "AC"
+   },
+   "K_per_W": {
+    "base": {
+     "winding_max": {
+      "cu_slot": 0.043939743940231424,
+      "cu_end": 0.0012762194873504739,
+      "ac_slot": 0.043939743940231424,
+      "fe_s": 0.02031399734888528,
+      "fe_r": 0.008546209297830657,
+      "pm": 0.00889428644476662
+     },
+     "stator_max": {
+      "cu_slot": 0.02694223601407445,
+      "cu_end": 0.0012861665335184257,
+      "ac_slot": 0.02694223601407445,
+      "fe_s": 0.020771438653989633,
+      "fe_r": 0.008698087441578479,
+      "pm": 0.009052350408345972
+     },
+     "magnet_max": {
+      "cu_slot": 0.008444598206716591,
+      "cu_end": 0.000530501096687459,
+      "ac_slot": 0.008444598206716591,
+      "fe_s": 0.0071139950655921495,
+      "fe_r": 0.11611494777528077,
+      "pm": 0.12126728417322415
+     },
+     "rotor_max": {
+      "cu_slot": 0.008453355284243784,
+      "cu_end": 0.0005310512284744675,
+      "ac_slot": 0.008453355284243784,
+      "fe_s": 0.0071213723034124,
+      "fe_r": 0.11577809626625347,
+      "pm": 0.1207874770838159
+     },
+     "shaft_max": {
+      "cu_slot": 0.007825823590574942,
+      "cu_end": 0.0004916288372234306,
+      "ac_slot": 0.007825823590574942,
+      "fe_s": 0.006592719871876113,
+      "fe_r": 0.12654559308351906,
+      "pm": 0.1187672368933001
+     },
+     "winding_mean": {
+      "cu_slot": 0.013067834000324526,
+      "cu_end": 0.010226769751881703,
+      "ac_slot": 0.013067834000324526,
+      "fe_s": 0.009414490838096458,
+      "fe_r": 0.0037971419843736884,
+      "pm": 0.003951795153056507
+     },
+     "OIL": {
+      "cu_slot": 0.0,
+      "cu_end": 0.0,
+      "ac_slot": 0.0,
+      "fe_s": 0.0,
+      "fe_r": 0.0,
+      "pm": 0.0
+     },
+     "JACKET": {
+      "cu_slot": 0.006328348709560914,
+      "cu_end": 0.0003917684503330463,
+      "ac_slot": 0.006328348709560914,
+      "fe_s": 0.006696507672555555,
+      "fe_r": 0.002036228636440143,
+      "pm": 0.0021191618562458954
+     },
+     "SPRAY": {
+      "cu_slot": 0.0013516080074951163,
+      "cu_end": 0.010743347661710615,
+      "ac_slot": 0.0013516080074951163,
+      "fe_s": 0.0008812271637633842,
+      "fe_r": 0.000359271177819096,
+      "pm": 0.0003739038742316296
+     },
+     "GAP_S": {
+      "cu_slot": 0.024348595557024056,
+      "cu_end": 0.0015296116279159265,
+      "ac_slot": 0.024348595557024056,
+      "fe_s": 0.02051202239278284,
+      "fe_r": 0.010628494959319909,
+      "pm": 0.01106138117505327
+     },
+     "GAP_R": {
+      "cu_slot": 0.00847450307572862,
+      "cu_end": 0.0005323797607785963,
+      "ac_slot": 0.00847450307572862,
+      "fe_s": 0.007139187867282104,
+      "fe_r": 0.11493544033544237,
+      "pm": 0.11961662690585985
+     },
+     "SHF": {
+      "cu_slot": 0.00013466403441469765,
+      "cu_end": 8.459777036534888e-06,
+      "ac_slot": 0.00013466403441469765,
+      "fe_s": 0.00011344521704175747,
+      "fe_r": 0.0021839193120754175,
+      "pm": 0.002044096108308807
+     }
+    }
+   },
+   "K_per_kW": {
+    "base": {
+     "winding_max": {
+      "cu_slot": 43.93974394023142,
+      "cu_end": 1.276219487350474,
+      "ac_slot": 43.93974394023142,
+      "fe_s": 20.31399734888528,
+      "fe_r": 8.546209297830657,
+      "pm": 8.894286444766621
+     },
+     "stator_max": {
+      "cu_slot": 26.942236014074453,
+      "cu_end": 1.2861665335184256,
+      "ac_slot": 26.942236014074453,
+      "fe_s": 20.771438653989634,
+      "fe_r": 8.69808744157848,
+      "pm": 9.052350408345973
+     },
+     "magnet_max": {
+      "cu_slot": 8.444598206716591,
+      "cu_end": 0.530501096687459,
+      "ac_slot": 8.444598206716591,
+      "fe_s": 7.11399506559215,
+      "fe_r": 116.11494777528077,
+      "pm": 121.26728417322414
+     },
+     "rotor_max": {
+      "cu_slot": 8.453355284243784,
+      "cu_end": 0.5310512284744675,
+      "ac_slot": 8.453355284243784,
+      "fe_s": 7.1213723034124,
+      "fe_r": 115.77809626625347,
+      "pm": 120.7874770838159
+     },
+     "shaft_max": {
+      "cu_slot": 7.8258235905749425,
+      "cu_end": 0.4916288372234306,
+      "ac_slot": 7.8258235905749425,
+      "fe_s": 6.592719871876113,
+      "fe_r": 126.54559308351907,
+      "pm": 118.7672368933001
+     },
+     "winding_mean": {
+      "cu_slot": 13.067834000324526,
+      "cu_end": 10.226769751881703,
+      "ac_slot": 13.067834000324526,
+      "fe_s": 9.414490838096459,
+      "fe_r": 3.797141984373688,
+      "pm": 3.9517951530565067
+     },
+     "OIL": {
+      "cu_slot": 0.0,
+      "cu_end": 0.0,
+      "ac_slot": 0.0,
+      "fe_s": 0.0,
+      "fe_r": 0.0,
+      "pm": 0.0
+     },
+     "JACKET": {
+      "cu_slot": 6.328348709560913,
+      "cu_end": 0.3917684503330463,
+      "ac_slot": 6.328348709560913,
+      "fe_s": 6.696507672555555,
+      "fe_r": 2.0362286364401427,
+      "pm": 2.1191618562458956
+     },
+     "SPRAY": {
+      "cu_slot": 1.3516080074951162,
+      "cu_end": 10.743347661710615,
+      "ac_slot": 1.3516080074951162,
+      "fe_s": 0.8812271637633842,
+      "fe_r": 0.359271177819096,
+      "pm": 0.37390387423162963
+     },
+     "GAP_S": {
+      "cu_slot": 24.348595557024055,
+      "cu_end": 1.5296116279159264,
+      "ac_slot": 24.348595557024055,
+      "fe_s": 20.51202239278284,
+      "fe_r": 10.628494959319909,
+      "pm": 11.06138117505327
+     },
+     "GAP_R": {
+      "cu_slot": 8.47450307572862,
+      "cu_end": 0.5323797607785963,
+      "ac_slot": 8.47450307572862,
+      "fe_s": 7.139187867282104,
+      "fe_r": 114.93544033544237,
+      "pm": 119.61662690585985
+     },
+     "SHF": {
+      "cu_slot": 0.13466403441469765,
+      "cu_end": 0.008459777036534888,
+      "ac_slot": 0.13466403441469765,
+      "fe_s": 0.11344521704175747,
+      "fe_r": 2.1839193120754175,
+      "pm": 2.044096108308807
+     }
+    }
+   },
+   "hot_nodes_at_reference": {
+    "base": {
+     "winding_max": 331981,
+     "stator_max": 318332,
+     "magnet_max": 493939,
+     "rotor_max": 554522,
+     "shaft_max": 440479
+    }
+   }
+  },
+  "sph": {
+   "_units": "K per W. Multiply by 1000 for K/kW.",
+   "_definition": "G[q][s] = (T_q from the unit solve of source s - 70 degC) / unit_W",
+   "_unit_W": 1000.0,
+   "_ac_slot": "aliased to cu_slot: D1 injects the AC slot loss uniformly over the same CU_SLOT element set as the DC slot loss, so the two columns are identical by construction (exact, not an approximation). D2's turn-wise injection must NOT reuse this.",
+   "_exactness": {
+    "winding_mean": "exact linear functional (mean over a fixed node set)",
+    "*_max": "the row of the hot node at the reference point below. max over nodes is convex, not affine, so this row is only valid while the argmax node does not move. The runs table never uses these rows: it reconstructs the full nodal field and takes the max there.",
+    "circuit nodes": "exact (single nodes); OIL is Dirichlet so its row is 0"
+   },
+   "_reference_point": {
+    "speed": 16000,
+    "current": 460.0,
+    "case": "AC"
+   },
+   "K_per_W": {
+    "sph": {
+     "winding_max": {
+      "cu_slot": 0.07557003707725173,
+      "cu_end": 0.0068216713942985474,
+      "ac_slot": 0.07557003707725173,
+      "fe_s": 0.05288360096724046,
+      "fe_r": 0.018618642378695868,
+      "pm": 0.019376957988993013
+     },
+     "stator_max": {
+      "cu_slot": 0.05854528124471975,
+      "cu_end": 0.006832832566816023,
+      "ac_slot": 0.05854528124471975,
+      "fe_s": 0.053308388197831916,
+      "fe_r": 0.01876156109803952,
+      "pm": 0.019525697621251184
+     },
+     "magnet_max": {
+      "cu_slot": 0.019193191749756963,
+      "cu_end": 0.0025501148991142913,
+      "ac_slot": 0.019193191749756963,
+      "fe_s": 0.01815043693985706,
+      "fe_r": 0.11949942738763551,
+      "pm": 0.12465013898636218
+     },
+     "rotor_max": {
+      "cu_slot": 0.019210595328107132,
+      "cu_end": 0.0025524272362405327,
+      "ac_slot": 0.019210595328107132,
+      "fe_s": 0.018166894992382325,
+      "fe_r": 0.11919964039368958,
+      "pm": 0.12434837671690721
+     },
+     "shaft_max": {
+      "cu_slot": 0.017784503910282752,
+      "cu_end": 0.0023629487468925132,
+      "ac_slot": 0.017784503910282752,
+      "fe_s": 0.01681828228142375,
+      "fe_r": 0.12971314015189425,
+      "pm": 0.12206379446306277
+     },
+     "winding_mean": {
+      "cu_slot": 0.03228313081145531,
+      "cu_end": 0.033170024900328006,
+      "ac_slot": 0.03228313081145531,
+      "fe_s": 0.02829774957379992,
+      "fe_r": 0.009774850291868184,
+      "pm": 0.010172968554936773
+     },
+     "OIL": {
+      "cu_slot": 0.0,
+      "cu_end": 0.0,
+      "ac_slot": 0.0,
+      "fe_s": 0.0,
+      "fe_r": 0.0,
+      "pm": 0.0
+     },
+     "JACKET": {
+      "cu_slot": 0.005652871948788487,
+      "cu_end": 0.000746197989860832,
+      "ac_slot": 0.005652871948788487,
+      "fe_s": 0.005883961730640465,
+      "fe_r": 0.001807067163757182,
+      "pm": 0.0018806669038043964
+     },
+     "SPRAY": {
+      "cu_slot": 0.0017037312371266182,
+      "cu_end": 0.010087478612769218,
+      "ac_slot": 0.0017037312371266182,
+      "fe_s": 0.0014212376022430392,
+      "fe_r": 0.0004927405707115753,
+      "pm": 0.0005128093200282393
+     },
+     "GAP_S": {
+      "cu_slot": 0.05533317840374052,
+      "cu_end": 0.007351875710857158,
+      "ac_slot": 0.05533317840374052,
+      "fe_s": 0.05232695923888502,
+      "fe_r": 0.020483728921151724,
+      "pm": 0.021318007333201067
+     },
+     "GAP_R": {
+      "cu_slot": 0.0192586545484517,
+      "cu_end": 0.0025588126526732255,
+      "ac_slot": 0.0192586545484517,
+      "fe_s": 0.018212343182820875,
+      "fe_r": 0.11836554415297383,
+      "pm": 0.12318643485525084
+     },
+     "SHF": {
+      "cu_slot": 0.00030602952122607975,
+      "cu_end": 4.066079534483436e-05,
+      "ac_slot": 0.00030602952122607975,
+      "fe_s": 0.00028940311748468163,
+      "fe_r": 0.002238425353834799,
+      "pm": 0.0021008221176402487
+     }
+    }
+   },
+   "K_per_kW": {
+    "sph": {
+     "winding_max": {
+      "cu_slot": 75.57003707725173,
+      "cu_end": 6.821671394298548,
+      "ac_slot": 75.57003707725173,
+      "fe_s": 52.883600967240454,
+      "fe_r": 18.618642378695867,
+      "pm": 19.376957988993013
+     },
+     "stator_max": {
+      "cu_slot": 58.545281244719746,
+      "cu_end": 6.832832566816023,
+      "ac_slot": 58.545281244719746,
+      "fe_s": 53.30838819783192,
+      "fe_r": 18.76156109803952,
+      "pm": 19.525697621251183
+     },
+     "magnet_max": {
+      "cu_slot": 19.193191749756963,
+      "cu_end": 2.5501148991142912,
+      "ac_slot": 19.193191749756963,
+      "fe_s": 18.15043693985706,
+      "fe_r": 119.4994273876355,
+      "pm": 124.65013898636218
+     },
+     "rotor_max": {
+      "cu_slot": 19.210595328107132,
+      "cu_end": 2.5524272362405327,
+      "ac_slot": 19.210595328107132,
+      "fe_s": 18.166894992382325,
+      "fe_r": 119.19964039368958,
+      "pm": 124.34837671690721
+     },
+     "shaft_max": {
+      "cu_slot": 17.78450391028275,
+      "cu_end": 2.3629487468925134,
+      "ac_slot": 17.78450391028275,
+      "fe_s": 16.81828228142375,
+      "fe_r": 129.71314015189427,
+      "pm": 122.06379446306278
+     },
+     "winding_mean": {
+      "cu_slot": 32.283130811455315,
+      "cu_end": 33.17002490032801,
+      "ac_slot": 32.283130811455315,
+      "fe_s": 28.297749573799923,
+      "fe_r": 9.774850291868184,
+      "pm": 10.172968554936773
+     },
+     "OIL": {
+      "cu_slot": 0.0,
+      "cu_end": 0.0,
+      "ac_slot": 0.0,
+      "fe_s": 0.0,
+      "fe_r": 0.0,
+      "pm": 0.0
+     },
+     "JACKET": {
+      "cu_slot": 5.652871948788487,
+      "cu_end": 0.746197989860832,
+      "ac_slot": 5.652871948788487,
+      "fe_s": 5.883961730640465,
+      "fe_r": 1.807067163757182,
+      "pm": 1.8806669038043964
+     },
+     "SPRAY": {
+      "cu_slot": 1.7037312371266182,
+      "cu_end": 10.087478612769218,
+      "ac_slot": 1.7037312371266182,
+      "fe_s": 1.421237602243039,
+      "fe_r": 0.4927405707115753,
+      "pm": 0.5128093200282393
+     },
+     "GAP_S": {
+      "cu_slot": 55.33317840374052,
+      "cu_end": 7.351875710857158,
+      "ac_slot": 55.33317840374052,
+      "fe_s": 52.326959238885024,
+      "fe_r": 20.483728921151723,
+      "pm": 21.318007333201066
+     },
+     "GAP_R": {
+      "cu_slot": 19.2586545484517,
+      "cu_end": 2.5588126526732253,
+      "ac_slot": 19.2586545484517,
+      "fe_s": 18.212343182820874,
+      "fe_r": 118.36554415297383,
+      "pm": 123.18643485525084
+     },
+     "SHF": {
+      "cu_slot": 0.30602952122607974,
+      "cu_end": 0.040660795344834355,
+      "ac_slot": 0.30602952122607974,
+      "fe_s": 0.2894031174846816,
+      "fe_r": 2.238425353834799,
+      "pm": 2.1008221176402486
+     }
+    }
+   },
+   "hot_nodes_at_reference": {
+    "sph": {
+     "winding_max": 331981,
+     "stator_max": 318332,
+     "magnet_max": 434859,
+     "rotor_max": 554522,
+     "shaft_max": 440479
+    }
+   }
+  }
+ },
+ "_superposition_check": {
+  "performed": true,
+  "ok": true,
+  "tol_K": 0.05,
+  "worst_err_K": 6.303577606558974e-07,
+  "max_abs_err_K": 6.303577606558974e-07,
+  "verified_htc_set": "base + sph (each verified in its own MAPDL session)",
+  "per_hset": {
+   "base": {
+    "performed": true,
+    "ok": true,
+    "tol_K": 0.05,
+    "worst_err_K": 6.303577606558974e-07,
+    "max_abs_err_K": 6.303577606558974e-07,
+    "verified_htc_set": "base",
+    "unit_roundtrip": {
+     "base": {
+      "ok": true,
+      "max_abs_err_K": 1.4210854715202004e-14,
+      "per_source": [
+       {
+        "source": "cu_slot",
+        "unit_W": 1000.0,
+        "max_abs_err_K": 0.0,
+        "ok": true,
+        "n_nodes": 12
+       },
+       {
+        "source": "cu_end",
+        "unit_W": 1000.0,
+        "max_abs_err_K": 0.0,
+        "ok": true,
+        "n_nodes": 12
+       },
+       {
+        "source": "fe_s",
+        "unit_W": 1000.0,
+        "max_abs_err_K": 0.0,
+        "ok": true,
+        "n_nodes": 12
+       },
+       {
+        "source": "fe_r",
+        "unit_W": 1000.0,
+        "max_abs_err_K": 0.0,
+        "ok": true,
+        "n_nodes": 12
+       },
+       {
+        "source": "pm",
+        "unit_W": 1000.0,
+        "max_abs_err_K": 1.4210854715202004e-14,
+        "ok": true,
+        "n_nodes": 12
+       }
+      ]
+     }
+    },
+    "points": [
+     {
+      "point": {
+       "speed": 8000,
+       "current": 230.05,
+       "case": "AC",
+       "htc": "base"
+      },
+      "P_W": {
+       "cu_slot": 7856.4235631704105,
+       "cu_end": 4616.870510537221,
+       "ac_slot": 3364.88233234727,
+       "fe_s": 722.8964030077071,
+       "fe_r": 28.82237813716074,
+       "pm": 163.68355555555556
+      },
+      "ok": true,
+      "max_abs_err_K": 1.425448772351956e-07,
+      "worst_node": "rotor_max",
+      "n_nodes": 12,
+      "tol_K": 0.05,
+      "per_node_K": {
+       "GAP_R": 1.4106035450822674e-07,
+       "GAP_S": 2.117724307026947e-08,
+       "JACKET": 4.7866137720120605e-09,
+       "OIL": 0.0,
+       "SHF": 2.278255806231755e-09,
+       "SPRAY": 5.850068873769487e-09,
+       "magnet_max": 1.4149534877105907e-07,
+       "rotor_max": 1.425448772351956e-07,
+       "shaft_max": 1.310476704929897e-07,
+       "stator_max": 1.777249281076365e-08,
+       "winding_max": 1.7548927644384094e-08,
+       "winding_mean": 1.139727601184859e-08
+      },
+      "reconstructed_C": {
+       "GAP_R": 195.60580049107904,
+       "GAP_S": 367.2300295961003,
+       "JACKET": 148.06752309715424,
+       "OIL": 70.0,
+       "SHF": 72.0297038248944,
+       "SPRAY": 135.47604481896292,
+       "magnet_max": 195.54811568667142,
+       "rotor_max": 195.56541845318492,
+       "shaft_max": 187.93919726226758,
+       "stator_max": 395.013154917952,
+       "winding_max": 585.347162464093,
+       "winding_mean": 271.4158225016073
+      },
+      "direct_C": {
+       "winding_max": 585.3471624465441,
+       "stator_max": 395.01315490017953,
+       "magnet_max": 195.54811554517607,
+       "rotor_max": 195.56541831064004,
+       "shaft_max": 187.9391971312199,
+       "winding_mean": 271.41582249021,
+       "OIL": 70.0,
+       "JACKET": 148.06752309236762,
+       "SPRAY": 135.47604481311285,
+       "GAP_S": 367.23002957492304,
+       "GAP_R": 195.60580035001868,
+       "SHF": 72.02970382261614
+      },
+      "max_functional_err_K": 1.4254484881348617e-07,
+      "max_functional_err_per_part_K": {
+       "winding_max": 1.7548927644384094e-08,
+       "stator_max": 1.777249281076365e-08,
+       "magnet_max": 1.414952919276402e-07,
+       "rotor_max": 1.4254484881348617e-07,
+       "shaft_max": 1.310476704929897e-07
+      },
+      "argmax_node_agreement": {
+       "winding": {
+        "reconstructed_argmax_node": 324577,
+        "direct_argmax_node": 324577,
+        "same": true
+       },
+       "stator": {
+        "reconstructed_argmax_node": 318332,
+        "direct_argmax_node": 318332,
+        "same": true
+       },
+       "magnet": {
+        "reconstructed_argmax_node": 451309,
+        "direct_argmax_node": 451309,
+        "same": true
+       },
+       "rotor": {
+        "reconstructed_argmax_node": 554522,
+        "direct_argmax_node": 554522,
+        "same": true
+       },
+       "shaft": {
+        "reconstructed_argmax_node": 439445,
+        "direct_argmax_node": 439445,
+        "same": true
+       }
+      },
+      "note": "superposition verified: max |reconstructed - direct| = 1.425e-07 K over 12 node(s), tol 0.05 K",
+      "field_max_err_K": 1.4288536931417184e-07,
+      "field_rms_err_K": 1.049771860905151e-07
+     },
+     {
+      "point": {
+       "speed": 2000,
+       "current": 460.0,
+       "case": "DC",
+       "htc": "base"
+      },
+      "P_W": {
+       "cu_slot": 31412.035361502007,
+       "cu_end": 18459.4553196349,
+       "ac_slot": 0.0,
+       "fe_s": 90.36205037596339,
+       "fe_r": 3.6027972671450925,
+       "pm": 10.230222222222222
+      },
+      "ok": true,
+      "max_abs_err_K": 6.303577606558974e-07,
+      "worst_node": "rotor_max",
+      "n_nodes": 12,
+      "tol_K": 0.05,
+      "per_node_K": {
+       "GAP_R": 6.244781047826109e-07,
+       "GAP_S": 1.2933082871313673e-07,
+       "JACKET": 2.830302037182264e-08,
+       "OIL": 0.0,
+       "SHF": 1.0076632861455437e-08,
+       "SPRAY": 2.4673795451235492e-08,
+       "magnet_max": 6.266517402764293e-07,
+       "rotor_max": 6.303577606558974e-07,
+       "shaft_max": 5.801379074910074e-07,
+       "stator_max": 1.0867950095416745e-07,
+       "winding_max": 1.0701205610530451e-07,
+       "winding_mean": 6.177094746817602e-08
+      },
+      "reconstructed_C": {
+       "GAP_R": 348.31173611188046,
+       "GAP_S": 865.0797032429266,
+       "JACKET": 276.65227142853985,
+       "OIL": 70.0,
+       "SHF": 74.42526520555504,
+       "SPRAY": 310.85785366528256,
+       "magnet_max": 347.3905088901853,
+       "rotor_max": 347.63701677334194,
+       "shaft_max": 327.1669129428321,
+       "stator_max": 942.0532988391403,
+       "winding_max": 1475.8342192268024,
+       "winding_mean": 670.1726837862191
+      },
+      "direct_C": {
+       "winding_max": 1475.8342191197903,
+       "stator_max": 942.0532987304608,
+       "magnet_max": 347.39050826353355,
+       "rotor_max": 347.6370161429842,
+       "shaft_max": 327.1669123626942,
+       "winding_mean": 670.1726837244481,
+       "OIL": 70.0,
+       "JACKET": 276.6522714002368,
+       "SPRAY": 310.85785364060877,
+       "GAP_S": 865.0797031135958,
+       "GAP_R": 348.31173548740236,
+       "SHF": 74.4252651954784
+      },
+      "max_functional_err_K": 6.303577606558974e-07,
+      "max_functional_err_per_part_K": {
+       "winding_max": 1.0701205610530451e-07,
+       "stator_max": 1.0867950095416745e-07,
+       "magnet_max": 6.266517402764293e-07,
+       "rotor_max": 6.303577606558974e-07,
+       "shaft_max": 5.801379074910074e-07
+      },
+      "argmax_node_agreement": {
+       "winding": {
+        "reconstructed_argmax_node": 324577,
+        "direct_argmax_node": 324577,
+        "same": true
+       },
+       "stator": {
+        "reconstructed_argmax_node": 318332,
+        "direct_argmax_node": 318332,
+        "same": true
+       },
+       "magnet": {
+        "reconstructed_argmax_node": 434859,
+        "direct_argmax_node": 434859,
+        "same": true
+       },
+       "rotor": {
+        "reconstructed_argmax_node": 556171,
+        "direct_argmax_node": 556171,
+        "same": true
+       },
+       "shaft": {
+        "reconstructed_argmax_node": 440479,
+        "direct_argmax_node": 440479,
+        "same": true
+       }
+      },
+      "note": "superposition verified: max |reconstructed - direct| = 6.304e-07 K over 12 node(s), tol 0.05 K",
+      "field_max_err_K": 6.324328865048301e-07,
+      "field_rms_err_K": 4.659385871159633e-07
+     }
+    ],
+    "note": "Two DIRECT full-load solves compared against the reconstruction. The fixed-node comparison is the linearity test; max_functional_err_K additionally checks the max-over-nodes operator that the runs table uses."
+   },
+   "sph": {
+    "performed": true,
+    "ok": true,
+    "tol_K": 0.05,
+    "worst_err_K": 3.58355919161113e-07,
+    "max_abs_err_K": 3.58355919161113e-07,
+    "verified_htc_set": "sph",
+    "unit_roundtrip": {
+     "sph": {
+      "ok": true,
+      "max_abs_err_K": 1.4210854715202004e-14,
+      "per_source": [
+       {
+        "source": "cu_slot",
+        "unit_W": 1000.0,
+        "max_abs_err_K": 1.4210854715202004e-14,
+        "ok": true,
+        "n_nodes": 12
+       },
+       {
+        "source": "cu_end",
+        "unit_W": 1000.0,
+        "max_abs_err_K": 1.4210854715202004e-14,
+        "ok": true,
+        "n_nodes": 12
+       },
+       {
+        "source": "fe_s",
+        "unit_W": 1000.0,
+        "max_abs_err_K": 0.0,
+        "ok": true,
+        "n_nodes": 12
+       },
+       {
+        "source": "fe_r",
+        "unit_W": 1000.0,
+        "max_abs_err_K": 1.4210854715202004e-14,
+        "ok": true,
+        "n_nodes": 12
+       },
+       {
+        "source": "pm",
+        "unit_W": 1000.0,
+        "max_abs_err_K": 0.0,
+        "ok": true,
+        "n_nodes": 12
+       }
+      ]
+     }
+    },
+    "points": [
+     {
+      "point": {
+       "speed": 8000,
+       "current": 230.05,
+       "case": "AC",
+       "htc": "sph"
+      },
+      "P_W": {
+       "cu_slot": 7856.4235631704105,
+       "cu_end": 4616.870510537221,
+       "ac_slot": 3364.88233234727,
+       "fe_s": 722.8964030077071,
+       "fe_r": 28.82237813716074,
+       "pm": 163.68355555555556
+      },
+      "ok": true,
+      "max_abs_err_K": 6.959965048736194e-08,
+      "worst_node": "GAP_S",
+      "n_nodes": 12,
+      "tol_K": 0.05,
+      "per_node_K": {
+       "GAP_R": 3.702569983943249e-08,
+       "GAP_S": -6.959965048736194e-08,
+       "JACKET": -6.303622512859874e-09,
+       "OIL": 0.0,
+       "SHF": 6.121325668573263e-10,
+       "SPRAY": -1.2988721209694631e-09,
+       "magnet_max": 3.731037168108742e-08,
+       "rotor_max": 3.7737265756732086e-08,
+       "shaft_max": 3.4572110507724574e-08,
+       "stator_max": -6.47650040264125e-08,
+       "winding_max": -6.413154096662765e-08,
+       "winding_mean": -3.2943603400781285e-08
+      },
+      "reconstructed_C": {
+       "GAP_R": 334.66176800490723,
+       "GAP_S": 766.7599468386194,
+       "JACKET": 141.49111780921584,
+       "OIL": 70.0,
+       "SHF": 74.23937174613324,
+       "SPRAY": 136.81621986687327,
+       "magnet_max": 334.1145472215149,
+       "rotor_max": 334.2743772306214,
+       "shaft_max": 316.35113978789457,
+       "stator_max": 800.7740432653972,
+       "winding_max": 991.4269639202081,
+       "winding_mean": 607.8038193715478
+      },
+      "direct_C": {
+       "winding_max": 991.4269639843396,
+       "stator_max": 800.7740433301622,
+       "magnet_max": 334.1145471842045,
+       "rotor_max": 334.2743771928841,
+       "shaft_max": 316.35113975332246,
+       "winding_mean": 607.8038194044914,
+       "OIL": 70.0,
+       "JACKET": 141.49111781551946,
+       "SPRAY": 136.81621986817214,
+       "GAP_S": 766.759946908219,
+       "GAP_R": 334.66176796788153,
+       "SHF": 74.23937174552111
+      },
+      "max_functional_err_K": 6.47650040264125e-08,
+      "max_functional_err_per_part_K": {
+       "winding_max": -6.413154096662765e-08,
+       "stator_max": -6.47650040264125e-08,
+       "magnet_max": 3.731042852450628e-08,
+       "rotor_max": 3.7737265756732086e-08,
+       "shaft_max": 3.4572110507724574e-08
+      },
+      "argmax_node_agreement": {
+       "winding": {
+        "reconstructed_argmax_node": 331981,
+        "direct_argmax_node": 331981,
+        "same": true
+       },
+       "stator": {
+        "reconstructed_argmax_node": 318332,
+        "direct_argmax_node": 318332,
+        "same": true
+       },
+       "magnet": {
+        "reconstructed_argmax_node": 434859,
+        "direct_argmax_node": 434859,
+        "same": true
+       },
+       "rotor": {
+        "reconstructed_argmax_node": 554522,
+        "direct_argmax_node": 554522,
+        "same": true
+       },
+       "shaft": {
+        "reconstructed_argmax_node": 440479,
+        "direct_argmax_node": 440479,
+        "same": true
+       }
+      },
+      "note": "superposition verified: max |reconstructed - direct| = 6.96e-08 K over 12 node(s), tol 0.05 K",
+      "field_max_err_K": 7.297853699128609e-08,
+      "field_rms_err_K": 4.178668589325193e-08
+     },
+     {
+      "point": {
+       "speed": 2000,
+       "current": 460.0,
+       "case": "DC",
+       "htc": "sph"
+      },
+      "P_W": {
+       "cu_slot": 31412.035361502007,
+       "cu_end": 18459.4553196349,
+       "ac_slot": 0.0,
+       "fe_s": 90.36205037596339,
+       "fe_r": 3.6027972671450925,
+       "pm": 10.230222222222222
+      },
+      "ok": true,
+      "max_abs_err_K": 3.58355919161113e-07,
+      "worst_node": "rotor_max",
+      "n_nodes": 12,
+      "tol_K": 0.05,
+      "per_node_K": {
+       "GAP_R": 3.5448476864985423e-07,
+       "GAP_S": -6.377513273037039e-08,
+       "JACKET": -5.776314537797589e-09,
+       "OIL": 0.0,
+       "SHF": 5.75069236674608e-09,
+       "SPRAY": 8.765255188336596e-11,
+       "magnet_max": 3.559994183888193e-07,
+       "rotor_max": 3.58355919161113e-07,
+       "shaft_max": 3.2962691420834744e-07,
+       "stator_max": -5.997753760311753e-08,
+       "winding_max": -5.917581802350469e-08,
+       "winding_mean": -2.8137947083450854e-08
+      },
+      "reconstructed_C": {
+       "GAP_R": 725.5202018587355,
+       "GAP_S": 1948.8596358843697,
+       "JACKET": 261.90005898612947,
+       "OIL": 70.0,
+       "SHF": 80.41929380628738,
+       "SPRAY": 309.86247394879615,
+       "magnet_max": 723.3167915129739,
+       "rotor_max": 723.905260715457,
+       "shaft_max": 675.5020168926701,
+       "stator_max": 2040.2412137684582,
+       "winding_max": 2574.776995643697,
+       "winding_mean": 1699.0757704336202
+      },
+      "direct_C": {
+       "winding_max": 2574.7769957028727,
+       "stator_max": 2040.2412138284358,
+       "magnet_max": 723.3167911569744,
+       "rotor_max": 723.905260357101,
+       "shaft_max": 675.5020165630432,
+       "winding_mean": 1699.075770461758,
+       "OIL": 70.0,
+       "JACKET": 261.9000589919058,
+       "SPRAY": 309.8624739487085,
+       "GAP_S": 1948.8596359481448,
+       "GAP_R": 725.5202015042507,
+       "SHF": 80.41929380053669
+      },
+      "max_functional_err_K": 3.58355919161113e-07,
+      "max_functional_err_per_part_K": {
+       "winding_max": -5.917581802350469e-08,
+       "stator_max": -5.997753760311753e-08,
+       "magnet_max": 3.559994183888193e-07,
+       "rotor_max": 3.58355919161113e-07,
+       "shaft_max": 3.2962691420834744e-07
+      },
+      "argmax_node_agreement": {
+       "winding": {
+        "reconstructed_argmax_node": 331981,
+        "direct_argmax_node": 331981,
+        "same": true
+       },
+       "stator": {
+        "reconstructed_argmax_node": 318332,
+        "direct_argmax_node": 318332,
+        "same": true
+       },
+       "magnet": {
+        "reconstructed_argmax_node": 434859,
+        "direct_argmax_node": 434859,
+        "same": true
+       },
+       "rotor": {
+        "reconstructed_argmax_node": 556171,
+        "direct_argmax_node": 556171,
+        "same": true
+       },
+       "shaft": {
+        "reconstructed_argmax_node": 440479,
+        "direct_argmax_node": 440479,
+        "same": true
+       }
+      },
+      "note": "superposition verified: max |reconstructed - direct| = 3.584e-07 K over 12 node(s), tol 0.05 K",
+      "field_max_err_K": 3.597025397539255e-07,
+      "field_rms_err_K": 2.6469659931143557e-07
+     }
+    ],
+    "note": "Two DIRECT full-load solves compared against the reconstruction. The fixed-node comparison is the linearity test; max_functional_err_K additionally checks the max-over-nodes operator that the runs table uses."
+   }
+  }
+ },
+ "I_cont_Arms": {
+  "base": {
+   "DC": {
+    "2000": 127.61232609265782,
+    "4000": 125.4179713004033,
+    "8000": 118.78835039636435,
+    "16000": 0.0
+   },
+   "AC": {
+    "2000": 125.64787285369688,
+    "4000": 118.64326279839028,
+    "8000": 99.85482469889334,
+    "16000": 0.0
+   }
+  },
+  "sph": {
+   "DC": {
+    "2000": 94.25723474579557,
+    "4000": 89.91155222304548,
+    "8000": 75.90394840809172,
+    "16000": 0.0
+   },
+   "AC": {
+    "2000": 92.85448038129306,
+    "4000": 85.20910551992219,
+    "8000": 64.1059643180306,
+    "16000": 0.0
+   }
+  }
+ },
+ "I_cont_winding_Arms": {
+  "base": {
+   "DC": {
+    "2000": 127.61232609265782,
+    "4000": 125.4179713004033,
+    "8000": 118.78835039636435,
+    "16000": 126.93388652799037
+   },
+   "AC": {
+    "2000": 125.64787285369688,
+    "4000": 118.64326279839028,
+    "8000": 99.85482469889334,
+    "16000": 82.56620541165064
+   }
+  },
+  "sph": {
+   "DC": {
+    "2000": 94.25723474579557,
+    "4000": 89.91155222304548,
+    "8000": 75.90394840809172,
+    "16000": 0.0
+   },
+   "AC": {
+    "2000": 92.85448038129306,
+    "4000": 85.20910551992219,
+    "8000": 64.1059643180306,
+    "16000": 0.0
+   }
+  }
+ },
+ "I_cont_magnet_Arms": {
+  "base": {
+   "DC": {
+    "2000": 244.47286508148557,
+    "4000": 235.43559648420472,
+    "8000": 199.73346772988393,
+    "16000": 0.0
+   },
+   "AC": {
+    "2000": 240.81037978585866,
+    "4000": 222.79189094781182,
+    "8000": 167.9232155601442,
+    "16000": 0.0
+   }
+  },
+  "sph": {
+   "DC": {
+    "2000": 157.97149146559514,
+    "4000": 149.9261094626526,
+    "8000": 118.51724404461325,
+    "16000": 0.0
+   },
+   "AC": {
+    "2000": 155.65667031118866,
+    "4000": 142.2067837478409,
+    "8000": 100.46409479329927,
+    "16000": 0.0
+   }
+  }
+ },
+ "I_cont_limited_by": {
+  "base": {
+   "DC": {
+    "2000": "winding",
+    "4000": "winding",
+    "8000": "winding",
+    "16000": "magnet"
+   },
+   "AC": {
+    "2000": "winding",
+    "4000": "winding",
+    "8000": "winding",
+    "16000": "magnet"
+   }
+  },
+  "sph": {
+   "DC": {
+    "2000": "winding",
+    "4000": "winding",
+    "8000": "winding",
+    "16000": "magnet"
+   },
+   "AC": {
+    "2000": "winding",
+    "4000": "winding",
+    "8000": "winding",
+    "16000": "magnet"
+   }
+  }
+ },
+ "I_cont_status": {
+  "base": {
+   "DC": {
+    "2000": "ok",
+    "4000": "ok",
+    "8000": "ok",
+    "16000": "extrap_low"
+   },
+   "AC": {
+    "2000": "ok",
+    "4000": "ok",
+    "8000": "extrap_low",
+    "16000": "extrap_low"
+   }
+  },
+  "sph": {
+   "DC": {
+    "2000": "extrap_low",
+    "4000": "extrap_low",
+    "8000": "extrap_low",
+    "16000": "extrap_low"
+   },
+   "AC": {
+    "2000": "extrap_low",
+    "4000": "extrap_low",
+    "8000": "extrap_low",
+    "16000": "extrap_low"
+   }
+  }
+ },
+ "I_cont_detail": {
+  "base": {
+   "DC": {
+    "2000": {
+     "I_cont_Arms": 127.61232609265782,
+     "I_cont_winding_Arms": 127.61232609265782,
+     "I_cont_magnet_Arms": 244.47286508148557,
+     "limited_by": "winding",
+     "status": "ok",
+     "T_at_I_cont": {
+      "winding": 179.9999999999921,
+      "magnet": 93.4711289619526
+     },
+     "P_W_at_I_cont": {
+      "cu_slot": 2417.4954439056373,
+      "cu_end": 1420.654491777677,
+      "ac_slot": 0.0,
+      "fe_s": 90.36205037596339,
+      "fe_r": 3.6027972671450925,
+      "pm": 10.230222222222222
+     },
+     "status_winding": "ok",
+     "status_magnet": "ok",
+     "limits_C": {
+      "winding": 180.0,
+      "magnet": 150.0
+     },
+     "search_range_Arms": [
+      0.0,
+      600.0
+     ],
+     "grid_Arms": [
+      115.075,
+      460.0
+     ],
+     "n_mono_samples": 65,
+     "monotonic": true,
+     "infeasible_at_zero_current": false,
+     "method": "superposition + bisection",
+     "notes": [
+      "I_cont = 127.6123 A, limited by the winding (ok). winding-limited 127.6123 A, magnet-limited 244.4729 A."
+     ],
+     "_method_detail": "superposition + bisection, hot-node fixed point (max over nodes is not a linear functional, so the argmax node is iterated to self-consistency)",
+     "_hot_node_iterations": [
+      {
+       "iteration": 0,
+       "winding_node": 324577,
+       "magnet_node": 434859,
+       "I_cont_Arms": 127.61232609265782,
+       "status": "ok"
+      }
+     ],
+     "_hot_node_converged": true,
+     "_hot_nodes": {
+      "winding": 324577,
+      "magnet": 434859
+     }
+    },
+    "4000": {
+     "I_cont_Arms": 125.4179713004033,
+     "I_cont_winding_Arms": 125.4179713004033,
+     "I_cont_magnet_Arms": 235.43559648420472,
+     "limited_by": "winding",
+     "status": "ok",
+     "T_at_I_cont": {
+      "winding": 179.99999999999253,
+      "magnet": 98.41127443027969
+     },
+     "P_W_at_I_cont": {
+      "cu_slot": 2335.070286027348,
+      "cu_end": 1372.2168944823143,
+      "ac_slot": 0.0,
+      "fe_s": 255.58247433105657,
+      "fe_r": 10.190249515354626,
+      "pm": 40.92088888888889
+     },
+     "status_winding": "ok",
+     "status_magnet": "ok",
+     "limits_C": {
+      "winding": 180.0,
+      "magnet": 150.0
+     },
+     "search_range_Arms": [
+      0.0,
+      600.0
+     ],
+     "grid_Arms": [
+      115.075,
+      460.0
+     ],
+     "n_mono_samples": 65,
+     "monotonic": true,
+     "infeasible_at_zero_current": false,
+     "method": "superposition + bisection",
+     "notes": [
+      "I_cont = 125.4180 A, limited by the winding (ok). winding-limited 125.4180 A, magnet-limited 235.4356 A."
+     ],
+     "_method_detail": "superposition + bisection, hot-node fixed point (max over nodes is not a linear functional, so the argmax node is iterated to self-consistency)",
+     "_hot_node_iterations": [
+      {
+       "iteration": 0,
+       "winding_node": 324577,
+       "magnet_node": 434859,
+       "I_cont_Arms": 125.4179713004033,
+       "status": "ok"
+      },
+      {
+       "iteration": 1,
+       "winding_node": 324577,
+       "magnet_node": 528879,
+       "I_cont_Arms": 125.4179713004033,
+       "status": "ok"
+      }
+     ],
+     "_hot_node_converged": true,
+     "_hot_nodes": {
+      "winding": 324577,
+      "magnet": 528879
+     }
+    },
+    "8000": {
+     "I_cont_Arms": 118.78835039636435,
+     "I_cont_winding_Arms": 118.78835039636435,
+     "I_cont_magnet_Arms": 199.73346772988393,
+     "limited_by": "winding",
+     "status": "ok",
+     "T_at_I_cont": {
+      "winding": 179.9999999999915,
+      "magnet": 117.12668279239806
+     },
+     "P_W_at_I_cont": {
+      "cu_slot": 2094.7303109800087,
+      "cu_end": 1230.9797864805234,
+      "ac_slot": 0.0,
+      "fe_s": 722.8964030077071,
+      "fe_r": 28.82237813716074,
+      "pm": 163.68355555555556
+     },
+     "status_winding": "ok",
+     "status_magnet": "ok",
+     "limits_C": {
+      "winding": 180.0,
+      "magnet": 150.0
+     },
+     "search_range_Arms": [
+      0.0,
+      600.0
+     ],
+     "grid_Arms": [
+      115.075,
+      460.0
+     ],
+     "n_mono_samples": 65,
+     "monotonic": true,
+     "infeasible_at_zero_current": false,
+     "method": "superposition + bisection",
+     "notes": [
+      "I_cont = 118.7884 A, limited by the winding (ok). winding-limited 118.7884 A, magnet-limited 199.7335 A."
+     ],
+     "_method_detail": "superposition + bisection, hot-node fixed point (max over nodes is not a linear functional, so the argmax node is iterated to self-consistency)",
+     "_hot_node_iterations": [
+      {
+       "iteration": 0,
+       "winding_node": 324577,
+       "magnet_node": 451309,
+       "I_cont_Arms": 118.78985499838603,
+       "status": "ok"
+      },
+      {
+       "iteration": 1,
+       "winding_node": 331981,
+       "magnet_node": 1059820,
+       "I_cont_Arms": 118.78835039636435,
+       "status": "ok"
+      }
+     ],
+     "_hot_node_converged": true,
+     "_hot_nodes": {
+      "winding": 331981,
+      "magnet": 1059820
+     }
+    },
+    "16000": {
+     "I_cont_Arms": 0.0,
+     "I_cont_winding_Arms": 126.93388652799037,
+     "I_cont_magnet_Arms": 0.0,
+     "limited_by": "magnet",
+     "status": "extrap_low",
+     "T_at_I_cont": {
+      "winding": 119.9808956057524,
+      "magnet": 176.69808946562517
+     },
+     "P_W_at_I_cont": {
+      "cu_slot": 0.0,
+      "cu_end": 0.0,
+      "ac_slot": 0.0,
+      "fe_s": 2044.6597946484526,
+      "fe_r": 81.52199612283701,
+      "pm": 654.7342222222222
+     },
+     "status_winding": "ok",
+     "status_magnet": "extrap_low",
+     "limits_C": {
+      "winding": 180.0,
+      "magnet": 150.0
+     },
+     "search_range_Arms": [
+      0.0,
+      600.0
+     ],
+     "grid_Arms": [
+      115.075,
+      460.0
+     ],
+     "n_mono_samples": 65,
+     "monotonic": true,
+     "infeasible_at_zero_current": true,
+     "method": "superposition + bisection",
+     "notes": [
+      "magnet: T(0 A) = 176.70 degC is already at/above the 150.0 degC limit -- the current-independent losses alone exceed it. No continuous operation at this speed; reporting I_cont = 0 A.",
+      "I_cont = 0.0000 A, limited by the magnet (extrap_low). winding-limited 126.9339 A, magnet-limited 0.0000 A.",
+      "I_cont is BELOW the plan grid low point 115.075 A: the machine cannot run continuously anywhere on the plan's current grid at this speed. Report the number with the extrap_low label."
+     ],
+     "_method_detail": "superposition + bisection, hot-node fixed point (max over nodes is not a linear functional, so the argmax node is iterated to self-consistency)",
+     "_hot_node_iterations": [
+      {
+       "iteration": 0,
+       "winding_node": 324577,
+       "magnet_node": 1090842,
+       "I_cont_Arms": 0.0,
+       "status": "extrap_low"
+      },
+      {
+       "iteration": 1,
+       "winding_node": 118185,
+       "magnet_node": 1090539,
+       "I_cont_Arms": 0.0,
+       "status": "extrap_low"
+      }
+     ],
+     "_hot_node_converged": true,
+     "_hot_nodes": {
+      "winding": 118185,
+      "magnet": 1090539
+     }
+    }
+   },
+   "AC": {
+    "2000": {
+     "I_cont_Arms": 125.64787285369688,
+     "I_cont_winding_Arms": 125.64787285369688,
+     "I_cont_magnet_Arms": 240.81037978585866,
+     "limited_by": "winding",
+     "status": "ok",
+     "T_at_I_cont": {
+      "winding": 179.99999999999145,
+      "magnet": 93.45881156329563
+     },
+     "P_W_at_I_cont": {
+      "cu_slot": 2343.638887687468,
+      "cu_end": 1377.252280367897,
+      "ac_slot": 75.12471894879566,
+      "fe_s": 90.36205037596339,
+      "fe_r": 3.6027972671450925,
+      "pm": 10.230222222222222
+     },
+     "status_winding": "ok",
+     "status_magnet": "ok",
+     "limits_C": {
+      "winding": 180.0,
+      "magnet": 150.0
+     },
+     "search_range_Arms": [
+      0.0,
+      600.0
+     ],
+     "grid_Arms": [
+      115.075,
+      460.0
+     ],
+     "n_mono_samples": 65,
+     "monotonic": true,
+     "infeasible_at_zero_current": false,
+     "method": "superposition + bisection",
+     "notes": [
+      "I_cont = 125.6479 A, limited by the winding (ok). winding-limited 125.6479 A, magnet-limited 240.8104 A."
+     ],
+     "_method_detail": "superposition + bisection, hot-node fixed point (max over nodes is not a linear functional, so the argmax node is iterated to self-consistency)",
+     "_hot_node_iterations": [
+      {
+       "iteration": 0,
+       "winding_node": 324577,
+       "magnet_node": 434859,
+       "I_cont_Arms": 125.64787285369688,
+       "status": "ok"
+      }
+     ],
+     "_hot_node_converged": true,
+     "_hot_nodes": {
+      "winding": 324577,
+      "magnet": 434859
+     }
+    },
+    "4000": {
+     "I_cont_Arms": 118.64326279839028,
+     "I_cont_winding_Arms": 118.64326279839028,
+     "I_cont_magnet_Arms": 222.79189094781182,
+     "limited_by": "winding",
+     "status": "ok",
+     "T_at_I_cont": {
+      "winding": 179.99999999999858,
+      "magnet": 98.3703576677987
+     },
+     "P_W_at_I_cont": {
+      "cu_slot": 2089.6164461057174,
+      "cu_end": 1227.9745956652437,
+      "ac_slot": 249.66843410027184,
+      "fe_s": 255.58247433105657,
+      "fe_r": 10.190249515354626,
+      "pm": 40.92088888888889
+     },
+     "status_winding": "ok",
+     "status_magnet": "ok",
+     "limits_C": {
+      "winding": 180.0,
+      "magnet": 150.0
+     },
+     "search_range_Arms": [
+      0.0,
+      600.0
+     ],
+     "grid_Arms": [
+      115.075,
+      460.0
+     ],
+     "n_mono_samples": 65,
+     "monotonic": true,
+     "infeasible_at_zero_current": false,
+     "method": "superposition + bisection",
+     "notes": [
+      "I_cont = 118.6433 A, limited by the winding (ok). winding-limited 118.6433 A, magnet-limited 222.7919 A."
+     ],
+     "_method_detail": "superposition + bisection, hot-node fixed point (max over nodes is not a linear functional, so the argmax node is iterated to self-consistency)",
+     "_hot_node_iterations": [
+      {
+       "iteration": 0,
+       "winding_node": 324577,
+       "magnet_node": 434859,
+       "I_cont_Arms": 118.64326279839028,
+       "status": "ok"
+      },
+      {
+       "iteration": 1,
+       "winding_node": 324577,
+       "magnet_node": 528879,
+       "I_cont_Arms": 118.64326279839028,
+       "status": "ok"
+      }
+     ],
+     "_hot_node_converged": true,
+     "_hot_nodes": {
+      "winding": 324577,
+      "magnet": 528879
+     }
+    },
+    "8000": {
+     "I_cont_Arms": 99.85482469889334,
+     "I_cont_winding_Arms": 99.85482469889334,
+     "I_cont_magnet_Arms": 167.9232155601442,
+     "limited_by": "winding",
+     "status": "extrap_low",
+     "T_at_I_cont": {
+      "winding": 179.99999999998872,
+      "magnet": 117.02564692053048
+     },
+     "P_W_at_I_cont": {
+      "cu_slot": 1480.1935978853342,
+      "cu_end": 869.8439076017722,
+      "ac_slot": 625.0258194224366,
+      "fe_s": 722.8964030077071,
+      "fe_r": 28.82237813716074,
+      "pm": 163.68355555555556
+     },
+     "status_winding": "extrap_low",
+     "status_magnet": "ok",
+     "limits_C": {
+      "winding": 180.0,
+      "magnet": 150.0
+     },
+     "search_range_Arms": [
+      0.0,
+      600.0
+     ],
+     "grid_Arms": [
+      115.075,
+      460.0
+     ],
+     "n_mono_samples": 65,
+     "monotonic": true,
+     "infeasible_at_zero_current": false,
+     "method": "superposition + bisection",
+     "notes": [
+      "I_cont = 99.8548 A, limited by the winding (extrap_low). winding-limited 99.8548 A, magnet-limited 167.9232 A.",
+      "I_cont is BELOW the plan grid low point 115.075 A: the machine cannot run continuously anywhere on the plan's current grid at this speed. Report the number with the extrap_low label."
+     ],
+     "_method_detail": "superposition + bisection, hot-node fixed point (max over nodes is not a linear functional, so the argmax node is iterated to self-consistency)",
+     "_hot_node_iterations": [
+      {
+       "iteration": 0,
+       "winding_node": 324577,
+       "magnet_node": 493939,
+       "I_cont_Arms": 99.85756131395571,
+       "status": "extrap_low"
+      },
+      {
+       "iteration": 1,
+       "winding_node": 331981,
+       "magnet_node": 1059820,
+       "I_cont_Arms": 99.85482469889334,
+       "status": "extrap_low"
+      }
+     ],
+     "_hot_node_converged": true,
+     "_hot_nodes": {
+      "winding": 331981,
+      "magnet": 1059820
+     }
+    },
+    "16000": {
+     "I_cont_Arms": 0.0,
+     "I_cont_winding_Arms": 82.56620541165064,
+     "I_cont_magnet_Arms": 0.0,
+     "limited_by": "magnet",
+     "status": "extrap_low",
+     "T_at_I_cont": {
+      "winding": 120.14064091419239,
+      "magnet": 176.75237321864267
+     },
+     "P_W_at_I_cont": {
+      "cu_slot": 0.0,
+      "cu_end": 0.0,
+      "ac_slot": 6.58708172059463,
+      "fe_s": 2044.6597946484526,
+      "fe_r": 81.52199612283701,
+      "pm": 654.7342222222222
+     },
+     "status_winding": "extrap_low",
+     "status_magnet": "extrap_low",
+     "limits_C": {
+      "winding": 180.0,
+      "magnet": 150.0
+     },
+     "search_range_Arms": [
+      0.0,
+      600.0
+     ],
+     "grid_Arms": [
+      115.075,
+      460.0
+     ],
+     "n_mono_samples": 65,
+     "monotonic": true,
+     "infeasible_at_zero_current": true,
+     "method": "superposition + bisection",
+     "notes": [
+      "magnet: T(0 A) = 176.75 degC is already at/above the 150.0 degC limit -- the current-independent losses alone exceed it. No continuous operation at this speed; reporting I_cont = 0 A.",
+      "I_cont = 0.0000 A, limited by the magnet (extrap_low). winding-limited 82.5662 A, magnet-limited 0.0000 A.",
+      "I_cont is BELOW the plan grid low point 115.075 A: the machine cannot run continuously anywhere on the plan's current grid at this speed. Report the number with the extrap_low label.",
+      "the AC loss at I_cont = 0.000 A was CLAMPED to the map end knot (clamped_low); outside 0.1-460 A the AC loss is not extrapolated, so the temperature there is understated."
+     ],
+     "_method_detail": "superposition + bisection, hot-node fixed point (max over nodes is not a linear functional, so the argmax node is iterated to self-consistency)",
+     "_hot_node_iterations": [
+      {
+       "iteration": 0,
+       "winding_node": 331981,
+       "magnet_node": 1093545,
+       "I_cont_Arms": 0.0,
+       "status": "extrap_low"
+      },
+      {
+       "iteration": 1,
+       "winding_node": 118185,
+       "magnet_node": 1090539,
+       "I_cont_Arms": 0.0,
+       "status": "extrap_low"
+      }
+     ],
+     "_hot_node_converged": true,
+     "_hot_nodes": {
+      "winding": 118185,
+      "magnet": 1090539
+     }
+    }
+   }
+  },
+  "sph": {
+   "DC": {
+    "2000": {
+     "I_cont_Arms": 94.25723474579557,
+     "I_cont_winding_Arms": 94.25723474579557,
+     "I_cont_magnet_Arms": 157.97149146559514,
+     "limited_by": "winding",
+     "status": "extrap_low",
+     "T_at_I_cont": {
+      "winding": 179.99999999998636,
+      "magnet": 100.63610147040836
+     },
+     "P_W_at_I_cont": {
+      "cu_slot": 1318.893729502342,
+      "cu_end": 775.0551529345719,
+      "ac_slot": 0.0,
+      "fe_s": 90.36205037596339,
+      "fe_r": 3.6027972671450925,
+      "pm": 10.230222222222222
+     },
+     "status_winding": "extrap_low",
+     "status_magnet": "ok",
+     "limits_C": {
+      "winding": 180.0,
+      "magnet": 150.0
+     },
+     "search_range_Arms": [
+      0.0,
+      600.0
+     ],
+     "grid_Arms": [
+      115.075,
+      460.0
+     ],
+     "n_mono_samples": 65,
+     "monotonic": true,
+     "infeasible_at_zero_current": false,
+     "method": "superposition + bisection",
+     "notes": [
+      "I_cont = 94.2572 A, limited by the winding (extrap_low). winding-limited 94.2572 A, magnet-limited 157.9715 A.",
+      "I_cont is BELOW the plan grid low point 115.075 A: the machine cannot run continuously anywhere on the plan's current grid at this speed. Report the number with the extrap_low label."
+     ],
+     "_method_detail": "superposition + bisection, hot-node fixed point (max over nodes is not a linear functional, so the argmax node is iterated to self-consistency)",
+     "_hot_node_iterations": [
+      {
+       "iteration": 0,
+       "winding_node": 331981,
+       "magnet_node": 434859,
+       "I_cont_Arms": 94.25723474579557,
+       "status": "extrap_low"
+      }
+     ],
+     "_hot_node_converged": true,
+     "_hot_nodes": {
+      "winding": 331981,
+      "magnet": 434859
+     }
+    },
+    "4000": {
+     "I_cont_Arms": 89.91155222304548,
+     "I_cont_winding_Arms": 89.91155222304548,
+     "I_cont_magnet_Arms": 149.9261094626526,
+     "limited_by": "winding",
+     "status": "extrap_low",
+     "T_at_I_cont": {
+      "winding": 179.99999999998562,
+      "magnet": 105.79306845308821
+     },
+     "P_W_at_I_cont": {
+      "cu_slot": 1200.083335157315,
+      "cu_end": 705.2355713417109,
+      "ac_slot": 0.0,
+      "fe_s": 255.58247433105657,
+      "fe_r": 10.190249515354626,
+      "pm": 40.92088888888889
+     },
+     "status_winding": "extrap_low",
+     "status_magnet": "ok",
+     "limits_C": {
+      "winding": 180.0,
+      "magnet": 150.0
+     },
+     "search_range_Arms": [
+      0.0,
+      600.0
+     ],
+     "grid_Arms": [
+      115.075,
+      460.0
+     ],
+     "n_mono_samples": 65,
+     "monotonic": true,
+     "infeasible_at_zero_current": false,
+     "method": "superposition + bisection",
+     "notes": [
+      "I_cont = 89.9116 A, limited by the winding (extrap_low). winding-limited 89.9116 A, magnet-limited 149.9261 A.",
+      "I_cont is BELOW the plan grid low point 115.075 A: the machine cannot run continuously anywhere on the plan's current grid at this speed. Report the number with the extrap_low label."
+     ],
+     "_method_detail": "superposition + bisection, hot-node fixed point (max over nodes is not a linear functional, so the argmax node is iterated to self-consistency)",
+     "_hot_node_iterations": [
+      {
+       "iteration": 0,
+       "winding_node": 331981,
+       "magnet_node": 434859,
+       "I_cont_Arms": 89.91155222304548,
+       "status": "extrap_low"
+      },
+      {
+       "iteration": 1,
+       "winding_node": 331981,
+       "magnet_node": 451309,
+       "I_cont_Arms": 89.91155222304548,
+       "status": "extrap_low"
+      }
+     ],
+     "_hot_node_converged": true,
+     "_hot_nodes": {
+      "winding": 331981,
+      "magnet": 451309
+     }
+    },
+    "8000": {
+     "I_cont_Arms": 75.90394840809172,
+     "I_cont_winding_Arms": 75.90394840809172,
+     "I_cont_magnet_Arms": 118.51724404461325,
+     "limited_by": "winding",
+     "status": "extrap_low",
+     "T_at_I_cont": {
+      "winding": 179.99999999999386,
+      "magnet": 124.99345214232929
+     },
+     "P_W_at_I_cont": {
+      "cu_slot": 855.2816413060386,
+      "cu_end": 502.61095983427856,
+      "ac_slot": 0.0,
+      "fe_s": 722.8964030077071,
+      "fe_r": 28.82237813716074,
+      "pm": 163.68355555555556
+     },
+     "status_winding": "extrap_low",
+     "status_magnet": "ok",
+     "limits_C": {
+      "winding": 180.0,
+      "magnet": 150.0
+     },
+     "search_range_Arms": [
+      0.0,
+      600.0
+     ],
+     "grid_Arms": [
+      115.075,
+      460.0
+     ],
+     "n_mono_samples": 65,
+     "monotonic": true,
+     "infeasible_at_zero_current": false,
+     "method": "superposition + bisection",
+     "notes": [
+      "I_cont = 75.9039 A, limited by the winding (extrap_low). winding-limited 75.9039 A, magnet-limited 118.5172 A.",
+      "I_cont is BELOW the plan grid low point 115.075 A: the machine cannot run continuously anywhere on the plan's current grid at this speed. Report the number with the extrap_low label."
+     ],
+     "_method_detail": "superposition + bisection, hot-node fixed point (max over nodes is not a linear functional, so the argmax node is iterated to self-consistency)",
+     "_hot_node_iterations": [
+      {
+       "iteration": 0,
+       "winding_node": 331981,
+       "magnet_node": 434859,
+       "I_cont_Arms": 75.90394840809172,
+       "status": "extrap_low"
+      },
+      {
+       "iteration": 1,
+       "winding_node": 331981,
+       "magnet_node": 1061310,
+       "I_cont_Arms": 75.90394840809172,
+       "status": "extrap_low"
+      }
+     ],
+     "_hot_node_converged": true,
+     "_hot_nodes": {
+      "winding": 331981,
+      "magnet": 1061310
+     }
+    },
+    "16000": {
+     "I_cont_Arms": 0.0,
+     "I_cont_winding_Arms": 0.0,
+     "I_cont_magnet_Arms": 0.0,
+     "limited_by": "magnet",
+     "status": "extrap_low",
+     "T_at_I_cont": {
+      "winding": 193.45058914986564,
+      "magnet": 201.28828506843726
+     },
+     "P_W_at_I_cont": {
+      "cu_slot": 0.0,
+      "cu_end": 0.0,
+      "ac_slot": 0.0,
+      "fe_s": 2044.6597946484526,
+      "fe_r": 81.52199612283701,
+      "pm": 654.7342222222222
+     },
+     "status_winding": "extrap_low",
+     "status_magnet": "extrap_low",
+     "limits_C": {
+      "winding": 180.0,
+      "magnet": 150.0
+     },
+     "search_range_Arms": [
+      0.0,
+      600.0
+     ],
+     "grid_Arms": [
+      115.075,
+      460.0
+     ],
+     "n_mono_samples": 65,
+     "monotonic": true,
+     "infeasible_at_zero_current": true,
+     "method": "superposition + bisection",
+     "notes": [
+      "winding: T(0 A) = 193.45 degC is already at/above the 180.0 degC limit -- the current-independent losses alone exceed it. No continuous operation at this speed; reporting I_cont = 0 A.",
+      "magnet: T(0 A) = 201.29 degC is already at/above the 150.0 degC limit -- the current-independent losses alone exceed it. No continuous operation at this speed; reporting I_cont = 0 A.",
+      "I_cont = 0.0000 A, limited by the magnet (extrap_low). winding-limited 0.0000 A, magnet-limited 0.0000 A.",
+      "I_cont is BELOW the plan grid low point 115.075 A: the machine cannot run continuously anywhere on the plan's current grid at this speed. Report the number with the extrap_low label."
+     ],
+     "_method_detail": "superposition + bisection, hot-node fixed point (max over nodes is not a linear functional, so the argmax node is iterated to self-consistency)",
+     "_hot_node_iterations": [
+      {
+       "iteration": 0,
+       "winding_node": 331981,
+       "magnet_node": 1055768,
+       "I_cont_Arms": 0.0,
+       "status": "extrap_low"
+      },
+      {
+       "iteration": 1,
+       "winding_node": 253853,
+       "magnet_node": 1076009,
+       "I_cont_Arms": 0.0,
+       "status": "extrap_low"
+      }
+     ],
+     "_hot_node_converged": true,
+     "_hot_nodes": {
+      "winding": 253853,
+      "magnet": 1076009
+     }
+    }
+   },
+   "AC": {
+    "2000": {
+     "I_cont_Arms": 92.85448038129306,
+     "I_cont_winding_Arms": 92.85448038129306,
+     "I_cont_magnet_Arms": 155.65667031118866,
+     "limited_by": "winding",
+     "status": "extrap_low",
+     "T_at_I_cont": {
+      "winding": 179.99999999998766,
+      "magnet": 100.61738161085921
+     },
+     "P_W_at_I_cont": {
+      "cu_slot": 1279.9297754424144,
+      "cu_end": 752.1577710626847,
+      "ac_slot": 41.03088985832382,
+      "fe_s": 90.36205037596339,
+      "fe_r": 3.6027972671450925,
+      "pm": 10.230222222222222
+     },
+     "status_winding": "extrap_low",
+     "status_magnet": "ok",
+     "limits_C": {
+      "winding": 180.0,
+      "magnet": 150.0
+     },
+     "search_range_Arms": [
+      0.0,
+      600.0
+     ],
+     "grid_Arms": [
+      115.075,
+      460.0
+     ],
+     "n_mono_samples": 65,
+     "monotonic": true,
+     "infeasible_at_zero_current": false,
+     "method": "superposition + bisection",
+     "notes": [
+      "I_cont = 92.8545 A, limited by the winding (extrap_low). winding-limited 92.8545 A, magnet-limited 155.6567 A.",
+      "I_cont is BELOW the plan grid low point 115.075 A: the machine cannot run continuously anywhere on the plan's current grid at this speed. Report the number with the extrap_low label."
+     ],
+     "_method_detail": "superposition + bisection, hot-node fixed point (max over nodes is not a linear functional, so the argmax node is iterated to self-consistency)",
+     "_hot_node_iterations": [
+      {
+       "iteration": 0,
+       "winding_node": 331981,
+       "magnet_node": 434859,
+       "I_cont_Arms": 92.85448038129306,
+       "status": "extrap_low"
+      }
+     ],
+     "_hot_node_converged": true,
+     "_hot_nodes": {
+      "winding": 331981,
+      "magnet": 434859
+     }
+    },
+    "4000": {
+     "I_cont_Arms": 85.20910551992219,
+     "I_cont_winding_Arms": 85.20910551992219,
+     "I_cont_magnet_Arms": 142.2067837478409,
+     "limited_by": "winding",
+     "status": "extrap_low",
+     "T_at_I_cont": {
+      "winding": 179.99999999998448,
+      "magnet": 105.73434395148878
+     },
+     "P_W_at_I_cont": {
+      "cu_slot": 1077.8353595437293,
+      "cu_end": 633.395876212611,
+      "ac_slot": 128.73291080999468,
+      "fe_s": 255.58247433105657,
+      "fe_r": 10.190249515354626,
+      "pm": 40.92088888888889
+     },
+     "status_winding": "extrap_low",
+     "status_magnet": "ok",
+     "limits_C": {
+      "winding": 180.0,
+      "magnet": 150.0
+     },
+     "search_range_Arms": [
+      0.0,
+      600.0
+     ],
+     "grid_Arms": [
+      115.075,
+      460.0
+     ],
+     "n_mono_samples": 65,
+     "monotonic": true,
+     "infeasible_at_zero_current": false,
+     "method": "superposition + bisection",
+     "notes": [
+      "I_cont = 85.2091 A, limited by the winding (extrap_low). winding-limited 85.2091 A, magnet-limited 142.2068 A.",
+      "I_cont is BELOW the plan grid low point 115.075 A: the machine cannot run continuously anywhere on the plan's current grid at this speed. Report the number with the extrap_low label."
+     ],
+     "_method_detail": "superposition + bisection, hot-node fixed point (max over nodes is not a linear functional, so the argmax node is iterated to self-consistency)",
+     "_hot_node_iterations": [
+      {
+       "iteration": 0,
+       "winding_node": 331981,
+       "magnet_node": 434859,
+       "I_cont_Arms": 85.20910551992219,
+       "status": "extrap_low"
+      },
+      {
+       "iteration": 1,
+       "winding_node": 331981,
+       "magnet_node": 451309,
+       "I_cont_Arms": 85.20910551992219,
+       "status": "extrap_low"
+      }
+     ],
+     "_hot_node_converged": true,
+     "_hot_nodes": {
+      "winding": 331981,
+      "magnet": 451309
+     }
+    },
+    "8000": {
+     "I_cont_Arms": 64.1059643180306,
+     "I_cont_winding_Arms": 64.1059643180306,
+     "I_cont_magnet_Arms": 100.46409479329927,
+     "limited_by": "winding",
+     "status": "extrap_low",
+     "T_at_I_cont": {
+      "winding": 179.99999999998093,
+      "magnet": 124.87768820173486
+     },
+     "P_W_at_I_cont": {
+      "cu_slot": 610.066656789259,
+      "cu_end": 358.5090257093701,
+      "ac_slot": 258.2229977438366,
+      "fe_s": 722.8964030077071,
+      "fe_r": 28.82237813716074,
+      "pm": 163.68355555555556
+     },
+     "status_winding": "extrap_low",
+     "status_magnet": "extrap_low",
+     "limits_C": {
+      "winding": 180.0,
+      "magnet": 150.0
+     },
+     "search_range_Arms": [
+      0.0,
+      600.0
+     ],
+     "grid_Arms": [
+      115.075,
+      460.0
+     ],
+     "n_mono_samples": 65,
+     "monotonic": true,
+     "infeasible_at_zero_current": false,
+     "method": "superposition + bisection",
+     "notes": [
+      "I_cont = 64.1060 A, limited by the winding (extrap_low). winding-limited 64.1060 A, magnet-limited 100.4641 A.",
+      "I_cont is BELOW the plan grid low point 115.075 A: the machine cannot run continuously anywhere on the plan's current grid at this speed. Report the number with the extrap_low label."
+     ],
+     "_method_detail": "superposition + bisection, hot-node fixed point (max over nodes is not a linear functional, so the argmax node is iterated to self-consistency)",
+     "_hot_node_iterations": [
+      {
+       "iteration": 0,
+       "winding_node": 331981,
+       "magnet_node": 434859,
+       "I_cont_Arms": 64.1059643180306,
+       "status": "extrap_low"
+      },
+      {
+       "iteration": 1,
+       "winding_node": 331981,
+       "magnet_node": 1061310,
+       "I_cont_Arms": 64.1059643180306,
+       "status": "extrap_low"
+      }
+     ],
+     "_hot_node_converged": true,
+     "_hot_nodes": {
+      "winding": 331981,
+      "magnet": 1061310
+     }
+    },
+    "16000": {
+     "I_cont_Arms": 0.0,
+     "I_cont_winding_Arms": 0.0,
+     "I_cont_magnet_Arms": 0.0,
+     "limited_by": "magnet",
+     "status": "extrap_low",
+     "T_at_I_cont": {
+      "winding": 193.81664606637747,
+      "magnet": 201.4118680693177
+     },
+     "P_W_at_I_cont": {
+      "cu_slot": 0.0,
+      "cu_end": 0.0,
+      "ac_slot": 6.58708172059463,
+      "fe_s": 2044.6597946484526,
+      "fe_r": 81.52199612283701,
+      "pm": 654.7342222222222
+     },
+     "status_winding": "extrap_low",
+     "status_magnet": "extrap_low",
+     "limits_C": {
+      "winding": 180.0,
+      "magnet": 150.0
+     },
+     "search_range_Arms": [
+      0.0,
+      600.0
+     ],
+     "grid_Arms": [
+      115.075,
+      460.0
+     ],
+     "n_mono_samples": 65,
+     "monotonic": true,
+     "infeasible_at_zero_current": true,
+     "method": "superposition + bisection",
+     "notes": [
+      "winding: T(0 A) = 193.82 degC is already at/above the 180.0 degC limit -- the current-independent losses alone exceed it. No continuous operation at this speed; reporting I_cont = 0 A.",
+      "magnet: T(0 A) = 201.41 degC is already at/above the 150.0 degC limit -- the current-independent losses alone exceed it. No continuous operation at this speed; reporting I_cont = 0 A.",
+      "I_cont = 0.0000 A, limited by the magnet (extrap_low). winding-limited 0.0000 A, magnet-limited 0.0000 A.",
+      "I_cont is BELOW the plan grid low point 115.075 A: the machine cannot run continuously anywhere on the plan's current grid at this speed. Report the number with the extrap_low label.",
+      "the AC loss at I_cont = 0.000 A was CLAMPED to the map end knot (clamped_low); outside 0.1-460 A the AC loss is not extrapolated, so the temperature there is understated."
+     ],
+     "_method_detail": "superposition + bisection, hot-node fixed point (max over nodes is not a linear functional, so the argmax node is iterated to self-consistency)",
+     "_hot_node_iterations": [
+      {
+       "iteration": 0,
+       "winding_node": 331981,
+       "magnet_node": 493939,
+       "I_cont_Arms": 0.0,
+       "status": "extrap_low"
+      },
+      {
+       "iteration": 1,
+       "winding_node": 253853,
+       "magnet_node": 1076009,
+       "I_cont_Arms": 0.0,
+       "status": "extrap_low"
+      }
+     ],
+     "_hot_node_converged": true,
+     "_hot_nodes": {
+      "winding": 253853,
+      "magnet": 1076009
+     }
+    }
+   }
+  }
+ },
+ "_git_check_ignore": {
+  "git_available": true,
+  "fix": "!mlxperPJT/thermal/thesis_out/*.png",
+  "deliverables": [
+   {
+    "path": "D:\\KDH\\NvidiaNemo\\eMach\\mlxperPJT\\thermal\\thesis_out\\e10_cont_rating_base.json",
+    "ignored": false,
+    "rule": ""
+   }
+  ],
+  "working_files": [
+   {
+    "path": "C:\\work\\_thermal_kit_20260907\\logs\\d1_base.log",
+    "ignored": false,
+    "rule": "fatal: C:\\work\\_thermal_kit_20260907\\logs\\d1_base.log: 'C:\\work\\_thermal_kit_20260907\\logs\\d1_base.log' is outside repository at 'D:/KDH/NvidiaNemo/eMach'"
+   }
+  ],
+  "figure_probe": [
+   {
+    "path": "D:\\KDH\\NvidiaNemo\\eMach\\mlxperPJT\\thermal\\thesis_out\\cont_rating_Tw_vs_I.png",
+    "ignored": true,
+    "rule": ".gitignore:203:!mlxperPJT/thermal/thesis_out/*.png\t\"D:\\\\KDH\\\\NvidiaNemo\\\\eMach\\\\mlxperPJT\\\\thermal\\\\thesis_out\\\\cont_rating_Tw_vs_I.png\""
+   },
+   {
+    "path": "D:\\KDH\\NvidiaNemo\\eMach\\mlxperPJT\\thermal\\thesis_out\\cont_rating_Icont_vs_n.png",
+    "ignored": true,
+    "rule": ".gitignore:203:!mlxperPJT/thermal/thesis_out/*.png\t\"D:\\\\KDH\\\\NvidiaNemo\\\\eMach\\\\mlxperPJT\\\\thermal\\\\thesis_out\\\\cont_rating_Icont_vs_n.png\""
+   }
+  ]
+ },
+ "_undershoot": [
+  {
+   "run": "unit[sph] cu_slot",
+   "n_nodes_below": 2,
+   "n_nodes_total": 1113930,
+   "node_ids": [
+    67651,
+    99303
+   ],
+   "node_T_C": [
+    64.3036,
+    62.4571
+   ],
+   "t_min_C": 62.457061571301686,
+   "undershoot_K": 7.542938428698314,
+   "winding_mean_contamination_K": 0.00036526398216542,
+   "winding_mean_contamination_rel": 1.1314263526846673e-05,
+   "verdict": "tolerated: a fixed, tiny set of winding nodes on badly shaped SOLID87 elements. Undershoot scales with the local gradient, so it varies by load case at the SAME node ids. Moves no reported quantity.",
+   "limits": {
+    "max_nodes": 50,
+    "max_K_effective": 22.671011123175518,
+    "max_frac_of_range": 0.3,
+    "field_range_K": 75.57003707725173,
+    "max_winding_mean_contamination_rel": 0.0001
+   },
+   "undershoot_frac_of_range": 0.0998138775687978
+  },
+  {
+   "run": "unit[sph] cu_end",
+   "n_nodes_below": 2,
+   "n_nodes_total": 1113930,
+   "node_ids": [
+    67651,
+    99303
+   ],
+   "node_T_C": [
+    55.8957,
+    53.7046
+   ],
+   "t_min_C": 53.70455311863353,
+   "undershoot_K": 16.295446881366473,
+   "winding_mean_contamination_K": 0.0004541518142645971,
+   "winding_mean_contamination_rel": 1.3691445744593983e-05,
+   "verdict": "tolerated: a fixed, tiny set of winding nodes on badly shaped SOLID87 elements. Undershoot scales with the local gradient, so it varies by load case at the SAME node ids. Moves no reported quantity.",
+   "limits": {
+    "max_nodes": 50,
+    "max_K_effective": 21.801279900151368,
+    "max_frac_of_range": 0.3,
+    "field_range_K": 72.67093300050456,
+    "max_winding_mean_contamination_rel": 0.0001
+   },
+   "undershoot_frac_of_range": 0.22423610388012127
+  },
+  {
+   "run": "unit[sph] fe_s",
+   "n_nodes_below": 2,
+   "n_nodes_total": 1113930,
+   "node_ids": [
+    67651,
+    99303
+   ],
+   "node_T_C": [
+    65.3174,
+    63.7913
+   ],
+   "t_min_C": 63.79126987027505,
+   "undershoot_K": 6.208730129724948,
+   "winding_mean_contamination_K": 0.00031682156792591583,
+   "winding_mean_contamination_rel": 1.1195873368145627e-05,
+   "verdict": "tolerated: a fixed, tiny set of winding nodes on badly shaped SOLID87 elements. Undershoot scales with the local gradient, so it varies by load case at the SAME node ids. Moves no reported quantity.",
+   "limits": {
+    "max_nodes": 50,
+    "max_K_effective": 20.0,
+    "max_frac_of_range": 0.3,
+    "field_range_K": 53.517634898819054,
+    "max_winding_mean_contamination_rel": 0.0001
+   },
+   "undershoot_frac_of_range": 0.116012789830179
+  },
+  {
+   "run": "unit[sph] fe_r",
+   "n_nodes_below": 2,
+   "n_nodes_total": 1113930,
+   "node_ids": [
+    67651,
+    99303
+   ],
+   "node_T_C": [
+    68.3505,
+    67.817
+   ],
+   "t_min_C": 67.81697267426439,
+   "undershoot_K": 2.1830273257356083,
+   "winding_mean_contamination_K": 0.00010976952471797319,
+   "winding_mean_contamination_rel": 1.1229664779042707e-05,
+   "verdict": "tolerated: a fixed, tiny set of winding nodes on badly shaped SOLID87 elements. Undershoot scales with the local gradient, so it varies by load case at the SAME node ids. Moves no reported quantity.",
+   "limits": {
+    "max_nodes": 50,
+    "max_K_effective": 39.16304160500298,
+    "max_frac_of_range": 0.3,
+    "field_range_K": 130.54347201667662,
+    "max_winding_mean_contamination_rel": 0.0001
+   },
+   "undershoot_frac_of_range": 0.016722608124416453
+  },
+  {
+   "run": "unit[sph] pm",
+   "n_nodes_below": 2,
+   "n_nodes_total": 1113930,
+   "node_ids": [
+    67651,
+    99303
+   ],
+   "node_T_C": [
+    68.2833,
+    67.7281
+   ],
+   "t_min_C": 67.72806051482553,
+   "undershoot_K": 2.271939485174471,
+   "winding_mean_contamination_K": 0.0001142403095605416,
+   "winding_mean_contamination_rel": 1.1229664779089765e-05,
+   "verdict": "tolerated: a fixed, tiny set of winding nodes on badly shaped SOLID87 elements. Undershoot scales with the local gradient, so it varies by load case at the SAME node ids. Moves no reported quantity.",
+   "limits": {
+    "max_nodes": 50,
+    "max_K_effective": 38.84962538592568,
+    "max_frac_of_range": 0.3,
+    "field_range_K": 129.49875128641892,
+    "max_winding_mean_contamination_rel": 0.0001
+   },
+   "undershoot_frac_of_range": 0.0175441034188006
+  },
+  {
+   "run": "verify 8000 rpm / 230.050 A / AC / sph",
+   "n_nodes_below": 2,
+   "n_nodes_total": 1113930,
+   "node_ids": [
+    67651,
+    99303
+   ],
+   "node_T_C": [
+    -62.7524,
+    -94.7987
+   ],
+   "t_min_C": -94.79865548464893,
+   "undershoot_K": 164.79865548464892,
+   "winding_mean_contamination_K": 0.006446391246152445,
+   "winding_mean_contamination_rel": 1.1986367044545797e-05,
+   "verdict": "tolerated: a fixed, tiny set of winding nodes on badly shaped SOLID87 elements. Undershoot scales with the local gradient, so it varies by load case at the SAME node ids. Moves no reported quantity.",
+   "limits": {
+    "max_nodes": 50,
+    "max_K_effective": 276.4280891953019,
+    "max_frac_of_range": 0.3,
+    "field_range_K": 921.4269639843396,
+    "max_winding_mean_contamination_rel": 0.0001
+   },
+   "undershoot_frac_of_range": 0.17885156602325109
+  },
+  {
+   "run": "verify 2000 rpm / 460.000 A / DC / sph",
+   "n_nodes_below": 2,
+   "n_nodes_total": 1113930,
+   "node_ids": [
+    67651,
+    99303
+   ],
+   "node_T_C": [
+    -369.74,
+    -468.3363
+   ],
+   "t_min_C": -468.33626333420517,
+   "undershoot_K": 538.3362633342051,
+   "winding_mean_contamination_K": 0.01988727307590159,
+   "winding_mean_contamination_rel": 1.220755391586626e-05,
+   "verdict": "tolerated: a fixed, tiny set of winding nodes on badly shaped SOLID87 elements. Undershoot scales with the local gradient, so it varies by load case at the SAME node ids. Moves no reported quantity.",
+   "limits": {
+    "max_nodes": 50,
+    "max_K_effective": 751.4330987108618,
+    "max_frac_of_range": 0.3,
+    "field_range_K": 2504.7769957028727,
+    "max_winding_mean_contamination_rel": 0.0001
+   },
+   "undershoot_frac_of_range": 0.21492382925017284
+  }
+ ],
+ "_merged_from": {
+  "base": "e10_cont_rating_base.json",
+  "sph": "e10_cont_rating_sph.json",
+  "by": "merge_d1_hsets.py",
+  "why": "SURF152 convection is written once at ESURF time; re-issuing SFE in /SOLU for a second h-set produced a max-principle violation on moa."
+ }
+}
