@@ -18,9 +18,14 @@ from dataclasses import dataclass
 V_REF, NS_REF = 720.0, 6
 ALLOWANCE_REF = dict(liner_mm=0.20, enamel_mm=0.10, other_mm=0.319)
 
+#: PDIV: PEEK 150 μm ≈ 1.3 kV (Solvay Ajedium data; IEEE Xplore 11014119). NKN laminate: no vendor PDIV at hand —
+#: the same source states PEEK reaches equal dielectric performance at 2/3 of the NKN thickness, so the reference
+#: 0.20 mm NKN is taken as equivalent to ~0.13 mm PEEK (pdiv scaled linearly, flagged as an estimate).
 INSULATION = {
-    "NKN": dict(liner_mm=0.20, enamel_mm=0.10, pdiv_V=900.0, k_W_mK=0.16, note="기준 권선 (aramid/polyimide 라이너)"),
-    "PEEK": dict(liner_mm=0.15, enamel_mm=0.10, pdiv_V=1650.0, k_W_mK=0.25, note="압출 PEEK 라이너 150 μm, PDIV 1.6–1.7 kV"),
+    "NKN": dict(liner_mm=0.20, enamel_mm=0.10, pdiv_V=1300.0 * (0.20 * 2 / 3) / 0.15, pdiv_is_estimate=True,
+                k_W_mK=0.16, note="기준 권선 (Nomex-Kapton-Nomex 라미네이트), PDIV 는 PEEK 등가 두께 환산 추정"),
+    "PEEK": dict(liner_mm=0.15, enamel_mm=0.10, pdiv_V=1300.0, pdiv_is_estimate=False,
+                 k_W_mK=0.17, note="압출 PEEK 라이너 150 μm, PDIV ≈ 1.3 kV (Solvay Ajedium)"),
 }
 
 
@@ -53,6 +58,7 @@ def loss_scales(bs1_mm, system="PEEK", ref="NKN"):
     return dict(dc_scale=1.0 / r, ac_scale=r ** 2, width_ratio=r, w_cu_ref_mm=w0, w_cu_mm=w1)
 
 
-def pdiv_margin(v_dc, system, overshoot=2.0):
-    """PDIV margin against the worst-case turn-to-turn stress (2·V_dc overshoot at the first turns)."""
+def pdiv_margin(v_dc, system, overshoot=1.5):
+    """PDIV margin of the slot liner against the phase-to-ground stress V_dc × overshoot (1.5 = typical SiC dv/dt
+    overshoot at the machine terminals; 2.0 = worst case with cable reflections)."""
     return INSULATION[system]["pdiv_V"] / (overshoot * v_dc)
