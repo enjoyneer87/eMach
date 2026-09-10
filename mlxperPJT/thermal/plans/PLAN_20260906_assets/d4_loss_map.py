@@ -110,6 +110,13 @@ MODEL_CONTEXT_VARS = (
     "ArmatureConductor_Temperature", "Magnet_Temperature",
     "StatorLam_Temperature", "RotorLam_Temperature",
     "IronLossCalculationType", "OnLoadLossCalculation",
+    "DriveModulation", "CurrentDefinition", "WindingConnection", "SupplyVoltage",
+)
+
+VOLTAGE_VARS = (
+    "PhaseVoltage", "LineLineVoltage", "RmsPhaseVoltage", "RmsLineLineVoltage",
+    "PeakPhaseVoltage", "PeakLineLineVoltage", "PhasorRmsPhaseVoltage",
+    "RmsPhaseDriveVoltage", "MinSupplyVoltage",
 )
 
 # 계획서 §2 가 주는 교차검증점. 16 krpm/460 A 의 R1 파이프라인 값 (W).
@@ -291,6 +298,8 @@ def solve_point(mcad, speed, current, phase, voltage=None):
         "dc_bus_voltage_V": float(mcad.get_variable(OP_VOLTAGE)),
         "magnet_2d3d_factor": float(mcad.get_variable("Magnet2D3DFactor")),
         "model_context": context,
+        "voltage_V": {name: float(mcad.get_variable(name)) for name in VOLTAGE_VARS},
+        "calculated_rms_current_A": float(mcad.get_variable("RmsCurrentCalc")),
         "solve_s": round(dt, 2),
         "speed_only_rule_W": speed_only_rule(speed),
     }
