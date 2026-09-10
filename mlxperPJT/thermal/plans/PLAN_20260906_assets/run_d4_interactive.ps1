@@ -5,6 +5,7 @@ param(
     [string]$Speeds = '2000,4000,8000,16000',
     [string]$Currents = '115.075,230.05,345.025,460.0',
     [string]$TaskName = 'eMach_D4_Interactive',
+    [double]$Phase = 36.0,
     [ValidateRange(1, 4)][int]$MaxInstances = 1
 )
 # Run the Python driver in the logged-in user's desktop session. No password,
@@ -26,6 +27,7 @@ if (Test-Path -LiteralPath $RunDirectory) {
 New-Item -ItemType Directory -Path $RunDirectory | Out-Null
 $arguments = @(
     $driver, '--repo', $Repo, '--speeds', $Speeds, '--currents', $Currents,
+    '--phase', $Phase,
     '--work-dir', (Join-Path $RunDirectory 'model'),
     '--out', (Join-Path $RunDirectory 'points.json'),
     '--log', (Join-Path $RunDirectory 'run.log')

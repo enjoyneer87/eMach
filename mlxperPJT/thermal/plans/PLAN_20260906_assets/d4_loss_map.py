@@ -111,12 +111,21 @@ MODEL_CONTEXT_VARS = (
     "StatorLam_Temperature", "RotorLam_Temperature",
     "IronLossCalculationType", "OnLoadLossCalculation",
     "DriveModulation", "CurrentDefinition", "WindingConnection", "SupplyVoltage",
+    "TorqueCalculation",
 )
 
 VOLTAGE_VARS = (
     "PhaseVoltage", "LineLineVoltage", "RmsPhaseVoltage", "RmsLineLineVoltage",
     "PeakPhaseVoltage", "PeakLineLineVoltage", "PhasorRmsPhaseVoltage",
     "RmsPhaseDriveVoltage", "MinSupplyVoltage",
+)
+
+# Torque and dq diagnostics for field-weakening screening. All automation names
+# are present in the v261 catalogue; zero-torque 90-degree points are diagnostics.
+OPERATING_OUTPUT_VARS = (
+    "AvTorqueMsVw", "AvTorqueDQ", "ShaftTorque", "RMSPhaseCurrent",
+    "RMSPhaseCurrent_D", "RMSPhaseCurrent_Q", "InductanceLoad_D", "InductanceLoad_Q",
+    "PhasorRmsPhaseVoltage_D", "PhasorRmsPhaseVoltage_Q",
 )
 
 # 계획서 §2 가 주는 교차검증점. 16 krpm/460 A 의 R1 파이프라인 값 (W).
@@ -300,6 +309,7 @@ def solve_point(mcad, speed, current, phase, voltage=None):
         "model_context": context,
         "voltage_V": {name: float(mcad.get_variable(name)) for name in VOLTAGE_VARS},
         "calculated_rms_current_A": float(mcad.get_variable("RmsCurrentCalc")),
+        "operating_outputs": {name: float(mcad.get_variable(name)) for name in OPERATING_OUTPUT_VARS},
         "solve_s": round(dt, 2),
         "speed_only_rule_W": speed_only_rule(speed),
     }
