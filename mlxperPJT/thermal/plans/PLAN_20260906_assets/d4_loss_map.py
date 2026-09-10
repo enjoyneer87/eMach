@@ -53,6 +53,7 @@ ts_dc_active_kW, ts_dc_end_kW. 철손도 자석손도 없다. 그래서 새로 �
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import math
 import os
@@ -100,6 +101,16 @@ MAGNETIC_LOSS_VARS = {
     "fe_r_unadjusted": "RotorIronLoss_Total",
     "pm_unadjusted": "MagnetLoss",
 }
+
+# Explicitly capture model settings rather than infer them from loss ratios.
+# Names verified against the v261 automation catalog.
+MODEL_CONTEXT_VARS = (
+    "IronLossBuildFactorDefinition", "StatorIronLossBuildFactor",
+    "RotorIronLossBuildFactor", "MagnetLossBuildFactor",
+    "ArmatureConductor_Temperature", "Magnet_Temperature",
+    "StatorLam_Temperature", "RotorLam_Temperature",
+    "IronLossCalculationType", "OnLoadLossCalculation",
+)
 
 # 계획서 §2 가 주는 교차검증점. 16 krpm/460 A 의 R1 파이프라인 값 (W).
 # pm 은 "정적 추정 8132 × 0.17 = 1382" 이고, Motor-CAD Full-FEA 레코드는 1335 W 다.
@@ -263,6 +274,13 @@ def solve_point(mcad, speed, current, phase, voltage=None):
     """한 운전점: 설정 -> 검증 -> 자기해석 -> 손실 읽기."""
     t0 = time.time()
     back = set_operating_point(mcad, speed, current, phase, voltage)
+    context = {name: mcad.get_variable(name) for name in MODEL_CONTEXT_VARS}
+    original_onload = context["OnLoadLossCalculation"]
+    mcad.set_variable("OnLoadLossCalculation", True)
+    context["OnLoadLossCalculation"] = mcad.get_variable("OnLoadLossCalculation")
+    if context["OnLoadLossCalculation"] not in (True, 1):
+        raise RuntimeError("Failed to enable on-load iron/magnet loss calculation")
+    context["OnLoadLossCalculation_before_request"] = original_onload
     mcad.do_magnetic_calculation()
     agg, raw = read_losses(mcad)
     dt = time.time() - t0
@@ -272,6 +290,7 @@ def solve_point(mcad, speed, current, phase, voltage=None):
         "cu_mcad_basis": "DC armature ConductorLoss; not total AC+DC copper",
         "dc_bus_voltage_V": float(mcad.get_variable(OP_VOLTAGE)),
         "magnet_2d3d_factor": float(mcad.get_variable("Magnet2D3DFactor")),
+        "model_context": context,
         "solve_s": round(dt, 2),
         "speed_only_rule_W": speed_only_rule(speed),
     }
@@ -410,6 +429,8 @@ def build_document(points, args, mot_used, gates, ok):
                   "currents": [float(c) for c in args.currents.split(",") if c.strip()],
                   "phase_advance_edeg": args.phase},
         "_mot": mot_used,
+        "_mot_sha256": (hashlib.sha256(open(mot_used, "rb").read()).hexdigest()
+                        if os.path.isfile(mot_used) else None),
         "_dry_run": bool(args.dry_run),
         "_gates": gates,
         "_gates_ok": bool(ok),
