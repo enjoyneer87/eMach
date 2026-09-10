@@ -4,7 +4,8 @@ param(
     [string]$RunDirectory = 'C:\work\_thermal_kit_20260910\d4_map',
     [string]$Speeds = '2000,4000,8000,16000',
     [string]$Currents = '115.075,230.05,345.025,460.0',
-    [string]$TaskName = 'eMach_D4_Interactive'
+    [string]$TaskName = 'eMach_D4_Interactive',
+    [ValidateRange(1, 4)][int]$MaxInstances = 1
 )
 # Run the Python driver in the logged-in user's desktop session. No password,
 # privilege elevation, automatic trigger, or attachment to another model.
@@ -16,8 +17,8 @@ foreach ($path in @($Python, $driver)) {
 if (Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue) {
     throw "Task already exists: $TaskName. Inspect it before reusing its name."
 }
-if (Get-Process MotorCAD -ErrorAction SilentlyContinue) {
-    throw 'MotorCAD is already running. Inspect its owner and workload first.'
+if (@(Get-Process MotorCAD -ErrorAction SilentlyContinue).Count -ge $MaxInstances) {
+    throw "MotorCAD instance limit reached ($MaxInstances). Inspect active workloads first."
 }
 if (Test-Path -LiteralPath $RunDirectory) {
     throw "Run directory already exists: $RunDirectory. Use a fresh directory."
