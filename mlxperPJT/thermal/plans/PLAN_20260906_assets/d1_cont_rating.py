@@ -692,6 +692,8 @@ class MapdlBackend(BackendBase):
         with mapdl_step("launch_mapdl(run_location=%s)" % args.run_dir):
             kw = dict(run_location=args.run_dir, override=True, nproc=int(args.nproc),
                       start_instance=True, loglevel="ERROR", cleanup_on_exit=True)
+            if args.mapdl_port is not None:
+                kw["port"] = args.mapdl_port
             if args.additional_switches:
                 kw["additional_switches"] = args.additional_switches
             self.mapdl = launch_mapdl(**kw)
@@ -2298,6 +2300,8 @@ def build_parser():
     p.add_argument("--ground-guard", action="store_true",
                    help="add h=1e-3 W/m2K on every exterior node. Recovery option for a "
                         "singular pivot (floating island); perturbs results by ~4e-6.")
+    p.add_argument("--mapdl-port", type=int, default=None,
+                   help="Explicit unique gRPC port for concurrent MAPDL processes")
     p.add_argument("--additional-switches", default=None,
                    help="passed to launch_mapdl, e.g. \"-m 8192 -db 2048\"")
     p.add_argument("--dry-run-nonlinear", type=float, default=0.0,
