@@ -13,13 +13,10 @@ D1 이 쓴 철손/자석손은 계획서 §1 이 지정한 **속도 전용** 규
 (2045 / 82 / 655 W) 으로 들어갔고, 최저 전류 115 A 에서 이미 자석이 216.4 degC
 (한계 150) 라 보간할 구간 자체가 없어 `I_cont(16000) = 0` 이 나왔다.
 
-즉 그 0 은 물리가 아니라 손실 모델의 산물이다. 자석손이 전류에 의존하지 않으면
-전류를 낮춰도 자석 온도가 안 내려간다. 저속에서 안 드러난 이유는 철손이
-`(n/15000)^1.5` 로 작아져 권선이 먼저 걸리기 때문이다 -- 그때는 한계를 정하는 것이
-전류 의존항인 동손이다. **속도를 올릴수록 전류 비의존 손실이 지배해서 결함이 드러난다.**
-
-킷은 이 한계를 이미 알고 기록해 두었다(`d1_cont_rating.py` LOSS_MODEL_CAVEAT,
-`jeet_map_loader.py:iron_magnet` docstring). 이 스크립트가 그 부채를 갚는다.
+이 값은 기존 손실 가정 아래 얻은 결과다. 전류 의존 손실맵으로 재평가하기
+전에는 실제 모터의 16 krpm 연속 운전 불가로 단정할 수 없다. 무부하에서도
+철손과 자석손이 발생할 수 있으므로, 전류 의존성을 추가하면 반드시 0이
+해소된다는 보장도 없다.
 
 JEET 맵으로는 안 되는 이유
 --------------------------
@@ -28,15 +25,11 @@ proximity_model, mode, speed, current, phase, backup_dir, hybrid_{total,prox,ski
 fea_{total_ac,per_turn_sum}_kW, fea_per_turn_raw, ts_{ac,dc}_active_only_kW,
 ts_dc_active_kW, ts_dc_end_kW. 철손도 자석손도 없다. 그래서 새로 계산해야 한다.
 
-`01_e10_motorcad_losses.py` 가 0 을 돌려준 진짜 이유
-----------------------------------------------------
-계획서 D4 는 "`do_magnetic_calculation` 미호출로 추정"이라고 적었지만, 그 스크립트는
-`do_magnetic_thermal_calculation()` 을 부르고 있다. 진짜 원인은 **운전점을 읽기만 하고
-쓰지 않는 것**이다 -- `Shaft_Speed_RPM`/`RMSCurrent` 를 `get_variable` 로 가져온 뒤
-`set_variable` 없이 바로 계산한다. .mot 에 들어 있던 운전점으로 푼 셈이다.
-
-그래서 이 스크립트는 운전점을 **쓰고, 되읽어 확인한 뒤** 계산한다. 되읽기 검증이
-없으면 같은 실패가 조용히 재발한다.
+운전점 검증
+-----------
+기존 01 스크립트는 저장된 모델의 운전점을 읽어 계산한다. 이 사실만으로
+기존 0 손실 출력의 원인을 확정할 수는 없다. 이 스크립트는 요청한 운전점을
+쓰고 되읽어 확인한 뒤 계산하여, 맵 각 점의 입력을 기록한다.
 
 재사용
 ------
@@ -142,14 +135,10 @@ def default_repo_root():
 # ---------------------------------------------------------------------------
 
 SSH_HINT = (
-    "Motor-CAD 가 뜨자마자 죽었다. ssh 세션에서 흔한 실패다 -- Motor-CAD 는 GUI "
-    "애플리케이션이라 메시지 펌프를 돌릴 대화형 데스크톱이 필요한데 ssh 세션에는 "
-    "없다. moa 실측 로그: 'Owner thread -1 no longer active. Shutting down.' "
-    "(MessageLogs\\messageLog_<pid>.txt). 라이선스 문제가 아니다. "
-    "해결: moa 데스크톱(콘솔/RDP)에서 Motor-CAD 를 띄워 두고 --attach 로 붙어라. "
-    "pymotorcad 는 localhost TCP 로 붙으므로 세션이 달라도 통한다. "
-    "포트 자동탐색이 세션 경계에서 막히면 --port 로 직접 준다 "
-    "(moa 에서: Get-NetTCPConnection -OwningProcess <MotorCAD pid> -State Listen)."
+    "Motor-CAD startup failed. Inspect the exception and MessageLogs. "
+    "On moa, an interactive scheduled Python driver succeeded where SSH startup "
+    "failed; use run_d4_interactive.ps1. An owner-thread message alone does not "
+    "identify the root cause or rule out licensing problems."
 )
 
 
@@ -211,11 +200,7 @@ class MotorCADSession(object):
 
 
 def set_operating_point(mcad, speed, current, phase, voltage=None, rel_tol=1e-6):
-    """운전점을 쓰고 **되읽어 확인**한다.
-
-    되읽기가 이 함수의 존재 이유다. `01_e10_motorcad_losses.py` 는 쓰지 않고 읽기만
-    해서 0 을 돌려줬고, 그 사실이 로그에 안 남았다. 여기서는 불일치가 예외로 뜬다.
-    """
+    """Set and read back each requested operating-point input before solving."""
     wrote = {OP_SPEED: float(speed), OP_CURRENT: float(current), OP_PHASE: float(phase)}
     if voltage is not None:
         wrote[OP_VOLTAGE] = float(voltage)
@@ -281,17 +266,10 @@ def solve_point(mcad, speed, current, phase, voltage=None):
 # ---------------------------------------------------------------------------
 
 def check_map(points, n_expect, rel_spread_min=1e-3):
-    """맵이 쓸 만한지 판정한다. 반환 (ok, gates_dict).
+    """Check completeness and finite/nonnegative losses; flag weak variation.
 
-    판정량을 무엇으로 나눌지 먼저 정한다 -- 손실은 하중에 비례하므로 절대 W 임계는
-    하중만 바꿔도 깨진다(이 세션에서 세 번 반복한 실수).
-
-    1. 개수      : 요청한 점이 전부 있는가 (메시/격자의 성질, 하중 무관 -> 절대 판정 OK)
-    2. 유한·양수 : NaN/inf/음수 손실은 물리적으로 불가
-    3. **분산**  : 같은 속도에서 전류만 바꿨을 때 pm 이 변하는가.
-                   변하지 않으면 = 운전점이 안 먹은 것 = 우리가 고치려던 바로 그 결함.
-                   상대 분산 (max-min)/max 로 잰다.
-    4. 단조      : 같은 전류에서 속도가 오르면 fe_s 가 오르는가 (철손의 기본 성질)
+    These are numerical diagnostics, not independent physical validation.
+    Current-independent magnet loss alone is not a failed operating point.
     """
     gates = {}
     ok = True
@@ -308,7 +286,8 @@ def check_map(points, n_expect, rel_spread_min=1e-3):
     gates["finite_nonneg"] = {"violations": bad_vals, "ok": not bad_vals}
     ok = ok and gates["finite_nonneg"]["ok"]
 
-    # 3. 전류 의존성 -- D4 의 존재 이유이므로 가장 엄하게 본다
+    # Low variation is a diagnostic, not proof that the operating point failed.
+    # Readback in set_operating_point verifies the requested inputs independently.
     spread = {}
     flat = []
     for s in sorted(set(p["speed"] for p in points)):
@@ -324,8 +303,8 @@ def check_map(points, n_expect, rel_spread_min=1e-3):
                 flat.append("%d rpm 에서 pm 의 전류 의존 상대분산 %.2e < %.0e "
                             "-- 운전점이 안 먹었을 가능성" % (int(s), rel, rel_spread_min))
     gates["current_dependence"] = {"rel_spread": spread, "flat": flat,
-                                   "min_required": rel_spread_min, "ok": not flat}
-    ok = ok and gates["current_dependence"]["ok"]
+                                   "warning_threshold": rel_spread_min,
+                                   "status": "WARN" if flat else "PASS", "ok": True}
 
     # 4. 속도 단조 (철손)
     nonmono = []
@@ -401,8 +380,9 @@ def build_document(points, args, mot_used, gates, ok):
         "_soltype": "magnetic steady, one solve per (speed, current)",
         "_param_ref": "ActiveXParametersMotorCADv261.txt",
         "_purpose": ("계획서 §1 D1 의 속도 전용 철손/자석손 규칙을 (속도 × 전류) 맵으로 "
-                     "대체한다. 그 규칙이 16 krpm 의 I_cont 를 0 으로 만들었다."),
-        "_grid": {"speeds": list(SPEEDS), "currents": list(CURRENTS),
+                     "비교 평가한다. 새 맵만으로 실제 연속 정격이 검증되는 것은 아니다."),
+        "_grid": {"speeds": [int(float(s)) for s in args.speeds.split(",") if s.strip()],
+                  "currents": [float(c) for c in args.currents.split(",") if c.strip()],
                   "phase_advance_edeg": args.phase},
         "_mot": mot_used,
         "_dry_run": bool(args.dry_run),
@@ -423,9 +403,7 @@ def write_document(doc, out_path, indent=1):
     tmp = out_path + ".tmp"
     with open(tmp, "w", encoding="utf-8") as f:
         json.dump(doc, f, ensure_ascii=False, indent=indent)
-    if os.path.exists(out_path):
-        os.remove(out_path)
-    os.rename(tmp, out_path)
+    os.replace(tmp, out_path)
     return os.path.getsize(out_path)
 
 
@@ -457,6 +435,11 @@ def prepare_mot(mot_src, work_dir, in_place):
         log("  refModel 보호: .mot 을 작업 사본으로 복사 -> %s" % dst)
     else:
         log("  작업 사본 재사용 -> %s" % dst)
+    # Preserve the companion material database, if present, alongside the model.
+    material_src = os.path.join(os.path.dirname(mot_src), "E10Material.mdb")
+    material_dst = os.path.join(work_dir, "E10Material.mdb")
+    if os.path.isfile(material_src) and os.path.abspath(material_src) != os.path.abspath(material_dst):
+        shutil.copy2(material_src, material_dst)
     return dst
 
 
@@ -589,9 +572,9 @@ def main(argv=None):
 
     log("게이트:")
     for name, g in gates.items():
-        mark = "PASS" if g.get("ok") else "FAIL"
+        mark = g.get("status", "PASS" if g.get("ok") else "FAIL")
         log("  [%s] %s" % (mark, name))
-        if not g.get("ok"):
+        if not g.get("ok") or mark == "WARN":
             for v in (g.get("violations") or g.get("flat") or [])[:6]:
                 log("        %s" % v)
     cc = doc["_crosscheck"]
