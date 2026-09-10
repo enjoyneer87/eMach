@@ -115,6 +115,26 @@ def evaluate(args):
                     res["_full_field_at_root_C"] = {"winding": values["winding_max"], "magnet": values["magnet_max"]}
                     if values["winding_max"] > cfg.limit_winding + 0.001 or values["magnet_max"] > cfg.limit_magnet + 0.001:
                         raise ValueError("Reconstructed root exceeds thermal limit")
+                    # Each magnetic component is monotone WITHIN one interpolation
+                    # segment, even if the complete map is not monotone. DC and
+                    # the monotone JEET AC interpolation have endpoint bounds too.
+                    # This bounds every node over the whole interval below the root,
+                    # including negative coefficients, without assuming monotone T.
+                    knots = sorted({cfg._magnetic_map.bounds(speed)[0], value} |
+                                   {i for i in cfg._magnetic_map.rows[float(speed)] if i < value})
+                    upper_max = {"winding": -float("inf"), "magnet": -float("inf")}
+                    for left, right in zip(knots, knots[1:]):
+                        pa = d1.losses_for_run(records, speed, left, cfg.phase, case, method_cfg)
+                        pb = d1.losses_for_run(records, speed, right, cfg.phase, case, method_cfg)
+                        upper = np.full(size, d1.OIL_T)
+                        for source in d1.SOURCES:
+                            upper += np.maximum(gmap[source] * pa[source], gmap[source] * pb[source])
+                        for part in upper_max:
+                            upper_max[part] = max(upper_max[part], float(upper[backend.part_idx[part]].max()))
+                    if upper_max["winding"] > cfg.limit_winding + 0.001 or upper_max["magnet"] > cfg.limit_magnet + 0.001:
+                        raise ValueError("Interval bound cannot certify thermal feasibility below root")
+                    res["_safe_below_root"] = {"method": "component endpoint bounds on each magnetic interpolation interval",
+                        "interval_count": len(knots) - 1, "upper_bound_C": upper_max}
                 results[method] = res
             primary, alternate = results["linear"], results["linear_i2"]
             value, other = primary["I_cont_Arms"], alternate["I_cont_Arms"]
