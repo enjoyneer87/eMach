@@ -122,6 +122,7 @@ if _HERE not in sys.path:
 try:
     import icont
     import jeet_map_loader as jm
+    from motorcad_loss_map import MagneticLossMap
 except ImportError as _exc:  # pragma: no cover - kit integrity failure
     raise SystemExit(
         "d1_cont_rating.py could not import its sibling modules from\n"
@@ -1433,7 +1434,7 @@ def verify_superposition(backend, gmap, hset, records, args, log):
     worst = 0.0
     for (speed, current, case) in VERIFY_POINTS:
         tag = "verify %d rpm / %.3f A / %s / %s" % (speed, current, case, hset)
-        lv = jm.losses_for(records, speed, current, args.phase, case)
+        lv = losses_for_run(records, speed, current, args.phase, case, args)
         t_dir = backend.direct(hset, lv, tag)
         t_rec = reconstruct_field(gmap, lv)
 
@@ -1527,12 +1528,22 @@ def unit_roundtrip_check(backend, gmap, hset, args, log):
 # 6.  I_cont
 # ===========================================================================
 
+def losses_for_run(records, speed, current, phase, case, args, continuous=False):
+    measured = getattr(args, "_magnetic_map", None)
+    if measured is None:
+        fn = jm.loss_vector if continuous else jm.losses_for
+        return fn(records, speed, current, phase, case)
+    values = jm.loss_vector(records, speed, current, phase, case)
+    values.update(measured.at(speed, current, args.iron_interpolation))
+    return values
+
+
 def icont_super(gmap, backend, records, speed, case, args, log, tag):
     """Continuous I_cont with a hot-node fixed point.  See the module docstring."""
     phase = args.phase
 
     def p_of_I(cur):
-        return jm.loss_vector(records, speed, cur, phase, case)
+        return losses_for_run(records, speed, cur, phase, case, args, continuous=True)
 
     idx_w = backend.part_idx["winding"]
     idx_m = backend.part_idx["magnet"]
@@ -1542,13 +1553,37 @@ def icont_super(gmap, backend, records, speed, case, args, log, tag):
         return (int(idx_w[int(np.argmax(t[idx_w]))]),
                 int(idx_m[int(np.argmax(t[idx_m]))]))
 
-    pos_w, pos_m = hot(0.5 * (CURRENTS_D1[0] + CURRENTS_D1[-1]))
+    root_options = {"lo": 0.0, "hi": float(args.i_hi)}
+    measured = getattr(args, "_magnetic_map", None)
+    if measured is not None:
+        lo, upper = measured.bounds(speed)
+        hi = min(float(args.i_hi), upper)
+        if hi <= lo:
+            raise D1Error("No measured current interval inside the requested root bracket")
+        root_options = {"lo": lo, "hi": hi, "grid_lo": lo, "grid_hi": upper, "max_expand": 0}
+        field_lo = reconstruct_field(gmap, p_of_I(lo))
+        temperatures_lo = {"winding": float(field_lo[idx_w].max()),
+                           "magnet": float(field_lo[idx_m].max())}
+        exceeded = [name for name, limit in (("winding", args.limit_winding),
+                                             ("magnet", args.limit_magnet))
+                    if temperatures_lo[name] > limit]
+        if exceeded:
+            return {"I_cont_Arms": None, "I_cont_winding_Arms": None,
+                    "I_cont_magnet_Arms": None, "limited_by": "+".join(exceeded),
+                    "status": "below_measured_range", "search_range_Arms": [lo, hi],
+                    "T_at_lower_bound_C": temperatures_lo,
+                    "infeasible_at_zero_current": False,
+                    "notes": ["Limit exceeded at lowest measured current; no extrapolation to zero current."]}
+
+    initial_current = (0.5 * (CURRENTS_D1[0] + CURRENTS_D1[-1]) if measured is None
+                       else 0.5 * (root_options["lo"] + root_options["hi"]))
+    pos_w, pos_m = hot(initial_current)
     history = []
     converged = False
     res = None
     for it in range(MAX_HOT_ITER):
         res = icont.i_cont_rootfind(row_at(gmap, pos_w), row_at(gmap, pos_m), p_of_I,
-                                    lo=0.0, hi=float(args.i_hi),
+                                    **root_options,
                                     lim_w=args.limit_winding, lim_m=args.limit_magnet,
                                     t_oil=OIL_T)
         i_c = res["I_cont_Arms"]
@@ -1570,12 +1605,15 @@ def icont_super(gmap, backend, records, speed, case, args, log, tag):
         raise D1Error("%s: the hot-node iteration produced no result" % tag)
     if not converged and history and history[-1]["I_cont_Arms"] is not None:
         res = icont.i_cont_rootfind(row_at(gmap, pos_w), row_at(gmap, pos_m), p_of_I,
-                                    lo=0.0, hi=float(args.i_hi),
+                                    **root_options,
                                     lim_w=args.limit_winding, lim_m=args.limit_magnet,
                                     t_oil=OIL_T)
     res["_method_detail"] = ("superposition + bisection, hot-node fixed point "
                              "(max over nodes is not a linear functional, so the "
                              "argmax node is iterated to self-consistency)")
+    if measured is not None:
+        res["_rating_scope"] = "thermal limit only; fixed magnetic temperatures/phase; voltage feasibility not imposed"
+        res["_magnetic_interpolation"] = args.iron_interpolation
     res["_hot_node_iterations"] = history
     res["_hot_node_converged"] = bool(converged)
     res["_hot_nodes"] = {"winding": int(backend.nnum[pos_w]),
@@ -1770,7 +1808,7 @@ def build_run_table(records, hsets, args):
         for case in CASES:
             for speed in args.speeds:
                 for cur in args.currents:
-                    lv = jm.losses_for(records, speed, cur, args.phase, case)
+                    lv = losses_for_run(records, speed, cur, args.phase, case, args)
                     table.append({"speed": int(speed), "current": float(cur),
                                   "case": case, "htc": h,
                                   "P_W": dict((k, float(lv[k])) for k in SOURCES)})
@@ -2043,7 +2081,7 @@ def build_influence_json(gmaps, backend, records, args):
     """K/W and K/kW sensitivities -- a thesis-grade result in their own right."""
     ref_speed, ref_cur, ref_case = 16000, 460.0, "AC"
     try:
-        ref_lv = jm.losses_for(records, ref_speed, ref_cur, args.phase, ref_case)
+        ref_lv = losses_for_run(records, ref_speed, ref_cur, args.phase, ref_case, args)
     except Exception:
         ref_lv = None
     out = {
@@ -2165,6 +2203,14 @@ def assemble(args, hsets, table, ibundle, influence_json, supercheck, backend, m
         "_superposition_check": supercheck,
     }
     payload.update(ibundle)
+    measured = getattr(args, "_magnetic_map", None)
+    if measured is not None:
+        payload["_magnetic_loss_map"] = measured.metadata(args.iron_interpolation)
+        payload["_loss_source"] = "JEET copper + measured Motor-CAD D4 magnetic losses"
+        payload["_loss_model_caveat"] = (
+            "Thermal-only sensitivity with fixed magnetic temperatures and phase. "
+            "Voltage feasibility is not imposed. Piecewise interpolation stays inside "
+            "the measured current range; this is not a validated drive operating envelope.")
     return payload
 
 
@@ -2191,6 +2237,10 @@ def build_parser():
                    help="mesh path, with or without .cdb (default: %(default)s)")
     p.add_argument("--map", default=None,
                    help="JEET map JSON (default: <repo>/%s)" % jm.MAP_REL)
+    p.add_argument("--loss-map", action="append", default=[],
+                   help="D4 magnetic loss JSON; repeat for disjoint grid subsets")
+    p.add_argument("--iron-interpolation", choices=("linear", "linear_i2"), default="linear",
+                   help="Magnetic loss interpolation in current or squared current; no extrapolation")
     p.add_argument("--out", default=None,
                    help="output directory (default: <repo>/mlxperPJT/thermal/thesis_out)")
     p.add_argument("--out-name", default=None,
@@ -2289,6 +2339,13 @@ def finish_args(args):
         raise SystemExit("--speeds / --currents must not be empty")
     if args.unit_W == 0.0:
         raise SystemExit("--unit-W must not be 0")
+    args._magnetic_map = MagneticLossMap(args.loss_map, args.phase) if args.loss_map else None
+    if args._magnetic_map is not None:
+        if args.mode != "super":
+            raise SystemExit("Measured magnetic losses require --mode super; the old I-squared bracket is not applicable")
+        for speed in args.speeds:
+            for current in args.currents:
+                args._magnetic_map.at(speed, current, args.iron_interpolation)
     if not args.dry_run and not os.path.isdir(args.run_dir):
         os.makedirs(args.run_dir)
     if not os.path.isdir(args.out):
