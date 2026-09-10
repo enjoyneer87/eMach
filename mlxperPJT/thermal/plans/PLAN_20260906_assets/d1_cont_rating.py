@@ -2015,6 +2015,18 @@ def run(args, log):
                     if mode == "super":
                         res = icont_super(gmaps[h], backend, records, speed, case,
                                           args, log, tag)
+                        if getattr(args, "_magnetic_map", None) is not None:
+                            alternate_args = argparse.Namespace(**vars(args))
+                            alternate_args.iron_interpolation = (
+                                "linear_i2" if args.iron_interpolation == "linear" else "linear")
+                            alternate = icont_super(gmaps[h], backend, records, speed, case,
+                                                    alternate_args, log, tag + "/interpolation-check")
+                            value, other = res.get("I_cont_Arms"), alternate.get("I_cont_Arms")
+                            res["_interpolation_sensitivity"] = {
+                                "alternate_method": alternate_args.iron_interpolation,
+                                "alternate_I_cont_Arms": other, "alternate_status": alternate.get("status"),
+                                "delta_Arms": None if value is None or other is None else other - value,
+                                "note": "Same unit fields; interpolation sensitivity, not another FEA solve."}
                     else:
                         cur = list(args.currents)
                         tw = [temps_by_key[(h, case, int(speed), float(c))]["winding_max"]
