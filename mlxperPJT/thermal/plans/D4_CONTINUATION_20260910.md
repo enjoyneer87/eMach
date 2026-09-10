@@ -56,3 +56,22 @@ Do not publish these input assets to the public GitHub repository.
 
 Both hashes match the previous transfer record. `E10Material.mdb` and
 `README_transfer.md` are also present. PC1 access to the NAS is not verified here.
+
+## First smoke completed; extraction not accepted
+
+The first driver finished in 290.6 seconds (FEA 254 seconds). All thermal
+`Loss_[...]` and copper injection values were zero even though requested
+speed/current/phase readbacks matched. Its reported PASS is invalid for D4;
+do not promote that JSON or start the full grid from that verdict.
+The solver also logged an operating-point voltage-limit warning.
+
+The revised driver reads the separate Magnetics outputs
+`StatorIronLoss_Total_Adj`, `RotorIronLoss_Total_Adj`, `MagnetLoss_Adj`, and
+`ConductorLoss`, all verified in the parameter catalog. It retains unadjusted
+magnetic values and thermal injection values independently, records DC voltage
+and the magnet 2D/3D factor, and rejects zero copper loss at positive current.
+`cu_mcad` is now explicitly a DC diagnostic, not total copper including AC.
+
+Second smoke location: `C:\work\_thermal_kit_20260910\codex_smoke_magnetic`.
+Task name: `Codex_D4_Magnetic_Smoke_20260910`. Check this newer run before
+any full-grid execution. Its result filename is `points.json`.

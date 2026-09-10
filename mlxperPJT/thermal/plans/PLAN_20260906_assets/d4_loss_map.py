@@ -88,6 +88,19 @@ LOSS_VARS = {
     "pm": "Loss_[Magnet]",
 }
 
+# Magnetic outputs are distinct from the thermal "Loss and Injected Power"
+# variables above. The first smoke solve completed with every thermal value 0.
+# All names below are verified in ActiveXParametersMotorCADv261.txt, Magnetics.
+MAGNETIC_LOSS_VARS = {
+    "fe_s": "StatorIronLoss_Total_Adj",
+    "fe_r": "RotorIronLoss_Total_Adj",
+    "pm": "MagnetLoss_Adj",
+    "cu_dc": "ConductorLoss",
+    "fe_s_unadjusted": "StatorIronLoss_Total",
+    "fe_r_unadjusted": "RotorIronLoss_Total",
+    "pm_unadjusted": "MagnetLoss",
+}
+
 # 계획서 §2 가 주는 교차검증점. 16 krpm/460 A 의 R1 파이프라인 값 (W).
 # pm 은 "정적 추정 8132 × 0.17 = 1382" 이고, Motor-CAD Full-FEA 레코드는 1335 W 다.
 # 둘이 3.5 % 차이라 **Motor-CAD 출력에는 ×0.17 을 다시 곱하면 안 된다** -- 이미 그 수준이다.
@@ -237,12 +250,12 @@ def read_losses(mcad):
         v = raw.get(k)
         return float(v) if isinstance(v, (int, float)) else 0.0
 
-    agg = {
-        "fe_s": g("fe_s_back") + g("fe_s_tooth"),
-        "fe_r": g("fe_r_back") + g("fe_r_tooth"),
-        "pm": g("pm"),
-        "cu_mcad": g("cu_total") or g("cu_dc"),
-    }
+    magnetic = {key: float(mcad.get_variable(var))
+                for key, var in MAGNETIC_LOSS_VARS.items()}
+    # Retain thermal outputs for diagnosis; never silently substitute them.
+    raw = {"thermal": raw, "magnetic": magnetic}
+    agg = {key: magnetic[key] for key in ("fe_s", "fe_r", "pm")}
+    agg["cu_mcad"] = magnetic["cu_dc"]  # DC diagnostic only; JEET supplies D1 copper.
     return agg, raw
 
 
@@ -256,6 +269,9 @@ def solve_point(mcad, speed, current, phase, voltage=None):
     return {
         "speed": float(speed), "current": float(current), "phase": float(phase),
         "P_W": agg, "raw_W": raw, "op_readback": back,
+        "cu_mcad_basis": "DC armature ConductorLoss; not total AC+DC copper",
+        "dc_bus_voltage_V": float(mcad.get_variable(OP_VOLTAGE)),
+        "magnet_2d3d_factor": float(mcad.get_variable("Magnet2D3DFactor")),
         "solve_s": round(dt, 2),
         "speed_only_rule_W": speed_only_rule(speed),
     }
@@ -285,6 +301,13 @@ def check_map(points, n_expect, rel_spread_min=1e-3):
                 bad_vals.append("%d rpm / %.3f A : %s = %r" % (p["speed"], p["current"], k, v))
     gates["finite_nonneg"] = {"violations": bad_vals, "ok": not bad_vals}
     ok = ok and gates["finite_nonneg"]["ok"]
+
+    # At nonzero current this e10 copper winding must dissipate power.
+    # In particular, the all-zero thermal-output smoke must never pass.
+    zero_loaded = ["%s rpm / %s A" % (p["speed"], p["current"])
+                   for p in points if p["current"] > 0 and p["P_W"].get("cu_mcad", 0) <= 0]
+    gates["loaded_copper_nonzero"] = {"ok": not zero_loaded, "violations": zero_loaded}
+    ok = ok and not zero_loaded
 
     # Low variation is a diagnostic, not proof that the operating point failed.
     # Readback in set_operating_point verifies the requested inputs independently.
@@ -379,6 +402,8 @@ def build_document(points, args, mot_used, gates, ok):
         "_loss_source": "Motor-CAD %s do_magnetic_calculation" % os.path.basename(mot_used),
         "_soltype": "magnetic steady, one solve per (speed, current)",
         "_param_ref": "ActiveXParametersMotorCADv261.txt",
+        "_loss_variables": MAGNETIC_LOSS_VARS,
+        "_loss_basis": "Magnetics adjusted outputs; thermal injection values retained separately",
         "_purpose": ("계획서 §1 D1 의 속도 전용 철손/자석손 규칙을 (속도 × 전류) 맵으로 "
                      "비교 평가한다. 새 맵만으로 실제 연속 정격이 검증되는 것은 아니다."),
         "_grid": {"speeds": [int(float(s)) for s in args.speeds.split(",") if s.strip()],
