@@ -27,7 +27,7 @@ if (Test-Path -LiteralPath $RunDirectory) {
 New-Item -ItemType Directory -Path $RunDirectory | Out-Null
 $arguments = @(
     $driver, '--repo', $Repo, '--speeds', $Speeds, '--currents', $Currents,
-    '--phase', $Phase,
+    '--phase', $Phase.ToString([System.Globalization.CultureInfo]::InvariantCulture),
     '--work-dir', (Join-Path $RunDirectory 'model'),
     '--out', (Join-Path $RunDirectory 'points.json'),
     '--log', (Join-Path $RunDirectory 'run.log')
