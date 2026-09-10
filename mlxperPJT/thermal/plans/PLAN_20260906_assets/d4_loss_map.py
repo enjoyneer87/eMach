@@ -141,25 +141,56 @@ def default_repo_root():
 # Motor-CAD 세션
 # ---------------------------------------------------------------------------
 
-class MotorCADSession(object):
-    """Motor-CAD 인스턴스 하나를 열고 .mot 을 로드한다.
+SSH_HINT = (
+    "Motor-CAD 가 뜨자마자 죽었다. ssh 세션에서 흔한 실패다 -- Motor-CAD 는 GUI "
+    "애플리케이션이라 메시지 펌프를 돌릴 대화형 데스크톱이 필요한데 ssh 세션에는 "
+    "없다. moa 실측 로그: 'Owner thread -1 no longer active. Shutting down.' "
+    "(MessageLogs\\messageLog_<pid>.txt). 라이선스 문제가 아니다. "
+    "해결: moa 데스크톱(콘솔/RDP)에서 Motor-CAD 를 띄워 두고 --attach 로 붙어라. "
+    "pymotorcad 는 localhost TCP 로 붙으므로 세션이 달라도 통한다. "
+    "포트 자동탐색이 세션 경계에서 막히면 --port 로 직접 준다 "
+    "(moa 에서: Get-NetTCPConnection -OwningProcess <MotorCAD pid> -State Listen)."
+)
 
-    `open_new_instance=True` 를 명시한다. 기본값이 True 이긴 하나, GUI 가 떠 있을 때
-    붙어버리면 **화면에 로드된 다른 모델로 계산이 돌아간다.** 그 사고는 로그에
-    아무 흔적을 안 남기므로 명시가 값싸다.
+
+class MotorCADSession(object):
+    """Motor-CAD 인스턴스를 확보한다. 새로 띄우거나(기본), 떠 있는 것에 붙거나(--attach).
+
+    `open_new_instance` 를 항상 **명시**한다. 실수로 붙어버리면 화면에 로드된 다른
+    모델로 계산이 돌아가는데, 그 사고는 로그에 아무 흔적을 안 남긴다.
+
+    attach 모드에서는 절대 quit 하지 않는다 -- 남의 GUI 세션을 닫는 셈이 된다.
     """
 
-    def __init__(self, mot_path, keep_open=False):
+    def __init__(self, mot_path, keep_open=False, attach=False, port=-1):
         self.mot_path = mot_path
-        self.keep_open = bool(keep_open)
+        self.attach = bool(attach)
+        # attach 면 keep_open 을 강제한다: 내가 띄우지 않은 인스턴스는 내가 닫지 않는다
+        self.keep_open = bool(keep_open) or self.attach
+        self.port = int(port)
         self.mcad = None
 
     def __enter__(self):
         import ansys.motorcad.core as mc
-        log("  Motor-CAD 기동 (open_new_instance=True) ...")
+        new = not self.attach
+        log("  Motor-CAD %s (open_new_instance=%s, port=%s) ..."
+            % ("접속" if self.attach else "기동", new,
+               self.port if self.port > 0 else "auto"))
         t0 = time.time()
-        self.mcad = mc.MotorCAD(open_new_instance=True)
-        log("    기동 %.1f s" % (time.time() - t0))
+        try:
+            kw = {"open_new_instance": new}
+            if self.port > 0:
+                kw["port"] = self.port
+            self.mcad = mc.MotorCAD(**kw)
+        except Exception as e:
+            if new:
+                log("  [FAIL] %r" % (e,))
+                log("  " + SSH_HINT)
+            else:
+                log("  [FAIL] 떠 있는 Motor-CAD 를 못 찾았다: %r" % (e,))
+                log("  moa 데스크톱에서 Motor-CAD 가 실제로 실행 중인지 먼저 확인할 것.")
+            raise
+        log("    %s %.1f s" % ("접속" if self.attach else "기동", time.time() - t0))
         log("  로드 %s" % self.mot_path)
         t0 = time.time()
         self.mcad.load_from_file(self.mot_path)
@@ -168,6 +199,8 @@ class MotorCADSession(object):
 
     def __exit__(self, exc_type, exc, tb):
         if self.mcad is None or self.keep_open:
+            if self.attach:
+                log("  attach 모드 -- Motor-CAD 는 열어 둔 채로 둔다")
             return False
         try:
             self.mcad.quit()
@@ -450,6 +483,14 @@ def build_parser():
     p.add_argument("--resume", action="store_true",
                    help="기존 출력에 있는 점은 건너뛴다")
     p.add_argument("--keep-open", action="store_true", help="끝나도 Motor-CAD 를 안 닫는다")
+    p.add_argument("--attach", action="store_true",
+                   help="이미 떠 있는 Motor-CAD 에 붙는다 (새로 띄우지 않는다). "
+                        "ssh 세션에서는 Motor-CAD 가 데스크톱이 없어 스스로 죽으므로 "
+                        "moa 콘솔/RDP 에서 띄워 두고 이 옵션을 쓴다. attach 는 quit 하지 않는다.")
+    p.add_argument("--port", type=int, default=-1,
+                   help="접속할 Motor-CAD 포트를 직접 준다 (기본 -1 = 자동탐색). "
+                        "세션 경계에서 자동탐색이 막히면 moa 에서 "
+                        "Get-NetTCPConnection -OwningProcess <pid> -State Listen 으로 확인.")
     p.add_argument("--dry-run", action="store_true",
                    help="Motor-CAD 없이 격자/게이트/입출력 경로만 태운다")
     p.add_argument("--json-indent", type=int, default=1)
@@ -506,7 +547,11 @@ def main(argv=None):
         else:
             log("풀 점 %d 개" % len(todo))
             try:
-                with MotorCADSession(mot_used, keep_open=args.keep_open) as mcad:
+                if args.attach:
+                    log("  [주의] attach 모드는 떠 있는 Motor-CAD 에 작업 사본을 "
+                        "load_from_file 한다 -- 그 화면에 열려 있던 모델은 교체된다.")
+                with MotorCADSession(mot_used, keep_open=args.keep_open,
+                                     attach=args.attach, port=args.port) as mcad:
                     for i, (s, c) in enumerate(todo, 1):
                         log("  [%2d/%2d] %5d rpm  %8.3f A ..." % (i, len(todo), s, c))
                         try:
