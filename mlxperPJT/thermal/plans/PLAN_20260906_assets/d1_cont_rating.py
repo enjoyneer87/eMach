@@ -96,6 +96,7 @@ so it can never be mistaken for a solve.
 import argparse
 import contextlib
 import datetime
+import hashlib
 import json
 import math
 import os
@@ -2076,6 +2077,25 @@ def run(args, log):
         payload = assemble(args, hsets, table, i_bundle(i_cont, i_w, i_m, i_by, i_st,
                                                         i_detail),
                            influence_json, supercheck, backend, mode, records, timing)
+        if args.save_influence:
+            if args.dry_run or mode != "super" or len(hsets) != 1 or not supercheck.get("ok"):
+                raise D1Error("A field cache requires one verified, real superposition h-set")
+            cache_path = os.path.abspath(args.save_influence)
+            if os.path.exists(cache_path):
+                raise D1Error("Refusing to replace an existing field cache")
+            arrays = {"nnum": backend.nnum}
+            arrays.update({"G_" + s: gmaps[hsets[0]][s] for s in SOURCES})
+            arrays.update({"part_" + p: backend.part_idx[p] for p in PARTS})
+            arrays.update({"circuit_" + p: np.asarray(backend.circ_pos[p]) for p in CIRCUIT_NODES})
+            with open(cache_path + ".tmp", "wb") as stream:
+                np.savez(stream, **arrays)
+            os.replace(cache_path + ".tmp", cache_path)
+            with open(cache_path, "rb") as stream:
+                cache_hash = hashlib.sha256(stream.read()).hexdigest()
+            payload["_field_cache"] = {"path": cache_path, "sha256": cache_hash,
+                "schema": 1, "hset": hsets[0], "oil_T_C": OIL_T,
+                "scope": "Internal full nodal linear responses; reuse only with this verified thermal model."}
+            log("saved internal nodal response cache:", cache_path)
         return payload, 0, backend
     finally:
         backend.close()
@@ -2302,6 +2322,8 @@ def build_parser():
                         "singular pivot (floating island); perturbs results by ~4e-6.")
     p.add_argument("--mapdl-port", type=int, default=None,
                    help="Explicit unique gRPC port for concurrent MAPDL processes")
+    p.add_argument("--save-influence", default=None,
+                   help="Save verified full nodal responses internally for loss-map refinement")
     p.add_argument("--additional-switches", default=None,
                    help="passed to launch_mapdl, e.g. \"-m 8192 -db 2048\"")
     p.add_argument("--dry-run-nonlinear", type=float, default=0.0,

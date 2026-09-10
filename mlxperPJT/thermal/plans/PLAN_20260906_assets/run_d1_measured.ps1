@@ -2,7 +2,8 @@ param(
     [string]$Repo = 'D:\KDH\NvidiaNemo\eMach',
     [string]$Work = 'C:\work\_thermal_kit_20260910',
     [ValidateSet('base','sph')][string]$Htc = 'base',
-    [ValidatePattern('^[a-zA-Z0-9_]+$')][string]$Attempt = 'ports'
+    [ValidatePattern('^[a-zA-Z0-9_]+$')][string]$Attempt = 'ports',
+    [switch]$SaveInfluence
 )
 # Explicit per-h-set process and result isolation. Invoke once per h-set.
 $ErrorActionPreference = 'Stop'
@@ -32,6 +33,7 @@ $arguments = @((Join-Path $kit 'd1_cont_rating.py'), '--repo', $Repo,
     '--out', $run, '--out-name', ('e10_cont_rating_mcad_' + $Htc + '.json'),
     '--run-dir', (Join-Path $run 'mapdl'), '--log', (Join-Path $run 'run.log'), '--no-git-check')
 foreach($path in $maps) { $arguments += @('--loss-map', $path) }
+if ($SaveInfluence) { $arguments += @('--save-influence', (Join-Path $run 'nodal_responses.npz')) }
 $argumentLine = ($arguments | ForEach-Object { '"' + $_ + '"' }) -join ' '
 $action = New-ScheduledTaskAction -Execute $py -Argument $argumentLine -WorkingDirectory $kit
 $principal = New-ScheduledTaskPrincipal -UserId ([System.Security.Principal.WindowsIdentity]::GetCurrent().Name) -LogonType Interactive -RunLevel Limited
