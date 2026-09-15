@@ -1,7 +1,7 @@
 # eMach — Claude Code Context
 
 > 이 레포지토리는 전기모터 설계 프레임워크 (eMach).  
-> 연구자: 강도현 | 작업 갈래: `mlxperPJT/humanoid/` (휴머노이드 로봇, **이 워크트리에서 활성**) · `mlxperPJT/JEET/` (AC 손실 JEET 논문)
+> 연구자: 강도현 | 이 워크트리: 휴머노이드 프로젝트(HumanX)용 **범용 도구** · JEET 논문은 본 체크아웃
 
 ---
 
@@ -13,17 +13,18 @@ eMach/
 ├── tools/
 │   └── motorCAD/pyMCAD/  Python Motor-CAD 유틸리티 (fea_workflow, magnetic 등)
 ├── mlxperPJT/
-│   ├── humanoid/       ★ 이 워크트리의 활성 작업 → humanoid/CLAUDE.md 참조
 │   └── JEET/           AC 손실 JEET 논문 → JEET/CLAUDE.md 참조
 └── Class/              모터 설계 클래스
 ```
 
-## 현재 주 작업 — 휴머노이드 로봇 프로젝트 (2026-09-15~)
+## 이 워크트리의 용도 — HumanX 용 범용 도구 (2026-09-15~)
 
-→ **`mlxperPJT/humanoid/CLAUDE.md`** 참조. 워크트리 `D:\KangDH\eMach-humanoid`,
-브랜치 `feat/humanoid`. 주 도구는 **Motor-CAD + MATLAB/Simulink**.
+워크트리 `D:\KangDH\eMach-humanoid`, 브랜치 `feat/humanoid`. 휴머노이드 프로젝트 자체(컨텍스트·데이터 규격·결과)는
+비공개 레포 `D:\KangDH\HumanX` 에 있고, HumanX 의 `simulink/setupHumanX.m` 이 이 워크트리를 MATLAB path 에 올린다.
 
-JEET·M3 작업은 본 체크아웃 `D:\KangDH\EveryMotor\eMach`(브랜치 `devVeriACLoss`)에서 한다.
+- 여기에는 다른 프로젝트에도 쓸 Motor-CAD ↔ MATLAB/Simulink 도구만 둔다.
+- **이 레포(enjoyneer87/eMach)는 공개 fork 다** — 프로젝트 데이터·요구사양·결과를 커밋하지 않는다.
+- JEET·M3 작업은 본 체크아웃 `D:\KangDH\EveryMotor\eMach`(브랜치 `devVeriACLoss`)에서 한다.
 
 ## 도구 환경
 
