@@ -24,7 +24,7 @@ F = S.FluxMap_dq;
 L = S.IronPMLossMap_dq;
 
 % ---- 기계 상수 (제원 정본)
-m = struct('p', 4, 'Vdc', 720, 'Vph_lim', 415.7, 'Rs_80C', 0.0786, ...
+m = struct('p', 4, 'Vdc', 720, 'Vph_lim', 285.1, 'Rs_80C', 0.0786, ...
            'R_active', 0.0495, 'R_end', 0.0291, 'n_rated', 16000, 'I_rated_rms', 460);
 
 % ---- 격자 (Apk).  M(iq, id)
