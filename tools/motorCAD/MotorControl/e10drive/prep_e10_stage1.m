@@ -61,8 +61,10 @@ S.Pcu_ac = P.Pac(:, :, kS);
 S.Pfe = P.Pfe(:, :, kS);
 S.Pmag = P.Pmag(:, :, kS);
 S.V_map = P.Vrms(:, :, kS);
-S.Fd = FD;  S.Fq = FQ;
+S.Fd = P.Fd;  S.Fq = P.Fq;          % 원 격자(id_pk, iq_pk) 기준으로 저장한다
+S.Fd_fine = FD; S.Fq_fine = FQ; S.idF = idF; S.iqF = iqF;
 
+S.Vmargin = 0.95;   % 기준표는 전압 여유를 두고 만든다 (폐루프가 약자속 트림을 할 여지)
 % ---- 3) 제어기 기준표: 요구 축 토크 -> (id*, iq*), 전압 한계 아래 총손실 최소
 % 전압 한계 아래 최대 축 토크 — 임계선 위에 얹히므로 조밀 보간으로 찾는다 (노드만 쓰면 과소평가)
 idD = linspace(P.id_pk(1), P.id_pk(end), 1301);
@@ -70,7 +72,7 @@ iqD = linspace(P.iq_pk(1), P.iq_pk(end), 1301);
 [IDd, IQd] = meshgrid(idD, iqD);
 Td = interp2(S.id_pk, S.iq_pk, S.T_shaft, IDd, IQd, 'linear');
 Vd = interp2(S.id_pk, S.iq_pk, S.V_map,   IDd, IQd, 'linear');
-Tmax = max(Td(Vd <= m.Vph_lim & hypot(IDd, IQd)/sqrt(2) <= m.I_rated_rms), [], 'all');
+Tmax = max(Td(Vd <= m.Vph_lim*S.Vmargin & hypot(IDd, IQd)/sqrt(2) <= m.I_rated_rms), [], 'all');
 S.T_ref_vec = [0, logspace(log10(0.5), log10(max(Tmax*0.995, 1)), 60)];
 % 두 가지 목적함수로 만든다. Lab 의 제어전략 0(최대토크/암페어)에 대응하는 것은 'current' 이고,
 % 'loss' 는 이 스레드가 묻는 총손실 최소다. 둘의 차이가 곧 '교류손을 넣으면 진각이 얼마나 움직이나'다.
@@ -88,6 +90,8 @@ for obj = {'current', 'loss'}
         end
     end
     idv(1) = idv(2);  iqv(1) = 0;  gmv(1) = 90;  Iv(1) = Iv(2);  Vv(1) = Vv(2);  Pv(1) = Pv(2);
+    S.(['fd_ref_' o]) = interp2(S.id_pk, S.iq_pk, S.Fd, idv, iqv, 'linear');
+    S.(['fq_ref_' o]) = interp2(S.id_pk, S.iq_pk, S.Fq, idv, iqv, 'linear');
     S.(['id_ref_' o]) = idv;  S.(['iq_ref_' o]) = iqv;  S.(['gamma_ref_' o]) = gmv;
     S.(['I_ref_' o]) = Iv;    S.(['V_ref_' o]) = Vv;    S.(['P_ref_' o]) = Pv;
 end
@@ -125,7 +129,7 @@ for g = 0:0.25:89.95
         Ip = Ipk(k) + f*(Ipk(k+1) - Ipk(k));
         idq = -Ip*sind(g);  iqq = Ip*cosd(g);
         V = interp2(S.id_pk, S.iq_pk, S.V_map, idq, iqq, 'linear', NaN);
-        if ~isfinite(V) || V > m.Vph_lim*1.01, continue; end
+        if ~isfinite(V) || V > m.Vph_lim*S.Vmargin, continue; end
         Irms = Ip/sqrt(2);
         if Irms > m.I_rated_rms, continue; end
         P = 3*m.Rs_80C*Irms^2 ...
