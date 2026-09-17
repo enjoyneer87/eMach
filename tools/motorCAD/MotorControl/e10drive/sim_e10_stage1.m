@@ -22,6 +22,16 @@ function R = sim_e10_stage1(S, opt)
 %
 %   상태 (2026-09-17): 플랜트는 단위 시험 통과(test_e10_plant.m — 열린 루프로 정상상태 전압을
 %   인가하면 세 점 모두 0.1 A 안에서 기준점에 머문다. 필요 전압은 한계의 24~87 %라 여유도 있다).
+%   제어기 실험 기록 (2026-09-17, 전부 MCB 이득 + 약자속 트림 끔, Ts=50 us):
+%     구조              5 Nm      20 Nm     60 Nm     85 Nm     비고
+%     보통 PI+상수디커플 -161 %   -117 %    -6.5 %   -11.7 %   고토크는 잘 맞고 저토크 붕괴
+%     복소벡터 PI       -171 %    +10 %    -25.6 %  -37.1 %   중간 토크만 맞음
+%   저토크에서 두 구조 모두 감마 90도로 붕괴한다(iq -> 0). 원인은 전향보상 모델 오차로 보인다 —
+%   깊은 약자속점에서 상수 Ld/lam 으로 계산한 we*(Ld id + lam) 이 실제보다 85 V 작다.
+%   **다음 작업: 손으로 짠 제어기를 버리고 MCB 의 FOC 블록(Field Weakening Control,
+%   MTPA Control Reference, 전류 PI)을 Simulink 에 그대로 인스턴스화한다.** 사용자 지적대로
+%   튜닝·구조가 이미 검증된 것을 쓰는 편이 빠르고, 플랜트(자속맵)는 그대로 붙이면 된다.
+%
 %   **남은 것은 제어기뿐이다.** 전류 PI 이득은 Motor Control Blockset 설계식에서 받았고
 %   (mcb.getPIControllerParameters, Modulus Optimum; Ts=50 us 에서 Kp_d 8.5 / Kp_q 16.0 V/A,
 %   Ki = Kp/(L/R), 약자속 Kp 0.79 A/V · Ki 38.9 A/(V·s)), 손으로 고른 값은 전류 P 가 2.5배 과했다.
@@ -59,6 +69,9 @@ KfwI = d('Kfw_i', 38.9);                   % [A/(V·s)]
 fwMax = d('fw_max', 120);
 Vtgt = d('V_target', 0.98)*Vmax;
 
+thc = d('delay_comp', 1)*we*(nDel + 0.5)*Ts;   % 지연 보상각 (0 이면 끔)
+rotSign = d('rot_sign', 1);
+ctrlMode = d('ctrl', 'pi_dec');   % 'pi_dec' | 'cvpi'
 idRef = S.(['id_ref_' refKind]);  iqRef = S.(['iq_ref_' refKind]);
 fdRef = S.(['fd_ref_' refKind]);  fqRef = S.(['fq_ref_' refKind]);
 
@@ -72,7 +85,7 @@ flux = [interp2(S.id_pk, S.iq_pk, S.Fd, id0, iq0, 'linear');
 nStep = round(Tstop/h);
 nSub  = round(Ts/h);
 vq_hist = zeros(2, max(nDel, 1) + 1);
-Xd = 0; Xq = 0; Xfw = 0; Xfw_i = 0;  v_ctrl = [0; 0];  v_app = [0; 0];
+X = complex(0, 0); Xfw = 0; Xfw_i = 0;  v_ctrl = [0; 0];  v_app = [0; 0];
 
 N = floor(nStep/nSub);
 R = struct('t', zeros(N, 1), 'T', zeros(N, 1), 'Tref', zeros(N, 1), 'id', zeros(N, 1), ...
@@ -92,22 +105,31 @@ for n = 1:N
     % ---- 제어기
     idc = idr - Xfw;
     ed = idc - i_meas(1);   eq = iqr - i_meas(2);
-    % 전향보상은 기준표의 자속을 쓴다 (제어기가 실제로 가진 정보). 상수 Ld/Lq 보다 오차가 작다.
+    % 전향보상은 기준표의 자속을 쓴다 (제어기가 실제로 가진 정보).
     fdr = interp1(S.T_ref_vec, fdRef, min(max(Tr, 0), S.T_ref_vec(end)), 'linear', 'extrap');
     fqr = interp1(S.T_ref_vec, fqRef, min(max(Tr, 0), S.T_ref_vec(end)), 'linear', 'extrap');
-    vd_u = Kpd*ed + Xd - we*fqr;
-    vq_u = Kpq*eq + Xq + we*fdr;
-    vmag = hypot(vd_u, vq_u);
+    % --- 복소벡터 전류제어 (Briz/Lorenz): 적분기를 we 로 회전시켜 교차결합을 상쇄한다.
+    %     실축 PI + 상수 디커플링은 we*Ts 가 커지면(여기서 샘플당 19도) 회전 결합을 못 지운다.
+    switch ctrlMode
+      case 'pi_dec'   % 보통 PI + 측정전류 디커플링 (MCB FOC 와 같은 구조). 동기좌표계 DC 오차 0.
+        vu = complex(Kpd*ed, Kpq*eq) + X ...
+             + complex(-we*Lq*i_meas(2), we*(Ld*i_meas(1) + lam));
+      otherwise       % 'cvpi': 복소벡터 PI (적분기 극점 -jwe) + 기준자속 전향보상
+        vu = complex(Kpd*ed, Kpq*eq) + X + complex(-we*fqr, we*fdr);
+    end
+    vd_u = real(vu);  vq_u = imag(vu);
+    vmag = abs(vu);
     if vmag > Vmax
         vd = vd_u*Vmax/vmag;  vq = vq_u*Vmax/vmag;  sat = 1;
     else
         vd = vd_u;  vq = vq_u;  sat = 0;
     end
-    Xd = Xd + Ts*(Kid*ed + Kaw*(vd - vd_u));
-    Xq = Xq + Ts*(Kiq*eq + Kaw*(vq - vq_u));
+    X = X*exp(-1i*we*Ts*rotSign*strcmp(ctrlMode,'cvpi')) + Ts*(complex(Kid*ed, Kiq*eq) + Kaw*complex(vd - vd_u, vq - vq_u));
     Xfw_i = min(max(0, Xfw_i + Ts*KfwI*(vmag - Vtgt)), fwMax);
     Xfw = min(max(0, Xfw_i + KfwP*(vmag - Vtgt)), fwMax);
-    v_ctrl = [vd; vq];
+    % --- 지연 보상: 인가 시점의 각도 앞섬 we*(n+0.5)*Ts 만큼 지령을 미리 돌려 둔다
+    vc = complex(vd, vq)*exp(1i*thc);
+    v_ctrl = [real(vc); imag(vc)];
 
     % ---- 연산 지연 (샘플 단위) 후 기계 프레임으로
     vq_hist = [vq_hist(:, 2:end), v_ctrl];
@@ -132,7 +154,7 @@ for n = 1:N
 end
 R.opt = struct('Ts', Ts, 'h', h, 'th_err_deg', th*180/pi, 'n_delay', nDel, 'ref', refKind, ...
                'Kp_d', Kpd, 'Kp_q', Kpq, 'Ki_d', Kid, 'Ki_q', Kiq, ...
-               'Kfw_p', KfwP, 'Kfw_i', KfwI, 'Vmax_peak', Vmax);
+               'Kfw_p', KfwP, 'Kfw_i', KfwI, 'Vmax_peak', Vmax, 'delay_comp_deg', thc*180/pi);
 end
 
 % ------------------------------------------------------------------ helpers
