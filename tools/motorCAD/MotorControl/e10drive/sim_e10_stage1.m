@@ -20,12 +20,15 @@ function R = sim_e10_stage1(S, opt)
 %     ref       'current' | 'loss'              ('current')
 %     Ts, h, Tstop, Kp, Ki, Kfw                 (아래 기본값)
 %
-%   상태 (2026-09-17): 플랜트·역맵·기준표는 검증됐고 루프는 돌지만 **제어기 정정 전**이다.
-%   16 krpm 에서 전류 추종이 기준표보다 15~40 % 높게 정착하고 약자속 트림이 계속 물린다.
-%   원인 후보: (i) we*Ts = 0.67 rad (샘플당 전기각 38도) 라 2 kHz 대역 dq PI + 1샘플 지연이
-%   안정 한계에 가깝다, (ii) 기준점 자체가 전압 한계에 붙어 있어 약자속 외루프가 항상 활성이다.
-%   다음 작업: 복소벡터(또는 지연보상) 전류제어로 바꾸고 Ts 를 20~50 us 로 낮춰 재정정,
-%   약자속 루프에 불감대와 누설을 넣는다. 그 다음에야 4절 실험(오프셋·지연·상한)이 의미를 갖는다.
+%   상태 (2026-09-17): 플랜트는 단위 시험 통과(test_e10_plant.m — 열린 루프로 정상상태 전압을
+%   인가하면 세 점 모두 0.1 A 안에서 기준점에 머문다. 필요 전압은 한계의 24~87 %라 여유도 있다).
+%   **남은 것은 제어기뿐이다.** 전류 PI 이득은 Motor Control Blockset 설계식에서 받았고
+%   (mcb.getPIControllerParameters, Modulus Optimum; Ts=50 us 에서 Kp_d 8.5 / Kp_q 16.0 V/A,
+%   Ki = Kp/(L/R), 약자속 Kp 0.79 A/V · Ki 38.9 A/(V·s)), 손으로 고른 값은 전류 P 가 2.5배 과했다.
+%   그래도 폐루프가 기준점을 못 잡는다 — we*Ts = 0.34 rad (샘플당 19도) 에서 실축 PI + 기준자속
+%   전향보상만으로는 회전 결합을 못 지운다. 다음: 복소벡터 전류제어(또는 측정자속 디커플링 +
+%   지연보상)로 교체. 플랜트는 그대로 두면 된다.
+
 
 if nargin < 2, opt = struct(); end
 d = @(f, v) getfielddef(opt, f, v);
@@ -43,12 +46,18 @@ Vmax = m.Vph_lim*sqrt(2);                  % 전압 원 (피크)
 
 % 제어기가 쓰는 상수 모델 (일부러 상수 — 실제 제어기도 그렇다)
 Ld = 0.85e-3;  Lq = 1.6e-3;  lam = S.fd_vec(end);
-Kp  = d('Kp', Ld*2*pi*2000);               % 전류 루프 2 kHz
-Ki  = d('Ki', R_ph*2*pi*2000);
+% 전류 PI 는 Motor Control Blockset 의 설계식(Modulus Optimum)에서 받는다.
+%   mcb.getPIControllerParameters(pmsm, inverter, PU, T_pwm, Ts, Ts_speed)
+%   -> Kp_id/Kp_i (PU) 를 V_base/I_base 로 SI 환산, Ti = L/R 이므로 Ki = Kp/Ti.
+% Ts = 50 us 기준값 (손으로 고른 값은 전류 P 가 2.5배 과했다).
+Kpd = d('Kp_d', 8.50);   Kpq = d('Kp_q', 16.00);
+Kid = d('Ki_d', Kpd/(Ld/R_ph));   Kiq = d('Ki_q', Kpq/(Lq/R_ph));
 Kaw = d('Kaw', 1/(Ld/R_ph));
-Kfw = d('Kfw', 2);                         % 약자속 외루프 [A/(V·s)]
-fwMax = d('fw_max', 80);                   % 기준표가 이미 약자속점이라 트림 폭만 준다
-Vtgt = d('V_target', 0.95)*Vmax;           % 전압 여유 (한계에 딱 붙이면 감김)
+% 약자속 루프도 MCB 설계값 (Kp_fwc, Ki_fwc 를 I_base/V_base 로 SI 환산)
+KfwP = d('Kfw_p', 0.79);                   % [A/V]
+KfwI = d('Kfw_i', 38.9);                   % [A/(V·s)]
+fwMax = d('fw_max', 120);
+Vtgt = d('V_target', 0.98)*Vmax;
 
 idRef = S.(['id_ref_' refKind]);  iqRef = S.(['iq_ref_' refKind]);
 fdRef = S.(['fd_ref_' refKind]);  fqRef = S.(['fq_ref_' refKind]);
@@ -63,7 +72,7 @@ flux = [interp2(S.id_pk, S.iq_pk, S.Fd, id0, iq0, 'linear');
 nStep = round(Tstop/h);
 nSub  = round(Ts/h);
 vq_hist = zeros(2, max(nDel, 1) + 1);
-Xd = 0; Xq = 0; Xfw = 0;  v_ctrl = [0; 0];  v_app = [0; 0];
+Xd = 0; Xq = 0; Xfw = 0; Xfw_i = 0;  v_ctrl = [0; 0];  v_app = [0; 0];
 
 N = floor(nStep/nSub);
 R = struct('t', zeros(N, 1), 'T', zeros(N, 1), 'Tref', zeros(N, 1), 'id', zeros(N, 1), ...
@@ -86,17 +95,18 @@ for n = 1:N
     % 전향보상은 기준표의 자속을 쓴다 (제어기가 실제로 가진 정보). 상수 Ld/Lq 보다 오차가 작다.
     fdr = interp1(S.T_ref_vec, fdRef, min(max(Tr, 0), S.T_ref_vec(end)), 'linear', 'extrap');
     fqr = interp1(S.T_ref_vec, fqRef, min(max(Tr, 0), S.T_ref_vec(end)), 'linear', 'extrap');
-    vd_u = Kp*ed + Xd - we*fqr;
-    vq_u = Kp*eq + Xq + we*fdr;
+    vd_u = Kpd*ed + Xd - we*fqr;
+    vq_u = Kpq*eq + Xq + we*fdr;
     vmag = hypot(vd_u, vq_u);
     if vmag > Vmax
         vd = vd_u*Vmax/vmag;  vq = vq_u*Vmax/vmag;  sat = 1;
     else
         vd = vd_u;  vq = vq_u;  sat = 0;
     end
-    Xd = Xd + Ts*(Ki*ed + Kaw*(vd - vd_u));
-    Xq = Xq + Ts*(Ki*eq + Kaw*(vq - vq_u));
-    Xfw = min(max(0, Xfw + Ts*Kfw*(vmag - Vtgt)), fwMax);
+    Xd = Xd + Ts*(Kid*ed + Kaw*(vd - vd_u));
+    Xq = Xq + Ts*(Kiq*eq + Kaw*(vq - vq_u));
+    Xfw_i = min(max(0, Xfw_i + Ts*KfwI*(vmag - Vtgt)), fwMax);
+    Xfw = min(max(0, Xfw_i + KfwP*(vmag - Vtgt)), fwMax);
     v_ctrl = [vd; vq];
 
     % ---- 연산 지연 (샘플 단위) 후 기계 프레임으로
@@ -121,7 +131,8 @@ for n = 1:N
     R.fw(k) = Xfw;  R.idcmd(k) = idc;  R.sat(k) = sat;
 end
 R.opt = struct('Ts', Ts, 'h', h, 'th_err_deg', th*180/pi, 'n_delay', nDel, 'ref', refKind, ...
-               'Kp', Kp, 'Ki', Ki, 'Kfw', Kfw, 'Vmax_peak', Vmax);
+               'Kp_d', Kpd, 'Kp_q', Kpq, 'Ki_d', Kid, 'Ki_q', Kiq, ...
+               'Kfw_p', KfwP, 'Kfw_i', KfwI, 'Vmax_peak', Vmax);
 end
 
 % ------------------------------------------------------------------ helpers
