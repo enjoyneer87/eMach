@@ -65,6 +65,13 @@ for k = 1:numel(files)
     out.Vrms(:, :, k) = S.Voltage_Phase_RMS.';
 end
 out.speeds = speeds;
+% 축 토크 맵: Lab 의 ShaftTorque 와 같은 정의 (전자기 토크에서 제동 손실을 뺀다).
+% 앵커 비교가 어긋났던 원인 — Lab 의 "1 N·m" 은 축 토크이고 같은 점의 전자기 토크는 3.3 N·m 이다.
+out.Tshaft = zeros(size(out.Pfe));
+for kk = 1:numel(speeds)
+    wm = 2*pi*speeds(kk)/60;
+    out.Tshaft(:, :, kk) = out.T - (out.Pfe(:, :, kk) + out.Pmag(:, :, kk))/wm;
+end
 out.machine = m;
 out.source = fullfile(workDir, 'e10_satloss_*.mat');
 out.axis_note = 'M(iq, id) 로 전치해 저장 (원본 export 는 M(id, iq))';
@@ -96,15 +103,23 @@ msk = abs(out.T) > 20;
 a.torque_rel_err_pct = 100*median(abs(Tem(msk)-out.T(msk))./abs(out.T(msk)));
 fprintf('3) T 대 1.5p(Fd iq-Fq id)      | 중앙 오차 %.2f %% (%d 점)\n', a.torque_rel_err_pct, nnz(msk));
 
-% 단자 전압: export 값(Voltage_Phase_RMS)과 정상상태식 비교 후 식을 쓴다
+% 단자 전압: Lab 이 내보낸 Voltage_Phase_RMS 를 쓴다. 정상상태 근사식은 고전류에서 3 % 낮다
+% (같은 (id,iq) 에서 Lab 285.1 V 대 근사식 275.5 V — 철손 전류 분기 등 Lab 내부 모델과의 차이).
+% 또 최적점이 전압 임계선 위에 얹히므로 격자 노드가 아니라 조밀 보간으로 찾아야 한다
+% (13 Apk 노드만 쓰면 최대 토크가 54.7 로 나온다 — 2026-09-17 앵커4 원인).
 Vcalc = hypot(m.Rs_80C*IDm - we*out.Fq, m.Rs_80C*IQm + we*out.Fd)/sqrt(2);
 VR = out.Vrms(:, :, kR);
 a.V_export_vs_calc_pct = 100*median(abs(Vcalc(msk) - VR(msk)) ./ max(VR(msk), 1));
-Irms = hypot(IDm, IQm)/sqrt(2);
-gam = atan2d(-IDm, IQm);
-feas = Vcalc <= m.Vph_lim & out.T > 0 & Irms <= m.I_rated_rms;
+idF = linspace(out.id_pk(1), out.id_pk(end), 1301);
+iqF = linspace(out.iq_pk(1), out.iq_pk(end), 1301);
+[IDf, IQf] = meshgrid(idF, iqF);
+Tf = interp2(out.id_pk, out.iq_pk, out.Tshaft(:, :, kR), IDf, IQf, 'linear');   % 축 토크
+Vf = interp2(out.id_pk, out.iq_pk, VR, IDf, IQf, 'linear');
+Irms = hypot(IDf, IQf)/sqrt(2);
+gam = atan2d(-IDf, IQf);
+feas = Vf <= m.Vph_lim & Tf > 0 & Irms <= m.I_rated_rms;
 a.gamma_min_feasible = min(gam(feas));
-[a.Tmax_16k, kT] = max(out.T(:).*feas(:));
+[a.Tmax_16k, kT] = max(Tf(:).*feas(:));
 a.Tmax_gamma = gam(kT);  a.Tmax_I_rms = Irms(kT);
 fprintf('4) 16 krpm 가능 최소 진각      | %.1f°  | 최대 토크 %.1f N·m (γ %.1f°, %.0f A rms) | Lab 88.0, 85.2°, 204 A\n', ...
         a.gamma_min_feasible, a.Tmax_16k, a.Tmax_gamma, a.Tmax_I_rms);
@@ -136,18 +151,19 @@ end
 function s = local_min_loss(out, m, we, Tdem, kR)
 best = struct('Ptot', inf);
 Ipk = linspace(5, 650, 2000);
-for g = 60:0.1:89.9
+for g = 60:0.05:89.99
     id = -Ipk*sind(g);  iq = Ipk*cosd(g);
-    T = interp2(out.id_pk, out.iq_pk, out.T, id, iq, 'linear', NaN);
-    k = find(isfinite(T(1:end-1)) & isfinite(T(2:end)) & (T(1:end-1)-Tdem).*(T(2:end)-Tdem) <= 0, 1);
-    if isempty(k), continue; end
+    T = interp2(out.id_pk, out.iq_pk, out.Tshaft(:, :, kR), id, iq, 'linear', NaN);   % 축 토크
+    % 90도 근처는 T(I) 가 단조가 아니라 교차가 둘이다 -> 전부 본다 (첫 교차는 전압 초과라 버려진다)
+    ks = find(isfinite(T(1:end-1)) & isfinite(T(2:end)) & (T(1:end-1)-Tdem).*(T(2:end)-Tdem) <= 0);
+    for k = ks(:).'
     f = (Tdem - T(k))/(T(k+1) - T(k));
     Ip = Ipk(k) + f*(Ipk(k+1) - Ipk(k));
     idq = -Ip*sind(g);  iqq = Ip*cosd(g);
-    Fd = interp2(out.id_pk, out.iq_pk, out.Fd, idq, iqq, 'linear', NaN);
-    Fq = interp2(out.id_pk, out.iq_pk, out.Fq, idq, iqq, 'linear', NaN);
-    V = hypot(m.Rs_80C*idq - we*Fq, m.Rs_80C*iqq + we*Fd)/sqrt(2);
-    if ~isfinite(V) || V > m.Vph_lim, continue; end
+    V = interp2(out.id_pk, out.iq_pk, out.Vrms(:, :, kR), idq, iqq, 'linear', NaN);
+    % export 맵의 전압은 같은 (id,iq) 에서 Lab 운전점 값과 -0.2 ~ +3 % 차이가 난다.
+    % 저토크 등고선은 전압 한계선 위에 그대로 얹혀 있으므로 1 % 여유를 둔다(문서화된 관용).
+    if ~isfinite(V) || V > m.Vph_lim*1.01, continue; end
     I_rms = Ip/sqrt(2);
     Pcu = 3*m.Rs_80C*I_rms^2;
     Pac = interp2(out.id_pk, out.iq_pk, out.Pac(:, :, kR), idq, iqq, 'linear', NaN);
@@ -157,6 +173,7 @@ for g = 60:0.1:89.9
     if isfinite(tot) && tot < best.Ptot
         best = struct('gamma_deg', g, 'I_rms', I_rms, 'T', Tdem, 'V_rms', V, ...
                       'Pcu', Pcu, 'Pac', Pac, 'Pfe', Pfe, 'Pmag', Pmg, 'Ptot', tot);
+    end
     end
 end
 s = best;
