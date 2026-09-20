@@ -464,9 +464,16 @@ def plot_motor_geometry_dxf(
                 for p in polys)
     stator = max(others, key=lambda p: p['n_raw'])
     r_bore = np.hypot(stator['pts'][:, 0], stator['pts'][:, 1]).min()
+    # Motor-CAD's DXF also contains sector-closing envelopes through the
+    # origin. One follows the moving-band midline, not the rotor surface.
+    # Only annular material outlines can identify the physical rotor here.
     rotor_polys = [p for p in others
-                   if np.hypot(p['pts'][:, 0],
-                               p['pts'][:, 1]).max() < r_bore]
+                   if (np.hypot(p['pts'][:, 0], p['pts'][:, 1]).min() > 1e-6
+                       and np.hypot(p['pts'][:, 0],
+                                    p['pts'][:, 1]).max() < r_bore)]
+    if not rotor_polys:
+        raise ValueError('No annular rotor outline found. Verify DXF geometry '
+                         'against model bore and rotor diameters.')
     r_rotor = max(np.hypot(p['pts'][:, 0], p['pts'][:, 1]).max()
                   for p in rotor_polys)
     g_air = r_bore - r_rotor

@@ -53,7 +53,7 @@ def _mounted(path: str) -> bool:
 
 
 # tab:Radial 에 실린 값 (대조용)
-TABLE = {"Ds_mm": 198.0, "Dr_mm": 141.5, "g_mm": 0.5,
+TABLE = {"Ds_mm": 198.0, "Dr_mm": 140.54, "g_mm": 1.0,
          "w_mm": 1.7, "h_mm": 3.7}
 
 

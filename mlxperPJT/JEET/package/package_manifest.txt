@@ -127,3 +127,5 @@
 @PKG/repro-checks.yml -> .github/workflows/repro-checks.yml
 
 @PKG/test_transfer_budget.py -> tests/test_transfer_budget.py
+@PKG/test_geometry_airgap.py -> tests/test_geometry_airgap.py
+@PKG/GEOMETRY_AUDIT.md -> GEOMETRY_AUDIT.md
