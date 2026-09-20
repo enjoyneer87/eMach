@@ -20,6 +20,7 @@ class SeparableRbfModel:
     ls_p: float
     p_coeffs: np.ndarray        # speed level polynomial f(s): [a2, a1, a0]
     q_coeffs: Optional[np.ndarray] = None  # spread exponent p(s): [b2, b1, b0]
+    anchor_speed_kRPM: Optional[float] = None  # exact speed-fit constraint
 
     #: g is clamped here before exponentiation — TPS extrapolation outside
     #: the sampled hull can dip to zero/negative, and p > 1 amplifies it.
@@ -86,16 +87,23 @@ class SeparableRbfModel:
 
         g_expr = " + ".join(terms_g)
 
-        # f_expr format coefficients
-        a2, a1, a0 = self.p_coeffs
-        f_expr = f"({a2:+.6f}*(Speed/1000)**2{a1:+.6f}*(Speed/1000){a0:+.6f})"
+        def speed_expression(coeffs):
+            a2, a1, a0 = coeffs
+            if self.anchor_speed_kRPM is not None:
+                # Keep the anchor exact even after serializing coefficients.
+                base = self.anchor_speed_kRPM
+                x = f"(Speed/1000/{base:.17g}-1)"
+                b = a2 * base**2
+                a = a1 * base + 2*b
+                return f"(1{a:+.17g}*{x}{b:+.17g}*{x}**2)"
+            return f"({a2:+.17g}*(Speed/1000)**2{a1:+.17g}*(Speed/1000){a0:+.17g})"
+
+        f_expr = speed_expression(self.p_coeffs)
 
         if self.q_coeffs is None:
             core = f"({f_expr}) * (\n    {g_expr}\n  )"
         else:
-            b2, b1, b0 = self.q_coeffs
-            p_expr = (f"({b2:+.6f}*(Speed/1000)**2{b1:+.6f}*(Speed/1000)"
-                      f"{b0:+.6f})")
+            p_expr = speed_expression(self.q_coeffs)
             core = f"({f_expr}) * (\n    {g_expr}\n  )**({p_expr})"
 
         formula = (f"Stator_Copper_Loss_AC * (\n  {core}\n)"

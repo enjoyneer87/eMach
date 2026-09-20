@@ -57,3 +57,15 @@ convergence study. The original Full-FEA reference values are unchanged.
 
 Detailed input manifests, predictions, training coordinates, checks and
 plots are in the manuscript review folder's `evidence/M1` artifacts.
+
+## Exact-anchor update, 2026-09-20
+
+The author adopted f(16)=p(16)=1 as an exact constraint after reviewing the
+full comparison. The native production runner now gives full-grid wMAE
+0.982584/1.203463/1.155889% and own-withheld wMAE
+3.295904/4.009746/3.449489% (Ref/HalfSC/SC). These replace the pre-anchor
+headline for the current model. Previously recorded results remain comparison
+history. No inputs, RBF smoothing, training budgets, truth values or FEA solves
+changed. The whole-grid decrease is primarily an already-trained anchor-plane
+effect, not independent validation. `plot_ref_only_calibration.py` regenerates
+the SC figure directly from a pipeline JSON using `--results` and `--out`.

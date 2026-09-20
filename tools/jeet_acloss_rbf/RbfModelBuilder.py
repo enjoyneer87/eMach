@@ -129,6 +129,23 @@ class RbfModelBuilder:
         return AcLossDataset(af_points)
 
     @staticmethod
+    def _anchored_quadratic(speeds, values, base_speed):
+        """Equal-speed least squares with q(base_speed)=1 exactly.
+
+        Fit q=1+a*x+b*x**2, x=s/base_speed-1. Return the existing
+        descending-power coefficient representation. With fewer than two
+        distinct non-anchor speeds, use the minimum-norm solution in (a,b).
+        No non-anchor observations gives the constant polynomial one.
+        """
+        if not np.isfinite(base_speed) or base_speed <= 0:
+            raise ValueError('base_speed must be finite and positive')
+        x = np.asarray(speeds, dtype=float) / base_speed - 1.0
+        a, b = np.linalg.lstsq(
+            np.column_stack((x, x*x)), np.asarray(values, dtype=float)-1.0,
+            rcond=None)[0]
+        return np.array([b/base_speed**2, (a-2*b)/base_speed, 1-a+b])
+
+    @staticmethod
     def _fit_speed_scaling(
         samples_by_speed: Dict[float, List[Tuple[float, float]]],
         base_speed: float,
@@ -145,7 +162,8 @@ class RbfModelBuilder:
                        in log g (regression would be degenerate).
 
         Returns (p_coeffs, q_coeffs): quadratic polynomials of f(s) and
-        p(s) over speed [kRPM], anchored at f(base)=1, p(base)=1.
+        p(s) over speed [kRPM], constrained to f(base)=1, p(base)=1.
+        The anchor is an equality constraint, not a weighted observation.
         q_coeffs is None in scalar mode.
         """
         speed_coords, f_coords, p_exps = [base_speed], [1.0], [1.0]
@@ -173,8 +191,10 @@ class RbfModelBuilder:
 
         order = np.argsort(speed_coords)
         s_arr = np.asarray(speed_coords)[order]
-        p_coeffs = np.polyfit(s_arr, np.asarray(f_coords)[order], 2)
-        q_coeffs = (np.polyfit(s_arr, np.asarray(p_exps)[order], 2)
+        p_coeffs = RbfModelBuilder._anchored_quadratic(
+            s_arr, np.asarray(f_coords)[order], base_speed)
+        q_coeffs = (RbfModelBuilder._anchored_quadratic(
+                        s_arr, np.asarray(p_exps)[order], base_speed)
                     if exponent else None)
         return p_coeffs, q_coeffs
 
@@ -460,7 +480,8 @@ class RbfModelBuilder:
             ls_i=LS_I,
             ls_p=LS_P,
             p_coeffs=p_coeffs,
-            q_coeffs=q_coeffs
+            q_coeffs=q_coeffs,
+            anchor_speed_kRPM=base_speed
         )
 
     @staticmethod
@@ -622,5 +643,6 @@ class RbfModelBuilder:
             ls_i=LS_I,
             ls_p=LS_P,
             p_coeffs=p_coeffs,
-            q_coeffs=q_coeffs
+            q_coeffs=q_coeffs,
+            anchor_speed_kRPM=base_speed
         )

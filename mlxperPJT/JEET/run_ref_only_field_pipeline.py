@@ -285,6 +285,7 @@ def main(argv=None):
         "source_code_sha256": {"runner": checksum(Path(__file__)),
                                "builder": checksum(HERE.parent.parent / "tools/jeet_acloss_rbf/RbfModelBuilder.py")},
         "conditions": {"Ref_MS_field_count": 30, "target_MS_fields_in_ref_only_case": 0,
+                       "speed_fit": "exact f(base)=p(base)=1; equal-speed constrained quadratic",
                        "new_FEA_solves": 0, "current_matching_tolerance_ref_A": CURRENT_TOL_REF_A,
                        "Ref_Full_FEA_training_count": 36, "target_Full_FEA_training_count_each": 27},
         "source_mapping": maps, "cases": results, "own_field_comparison_coverage": own_status,

@@ -30,7 +30,7 @@ Full regeneration still awaits the remaining figure/input provenance work.
 |---|---|---|---|
 | Reviewed public direct-AF transfer | 0.6308 / 1.9911 | 0.8285 / 2.6323 | 0.8399 / 2.5459 |
 | Existing author numerator transfer | 0.6308 / 1.9911 | 0.8424 / 2.6374 | 0.7868 / 2.2190 |
-| Adopted predicted-loss transfer (both branches) | 0.6308 / 1.9911 | 0.8424 / 2.6374 | 0.7616 / 2.2001 |
+| Predicted-loss transfer before exact anchor (historical) | 0.6308 / 1.9911 | 0.8424 / 2.6374 | 0.7616 / 2.2001 |
 
 Values are wMAE in percent. Full-map evaluation includes calibration points;
 held-out excludes the target's own training indices only. These are not new
@@ -42,7 +42,7 @@ its stated 36-point training set when transferring to SC. The adopted method alw
 uses the frozen donor prediction times donor hybrid loss. The author tests
 confirm that hiding all 60 unselected Ref truth values leaves the SC pipeline
 prediction unchanged, and a hybrid-only donor object is sufficient for transfer.
-The raw datasets are retained. The manuscript has not yet been edited.
+The raw datasets are retained. A separate submission-based author-review manuscript now records the Ref-only calculation.
 
 Global denominator-scale invariance is **open**: scaling both hybrid baselines by
 2.7 changes the fitted SC prediction by up to about 1.86% in this diagnostic.
@@ -63,8 +63,8 @@ are a different calculation and must not be substituted.
 
 ## Still open
 
-- Manuscript wording and exact-value updates after adoption; transfer decision is complete.
-- Reference-only field-to-final-loss validation, independent test grid, and FEA convergence.
+- Remaining figures and final abstract after full workflow validation; transfer and exact-anchor decisions are complete.
+- Public packaging of the locally verified Ref-only field-to-loss calculation, independent test grid, and FEA convergence.
 - TPS formulation/full-model comparison and denominator-refit consistency.
 - Packaging the calibrated efficiency solver and remaining submitted figures.
 - Clean-source full regeneration, exact submitted PDF/source binding, release tag.
@@ -83,3 +83,29 @@ The old workflow diagram still prints a direct-AF equation. Its author-approved
 manuscript replacement is pending, and FIGURE_STATUS.csv flags that limitation.
 The stored efficiency-array result above predates adoption; it has not been
 recomputed with the adopted AF model in this change.
+
+## Exact speed anchor adopted, 2026-09-20
+
+The default speed fit now enforces f(base)=p(base)=1 using
+q=1+a*x+b*x^2 with x=s/base-1 and equal weight per speed. The per-speed
+regressions, RBF fit, training budgets and predicted-loss transfer are unchanged.
+Exported speed expressions retain the shifted basis so coefficient serialization
+preserves the anchor. This is exact preservation of the fitted RBF shape; its
+regularization still allows residuals against Full-FEA at calibration points.
+
+| Current exact-anchor path | Ref full / own-held-out | HalfSC full / own-held-out | SC full / own-held-out |
+|---|---|---|---|
+| Bundled deposited-hybrid evaluator | 0.613050 / 1.991268 | 0.814834 / 2.638148 | 0.716587 / 2.199438 |
+| Author Ref-only public evaluator | 0.982584 / 3.295904 | 1.203463 / 4.009746 | 1.155889 / 3.449489 |
+
+Values are wMAE in percent. All-grid improvement mainly reflects preservation
+of the already-trained 16 kRPM plane. No independent generalization improvement
+is inferred. The Ref-only row is calculated in the author worktree; its complete
+input/runner packaging is still part of M8. The older tables and stored figures
+above remain historical comparisons. In particular the efficiency and denominator
+invariance diagnostics predate this change and have not been recomputed here.
+
+The Windows test suite now has 10 passing contracts, including an independent
+KKT optimum, sparse-speed fits, native/exported anchors, donor truth masking,
+and consistency between the default/ablation/cost paths. Linux/macOS execution
+of this exact-anchor revision is not claimed. No public release was pushed.
