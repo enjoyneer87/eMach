@@ -132,3 +132,53 @@ comparison and its limits in Appendix A.1. Main results are unchanged.
 The full Ref-only input/runner release remains an M8
 item. `run_evaluator_robustness.py` and its kernel checks are in the author tree;
 the portable transfer API and its regression check are mirrored here.
+
+## Full-workflow RBF/TPS comparison, 2026-09-20
+
+The author comparison freezes the capped Ref-only evaluator, training and
+donor-probe coordinates, regularization and exact speed anchor. The maximum
+own-held-out wMAE difference between bare RBF and affine TPS is 0.001262
+percentage points. The existing RBF is retained under the author's selection rule.
+Full-workflow anchor LOO improves from 6.0277/5.9848/5.5500% to
+2.7321/2.5537/1.8118% for Ref/HalfSC/SC. This benefit remains separate
+model-development evidence. The 3D baseline audit and manuscript naming/figure
+updates remain open.
+
+The comparison adapter matches the native RBF predictions. Affine TPS matches
+SciPy, and withholding all unselected truth leaves both family predictions
+unchanged. The runner is in the author tree as
+`mlxperPJT/JEET/run_tps_workflow_comparison.py`.
+
+## Prospective four-point M2 test, 2026-09-20
+
+Before new Full-FEA, author commit `8697165` fixed the capped evaluator and
+native RBF coefficients, training coordinates, donor probes, input hashes and
+the four predictions. Ref and SC were tested at 6 kRPM/beta 36 degrees and
+12 kRPM/beta 72 degrees, at 460 and 920 A RMS respectively.
+
+| Motor | Speed [rpm] | Beta [deg] | Frozen prediction [kW] | New Full-FEA [kW] | Signed error [%] |
+|---|---:|---:|---:|---:|---:|
+| Ref | 6000 | 36 | 6.709621 | 6.612767 | +1.4647 |
+| Ref | 12000 | 72 | 16.718373 | 17.253137 | -3.0995 |
+| SC | 6000 | 36 | 69.011965 | 71.465272 | -3.4329 |
+| SC | 12000 | 72 | 177.471371 | 186.066605 | -4.6194 |
+
+Designed-set wMAE is 4.150765%, with a maximum absolute
+relative error of 4.619439%.
+The two-point wMAEs are 2.646530% (Ref) and
+4.290165% (SC). These values describe the four
+prescribed-current speed-interpolation points. They do not establish independent
+HalfSC accuracy or new current/phase accuracy at 16 kRPM. Voltage-limit warnings
+are retained; these are not voltage-feasible trajectory claims.
+
+The test retains the existing 80 C, one-cycle/128-step protocol. Numerical
+convergence is a separate M3 task. Active AC excess is checked using the sum
+of per-turn loss minus three-phase active DC loss, against the reported AC total.
+No test result was merged into the training JSON or used to refit the model.
+
+Frozen prediction SHA-256:
+`327c637b1941cd14e60540f07988515272426cc0cd7b364d62f4a1e4ba5cba3b`.
+The author runners are `freeze_m2_stage_a.py` and `run_m2_stage_a.py`.
+The complete Ref-only runner, spectra and new raw evidence still require M8
+release packaging. This maintenance checkout reports the result and does not
+claim that its current default entry point regenerates the new solver runs.

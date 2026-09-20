@@ -88,7 +88,9 @@ def main():
                                'run_tps_workflow_comparison.py', 'run_ref_only_field_pipeline.py',
                                'run_evaluator_robustness.py')]
     code += list((repo / 'tools' / 'jeet_acloss_rbf').glob('*.py'))
-    code += list((repo / 'tools' / 'acloss_ref_methods').glob('*.py'))
+    kernel_root = here / 'acloss_ref_methods'
+    assert (kernel_root / 'volpe_hybrid_acloss.py').is_file()
+    code += list(kernel_root.glob('*.py'))
     payload = {'schema': 'm2-stage-a-freeze-v1', 'frozen_at_utc': datetime.now(timezone.utc).isoformat(),
                'author_decision': {'question': 'Q24', 'answer': '1번부터해쥐',
                                    'execution_authorized': True, 'stage': 'A', 'stage_B_authorized': False},
