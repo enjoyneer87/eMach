@@ -66,7 +66,7 @@ are a different calculation and must not be substituted.
 
 - Remaining figures and final abstract after full workflow validation; transfer and exact-anchor decisions are complete.
 - Public packaging of the locally verified Ref-only field-to-loss calculation, independent test grid, and FEA convergence.
-- TPS formulation/full-model comparison and denominator-refit consistency.
+- TPS formulation/full-model comparison. The matched evaluator refits and appendix adoption are complete; final input/runner packaging remains open.
 - Packaging the calibrated efficiency solver and remaining submitted figures.
 - Clean-source full regeneration, exact submitted PDF/source binding, release tag.
 - Actual macOS execution. A configured CI job is not a completed test.
@@ -126,8 +126,9 @@ RBF regularization and exact anchor fixed. SC all-grid / own-held-out wMAE is
 All planned regression samples were admitted; truth masking leaves all outputs
 unchanged. The physical kernels were not tuned to these results.
 
-The main capped evaluator has not been changed. The author is being interviewed
-on retaining the alternatives as appendix robustness evidence versus considering
-a new primary evaluator. The full Ref-only input/runner release remains an M8
+The author has adopted retention of the capped evaluator as the primary model.
+The separate submission-based manuscript now reports the four-evaluator
+comparison and its limits in Appendix A.1. Main results are unchanged.
+The full Ref-only input/runner release remains an M8
 item. `run_evaluator_robustness.py` and its kernel checks are in the author tree;
 the portable transfer API and its regression check are mirrored here.
