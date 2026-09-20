@@ -46,9 +46,9 @@ DEFAULT_CONFIG = {
     'base_speed': 16.0,          # kRPM, 2D-kernel anchor (f = 1, p = 1)
     'exponent': True,            # AF = f * g**p (False -> scalar f * g)
     'json': {
-        'Ref':    r'Ref\JEET_ACLoss_Ref_Map_Summary.json',
-        'HalfSC': r'HalfSC\JEET_ACLoss_HalfSC_Map_Summary.json',
-        'SC':     r'SC\JEET_ACLoss_SC_Map_Summary.json',
+        'Ref':    'Ref/JEET_ACLoss_Ref_Map_Summary.json',
+        'HalfSC': 'HalfSC/JEET_ACLoss_HalfSC_Map_Summary.json',
+        'SC':     'SC/JEET_ACLoss_SC_Map_Summary.json',
     },
     # known-bad TS-FEA runs (AF neighbor-consistency scan). The single SC
     # outlier (16 kRPM, 690 A, 90 deg; AF 0.47) was re-run in Motor-CAD on
@@ -203,7 +203,8 @@ class AcLossPipeline:
             base_speed=self.cfg['base_speed'],
             n_probe_transfer=self.cfg['n_probe_transfer'],
             exponent=expo, placement='structured',
-            donor_dataset=self.load_dataset(self.cfg['donor_scale']))
+            donor_dataset=self.load_dataset(self.cfg['donor_scale']),
+            rule=self.cfg.get('transfer_rule'))
 
     def pick_representative_seed(self, scale: str) -> int:
         """Seed in [0, n_seeds_pick) whose wMAE is closest to the mean."""
@@ -459,7 +460,8 @@ class AcLossPipeline:
                             exponent=bool(self.cfg.get('exponent', False)),
                             placement=placement,
                             donor_dataset=self.load_dataset(
-                                self.cfg['donor_scale']))
+                                self.cfg['donor_scale']),
+                            rule=self.cfg.get('transfer_rule'))
                     except np.linalg.LinAlgError:
                         continue
                     ws.append(self._metrics_of(scale, m)[1])

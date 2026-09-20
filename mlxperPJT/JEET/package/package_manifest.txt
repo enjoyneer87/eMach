@@ -117,3 +117,11 @@
 
 # ── data: shipped verification results (checks read these by default) ───
 @E10/checks/* -> data/e10/checks/
+
+# Review maintenance contracts and explicit reproduction coverage
+@PKG/FIGURE_STATUS.csv -> FIGURE_STATUS.csv
+@PKG/REVIEW_STATUS.md -> REVIEW_STATUS.md
+@PKG/check_manifest.py -> scripts/check_manifest.py
+@JEET/audit_efficiency_array.py -> scripts/audit_efficiency_array.py
+@PKG/test_review_contracts.py -> tests/test_review_contracts.py
+@PKG/repro-checks.yml -> .github/workflows/repro-checks.yml

@@ -10,17 +10,16 @@ Technology).
 
 ## What this is
 
-This repository is reference [32] of the paper: every figure, the five
-self-consistency checks of Section 5.1, and the headline error numbers are
-rebuilt from this clone (about 9 MB). Reference [31] is the raw-data deposit
-([10.5281/zenodo.21775297](https://doi.org/10.5281/zenodo.21775297), about
-37 GB) — needed only to re-run the reduction and verification steps from the
-solver exports, never for the figures.
+This package rebuilds selected figures and reduced-data calibration results.
+It does not yet reproduce every figure or every number of the 2026-09-02
+submission. See `FIGURE_STATUS.csv` and `REVIEW_STATUS.md` for the exact gaps.
+The raw-data deposit is [10.5281/zenodo.21775297](https://doi.org/10.5281/zenodo.21775297).
+Raw solver exports are required for raw verification, not cached-result checks.
 
-This tree is *generated*: a manifest-driven generator inside the eMach
-development branch copies each file from its worktree original
-(`PROVENANCE.txt` records the exact source commit). Nothing here is edited
-by hand.
+The original tree was generated from eMach. `PROVENANCE.txt` preserves that
+historical record; this review branch applies bounded maintenance patches
+whose source counterparts are recorded in `REVIEW_STATUS.md`. It is not a
+new submission-matched release.
 
 ## Quick start
 
@@ -38,46 +37,26 @@ everything; all are optional:
 | `JEET_DATA_ROOT` | reduced data root; if it also holds a `fea/` directory in the Zenodo layout, raw exports are read from there | `data/e10` |
 | `JEET_FIGDIR` | where figures are written | `fig_out/` |
 | `JEET_FEA_ROOT` | the author's raw export tree (pre-deposit layout) | unset |
-| `JEET_EFFMAP` | efficiency-map `.mat` (`efficiency_map_results.mat`, author-side, not deposited); Table C's operating-band rows need it — without it they fall back to the full-plane numbers | unset |
+| `JEET_EFFMAP` | efficiency-map `.mat` (`efficiency_map_results.mat`, author-side, not deposited); Table B.1 operating-band rows need it; unavailable input produces null region metrics | unset |
 
 ## Figure map
 
-Numbers follow the submitted manuscript.
+`FIGURE_STATUS.csv` maps the submitted figure numbers to package scripts,
+inputs and limitations. In particular, submitted Fig. 9 (field transfer),
+Fig. 12 (calibrated efficiency), Fig. 13 (cost), and Fig. B.2 (screening)
+are not rebuilt by the legacy default entry point.
 
-| Paper | Output file(s) | Script |
-|---|---|---|
-| Fig. 1 | `ACDC_ratio_scaling.png` | `scripts/run_fig2_acdc_ratio.py` |
-| Fig. 2 | `fig2_{Ref,SC}_ts_vs_2d.png` | `scripts/run_fig1_shared_scale.py` |
-| Fig. 3 | `Bfield_MVP_mesh.pdf` | `scripts/run_fig11_mvp_field.py` |
-| Fig. 4 | `TS_Hybrid_ratio.png` | `scripts/run_fig4_ts_hyb_ratio.py` |
-| Fig. 5 | `proposed_framework_v3.pdf` | `scripts/run_workflow_fig.py` |
-| Fig. 6 | `af_transfer_map_hybrid.pdf` | `scripts/run_af_transfer_fig.py` |
-| Fig. 7 | `transfer_ablation_{HalfSC,SC}.pdf` | `scripts/run_manuscript_figs78.py` |
-| Fig. 8 | `motor_geometry_e10.pdf` | `scripts/run_geometry_fig.py` |
-| Fig. 9 | `flux_torque_scaling.pdf` | `scripts/run_flux_torque_fig.py` |
-| Fig. 10 | `RBF_correction_validation_SC.png` | `scripts/run_fig10_validation.py` |
-| Fig. 11 | `effmap_SC_compare.pdf` | `scripts/plotFig15Effmaps.m` (MATLAB) |
-| Fig. A.1 | `eddy_factors_eta.pdf` | `scripts/run_figA1_eddy_factors.py` |
-| Fig. B.1 | `hybrid_variants_{speed,compare}.pdf` | `scripts/run_fig_hybrid_variants.py` |
-| Fig. C.1 | `form_convergence_{Ref,HalfSC,SC}.pdf` | `scripts/run_manuscript_figs78.py` |
-| Fig. C.2 | `ref_ablation.pdf` | `scripts/run_ref_ablation.py` |
-| App. B refit | `SC/open_denominator_refit.json` | `scripts/run_open_denominator_refit.py` |
-| Table C | `results/form_study.json` | `scripts/run_form_study.py` |
+`scripts/plotFig15Effmaps.m` renders the older two-MotorLAB-map comparison.
+It is not the submitted calibrated Fig. 12. The author-side shaft-map array
+can be audited without MATLAB using:
 
-Fig. 11 is the one MATLAB-drawn figure. Its inputs are the two LAB
-electrical datasets in `data/e10/effmaps/` (MATLAB v5 files, byte-identical
-to the deposited copies — `scipy.io.loadmat` reads them fine, only the
-drawing is MATLAB):
-
-```matlab
-setenv('JEET_DATA_ROOT', fullfile(pwd, 'data', 'e10'))
-setenv('JEET_FIGDIR',    fullfile(pwd, 'fig_out'))
-run('scripts/plotFig15Effmaps.m')
+```bash
+python scripts/audit_efficiency_array.py --input /path/to/effmap_shaft_SC.npz
 ```
 
-`scripts/from_raw/run_cut_fig1_slot_reduction.py` rebuilds the reduced
-Fig. 2 inputs from the full solver exports (deposit or author tree), so the
-reduction step itself can be audited.
+This command reports a common three-model feasibility mask and the older
+per-panel masks separately. It rechecks stored arrays; it does not execute
+the shaft-torque trajectory solver, and a missing array exits 2.
 
 ## Verification checks
 
@@ -85,14 +64,16 @@ Section 5.1 of the paper states that the Full-FEA solutions pass internal
 self-consistency checks before they serve as the reference. The scripts
 behind that sentence live in `checks/` and run in three modes:
 
-1. **default** — re-evaluate the shipped result JSONs in `data/e10/checks/`
-   and print the manuscript numbers with a pass/fail verdict;
-2. **deposit** — when `JEET_DATA_ROOT/fea/` holds files from the Zenodo
-   deposit, recompute from the raw exports;
-3. **author tree** — when `JEET_FEA_ROOT` points at the pre-deposit layout.
+1. `python repro.py checks` rechecks six shipped result JSON files. It does
+   not run a solver or reparse the raw exports.
+2. `python repro.py checks --recompute` requests recomputation from the
+   configured input sources. The similarity-pair check uses shipped map
+   summaries; other checks require raw field or timing files. Set
+   `JEET_DATA_ROOT` / `JEET_FEA_ROOT` as appropriate. Missing sources fail.
 
-Exit codes: `0` pass, `1` a needed input is not downloaded, `2` the raw
-data behind the check is not part of the deposit at all.
+Exit code 0 indicates that the requested checks passed; nonzero indicates
+a failure or unavailable input. Individual scripts distinguish missing
+inputs and unavailable raw-source layouts in their diagnostic messages.
 
 | Check | Manuscript number | Recompute source |
 |---|---|---|
@@ -100,7 +81,7 @@ data behind the check is not part of the deposit at all.
 | `check_parseval.py` | Parseval sum of the harmonic decomposition closes within 0.6% | deposit (8 exports) |
 | `check_torque_methods.py` | Maxwell-stress, flux-linkage, and virtual-work torques agree within 1% | deposit (Ref, SC); HalfSC needs the author tree |
 | `check_similarity_pairs.py` | absolute Full-FEA loss within 1.6% across the 24 grid-matched operating points | none — Map_Summary JSONs ship here |
-| `check_field_similarity.py` | fundamental amplitude within 1.8%, proximity-excitation energy within 2.0%, tangential fraction within 0.005, element-resolved loss −0.7 to −4.8% | HalfSC raw sweep — **not in the deposit**, recompute exits `2` |
+| `check_field_similarity.py` | mean fundamental-amplitude error about 1.8%, mean proximity-energy error about 2.0%, tangential fraction within 0.005, element-resolved loss −0.7 to −4.8% | HalfSC raw sweep — **not in the deposit**, recompute exits `2` |
 
 The HalfSC raw sweep was deliberately left out of the deposit (the Ref and
 SC exports already carry the similarity argument at both ends of the scale
@@ -116,7 +97,7 @@ python repro.py audit
 
 recomputes, per machine, the sample-candidate pool, the evaluated load
 points (96 per machine), and the loss-weighted full-map error before and
-after calibration — the paper's headline **27–45% → 0.6–0.8%**:
+after calibration including calibration points. These are the legacy public implementation results, not an independent unseen-point accuracy claim:
 
 | machine | uncorrected wMAE | calibrated wMAE | own Full-FEA samples |
 |---|---|---|---|
@@ -135,8 +116,8 @@ source and the audit also greps the printed text for these strings.
 swept operating point, the Full-FEA AC winding loss and the hybrid
 prediction at the same point; their ratio is the amplification factor the
 calibration learns. Points enter the sample-candidate pool only under load
-(`I_rms >= 50 A` — at no load both losses vanish and the ratio is
-undefined); accuracy is reported over every load point regardless.
+(`I_rms >= 50 A`; low-current cases are outside the fitted coordinate
+domain, and PM-induced AC loss can remain at near-zero armature current); accuracy is reported over every load point regardless.
 
 The rest of `data/` is one file per figure, named after what it carries:
 
@@ -192,3 +173,15 @@ Zenodo deposit and are, like it, CC-BY-4.0.
 
 See `CITATION.cff` — please cite the paper; the data deposit is
 [10.5281/zenodo.21775297](https://doi.org/10.5281/zenodo.21775297).
+
+## Maintenance checks
+
+```bash
+python scripts/check_manifest.py
+python -m unittest discover -s tests -v
+```
+
+The manifest checks exact stored bytes. Normalize text to LF before creating
+hashes; a verifier must not silently normalize a damaged checkout.
+The CI workflow covers Linux, macOS and Windows when run by GitHub Actions.
+Adding the workflow alone is not evidence that those remote jobs passed.

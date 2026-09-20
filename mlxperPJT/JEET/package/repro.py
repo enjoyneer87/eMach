@@ -5,12 +5,12 @@
 ::
 
     python repro.py figs [--quick]   rebuild the Python-drawn figures
-    python repro.py checks           run the five verification checks
+    python repro.py checks           run the six verification checks
     python repro.py audit            recompute the headline wMAE table
     python repro.py all              figs + checks + audit
 
 Everything runs against the shipped ``data/e10`` tree; set ``JEET_DATA_ROOT``
-and ``JEET_FIGDIR`` to relocate input and output.  Fig. 11 is the one
+and ``JEET_FIGDIR`` to relocate input and output.  The legacy efficiency comparison is a
 MATLAB-drawn figure (``scripts/plotFig15Effmaps.m``); see the README.
 """
 from __future__ import annotations
@@ -43,15 +43,15 @@ FIGS = [
     ("scripts/run_fig4_ts_hyb_ratio.py",   "Fig 4",          [], False),
     ("scripts/run_workflow_fig.py",        "Fig 5",          [], False),
     ("scripts/run_af_transfer_fig.py",     "Fig 6",          [], False),
-    ("scripts/run_manuscript_figs78.py",   "Fig 7 + C.1",    [], True),
+    ("scripts/run_manuscript_figs78.py",   "Fig 7 + B.1",    [], True),
     ("scripts/run_geometry_fig.py",        "Fig 8",          [], False),
-    ("scripts/run_flux_torque_fig.py",     "Fig 9",          [], False),
-    ("scripts/run_fig10_validation.py",    "Fig 10",         [], False),
-    ("scripts/run_figA1_eddy_factors.py",  "Fig A.1",        [], False),
-    ("scripts/run_fig_hybrid_variants.py", "Fig B.1",        [], False),
-    ("scripts/run_ref_ablation.py",        "Fig C.2",        [], False),
-    ("scripts/run_open_denominator_refit.py", "Appendix B",  [], False),
-    ("scripts/run_form_study.py",          "Table C",
+    ("scripts/run_flux_torque_fig.py",     "Fig 10",          [], False),
+    ("scripts/run_fig10_validation.py",    "Fig 11",         [], False),
+    ("scripts/run_figA1_eddy_factors.py",  "legacy eddy factors", [], False),
+    ("scripts/run_fig_hybrid_variants.py", "Fig A.1",        [], False),
+    ("scripts/run_ref_ablation.py",        "Fig B.3",        [], False),
+    ("scripts/run_open_denominator_refit.py", "Appendix A diagnostic",  [], False),
+    ("scripts/run_form_study.py",          "Table B.1",
      ["--out", os.path.join(RESULTS, "form_study.json")],        True),
 ]
 
@@ -103,16 +103,18 @@ def cmd_figs(quick):
         code = run_script(rel, extra)
         if code != 0:
             failed.append((rel, code))
-    print("\nFig 11 is MATLAB-drawn: run scripts/plotFig15Effmaps.m "
+    print("\nLegacy efficiency comparison: scripts/plotFig15Effmaps.m; submitted Fig 12 is not packaged. "
           "(see README).")
     return summarize("figs", failed)
 
 
-def cmd_checks():
+def cmd_checks(recompute=False):
+    print("[mode] raw recomputation requested" if recompute else
+          "[mode] cached-result recheck; no new FEA or raw reduction")
     failed = []
     for rel, label in CHECKS:
         print("\n=== %s  (%s) ===" % (label, rel))
-        code = run_script(rel, [])
+        code = run_script(rel, ["--recompute"] if recompute else [])
         if code != 0:
             failed.append((rel, code))
     return summarize("checks", failed)
@@ -155,8 +157,9 @@ def cmd_audit():
                             DEFAULT_CONFIG["json"][scale])
         recs, err = AcLossJsonReader.read(path, scale)
         assert err is None, err
-        m = AcLossPipeline().build_model(scale)
-        pool = RB.match_records_and_create_dataset(recs, 50.0, 0.3, 3.0)
+        pipeline = AcLossPipeline()
+        m = pipeline.build_model(scale)
+        pool = pipeline.load_dataset(scale)
         ds = RB.match_records_and_create_dataset(recs, 50.0, 0.0, big)
         af = m.predict(ds.speeds_k * 1000.0, ds.irms_arr, ds.phase_arr)
         e = (ds.h_ac_arr * af - ds.f_ac_arr) / (ds.f_ac_arr + 1e-12) * 100
@@ -200,7 +203,8 @@ def main(argv=None):
     p_figs = sub.add_parser("figs", help="rebuild the Python-drawn figures")
     p_figs.add_argument("--quick", action="store_true",
                         help="skip the slow multi-seed sweeps")
-    sub.add_parser("checks", help="run the five verification checks")
+    p_checks = sub.add_parser("checks", help="recheck six cached verification results")
+    p_checks.add_argument("--recompute", action="store_true", help="recompute from source data; missing inputs fail")
     sub.add_parser("audit", help="recompute the headline wMAE table")
     p_all = sub.add_parser("all", help="figs + checks + audit")
     p_all.add_argument("--quick", action="store_true")
@@ -209,7 +213,7 @@ def main(argv=None):
     if a.cmd == "figs":
         return cmd_figs(a.quick)
     if a.cmd == "checks":
-        return cmd_checks()
+        return cmd_checks(a.recompute)
     if a.cmd == "audit":
         return cmd_audit()
     code = cmd_figs(a.quick)

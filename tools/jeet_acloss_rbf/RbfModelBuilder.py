@@ -15,6 +15,8 @@ class RbfModelBuilder:
     #:   'numerator' -- 식 (8) 그대로: 분자 P_TS 만 도너의 상사점에서 가져오고
     #:                  분모는 변형체 자신의 하이브리드. 상사점에서 손실은
     #:                  k_a 배이므로 k_r 인수는 붙지 않는다.
+    #:   'predicted_loss' -- opt-in review candidate; use donor AF * donor
+    #:                       hybrid at every probe, never donor f_ac_arr.
     #: Motor-CAD 분모는 2.5 % 비상사하고 분자는 1 % 안에서 상사하므로,
     #: 비를 옮기면 그 차이가 전달 대역 AF 에 +3.4 % 편향으로 실린다.
     TRANSFER_RULE = 'numerator'
@@ -506,14 +508,17 @@ class RbfModelBuilder:
         LS_I, LS_P = dataset.LS_I, dataset.LS_P
 
         rule = rule or RbfModelBuilder.TRANSFER_RULE
-        if rule == 'numerator' and donor_dataset is None:
-            raise ValueError("rule 'numerator' needs the donor dataset to "
-                             "look up P_TS at the similarity point")
+        if rule not in ('ratio', 'numerator', 'predicted_loss'):
+            raise ValueError("unknown transfer rule: %s" % rule)
+        if rule in ('numerator', 'predicted_loss') and donor_dataset is None:
+            raise ValueError("loss transfer needs donor hybrid data at the similarity point")
 
         def donor_p_ts(spd_k, I_val, th_val):
             """P_TS of the donor at the similarity-corresponding point.
 
-            On a grid node the stored Full-FEA value is used directly.
+            In legacy 'numerator' mode, a grid node uses stored Full-FEA.
+            In 'predicted_loss' mode, every point uses the frozen donor
+            predictor times interpolated donor hybrid loss; no truth read.
             Off the grid -- HalfSC's 2 kRPM maps onto Ref 4.5 kRPM, which
             Ref never ran -- it is the donor's AF model times the donor's
             hybrid, the hybrid being interpolated in speed. That
@@ -526,13 +531,15 @@ class RbfModelBuilder:
             at_I = ((np.abs(donor_dataset.irms_arr - I_d) < ti)
                     & (np.abs(donor_dataset.phase_arr - th_val) < tp))
             hit = at_I & (np.abs(donor_dataset.speeds_k - s_d) < ts)
-            if hit.any():
+            if hit.any() and rule == 'numerator':
                 return float(donor_dataset.f_ac_arr[np.flatnonzero(hit)[0]])
             if at_I.sum() < 2:
                 return None
             sp = donor_dataset.speeds_k[at_I]
             hy = donor_dataset.h_ac_arr[at_I]
             o = np.argsort(sp)
+            if not (sp[o][0] <= s_d <= sp[o][-1]):
+                raise ValueError("donor hybrid interpolation would extrapolate")
             h_d = float(np.exp(np.interp(np.log(s_d), np.log(sp[o]),
                                          np.log(hy[o]))))
             af_d = float(donor_model.predict(s_d * 1000.0, I_d, th_val))
@@ -595,7 +602,7 @@ class RbfModelBuilder:
                 if not transferable:
                     _trt.append(int(idx))
                 I_val, th_val = irms_arr[idx], phase_arr[idx]
-                if transferable and rule == 'numerator':
+                if transferable and rule in ('numerator', 'predicted_loss'):
                     # 식 (8) 그대로: 분자만 도너의 상사점에서, 분모는 자기 것.
                     p_ts = donor_p_ts(spd, I_val, th_val)
                     if p_ts is None or dataset.h_ac_arr[idx] <= 0:

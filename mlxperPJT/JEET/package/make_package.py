@@ -414,7 +414,10 @@ def main(argv=None):
             blocking = {"NOSRC", "LEAK", "NB-OUTPUTS", "ZENODO-MISMATCH"}
             if set(st) & blocking:
                 continue
-            if st:                                # MISSING / STALE only
+            needs_lf = (not st and is_text(src_abs)
+                        and read_bytes(os.path.join(dest, dest_rel))
+                        != lf_fold(read_bytes(src_abs)))
+            if st or needs_lf:
                 write_one(src_abs, os.path.join(dest, dest_rel))
                 written += 1
                 rows[i] = ([], dest_rel, notes, src_abs, flags)

@@ -72,7 +72,7 @@ def region_mask(dataset, band: Dict[float, tuple],
                 margin_deg: float = 12.0) -> np.ndarray:
     """표본이 해당 속도의 운전 beta 범위(+-margin) 안인지."""
     if not band:
-        return np.ones(len(dataset.af_arr), bool)
+        return np.zeros(len(dataset.af_arr), bool)
     keys = np.array(sorted(band))
     spd_rpm = np.asarray(dataset.speeds_k, float) * 1000.0
     out = np.zeros(spd_rpm.size, bool)
@@ -195,6 +195,8 @@ def run_form_study(pipeline,
         "meta": {
             "n_seeds": n_seeds, "budget": budget, "ns_own": ns_own,
             "margin_deg": margin_deg, "base_speed_kRPM": base_speed,
+            "operating_band_status": "available" if band else "unavailable",
+            "operating_band_reason": None if band else "missing or invalid efficiency-map input",
             "operating_band_deg": {str(k): list(v)
                                    for k, v in sorted(band.items())},
             "forms": forms, "placements": list(_PLACEMENTS),
@@ -222,11 +224,11 @@ def run_form_study(pipeline,
         fw, fm = _err(ds, np.ones(n))
         rw, rm = _err(ds, np.ones(n), mask)
         entry = {
-            "n_points": n, "n_region": int(mask.sum()),
+            "n_points": n, "n_region": int(mask.sum()) if band else None,
             "base_pool": pool, "n_other_speeds": n_other,
             "budget": B, "ns_own": ns, "n_base": n_base,
             "uncorrected": {"full_wmae": fw, "full_mae": fm,
-                            "region_wmae": rw, "region_mae": rm},
+                            "region_wmae": rw if band else None, "region_mae": rm if band else None},
             "placement": {},
         }
 
@@ -278,7 +280,7 @@ def run_form_study(pipeline,
                    "n_runs": len(list(seeds)),
                    "log_kappa_span": spans, "forms": {}}
             for f, d in acc.items():
-                blk["forms"][f] = ({k: float(np.nanmean(v))
+                blk["forms"][f] = ({k: (float(np.nanmean(v)) if np.any(np.isfinite(v)) else None)
                                     for k, v in d.items()}
                                    if d["full_wmae"] else None)
             entry["placement"][placement] = blk
@@ -288,5 +290,5 @@ def run_form_study(pipeline,
     if out_json:
         os.makedirs(os.path.dirname(os.path.abspath(out_json)), exist_ok=True)
         with open(out_json, "w", encoding="utf-8") as fh:
-            json.dump(result, fh, ensure_ascii=False, indent=1)
+            json.dump(result, fh, ensure_ascii=False, indent=1, allow_nan=False)
     return result
