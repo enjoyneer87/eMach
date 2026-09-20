@@ -12,6 +12,35 @@ from jeet_acloss_rbf.cost_accuracy import sweep_cost_accuracy
 
 
 class TransferBudget(unittest.TestCase):
+    def test_fixed_coordinates_match_default_and_reject_invalid_plan(self):
+        with contextlib.redirect_stdout(io.StringIO()):
+            p = AcLossPipeline()
+            donor, ref, ds = p.build_donor(), p.load_dataset('Ref'), p.load_dataset('SC')
+            expected = p.build_model('SC')
+            expected_train = RB.last_train_idx.copy()
+            probes = RB.plan_sampling_indices(ds, 24, 6, base_speed=16., placement='structured')
+            own = RB.plan_sampling_indices(ds, 24, 3, base_speed=16., placement='structured')
+        plan = {'base': probes['base'], 'by_speed': dict(probes['by_speed'])}
+        plan['by_speed'][8.] = own['by_speed'][8.]
+        def fit(ip):
+            return RB.build_separable_rbf_transfer(
+                ds, donor, 2., 24, 3, base_speed=16., n_probe_transfer=6,
+                exponent=True, placement='structured', donor_dataset=ref, index_plan=ip)
+        actual = fit(plan)
+        np.testing.assert_array_equal(RB.last_train_idx, expected_train)
+        args = (ds.speeds_k*1000, ds.irms_arr, ds.phase_arr)
+        np.testing.assert_allclose(actual.predict(*args), expected.predict(*args), rtol=1e-13)
+        for kind in ('missing_speed', 'duplicate_index', 'wrong_speed'):
+            bad = copy.deepcopy(plan)
+            if kind == 'missing_speed':
+                del bad['by_speed'][2.]
+            elif kind == 'duplicate_index':
+                bad['by_speed'][8.][1] = bad['by_speed'][8.][0]
+            else:
+                bad['by_speed'][8.][0] = bad['base'][0]
+            with self.subTest(kind=kind), self.assertRaises(ValueError):
+                fit(bad)
+
     def test_default_transfer_accepts_hybrid_only_donor(self):
         with contextlib.redirect_stdout(io.StringIO()):
             p=AcLossPipeline()

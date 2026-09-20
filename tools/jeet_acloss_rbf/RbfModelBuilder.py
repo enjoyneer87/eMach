@@ -501,6 +501,7 @@ class RbfModelBuilder:
         donor_dataset: 'AcLossDataset' = None,
         k_a: float = 1.0,
         rule: str = None,
+        index_plan: Optional[dict] = None,
     ) -> SeparableRbfModel:
         """
         Builds a Separable RBF using predicted-loss similarity transfer.
@@ -518,6 +519,11 @@ class RbfModelBuilder:
         exponent=True fits AF = f(s) * g(I, beta)**p(s) per speed via
         log-space regression (needs n_spd >= 3 own points in the high band
         for a stable fit; transferred probes are free, use >= 6).
+
+        index_plan optionally freezes both own Full-FEA coordinates and donor
+        probe coordinates for matched evaluator comparisons. It contains
+        'base' and 'by_speed' indices in this dataset's unchanged ordering.
+        Omitting it retains the standard two-stage placement rule.
         """
         speeds_k = dataset.speeds_k
         irms_arr = dataset.irms_arr
@@ -561,7 +567,22 @@ class RbfModelBuilder:
         _trt = []
         # 2D kernel at the scaled model's own base speed
         base_idx = np.where(np.abs(speeds_k - base_speed) < 0.1)[0]
-        if placement == "structured":
+        def checked_indices(indices, allowed, count, label):
+            arr = np.asarray(indices)
+            if (arr.ndim != 1 or not np.issubdtype(arr.dtype, np.integer)
+                    or len(arr) != min(count, len(allowed))
+                    or len(np.unique(arr)) != len(arr)
+                    or not np.all(np.isin(arr, allowed))):
+                raise ValueError(f'invalid fixed index plan for {label}')
+            return arr.astype(int, copy=False)
+
+        if index_plan is not None:
+            expected_speeds = {float(s) for s in np.unique(speeds_k)
+                               if abs(s-base_speed) >= 0.1}
+            if set(index_plan['by_speed']) != expected_speeds:
+                raise ValueError('fixed index plan must cover every non-anchor speed')
+            bsel = checked_indices(index_plan['base'], base_idx, n_base, 'base')
+        elif placement == "structured":
             bsel = RbfModelBuilder._maximin_indices(
                 base_idx, irms_arr[base_idx] / LS_I,
                 phase_arr[base_idx] / LS_P, n_base)
@@ -592,7 +613,9 @@ class RbfModelBuilder:
             transferable = (spd * k_r**2) <= max_donor_speed + 0.1
             # transferred probes cost no TS-FEA -> use a richer probe set
             n_pick = n_probe_transfer if transferable else n_spd
-            if placement == "structured":
+            if index_plan is not None:
+                pick = checked_indices(index_plan['by_speed'][spd], grp, n_pick, spd)
+            elif placement == "structured":
                 g = np.asarray(g_local(irms_arr[grp], phase_arr[grp]),
                                float).ravel()
                 ok = grp[g > 0]

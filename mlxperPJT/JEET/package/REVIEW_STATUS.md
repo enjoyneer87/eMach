@@ -44,12 +44,13 @@ confirm that hiding all 60 unselected Ref truth values leaves the SC pipeline
 prediction unchanged, and a hybrid-only donor object is sufficient for transfer.
 The raw datasets are retained. A separate submission-based author-review manuscript now records the Ref-only calculation.
 
-Global denominator-scale invariance is **open**: scaling both hybrid baselines by
-2.7 changes the fitted SC prediction by up to about 1.86% in this diagnostic.
-The author test records this as an expected failure, not a passed requirement.
-The independent polynomial speed fits are not closed under the corresponding
-transformation of the level function; transferring a consistent quantity alone
-does not establish invariance of the fitted model family.
+The author clarified that M4-2 concerns empirical robustness after refitting
+AF to the same Full-FEA samples, not exact invariance of every prediction.
+The historical pre-anchor 2.7x denominator diagnostic changed predictions by
+about 1.86%; it is retained as history, not an unresolved requirement to force
+exact invariance. The new Ref-only exact-anchor comparison gives a maximum
+pointwise change of 0.56% for that numerical rescaling diagnostic. This does
+not establish robustness to arbitrary physical evaluators.
 
 ## Efficiency result
 
@@ -109,3 +110,24 @@ The Windows test suite now has 10 passing contracts, including an independent
 KKT optimum, sparse-speed fits, native/exported anchors, donor truth masking,
 and consistency between the default/ablation/cost paths. Linux/macOS execution
 of this exact-anchor revision is not claimed. No public release was pushed.
+
+## Evaluator-robustness comparison, 2026-09-20
+
+An optional validated `index_plan` now freezes both target Full-FEA coordinates
+and donor-probe coordinates in transfer fits. Default placement and adopted
+results are unchanged. Invalid/duplicate/wrong-speed plans are rejected.
+The Windows suite now has 11 passing tests.
+
+The author Ref-only comparison holds the field spectra, truth, coordinates,
+RBF regularization and exact anchor fixed. SC all-grid / own-held-out wMAE is
+1.1559/3.4495% (capped /24), 1.1156/3.2727% (G2), and 0.6663/1.9227%
+(G2 with modified skin depth). The uncapped /24 evaluator gives
+7.0771/22.1647%. These are retrospective comparisons, not new independent FEA.
+All planned regression samples were admitted; truth masking leaves all outputs
+unchanged. The physical kernels were not tuned to these results.
+
+The main capped evaluator has not been changed. The author is being interviewed
+on retaining the alternatives as appendix robustness evidence versus considering
+a new primary evaluator. The full Ref-only input/runner release remains an M8
+item. `run_evaluator_robustness.py` and its kernel checks are in the author tree;
+the portable transfer API and its regression check are mirrored here.
