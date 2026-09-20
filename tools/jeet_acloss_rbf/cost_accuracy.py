@@ -133,7 +133,8 @@ def sweep_cost_accuracy(pipeline,
                                                 placement=placement,
                                                 donor_dataset=pipeline.
                                                 load_dataset(pipeline.cfg[
-                                                    "donor_scale"]))
+                                                    "donor_scale"]),
+                                                rule=pipeline.cfg.get("transfer_rule"))
                                 ws.append(_wmae(ds, m))
                             except Exception:
                                 continue

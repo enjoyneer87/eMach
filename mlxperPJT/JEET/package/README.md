@@ -97,16 +97,20 @@ python repro.py audit
 
 recomputes, per machine, the sample-candidate pool, the evaluated load
 points (96 per machine), and the loss-weighted full-map error before and
-after calibration including calibration points. These are the legacy public implementation results, not an independent unseen-point accuracy claim:
+after calibration including calibration points. These use the adopted predicted-loss transfer. They are not an independent unseen-point accuracy claim:
 
 | machine | uncorrected wMAE | calibrated wMAE | own Full-FEA samples |
 |---|---|---|---|
 | Ref (donor) | 45.5% | 0.63% | 36 |
-| HalfSC | 33.3% | 0.83% | 27 |
-| SC | 26.9% | 0.84% | 27 |
+| HalfSC | 33.3% | 0.84% | 27 |
+| SC | 26.9% | 0.76% | 27 |
 
-The variants inherit their low-speed calibration from Ref through the
-similarity mapping, which is what cuts the two-model computation time by
+The variants inherit low-speed predicted loss from the fitted Ref model.
+At mapped coordinates, donor AF prediction is multiplied by donor hybrid loss
+and divided by the target hybrid loss. The 36-point donor fit is the only
+source of donor Full-FEA information; transfer never looks up withheld donor
+truth. The complete 96-point loaded datasets remain available for evaluation.
+This similarity mapping is the transfer used in the computation-budget study, which is what cuts the two-model computation time by
 about 70% against exhaustive Full-FEA. Point `JEET_TEX` at the manuscript
 source and the audit also greps the printed text for these strings.
 

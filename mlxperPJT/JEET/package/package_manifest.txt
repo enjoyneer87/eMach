@@ -125,3 +125,5 @@
 @JEET/audit_efficiency_array.py -> scripts/audit_efficiency_array.py
 @PKG/test_review_contracts.py -> tests/test_review_contracts.py
 @PKG/repro-checks.yml -> .github/workflows/repro-checks.yml
+
+@PKG/test_transfer_budget.py -> tests/test_transfer_budget.py

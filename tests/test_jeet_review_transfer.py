@@ -1,4 +1,4 @@
-"""Scientific regression checks for the opt-in predicted-loss transfer."""
+"""Scientific regression checks for the adopted predicted-loss transfer."""
 import contextlib
 import copy
 import importlib.util
@@ -64,8 +64,10 @@ class TransferContracts(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.build(rule='misspelled')
 
-    def test_numerator_default_stays_unchanged(self):
-        self.assertEqual(RB.TRANSFER_RULE,'numerator')
+    def test_direct_truth_rule_is_removed(self):
+        self.assertEqual(RB.TRANSFER_RULE,'predicted_loss')
+        with self.assertRaisesRegex(ValueError,'direct donor truth lookup was removed'):
+            self.build(rule='numerator')
 
     def test_generator_normalizes_already_equal_text_before_hashing(self):
         path=ROOT/'mlxperPJT/JEET/package/make_package.py'

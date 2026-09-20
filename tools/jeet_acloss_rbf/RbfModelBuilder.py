@@ -10,18 +10,12 @@ class RbfModelBuilder:
     #: held-out 판정이 이걸 읽는다 (결정론 배치는 RNG 기록이 없다).
     last_train_idx = None
 
-    #: 상사 전달이 무엇을 옮기는가.
-    #:   'ratio'     -- 도너의 AF 비를 그대로 (분자·분모 모두 Ref).
-    #:   'numerator' -- 식 (8) 그대로: 분자 P_TS 만 도너의 상사점에서 가져오고
-    #:                  분모는 변형체 자신의 하이브리드. 상사점에서 손실은
-    #:                  k_a 배이므로 k_r 인수는 붙지 않는다.
-    #:   'predicted_loss' -- opt-in review candidate; use donor AF * donor
-    #:                       hybrid at every probe, never donor f_ac_arr.
-    #: Motor-CAD 분모는 2.5 % 비상사하고 분자는 1 % 안에서 상사하므로,
-    #: 비를 옮기면 그 차이가 전달 대역 AF 에 +3.4 % 편향으로 실린다.
-    TRANSFER_RULE = 'numerator'
-    #: 'numerator' 에서 도너 P_TS 를 찾을 때 허용하는 격자 어긋남.
-    TRANSFER_GRID_TOL = (0.5, 0.2, 0.1)     # kRPM, A, deg
+    #: Adopted 2026-09-20: transfer the fitted donor's predicted loss.
+    #: Donor truth outside its training budget is never read at transfer.
+    #: 'ratio' remains an explicit historical direct-AF comparison only.
+    TRANSFER_RULE = 'predicted_loss'
+    #: Match rounded donor current / phase coordinates (A RMS, degrees).
+    TRANSFER_COORD_TOL = (0.2, 0.1)
 
     @staticmethod
     def match_records_and_create_dataset(
@@ -488,8 +482,11 @@ class RbfModelBuilder:
         rule: str = None,
     ) -> SeparableRbfModel:
         """
-        Builds a Separable RBF for a scaled variant using SCL-M similarity
-        transfer: AF_scaled(w, I, beta) = AF_ref(k_r^2 * w, I / k_r, beta).
+        Builds a Separable RBF using predicted-loss similarity transfer.
+        At mapped coordinates (k_r^2*w, I/k_r, beta), transfer k_a times
+        donor AF prediction times donor hybrid loss, then divide by target
+        hybrid loss. No donor Full-FEA lookup is allowed at this stage.
+        The current mapping uses the paper's k_w=1 convention.
 
         The 2D kernel and the calibration points in the *untransferable*
         high band (mapped speed k_r^2 * w > max_donor_speed) use the scaled
@@ -508,31 +505,24 @@ class RbfModelBuilder:
         LS_I, LS_P = dataset.LS_I, dataset.LS_P
 
         rule = rule or RbfModelBuilder.TRANSFER_RULE
-        if rule not in ('ratio', 'numerator', 'predicted_loss'):
+        if rule == 'numerator':
+            raise ValueError("direct donor truth lookup was removed; use predicted_loss")
+        if rule not in ('ratio', 'predicted_loss'):
             raise ValueError("unknown transfer rule: %s" % rule)
-        if rule in ('numerator', 'predicted_loss') and donor_dataset is None:
+        if rule == 'predicted_loss' and donor_dataset is None:
             raise ValueError("loss transfer needs donor hybrid data at the similarity point")
 
-        def donor_p_ts(spd_k, I_val, th_val):
-            """P_TS of the donor at the similarity-corresponding point.
+        def donor_predicted_loss(spd_k, I_val, th_val):
+            """Frozen donor AF times hybrid loss, including on grid nodes.
 
-            In legacy 'numerator' mode, a grid node uses stored Full-FEA.
-            In 'predicted_loss' mode, every point uses the frozen donor
-            predictor times interpolated donor hybrid loss; no truth read.
-            Off the grid -- HalfSC's 2 kRPM maps onto Ref 4.5 kRPM, which
-            Ref never ran -- it is the donor's AF model times the donor's
-            hybrid, the hybrid being interpolated in speed. That
-            interpolation is safe: the 1-D kernel is in its low-frequency
-            limit here and the donor hybrid follows speed squared to two
-            decimals on the deposited grid.
+            Hybrid loss is interpolated in log speed / log loss at matching
+            current and phase. This covers off-grid probes such as Ref
+            4.5 kRPM mapped from HalfSC 2 kRPM without reading donor truth.
             """
             s_d, I_d = spd_k * k_r ** 2, I_val / k_r
-            ts, ti, tp = RbfModelBuilder.TRANSFER_GRID_TOL
+            ti, tp = RbfModelBuilder.TRANSFER_COORD_TOL
             at_I = ((np.abs(donor_dataset.irms_arr - I_d) < ti)
                     & (np.abs(donor_dataset.phase_arr - th_val) < tp))
-            hit = at_I & (np.abs(donor_dataset.speeds_k - s_d) < ts)
-            if hit.any() and rule == 'numerator':
-                return float(donor_dataset.f_ac_arr[np.flatnonzero(hit)[0]])
             if at_I.sum() < 2:
                 return None
             sp = donor_dataset.speeds_k[at_I]
@@ -602,12 +592,11 @@ class RbfModelBuilder:
                 if not transferable:
                     _trt.append(int(idx))
                 I_val, th_val = irms_arr[idx], phase_arr[idx]
-                if transferable and rule in ('numerator', 'predicted_loss'):
-                    # 식 (8) 그대로: 분자만 도너의 상사점에서, 분모는 자기 것.
-                    p_ts = donor_p_ts(spd, I_val, th_val)
-                    if p_ts is None or dataset.h_ac_arr[idx] <= 0:
+                if transferable and rule == 'predicted_loss':
+                    p_donor = donor_predicted_loss(spd, I_val, th_val)
+                    if p_donor is None or dataset.h_ac_arr[idx] <= 0:
                         continue
-                    af_val = k_a * p_ts / float(dataset.h_ac_arr[idx])
+                    af_val = k_a * p_donor / float(dataset.h_ac_arr[idx])
                 elif transferable:
                     # AF from the donor model via similarity mapping
                     af_val = float(donor_model.predict(

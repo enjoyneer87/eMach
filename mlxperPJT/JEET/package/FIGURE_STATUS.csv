@@ -3,13 +3,13 @@ figure,script,input,status
 2,scripts/run_fig1_shared_scale.py,data/e10/fields/reduced,legacy_generator_available
 3,scripts/run_fig11_mvp_field.py,data/e10/fields,legacy_generator_available
 4,scripts/run_fig4_ts_hyb_ratio.py,data/e10,legacy_generator_available
-5,scripts/run_workflow_fig.py,script constants,transfer_definition_pending
+5,scripts/run_workflow_fig.py,script constants,legacy_diagram_equation_update_pending
 6,scripts/run_af_transfer_fig.py,data/e10,author_annotation_not_reproduced
 7,scripts/run_manuscript_figs78.py,data/e10,slow_sweep
 8,scripts/run_geometry_fig.py,data/e10,author_annotation_not_reproduced
 9,unavailable,author field-transfer inputs,not_packaged
 10,scripts/run_flux_torque_fig.py,data/e10/lab_scaling_comparison_e10.mat,legacy_generator_available
-11,scripts/run_fig10_validation.py,data/e10,legacy_transfer_differs_from_submission
+11,scripts/run_fig10_validation.py,data/e10,adopted_transfer_new_values_manuscript_pending
 12,unavailable,author shaft-map solver and inputs,metric_auditor_available_generator_not_packaged
 13,unavailable,data/e10/checks/compute_cost.json,check_available_figure_not_packaged
 A.1,scripts/run_fig_hybrid_variants.py,data/e10,author_annotations_not_reproduced
