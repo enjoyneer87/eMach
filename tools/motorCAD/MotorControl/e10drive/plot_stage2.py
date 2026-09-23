@@ -61,13 +61,12 @@ for td, col in ((0, "#b8753f"), (2, "#2f6f8f")):
     ax.plot(s.T_ref, s["T"], "-o", color=col, ms=4, label="realized T, td %d µs" % td)
 ax.plot([0, 100], [0, 100], color="0.6", lw=0.8)
 ax.set(xlabel="torque reference [N·m]", ylabel="realized torque [N·m]",
-       title="(c) Closed-loop ceiling and realized phase advance")
-ax2 = ax.twinx()
-for td, col in ((0, "#b8753f"), (2, "#2f6f8f")):
-    s = c[c.td_us == td].sort_values("T_ref")
-    ax2.plot(s.T_ref, s.gamma, "--", color=col, lw=1)
-ax2.axhline(80, color="#aa3333", lw=0.8, ls=":")
-ax2.set(ylabel="realized γ [deg] (dashed)", ylim=(78, 92))
+       title="(c) Closed-loop ceiling; labels = realized phase advance γ (td 0)")
+s0 = c[c.td_us == 0].sort_values("T_ref")
+for _, r in s0.iterrows():
+    if r.T_ref in (5, 20, 40, 60, 80, 100):
+        ax.annotate("%.1f°" % r.gamma, (r.T_ref, r["T"]), textcoords="offset points", xytext=(-4, 7),
+                    ha="right", fontsize=7)
 ax.legend(fontsize=7, loc="upper left")
 # (d) delay compensation on/off
 ax = axs[1, 1]

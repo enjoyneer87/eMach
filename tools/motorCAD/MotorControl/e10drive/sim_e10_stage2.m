@@ -12,7 +12,8 @@ function R = sim_e10_stage2(S, opt)
 %   레졸버 오프셋 th_err: 제어기 각도 = 기계 각도 + th_err.
 %   연산 지연 n_delay: k 번째 샘플로 계산한 αβ 전압이 k+n_delay 번째 반주기에 인가된다.
 %   지연 보상 delay_comp: 지령을 ωe(n_delay+0.5)Ts 만큼 미리 돌린다 (반주기 유지 평균각까지 포함).
-%   데드타임 보상 dt_comp: 상 지령에 sign(i_x)·Vdc·td/Ts 를 더한다 (샘플 전류 부호).
+%   데드타임 보상 dt_comp: 에지가 밀리는 반주기에서만 듀티를 td/Ts 보정한다 (샘플 전류 부호;
+%     주기 평균 sign(i_x)·Vdc·td/Tpwm).
 %
 %   opt 필드 (기본값): Tref_fn(@(t) 20*(t>=5e-3)), th_err(0 deg), n_delay(1), delay_comp(1),
 %     td(0 s), dt_comp(0), Tpwm(1e-4), h_max(2e-6), Tstop(0.06), Kp_d/Kp_q/Ki_d/Ki_q/Kaw (단계 1 과 같음),
@@ -96,11 +97,19 @@ for n = 1:N
     vab_app = vab_q(:, 1);                        % n_delay 샘플 전에 계산된 지령
     % ---------------- 변조 (SVPWM: min-max 영상분 주입)
     vabc = clarkeInv(vab_app);
-    if dtComp && td > 0
-        vabc = vabc + sign(i_abc)*Vdc*td/Ts;
-    end
     vzs = -(max(vabc) + min(vabc))/2;
     duty = 0.5 + (vabc + vzs)/Vdc;
+    if dtComp && td > 0
+        % 밀리는 에지는 반주기마다 한 번이 아니라 캐리어 주기마다 한 번이다:
+        % i > 0 이면 상승 반주기의 켜짐 에지, i < 0 이면 하강 반주기의 꺼짐 에지만 td 늦는다.
+        % 그 반주기에서만 듀티를 td/Ts 만큼 보정한다 (주기 평균 = sign(i)·Vdc·td/Tpwm).
+        % (09-23 초판은 매 반주기 sign(i)·Vdc·td/Ts 를 더해 2 배 과보상이었다.)
+        if mod(n-1, 2) == 0
+            duty = duty + (i_abc > 0)*td/Ts;
+        else
+            duty = duty - (i_abc < 0)*td/Ts;
+        end
+    end
     clip = any(duty < 0 | duty > 1);
     duty = min(max(duty, 0), 1);
     rising = mod(n-1, 2) == 0;                    % 짝수 반주기: 카운터 상승 -> (1-d)Ts 에 상단 ON

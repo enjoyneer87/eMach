@@ -9,10 +9,65 @@ import csv
 import json
 from pathlib import Path
 
+from report_links import COPY_JS, FILES_CSS, LINK_NOTE, files_box, item
+
 HERE = Path(__file__).resolve().parent
 DRV = Path(r"D:\KangDH\Thesis\e10\work_lab_pc1\drive")
 FMU = Path(r"D:\KangDH\Thesis\e10\work_lab_pc1\fmu")
+EX = Path(r"D:\KangDH\Thesis\e10\work_lab_pc1\existing")
+E10 = HERE / "e10drive"
 RES = DRV / "stage1_results.csv"
+DATA16 = DRV / "e10_stage1_data_16000_shaft.mat"
+RUN2 = ("addpath('%s'); S = load('%s'); r = sim_e10_stage2(S, struct('Tref_fn', @(t) 20*(t>=0.005), "
+        "'td', 3e-6, 'Tstop', 0.08)); plot(r.t*1e3, r.T)") % (E10, DATA16)
+
+BOX0 = files_box("이 결과의 파일 — 단계 0", [
+    item(EX / "gamma_wall_mc.csv", "몬테카를로 결과 (진각별 산포·반전·전압 초과)"),
+    item(EX / "gamma_wall_mc_200A.csv", "같은 시험, 200 A"),
+    item(EX / "gamma_wall_mc.png", "그림 1 원본", cmd=""),
+    item(EX / "gammagrid_ref_hyb_fine16000.json", "재샘플에 쓴 16 krpm (I, γ) 격자 (Motor-CAD)", cmd="")],
+    note="몬테카를로 스크립트는 당시 스크래치패드에 있어 남아 있지 않다(ipmfea로 옮길 예정).")
+BOX1 = files_box("이 결과의 파일 — 단계 1 (평균값 dq Simulink)", [
+    item(E10 / "build_e10_stage1.m", "Simulink 모델 생성 스크립트", cmd="addpath('%s'); S = load('%s'); build_e10_stage1(S)" % (E10, DATA16)),
+    item(E10 / "e10_stage1.slx", "생성된 모델 (저장소 미추적)"),
+    item(E10 / "sim_e10_stage1.m", "같은 모델의 스크립트판 (격자 실험용)"),
+    item(E10 / "run_e10_stage1.m", "오프셋 × 지연 격자, 지연 보상, 상한 스캔", cmd="addpath('%s'); run_e10_stage1(16000)" % E10),
+    item(RES, "결과 표"),
+    item(DATA16, "플랜트·기준표·이득 (16 krpm, 축 토크 기준)"),
+    item(DRV / "stage1_offset_delay.png", "그림 2 원본", cmd="")])
+BOX2 = files_box("이 결과의 파일 — 단계 2 (스위칭 모델)", [
+    item(E10 / "sim_e10_stage2.m", "스위칭 모델 본체 (사건 구동 SVPWM·데드타임·RK4)", cmd=RUN2),
+    item(E10 / "run_e10_stage2.m", "68 격자 + 파형 6 (part = [i n] 배치 분할)", cmd="addpath('%s'); run_e10_stage2([], 0, [1 1])" % E10),
+    item(E10 / "merge_e10_stage2.m", "배치 결과 합치기"),
+    item(DRV / "stage2_results.csv", "격자 결과 (표·그림 3의 원자료)"),
+    item(DRV / "stage2_traces.mat", "상전류 파형 (그림 4, THD)"),
+    item(E10 / "plot_stage2.py", "그림 3·4와 THD 계산")])
+BOX2B = files_box("이 결과의 파일 — 단계 2b (교정 전압 여유)", [
+    item(E10 / "mbc_ref_from_lab.m", "MBC calibratepmsm 교정표 (VsMax 100/95/90 %)", cmd="addpath('%s'); M = mbc_ref_from_lab([], [1 0.95 0.9]);" % E10),
+    item(DRV / "mbc_tables.mat", "교정표·TPA 결과 (MATLAB table 포함)"),
+    item(E10 / "mcb_ref_from_lab.m", "비교 기준 MCB 기준표 생성"),
+    item(DRV / "mcb_lut_shaft.mat", "MCB 기준표 (축 토크)"),
+    item(E10 / "run_e10_stage2b.m", "교정표 4종 × 토크 × 데드타임", cmd="addpath('%s'); t = run_e10_stage2b();" % E10),
+    item(DRV / "stage2b_results.csv", "결과 표 (그림 5 원자료)"),
+    item(E10 / "plot_stage2b.py", "그림 5")])
+BOX3 = files_box("이 결과의 파일 — 단계 3 (Motor-CAD Lab FMU)", [
+    item(Path(r"D:\KangDH\Thesis\e10\refModel\e10Turn6V261.mot"), "Motor-CAD 기준 모델 (Lab 빌드 포함)", cmd=""),
+    item(E10 / "export_lab_model.py", "새 Motor-CAD 창에서 .lab 내보내기"),
+    item(FMU / "e10Turn6V261.lab", "FMU 입력 Lab 모델", cmd=""),
+    item(Path(r"C:\Program Files\ANSYS Inc\v261\motorcad\FMU\Ansys_Motor-CAD_Lab_BPM.fmu"), "Lab BPM FMU (FMI 2.0)", cmd=""),
+    item(E10 / "lab_fmu.py", "FMU 래퍼 (모드 0/1/2) — 실행하면 16 krpm 20 N·m 예제"),
+    item(E10 / "lab_gamma_sweep.py", "진각 강제 스윕 (그림 6)"),
+    item(FMU / "lab_gamma_sweep.json", "스윕 결과", cmd=""),
+    item(E10 / "lab_stage3c.py", "스위칭 모델 도달점의 손실 (그림 7)"),
+    item(FMU / "lab_stage3c.json", "3(c) 결과", cmd=""),
+    item(E10 / "plot_lab_gamma_sweep.py", "그림 6"),
+    item(E10 / "plot_stage3c.py", "그림 7")])
+BOX2C = files_box("이 결과의 파일 — 단계 2c (Simscape)", [
+    item(DRV / "stage2c" / "e10_stage2c.slx", "Simscape 모델 — 열어서 블록 구성 확인"),
+    item(E10 / "build_e10_stage2c.m", "하니스를 복사·개조해 모델 생성"),
+    item(E10 / "run_e10_stage2c.m", "4 경우 실행·비교 (경우당 11–22 s)", cmd="addpath('%s'); R = run_e10_stage2c();" % E10),
+    item(DRV / "stage2c_results.csv", "비교 결과"),
+    item(Path(r"D:\KangDH\Thesis\e10\work_lab_pc1\mw_examples\ex1\HEVPMSMDriveTestHarness.slx"), "원본 MathWorks 예제")])
 
 
 def img(name, cap):
@@ -103,8 +158,8 @@ for tb, lab in (("MCB", "MCB (여유 ≈ 0)"), ("MBC 100", "MBC VsMax 100 %"), (
                 ("MBC 90", "MBC VsMax 90 %")):
     tds = ""
     for T in (5, 20, 60):
-        for td in (0, 3):
-            e = float(s2bget(tb, T, td, 0)["err_pct"])
+        for td, dc in ((0, 0), (3, 0), (3, 1)):
+            e = float(s2bget(tb, T, td, dc)["err_pct"])
             tds += '<td class="%s">%+.0f %%</td>' % (cls(e), e)
     r20 = s2bget(tb, 20, 0, 0)
     p = j3c["s2bref|%s|T20" % tb]
@@ -165,12 +220,13 @@ td.ok{color:var(--ok)}td.warn{color:var(--warn)}td.bad{color:var(--bad);font-wei
 .eq{font-family:ui-monospace,Consolas,monospace;background:var(--hl);padding:8px 10px;border-radius:6px;overflow-x:auto;font-size:13.5px}
 figure{margin:12px 0}img{max-width:100%;height:auto;border:1px solid var(--line);border-radius:6px;background:#fff}
 figcaption{font-size:13px;color:var(--mut)}code{font-size:13px;word-break:break-all}
-"""
+""" + FILES_CSS
 
 doc = f"""<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>고속 저토크 진각 벽</title><style>{CSS}</style></head><body><main>
 <h1>고속 저토크에서 진각 80° 벽 — 현상, 이론, 재현, 결과</h1>
 <p class="mut">대상: e10 구동모터 기준기(Motor-CAD Lab 포화맵), 16 krpm, 직류 720 V · 초판 2026-09-23, 같은 날 단계 2·2b·2c·3 추가 · PC1 · 근거: 2026-09-17~18 세션 b5dcb1f7(단계 0·1), 2026-09-23 세션(단계 2·3)</p>
+<p>모델이 어떻게 만들어졌는지(플랜트·제어기·PWM·데드타임·교정표·Simscape·FMU의 이론과 구현)는 <a href="drive_model_study.html"><b>구동 시뮬레이션 모델 해설</b></a>에 따로 정리했다. 결과마다 아래 <b>파일 상자</b>에서 모델·스크립트·데이터를 바로 열 수 있다. <span class="mut">{LINK_NOTE}</span></p>
 <div class="kpi">
 <div>16 krpm 역기전력<b>1042 V rms</b><span class="mut">상전압 한계 285.1 V rms의 3.7배</span></div>
 <div>16 krpm에서 전압이 허락하는 진각<b>≥ 85–88°</b><span class="mut">토크가 낮을수록 더 높다 (Lab FMU)</span></div>
@@ -179,7 +235,7 @@ doc = f"""<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name=
 </div>
 <nav><a href="#p">1 현상</a><a href="#t">2 발생 이론</a><a href="#m">3 재현 방법</a><a href="#r">4 결과 분석</a><a href="#c">5 결론</a><a href="#f">6 모델·코드 경로</a></nav>
 
-<div class="card"><b>초판 정정 (같은 날).</b> ① 초판은 16 krpm 상전압(rms)을 첨두값 한계 720/√3 = 415.7 V와 비교했다. 맞는 비교 대상은 rms 한계다 — 선형 SVPWM 상한 720/√6 = 293.9 V rms, Lab이 쓰는 값 285.1 V rms(첨두 403.2 V). 단계 1·2 모델은 처음부터 403.2 V 첨두를 썼으므로 계산 결과는 바뀌지 않고 1절 해석만 바뀐다: 16 krpm에서 필요한 진각은 “83–85° 이상”이 아니라 <b>저토크 88–89°, 60 N·m 86–87°, 최대 토크 약 85°</b>다. ② 단계 1의 “지연 2샘플이면 루프 붕괴”는 전압 지연을 회전 좌표계에서 준 모델의 인공물이었다. 정지 좌표계에서 전압을 유지하는 단계 2에서는 보상된 지연 0–2샘플의 차이가 1 % 이하다(4.3절).</div>
+<div class="card"><b>초판 정정 (같은 날).</b> ① 초판은 16 krpm 상전압(rms)을 첨두값 한계 720/√3 = 415.7 V와 비교했다. 맞는 비교 대상은 rms 한계다 — 선형 SVPWM 상한 720/√6 = 293.9 V rms, Lab이 쓰는 값 285.1 V rms(첨두 403.2 V). 단계 1·2 모델은 처음부터 403.2 V 첨두를 썼으므로 계산 결과는 바뀌지 않고 1절 해석만 바뀐다: 16 krpm에서 필요한 진각은 “83–85° 이상”이 아니라 <b>저토크 88–89°, 60 N·m 86–87°, 최대 토크 약 85°</b>다. ② 단계 1의 “지연 2샘플이면 루프 붕괴”는 전압 지연을 회전 좌표계에서 준 모델의 인공물이었다. 정지 좌표계에서 전압을 유지하는 단계 2에서는 보상된 지연 0–2샘플의 차이가 1 % 이하다(4.3절). ③ 초판의 데드타임 보상식은 매 반주기 sign(i)·V<sub>dc</sub>t<sub>d</sub>/T<sub>s</sub>를 더했는데, 실제로 밀리는 에지는 캐리어 주기마다 한 번이라 <b>손실의 2배를 보상</b>했다. 에지가 밀리는 반주기에서만 보정하도록 고치자 여유 없는 표에서 보상 효과가 작아졌다(20 N·m, 3 µs: −5 % → −16 %). 결론 3(전압 여유가 핵심)은 오히려 강해진다. 같은 이유로 2.2절 데드타임 전압 크기를 43 V에서 21.6 V(평균)로 고쳤다. ④ 2.1절의 “특성전류점 i<sub>d</sub> ≈ −196 A”는 틀렸다. −191 A는 i<sub>q</sub> = 0에서 16 krpm 전압 타원의 오른쪽 끝이고, 특성전류점(λ<sub>d</sub> = 0)은 −273 A다.</div>
 
 <h2 id="p">1. 현상</h2>
 <p>현장에서는 “고속 저토크에서는 진각(전류 위상각, q축 기준)을 80° 이상 넣기 어렵다”고 한다. 반면 손실 최소화로 푼 e10의 16 krpm 설정점은
@@ -197,14 +253,14 @@ doc = f"""<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name=
 <div class="eq">v<sub>d</sub> = R i<sub>d</sub> − ω<sub>e</sub> λ<sub>q</sub>(i<sub>d</sub>,i<sub>q</sub>), &nbsp; v<sub>q</sub> = R i<sub>q</sub> + ω<sub>e</sub> λ<sub>d</sub>(i<sub>d</sub>,i<sub>q</sub>), &nbsp; |v| ≤ 403.2 V 첨두 (285.1 V rms)
 <br>i<sub>d</sub> = −I sin γ, i<sub>q</sub> = I cos γ &nbsp; (γ = 90°에서 순수 −d축 전류)</div>
 <p>고속에서는 ω<sub>e</sub>λ<sub>m</sub>이 전압 한계를 크게 넘으므로, λ<sub>d</sub> = λ<sub>m</sub> + L<sub>d</sub>i<sub>d</sub>를 −d축 전류로 깎아야 한다.
-토크가 작을수록 i<sub>q</sub>가 작아 전류 벡터는 −d축(γ → 90°)에 붙고, 운전점은 전압 한계 타원의 중심(특성전류점, 여기서는 i<sub>d</sub> ≈ −196 A pk) 근처가 된다.
+토크가 작을수록 i<sub>q</sub>가 작아 전류 벡터는 −d축(γ → 90°)에 붙고, 운전점은 16 krpm 전압 한계 타원의 오른쪽 끝(i<sub>q</sub> = 0에서 i<sub>d</sub> ≈ −191 A pk, 전류가 가장 작은 쪽) 근처가 된다. 타원 중심인 특성전류점(λ<sub>d</sub> = 0)은 i<sub>d</sub> ≈ −273 A pk다(<a href="drive_model_study.html#region">해설 4절</a>).
 이 영역에서 손실의 대부분은 토크와 무관한 약자속 전류(약 135 A rms)가 만든다 — 1 N·m에도 10 kW.</p>
 <h3>2.2 왜 제어기는 그 각을 유지하기 어려운가</h3>
 <div class="scroll"><table><tr><th>원인</th><th>기구</th><th>e10 16 krpm 크기</th></tr>
 <tr><td>① 각도 민감도</td><td>저토크에서 T ≈ k·I cos γ의 기울기가 크다. 각도 오차가 곧 토크 오차가 되고, 90°를 넘으면 부호가 뒤집혀 제동한다.</td><td>dT/dγ = −10.4 N·m/° (138 A), −20.4 N·m/° (230 A) → 1 N·m 운전점에서 0.1° 오차가 토크 100 %</td></tr>
 <tr><td>② 연산 지연</td><td>전류 샘플–PWM 갱신 사이 지연 동안 회전자가 돈다. 보상하지 않으면 전압 벡터가 그만큼 앞서거나 뒤진다.</td><td>전기 1066.7 Hz. 단일 갱신(100 µs) 1.5주기 = 전기각 58°; 양 끝 갱신(50 µs) 1샘플 + 유지 반샘플 = 29°</td></tr>
 <tr><td>③ 전압 포화</td><td>약자속 심부에서 전류 PI 출력이 한계에 붙는다(와인드업). 실제 전류 벡터는 지령이 아니라 전압 제약이 정하고, 포화된 PI는 인버터 오차(데드타임)를 보정하지 못한다.</td><td>여유 0 기준표에서 데드타임 2 µs면 포화율 100 % (4.3절)</td></tr>
-<tr><td>④ 데드타임</td><td>스위칭 순간이 전류 부호에 따라 t<sub>d</sub>만큼 밀려 상전압이 sign(i)·V<sub>dc</sub>t<sub>d</sub>/T<sub>s</sub>만큼 줄어든다. 깊은 약자속에서는 변조율이 한계에 붙어 있어 이 몫을 채울 전압이 없다.</td><td>t<sub>d</sub> = 3 µs, T<sub>s</sub> = 50 µs → 43 V (한계 403 V 첨두의 11 %)</td></tr>
+<tr><td>④ 데드타임</td><td>전류 부호에 따라 한 에지가 캐리어 주기마다 한 번 t<sub>d</sub>만큼 밀려(i &gt; 0이면 켜짐, i &lt; 0이면 꺼짐) 상전압 평균이 −sign(i)·V<sub>dc</sub>t<sub>d</sub>/T<sub>pwm</sub>만큼 바뀐다. 이 사각파 오차의 기본파는 전류 벡터 반대 방향이다. 깊은 약자속에서는 변조율이 한계에 붙어 있어 이 몫을 채울 전압이 없다.</td><td>t<sub>d</sub> = 3 µs, 10 kHz → 상 평균 21.6 V, 기본파 약 27.5 V (한계 403 V 첨두의 약 7 %). 20 N·m에서 진각이 0.7° 밀려 토크 −43 %</td></tr>
 <tr><td>⑤ 파라미터 불확실성</td><td>레졸버 오프셋, 자석 온도에 따른 λ<sub>m</sub> 드리프트, 맵 오차. MTPV 경계에서 여유를 두고 리미터를 건다.</td><td>레졸버 오프셋 보정 오차 통상 1–2°</td></tr>
 <tr><td>⑥ 열·효율</td><td>뜨거운 자석에 순수 −d축 전류를 계속 흘린다. 인버터 도통·스위칭 손실만 쌓인다.</td><td>1 N·m에 138 A: 직류 4.3 + 교류 2.8 + 철손 2.7 ≈ 10 kW, 역률 ≈ 0</td></tr></table></div>
 <p><b>정리:</b> 아래쪽 벽은 전압(γ가 작으면 한계 초과), 위쪽 벽은 토크 정밀도(γ가 90°에 가까우면 오차가 제동으로 넘어감)다. 그 사이 폭은 각도 오차 예산과 교정표의 전압 여유가 정한다. “80°”라는 숫자는 기계 상수가 아니라 특정 인버터·센서·제어 구조에서의 경험값이다.</p>
@@ -239,18 +295,20 @@ doc = f"""<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name=
 <tr><td>88°</td><td>19.1</td><td>±117 %</td><td class="warn">20.0 %</td><td>1.5 %</td></tr>
 <tr><td>89.7° (손실 최적)</td><td>1.1</td><td>±1376 %</td><td class="bad">48.3 %</td><td>0.1 %</td></tr></table></div>
 <p>보통 수준의 오차에서 실용 운전창은 <b>84–87°</b>다. <b>벽의 위치는 계측·지연 예산의 함수</b>다.</p>
+{BOX0}
 
 <h3>4.2 단계 1 — 평균값 모델 (09-18)</h3>
 {img("stage1_offset_delay.png", "그림 2. 단계 1 폐루프(16 krpm): (a) 레졸버 오프셋 × 연산 지연별 토크 오차, (b) 전압 포화율, (c) 폐루프 상한")}
 <div class="scroll"><table><tr><th>토크 지령</th><th>레졸버 오프셋</th><th>지연 0 샘플</th><th>1 샘플</th><th>2 샘플</th></tr>{od}</table></div>
-<p>오프셋 결론(1°에서 20 N·m −57 %, 60 N·m −25 %)은 단계 2에서 그대로 재현됐다. 지연 열(2샘플 붕괴)은 인공물이다 — 아래 4.3.</p>
+<p>오프셋 결론(1°에서 20 N·m −57 %, 60 N·m −25 %)은 단계 2에서 그대로 재현됐다. 지연 열(2샘플 붕괴)은 인공물이다 — 아래 4.3, 원리는 <a href="drive_model_study.html#delay">해설 6절</a>.</p>
+{BOX1}
 
 <h3>4.3 단계 2 — 스위칭 인버터와 데드타임</h3>
 {img("stage2_summary.png", "그림 3. 단계 2 스위칭 모델(16 krpm, 10 kHz SVPWM 양 끝 갱신, MCB 기준표): (a) 데드타임별 실현 토크와 보상, (b) 레졸버 오프셋 × 보상된 연산 지연, (c) 폐루프 상한과 실현 진각, (d) 지연 보상 on/off")}
 <div class="scroll"><table><tr><th>토크 지령</th><th>t<sub>d</sub> 0</th><th>1 µs</th><th>2 µs</th><th>3 µs</th><th>2 µs + 보상</th><th>3 µs + 보상</th></tr>{dt_rows}</table></div>
 <ul>
 <li><b>데드타임은 여유 없는 약자속에서 토크를 깎는다.</b> 보상 없이 2 µs면 20 N·m −25 %, 3 µs면 −43 %; 60 N·m은 −10/−16 %. 전류 PI가 전압 한계에 붙어(포화 100 %) 잃어버린 전압을 되찾지 못하기 때문이다. 오차의 상대 크기는 토크가 낮을수록(진각이 90°에 가까울수록) 크다.</li>
-<li><b>데드타임 보상(sign(i)·V<sub>dc</sub>t<sub>d</sub>/T<sub>s</sub>)이 거의 전부 되돌린다</b>: 20 N·m −4 %, 60 N·m −3 %. 5 N·m도 −289 % → −14 %.</li>
+<li><b>데드타임 보상은 여유가 없으면 반만 듣는다.</b> 에지가 밀리는 반주기에서만 듀티를 t<sub>d</sub>/T<sub>s</sub> 보정하면(주기 평균 sign(i)·V<sub>dc</sub>t<sub>d</sub>/T<sub>pwm</sub>) t<sub>d</sub> 2 µs에서는 20 N·m −25 → −5 %, 60 N·m −10 → −3 %로 대부분 돌아온다. 3 µs에서는 20 N·m −43 → −16 %, 60 N·m −16 → −5 %에 그치고 전압 포화가 81–89 % 남는다. 5 N·m은 보상해도 실패한다(−240 %). 원인 후보는 샘플 전류 부호가 영교차 부근에서 틀리는 몫(샘플당 전기각 19°)과 한계선 위 운전점의 불량조건인데, 둘은 아직 분리하지 않았다.</li>
 <li><b>5 N·m은 이상 인버터(t<sub>d</sub> 0)에서도 실패한다</b>(−4.3 N·m, 포화 100 %). MCB 표가 전압 한계선 위에 있어 리플만으로도 포화된다 — 여유 문제이며 4.4절에서 풀린다.</li>
 <li><b>보상된 지연은 무해하다.</b> td 2 µs에서 지연 0/1/2샘플의 토크 차이는 1 % 이하. 단계 1의 붕괴는 전압을 회전 좌표계에서 지연시킨 탓이다(회전자가 도는 동안 전압 벡터도 같이 돌아가 버려 지연이 사라지지 않는다). 대신 <b>지연 보상을 끄면</b> 1샘플만으로 20 N·m가 −610 %(역토크)로 붕괴한다.</li>
 <li><b>레졸버 오프셋은 인버터와 무관하게 지배적이다.</b></li>
@@ -260,16 +318,19 @@ doc = f"""<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name=
 <div class="scroll"><table><tr><th>지령</th><th>실현 T (t<sub>d</sub> 0)</th><th>γ</th><th>I rms</th><th>실현 T (t<sub>d</sub> 2 µs)</th><th>γ</th></tr>{ceil_rows}</table></div>
 <p>16 krpm에서 실현 진각은 한 번도 84.7° 아래로 내려가지 않는다. 지령을 100 N·m까지 올려도 토크는 87(t<sub>d</sub> 0)·83 N·m(2 µs)에서 멈추고 γ는 84.7–84.9°에 머문다 — 전류(194 A)는 한계 460 A의 절반도 안 되는데 전압이 막는다. 상전류 THD는 10 kHz(전기 한 주기에 캐리어 9.4주기)에서 {thd_txt}로 데드타임의 영향이 작다(그림 4) — 이 운전점에서 데드타임은 파형이 아니라 기본파 크기를 깎는다.</p>
 {img("stage2_currents.png", "그림 4. 단계 2 상전류(마지막 전기 2주기), t<sub>d</sub> 0 대 3 µs")}
+{BOX2}
 
 <h3>4.4 단계 2b — 교정표의 전압 여유가 내성을 정한다</h3>
 {img("stage2b_margin.png", "그림 5. 단계 2b: 같은 스위칭 모델에 교정표만 바꿔 넣음. (a) 5 N·m, (b) 20 N·m 토크 오차(회색 ±5 %), (c) 표 점의 Lab 손실 − 같은 토크의 Lab 최적 손실. MCB·MBC 100 %가 음수인 것은 그 점이 Lab 계산으로는 전압 한계를 0–3 % 넘기 때문이다")}
-<div class="scroll"><table><tr><th rowspan="2">기준표</th><th colspan="2">5 N·m</th><th colspan="2">20 N·m</th><th colspan="2">60 N·m</th><th colspan="3">20 N·m 표 점 (Lab FMU)</th></tr>
-<tr><th>t<sub>d</sub> 0</th><th>3 µs</th><th>t<sub>d</sub> 0</th><th>3 µs</th><th>t<sub>d</sub> 0</th><th>3 µs</th><th>I · γ</th><th>상전압</th><th>손실 대 최적</th></tr>{mb_rows}</table></div>
+<div class="scroll"><table><tr><th rowspan="2">기준표</th><th colspan="3">5 N·m</th><th colspan="3">20 N·m</th><th colspan="3">60 N·m</th><th colspan="3">20 N·m 표 점 (Lab FMU)</th></tr>
+<tr><th>t<sub>d</sub> 0</th><th>3 µs</th><th>3 µs + 보상</th><th>t<sub>d</sub> 0</th><th>3 µs</th><th>3 µs + 보상</th><th>t<sub>d</sub> 0</th><th>3 µs</th><th>3 µs + 보상</th><th>I · γ</th><th>상전압</th><th>손실 대 최적</th></tr>{mb_rows}</table></div>
 <ul>
 <li><b>5 % 여유면 데드타임 3 µs를 보상 없이도 견딘다</b>: 20 N·m −6 %, 60 N·m −4 %, 5 N·m도 추종(+7 % / −24 %). 10 % 여유면 5 N·m도 −10 % 안.</li>
+<li><b>여유가 있어야 보상이 제대로 듣는다.</b> 5 % 여유 표에 보상까지 더하면 20 N·m −2 %, 60 N·m −1.6 %, 5 N·m +0.5 %다. 여유 없는 표에서 같은 보상을 하면 −16 %, −5 %, −240 %다.</li>
 <li><b>여유의 값은 진각이 아니라 전류로 치른다.</b> 20 N·m에서 진각은 88.01° → 88.05°(95 %) → 88.10°(90 %)로 0.1°도 안 바뀌고, 전류가 138.4 → 141.3 → 144.2 A로 늘어 Lab 손실이 +2.9 % / +6.6 %(60 N·m +2.3 % / +6.9 %) 늘어난다. 약자속 심부에서는 −d축 전류를 조금 더 넣어 전압을 내리는 것이 여유를 만드는 유일한 방법이기 때문이다.</li>
 <li>MBC 표 끝(72 N·m, VsMax 90 %에서 도달 가능한 최대의 98 %로 잡은 격자)을 넘는 80 N·m 지령은 표 끝으로 잘려 −11 %다. 이는 표 설계의 선택이며 여유 자체의 효과가 아니다.</li>
 </ul>
+{BOX2B}
 
 <h3>4.5 단계 3 — Lab FMU로 본 진각별 비용</h3>
 {img("stage3_lab_gamma_sweep.png", "그림 6. Lab FMU(모드 2): 토크를 고정하고 진각을 강제할 때 필요한 전류로 푼 전체 손실(위)과 상전압(아래). ★ Lab 자체 최적(모드 0), × 전압 한계 초과, 빨간 점선 80°")}
@@ -277,26 +338,29 @@ doc = f"""<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name=
 <p>16 krpm에서는 80°가 아예 불가능하고, 8 krpm 60 N·m에서는 82° 이상, 4 krpm에서는 모든 진각이 가능하지만 80°는 최적(8.6°/19.4°) 대비 손실이 +109 %/+316 %다. <b>“80° 이상 올리지 말라”는 규칙이 해가 없는 곳은 전압 여유가 있는 저·중속뿐</b>이고, 그곳에서는 애초에 그렇게 큰 진각이 필요 없다.</p>
 {img("stage3c_losses.png", "그림 7. 단계 3(c): 스위칭 모델이 실제로 도달한 (I, γ)를 Lab FMU로 되짚은 손실. (a) 화살표는 지령 토크 → 실현 토크, 회색 선은 같은 토크의 Lab 최적 손실, (b) 실현 N·m당 손실")}
 <p><b>고속에서 오차의 비용은 손실이 아니라 토크다.</b> 데드타임·오프셋으로 도달점이 바뀌어도 손실은 거의 그대로이고(실현 토크 기준 Lab 최적 대비 −1.5~+4 %; 예외는 60 N·m 레졸버 오프셋 1°에서 +8 %, 2°에서 +17 %), 토크만 줄어든다. 약자속 전류가 손실을 정하기 때문이다. 그래서 20 N·m 지령에서 t<sub>d</sub> 3 µs는 실현 N·m당 손실을 574 → 926 W/(N·m)로 61 % 키운다.</p>
+{BOX3}
 
 <h3>4.6 전압 계산의 모델 간 차이</h3>
 <p>스위칭 모델이 285.1 V에 붙여 둔 운전점을 Lab FMU로 되짚으면 상전압이 286–295 V로 0.5–3 % 높다(토크는 1–4 % 안에서 일치). 단계 1·2 플랜트의 V = |R i + jω<sub>e</sub>λ|가 Lab의 전압 계산(단자 전압에 포함하는 항)보다 약간 낮다. 방향은 “여유가 더 필요하다”는 쪽이므로 4.4절 결론을 강화한다.</p>
 
 <h3>4.7 단계 2c — Simscape 교차 확인</h3>
 {s2c_html}
+{BOX2C}
 
 <h2 id="c">5. 결론</h2>
 <div class="card">
 <ol>
 <li><b>e10의 16 krpm에서는 80°가 상한이 아니라 하한 쪽 문제다.</b> 전압이 γ ≥ 85–88°를 강제한다(1절, 4.5절). 폐루프 최대 토크에서도 실현 진각은 84.7°다.</li>
-<li><b>위쪽 벽은 정밀도다.</b> 88° 근처 저토크 운전점에서 레졸버 오프셋 1°는 −60 %, 여유 없는 표에서 데드타임 3 µs는 −43 %다. 전자는 인버터로 못 고치고, 후자는 데드타임 보상이나 전압 여유로 고친다.</li>
+<li><b>위쪽 벽은 정밀도다.</b> 88° 근처 저토크 운전점에서 레졸버 오프셋 1°는 −60 %, 여유 없는 표에서 데드타임 3 µs는 −43 %다(보상해도 −16 %). 전자는 인버터로 못 고치고, 후자는 전압 여유가 있어야 고쳐진다(5 % 여유 + 보상이면 −2 %).</li>
 <li><b>교정표의 전압 여유가 핵심 설계 변수다.</b> 5 %면 데드타임 3 µs를 보상 없이 견디고(오차 ≤ 6 %) 손실은 +1–3 %; 10 %면 +4–9 %. 진각은 0.1°도 움직이지 않는다.</li>
 <li><b>현장의 “80°”는</b> 역기전력/전압 비가 낮은 기계, 여유를 넉넉히 둔 교정표, 1–2° 각도 오차 예산에서 굳어진 경험값으로 해석하는 것이 맞다. 이 기계에 그대로 적용하면 16 krpm 운전이 불가능하다.</li>
 <li><b>논문 인용 시:</b> 89.7° 같은 손실 최적 진각은 제어기가 유지하는 각이 아니다. 고속 손실 비교는 “전압 여유 k %를 둔 교정표” 기준으로 적어야 하며, 교류 동손 모델이 고속 진각을 거의 바꾸지 않는다(Δγ ≤ 0.25°)는 결론은 여유를 두면 오히려 강화된다(여유는 전류로 치르고 진각은 안 바뀐다).</li>
 </ol></div>
 
 <h2 id="f">6. 모델·코드·데이터 경로 (PC1)</h2>
+<p>결과별 파일은 4절 각 소절 끝의 파일 상자에 있다. 아래는 전체 목록이다. 모델 구조와 이론은 <a href="drive_model_study.html">구동 시뮬레이션 모델 해설</a>.</p>
 <div class="scroll"><table><tr><th>구분</th><th>경로</th><th>내용</th></tr>
-<tr><td>저장소</td><td><code>D:\\KangDH\\EveryMotor\\eMach</code> 브랜치 <code>docs/loss-torque-convention</code></td><td>단계 1까지 커밋 6cf8bba; 단계 2·2b·2c·3 파일은 아직 미커밋</td></tr>
+<tr><td>저장소</td><td><code>D:\\KangDH\\EveryMotor\\eMach</code> 브랜치 <code>docs/loss-torque-convention</code></td><td>코드는 <code>tools\\motorCAD\\MotorControl\\e10drive\\</code>, 데이터·생성 모델은 저장소 밖 <code>D:\\KangDH\\Thesis\\e10\\work_lab_pc1\\</code></td></tr>
 <tr><td>단계 1</td><td><code>tools\\motorCAD\\MotorControl\\e10drive\\build_e10_stage1.m</code>, <code>run_e10_stage1.m</code>, <code>sim_e10_stage1.m</code></td><td>평균값 dq 플랜트 + 이산 FOC</td></tr>
 <tr><td>단계 2 스위칭 모델</td><td><code>e10drive\\sim_e10_stage2.m</code></td><td>사건 구동 SVPWM·데드타임·Lab 맵 플랜트; 옵션 <code>ref</code>로 기준표 교체</td></tr>
 <tr><td>단계 2 실행</td><td><code>e10drive\\run_e10_stage2.m</code> (<code>part = [i n]</code>으로 독립 배치 분할) + <code>merge_e10_stage2.m</code>, 그림 <code>plot_stage2.py</code></td><td>68 격자 + 파형 6; 배치 6개 병렬로 1분 이내</td></tr>
@@ -304,7 +368,8 @@ doc = f"""<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name=
 <tr><td>단계 2c</td><td><code>e10drive\\build_e10_stage2c.m</code>, <code>run_e10_stage2c.m</code></td><td>HEV PMSM Drive Test Harness 개조 → <code>drive\\stage2c\\e10_stage2c.slx</code>; 원본 예제 <code>work_lab_pc1\\mw_examples\\ex1\\</code></td></tr>
 <tr><td>단계 3</td><td><code>e10drive\\export_lab_model.py</code> → <code>work_lab_pc1\\fmu\\e10Turn6V261.lab</code>; <code>lab_fmu.py</code>(FMU 래퍼), <code>lab_gamma_sweep.py</code>, <code>lab_stage3c.py</code>, 그림 <code>plot_lab_gamma_sweep.py</code>, <code>plot_stage3c.py</code></td><td>FMU: <code>C:\\Program Files\\ANSYS Inc\\v261\\motorcad\\FMU\\Ansys_Motor-CAD_Lab_BPM.fmu</code>; venv <code>work_lab_pc1\\fmu\\fmuenv</code>(fmpy 0.3.32); 결과 <code>lab_gamma_sweep.json</code>, <code>lab_stage3c.json</code></td></tr>
 <tr><td>결과 데이터</td><td><code>D:\\KangDH\\Thesis\\e10\\work_lab_pc1\\drive\\</code></td><td><code>stage1_results.csv</code>, <code>stage2_results.csv</code>, <code>stage2_traces.mat</code>, <code>stage2b_results.csv</code>, <code>stage2c_results.csv</code></td></tr>
-<tr><td>이 페이지</td><td><code>tools\\motorCAD\\MotorControl\\gamma_wall_explainer.html</code> ← <code>make_gamma_wall_explainer.py</code></td><td>재생성 가능</td></tr></table></div>
-</main></body></html>"""
+<tr><td>이 페이지</td><td><code>tools\\motorCAD\\MotorControl\\gamma_wall_explainer.html</code> ← <code>make_gamma_wall_explainer.py</code> (+ <code>report_links.py</code>)</td><td>재생성 가능</td></tr></table></div>
+{files_box("페이지 생성기", [item(HERE / "make_gamma_wall_explainer.py", "이 페이지 생성"), item(HERE / "report_links.py", "파일 상자 도우미"), item(HERE / "drive_model_study.html", "모델 해설 페이지", cmd="")])}
+</main>{COPY_JS}</body></html>"""
 (HERE / "gamma_wall_explainer.html").write_text(doc, encoding="utf-8")
 print("wrote", HERE / "gamma_wall_explainer.html")
