@@ -47,6 +47,7 @@ P.Kpd = 8.50;  P.Kpq = 16.00;
 P.Kid = P.Kpd/(P.Ld/Rph);  P.Kiq = P.Kpq/(P.Lq/Rph);  P.Kaw = 1/(P.Ld/Rph);
 nDel = 1;
 P.thc = we*(nDel + 0.5)*Ts;                      % 지연 보상 (delay_comp = 1)
+P.ffRef = 0;                                     % 디커플링: 0 측정 전류, 1 기준 전류
 P.Tv = S.T_ref_vec(:);  P.idRef = S.id_ref_current(:);  P.iqRef = S.iq_ref_current(:);
 % 초기 상태: 첫 기준점(T* = 0)의 정상상태 (sim_e10_stage2 와 같음)
 id0 = interp1(P.Tv, P.idRef, 0);  iq0 = interp1(P.Tv, P.iqRef, 0);
@@ -323,8 +324,10 @@ c = strjoin({ ...
 'idr = interp1(P.Tv, P.idRef, Tc);'
 'iqr = interp1(P.Tv, P.iqRef, Tc);'
 'ed = idr - idm;  eq = iqr - iqm;'
-'vud = P.Kpd*ed + X(1) - P.we*P.Lq*iqm;'
-'vuq = P.Kpq*eq + X(2) + P.we*(P.Ld*idm + P.lam);'
+'% 디커플링: 기본은 측정 전류, P.ffRef = 1 이면 기준 전류 (고조파 전류가 we*L 로 증폭되지 않게)'
+'if P.ffRef > 0, idf = idr; iqf = iqr; else, idf = idm; iqf = iqm; end'
+'vud = P.Kpd*ed + X(1) - P.we*P.Lq*iqf;'
+'vuq = P.Kpq*eq + X(2) + P.we*(P.Ld*idf + P.lam);'
 'vmag = sqrt(vud^2 + vuq^2);'
 'if vmag > P.Vmax'
 '    vsd = vud*P.Vmax/vmag;  vsq = vuq*P.Vmax/vmag;  sat = 1;'

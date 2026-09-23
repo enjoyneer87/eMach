@@ -54,7 +54,8 @@ li{margin-bottom:7px}
 
 <h1>손실의 토크 귀속 규약</h1>
 <p class="sub">어떤 손실이 제동토크이고 어떤 손실이 입력측인가 — 전력 평형으로 가르기<br>
-PC2 · 2026-09-17 · e10Turn6 헤어핀 IPM 실측 기준</p>
+PC2 · 2026-09-17 · e10Turn6 헤어핀 IPM 실측 기준<br>
+PC1 · 2026-09-23 보강 — Motor-CAD E-Magnetic·Lab과 구동 모델이 실제로 어떻게 처리하는지(4절, 4.1–4.3), 16 krpm 운전점 수치(5절)</p>
 
 <div class="note">
 <b>한 줄 요약.</b> 판별 기준은 손실이 어디서 소산되느냐가 아니라 <b>그 에너지가 공극을 건너오느냐</b>입니다.
@@ -247,16 +248,82 @@ P<sub>gap</sub> − (공극을 건너는 손실) = P<sub>shaft</sub> = T<sub>sha
   <td>같은 손실의 전류 환산분</td>
   <td>교류 동손·전기자 철손이 제동으로 들어가고 이중 계상 소지</td>
 </tr>
+<tr>
+  <td>Motor-CAD E-Magnetic<span class="tag">ShaftTorque</span></td>
+  <td>고정자 철손 전체<sub>adj</sub> + 회전자 철손<sub>adj</sub> + 기계손</td>
+  <td>입력 전력에: 직류 동손 + 교류 동손(Hybrid·FullFEA) + <b>자석손</b><sub>adj</sub></td>
+  <td>고정자 철손 전기자분까지 제동, 자석손은 입력측 — 규약과 두 곳 다름 (4.1)</td>
+</tr>
+<tr>
+  <td>Motor-CAD Lab<span class="tag">FMU·맵 export</span></td>
+  <td>고정자 철손 전체 + 회전자 철손 + 자석손 + 기계손</td>
+  <td>입력 전력에: 직류 동손 + 교류 동손(Hybrid 맵)</td>
+  <td>자석손은 규약대로 제동, 고정자 철손 전기자분은 제동으로 넣음 (4.1)</td>
+</tr>
+<tr>
+  <td>구동 모델 A<span class="tag">단계 1·2·2c</span></td>
+  <td>고정자 철손 전체 + 회전자 철손 + 자석손 (Lab 맵, 기계손 없음)</td>
+  <td>직류 저항만 — 교류 동손의 전압 몫이 빠짐</td>
+  <td>토크는 Lab과 거의 같으나 입력측 교류 동손을 전압에 반영하지 않음 (4.3)</td>
+</tr>
+<tr>
+  <td>구동 모델 B–D<span class="tag">단계 2d, 09-23</span></td>
+  <td>규약대로: 기계손 + 회전자 철손 + 자석손 + 무부하 고정자 철손 + 무부하 교류 동손</td>
+  <td>부하분 교류 동손을 직렬 등가저항 R<sub>ac,eff</sub>로 (전기자분 철손은 작아 생략)</td>
+  <td>이 문서의 규약을 그대로 구현 (4.3)</td>
+</tr>
 </tbody>
 </table>
 </div>
 
-<p>세 구현이 서로 다르고 어느 것도 위 표의 분류와 일치하지 않습니다.
+<p>원래의 세 구현이 서로 다르고 어느 것도 위 표의 분류와 일치하지 않습니다. Motor-CAD의 두 모듈도 자석손을 서로 반대로 다룹니다.
 사이클 에너지처럼 축 일량을 보는 계산과 인버터 전류·전압 한계를 보는 계산이
 같은 코드에서 나오므로, 규약을 문서로 고정해 두지 않으면 결과가 조용히 어긋납니다.</p>
 
 <p>참고로 <code>calcTnPoint.m</code>의 기계손 토크 환산에서 분모가 전기 각속도입니다.
 같은 파일의 기계 출력은 기계 각속도를 쓰므로 단위가 어긋나며, 극쌍수 배만큼 제동 토크를 작게 봅니다.</p>
+
+<h3>4.1 Motor-CAD E-Magnetic과 Lab의 실제 처리 — 출력에서 역산 (PC1, 2026-09-23)</h3>
+<p>도움말은 E-Magnetic의 <code>ShaftTorque</code>를 "drag loss를 고려한 축 토크"라고만 설명합니다.
+그래서 출력값으로 직접 역산했습니다. e10 기준기 사본, 새 인스턴스, 16 krpm, 80 °C에서 계산했습니다(<code>emag_loss_check.py</code>).
+Lab은 앞서 받아 둔 Lab BPM FMU 출력 96점(4·8·16 krpm, 여러 진각)에서 역산했습니다.</p>
+<div class="scroll">
+<table>
+<thead><tr><th>E-Magnetic (Hybrid)</th><th>평균 토크 MsVw</th><th>ShaftTorque</th><th>(차) × ω<sub>mech</sub></th><th>고정자 철손<sub>adj</sub></th><th>회전자 철손<sub>adj</sub></th><th>자석손 (adj)</th><th>잔차 = 기계손</th></tr></thead>
+<tbody>
+<tr><td>무부하</td><td>−0.003</td><td>−1.250</td><td>2088.2 W</td><td>1857.9</td><td>47.2</td><td>2.6 (3.8)</td><td>183.1</td></tr>
+<tr><td>20 N·m점 (195.8 A, 88.01°)</td><td>21.823</td><td>20.119</td><td>2854.6 W</td><td>1902.1</td><td>769.4</td><td>420.9 (631.4)</td><td>183.1</td></tr>
+<tr><td>60 N·m점 (222.2 A, 85.27°)</td><td>61.657</td><td>59.707</td><td>3267.2 W</td><td>2140.8</td><td>943.3</td><td>514.8 (772.2)</td><td>183.1</td></tr>
+</tbody>
+</table>
+</div>
+<div class="eq">E-Magnetic:  T<sub>shaft</sub> = T<sub>MsVw</sub> − ( P<sub>fe,stator,adj</sub> + P<sub>fe,rotor,adj</sub> + P<sub>mech</sub> ) / ω<sub>mech</sub>        (P<sub>mech</sub> = 183.1 W, 세 점 모두 잔차 0.1 W 이내)<br>
+             P<sub>in</sub> = T<sub>MsVw</sub>·ω<sub>mech</sub> + P<sub>cu,dc</sub> + P<sub>cu,ac</sub> + P<sub>magnet,adj</sub>        (두 부하점 모두 0.2 W 이내)<br>
+Lab (FMU):   T<sub>shaft</sub> = T<sub>em</sub> − ( P<sub>fe,stator</sub> + P<sub>fe,rotor</sub> + P<sub>magnet</sub> + P<sub>mech</sub> ) / ω<sub>mech</sub>        (96점 최대 잔차 2.4 W)<br>
+             P<sub>terminal</sub> = P<sub>shaft</sub> + ΣP<sub>loss</sub>        (정확히 성립)</div>
+<ul>
+<li><b>빌드 계수.</b> E-Magnetic의 <code>_Adj</code> 값은 원시 FEA 철손·자석손에 1.5를 곱한 것입니다(1857.9 = 1.5 × 1238.6). Lab 맵·FMU와 Saturation/Loss map export의 철손이 이 조정값입니다.</li>
+<li><b>자석손을 반대로 다룹니다.</b> Lab은 제동, E-Magnetic은 입력측입니다. 같은 20 N·m점의 자석손 크기도 다릅니다. E-Magnetic은 631 W(adj), Lab 맵은 987 W입니다. 자석손 모델이 서로 달라 보입니다.</li>
+<li><b>기계손도 다릅니다.</b> 16 krpm에서 E-Magnetic은 183.1 W, Lab은 풍손 159.7 W입니다.</li>
+<li><b>고정자 철손은 둘 다 전부 제동으로 봅니다.</b> 이 문서의 규약은 무부하분만 제동입니다. 그런데 16 krpm 기준표 운전점에서는 고정자 철손(1.88–2.47 kW)이 무부하분(1.86 kW)과 거의 같습니다. 그래서 축 토크 차이는 ±0.3 N·m 이하입니다(5절).</li>
+<li><b>전압한계.</b> Lab의 상전압 한계 285.1 V rms는 <code>ModulationIndex_MotorLAB = 0.97</code> × 720/√6 = 0.97 × 293.9 V입니다. E-Magnetic은 전압을 두 가지로 냅니다. 하나는 페이저 기본파(<code>PhasorRmsPhaseVoltage</code>), 다른 하나는 FEA 파형에서 잡은 값(<code>RmsPhaseVoltage</code>, <code>PeakPhaseVoltage</code>)입니다. 20 N·m점에서 각각 290.9 V rms와 561 V rms / 첨두 1149 V입니다. 파형값은 정현 전류를 강제할 때 슬롯 고조파 역기전력이 더해진 값이라, 인버터가 내야 하는 전압이 아닙니다.</li>
+</ul>
+
+<h3>4.2 교류 동손 계산 방식 — Hybrid와 FullFEA</h3>
+<ul>
+<li><b>Hybrid</b>(<code>ProximityLossModel = 1</code>)는 정자장 FEA의 슬롯 자속밀도로 도체 와전류손을 후처리합니다. 도체 전류가 장에 반작용하지 않으므로 <b>FEA 토크·쇄교자속은 바뀌지 않고</b>, 손실은 입력 전력에만 더해집니다. 즉 이 규약의 "입력측" 처리와 같습니다. 16 krpm 20 N·m점은 2866 W, 무부하는 2.4 W입니다.</li>
+<li><b>FullFEA</b>(<code>= 3</code>)는 과도 FEA에서 도체를 실제 전도체로 풉니다. 와전류 반작용이 장과 토크에 들어갑니다. 같은 20 N·m점에서 평균 토크가 21.82에서 21.50 N·m로 0.32 N·m 낮고(541 W 상당), 교류 동손은 2567 W, 무부하 도체 와전류손은 6.6 W입니다.
+토크 감소분이 교류 동손의 약 21 %라는 것은 "부하분은 입력측"이라는 가정과 다를 수 있습니다. 다만 <code>TorqueNumberCycles = 1</code>의 1주기 평균에 기동 과도가 섞여 있어 아직 분리하지 못했습니다(2주기 이상으로 재확인할 과제).</li>
+<li><b>Lab</b>의 교류손 맵(<code>CalcTypeCuLoss_MotorLAB = 3</code>, <code>ACLossMethod_Lab = 0</code> = Hybrid)은 빌드 점의 Hybrid 값을 운전점에 보간합니다. 입력측으로 들어갑니다.</li>
+<li><b>무부하 성분(6절 가.)</b>: 16 krpm, 전류 0에서 교류 동손은 Hybrid 2.4 W, FullFEA 6.6 W로 무시할 수준입니다. 제동으로 넣어야 할 무부하 성분은 사실상 무부하 고정자 철손(1.86 kW)뿐입니다.</li>
+</ul>
+
+<h3>4.3 구동 시뮬레이션에 넣는 방법</h3>
+<p>시간영역 구동 모델(스크립트·Simscape)과 정상상태 운전점 계산기(<code>qs_opsolver.py</code>)는 이 규약을 이렇게 구현합니다.</p>
+<div class="eq">토크표:   T<sub>shaft</sub>(i<sub>d</sub>, i<sub>q</sub>) = T<sub>em</sub> − ( P<sub>mech</sub> + P<sub>fe,rotor</sub> + P<sub>magnet</sub> + P<sub>fe,stator,NL</sub> + P<sub>cu,ac,NL</sub> ) / ω<sub>mech</sub><br>
+전압:     v = ( R<sub>dc</sub> + R<sub>ac,eff</sub> ) i + jω<sub>e</sub>ψ(i),   R<sub>ac,eff</sub> = ( P<sub>cu,ac</sub> − P<sub>cu,ac,NL</sub> ) / ( 1.5 |i|<sup>2</sup> )   (첨두 기준)</div>
+<p>16 krpm 기준표 운전점에서 R<sub>ac,eff</sub> ≈ 0.050 Ω로, 직류 저항 0.0786 Ω의 약 63 %입니다. 이 몫이 필요 전압을 0.9–2.8 % 올립니다(5절). 부하분 고정자 철손(85–613 W)은 등가 전류로 넣을 수 있지만 전압 영향이 작아 생략했습니다.</p>
+<p><b>시간영역에서 본 효과 (Simscape 단계 2d, 09-23 밤).</b> 같은 모델에서 전동기 표만 기존(Lab 정의 축 토크, R<sub>dc</sub>)에서 이 규약(축 토크 식 + R<sub>ac,eff</sub>)으로 바꾸면, 여유 없이 한계선에 붙인 기준표(MCB)의 20 N·m가 −3.1 %에서 −9.3 %로 나빠지고 전압 포화가 0 %에서 100 %가 됩니다. 5 % 여유 기준표(MBC 95)에서는 −1.4 %에서 −1.8 %로 여유가 흡수합니다. 정상상태 계산기의 QS 기준표는 R<sub>ac</sub>를 한계식에 넣어 만들므로 이 몫이 처음부터 여유 계산에 들어갑니다. 같은 실험에서 회전자 위치별 FEA 맵(슬롯 고조파)의 영향은 이보다 훨씬 컸습니다(5 % 여유 표 20 N·m −60 %). 자세한 내용은 <a href="gamma_wall_explainer.html#j">진각 벽 보고서 4.9절</a>에 있습니다.</p>
 
 <h2>5. e10Turn6 실측 수치</h2>
 
@@ -289,14 +356,32 @@ ipmfea <code>jobs/r2_fullfea/results_pc2_sd/R1_0167</code>)에서 나온 값입�
 <b>분리 방법.</b> 전류 0, 16 krpm으로 Full-FEA를 한 점만 돌리면 그 턴별 손실이 곧
 무부하 도체 와전류손이고 제동 성분입니다. 지금까지 돌린 여섯 점이 모두 고전류라 분리가 안 되어 있습니다.
 같은 실행에서 무부하 고정자 철손도 함께 얻을 수 있습니다.
+<br><b>09-23 결과(PC1):</b> 무부하 도체 와전류손은 FullFEA 6.6 W, Hybrid 2.4 W로 무시할 수준입니다. 무부하 고정자 철손은 1856–1858 W(adj)입니다(4.2).
 </div>
+
+<h3>16 krpm 기준표 운전점 (Lab 맵, Hybrid 교류 동손)</h3>
+<p>진각 벽 연구의 MCB 기준표 운전점입니다. 무부하분은 고정자 철손 1858.8 W, 교류 동손 2.4 W이고, 기계손은 159.7 W(Lab)입니다.</p>
+<div class="scroll">
+<table>
+<thead><tr><th>지령</th><th>T<sub>em</sub></th><th>고정자 철손</th><th>회전자 철손</th><th>자석손</th><th>교류 동손</th><th>직류 동손</th><th>T<sub>shaft</sub> Lab 정의</th><th>T<sub>shaft</sub> 규약</th><th>입력측 교류 동손</th></tr></thead>
+<tbody>
+<tr><td>5 N·m</td><td>6.9</td><td>1884</td><td>769</td><td>971</td><td>2729</td><td>4302</td><td>4.76</td><td>4.67</td><td>2727 W</td></tr>
+<tr><td>20 N·m</td><td>22.1</td><td>1943</td><td>801</td><td>987</td><td>2856</td><td>4525</td><td>19.84</td><td>19.80</td><td>2853 W</td></tr>
+<tr><td>40 N·m</td><td>42.2</td><td>2040</td><td>857</td><td>1026</td><td>3078</td><td>4914</td><td>39.86</td><td>39.88</td><td>3075 W</td></tr>
+<tr><td>60 N·m</td><td>62.0</td><td>2230</td><td>974</td><td>1153</td><td>3604</td><td>5821</td><td>59.45</td><td>59.57</td><td>3602 W</td></tr>
+<tr><td>80 N·m</td><td>80.4</td><td>2472</td><td>1123</td><td>1315</td><td>4295</td><td>7022</td><td>77.42</td><td>77.69</td><td>4292 W</td></tr>
+</tbody>
+</table>
+</div>
+<p>이 속도에서는 토크 귀속 규약이 축 토크를 ±0.3 N·m(5 N·m점만 −1.7 %) 이상 바꾸지 않습니다. 차이가 나는 곳은 전압입니다. 입력측 교류 동손 2.7–4.3 kW를 R<sub>ac,eff</sub>로 넣으면 필요 전압이 20 N·m점에서 402.8 V에서 406.3 V(+0.9 %), 60 N·m점에서 401.1 V에서 410.0 V(+2.2 %)로 오릅니다. 여유 없이 한계선에 붙여 만든 기준표에서는 이 몫만으로 운전점이 한계를 넘습니다.</p>
 
 <h2>6. 다른 로컬에서 할 검증</h2>
 
-<h3>가. 무부하 성분 분리 (Motor-CAD 필요)</h3>
+<h3>가. 무부하 성분 분리 (Motor-CAD 필요) — 09-23 PC1 완료</h3>
 <p>전류 0, 16 krpm, <code>ProximityLossModel = 3</code>으로 한 점 실행합니다.
 얻은 무부하 도체 와전류손과 고정자 철손을 위 축 토크 식의 제동 항에 넣습니다.
-소요는 한 점 약 10분입니다.</p>
+소요는 한 점 약 10분입니다.
+<b>결과:</b> 도체 와전류손 6.6 W(FullFEA, 약 3.5분), 고정자 철손 1855.5 W(adj). 4.2절 참고.</p>
 
 <h3>나. eMach 전류맵 코드 점검 (MATLAB)</h3>
 <p><code>findOptimalCurrentsWithConstraints.m</code>의 목적함수가 최적화 변수를 쓰지 않습니다.</p>
@@ -343,6 +428,9 @@ end</code></pre>
 <li>고정자 철손도 같은 방식으로 갈린다. 무부하 드래그 토크가 그 증거다.</li>
 <li>같은 손실을 토크와 전류 양쪽에 넣으면 이중 계상이다.</li>
 <li>SyR-e 두 파일과 eMach 전류맵 코드의 규약이 서로 다르다. 하나로 고정해야 한다.</li>
+<li>Motor-CAD도 모듈마다 다르다. E-Magnetic은 자석손을 입력측으로, Lab은 제동으로 둔다. 둘 다 고정자 철손 전체를 제동으로 둔다(4.1).</li>
+<li>Hybrid 교류 동손은 장에 반작용하지 않아 FEA 토크를 바꾸지 않는다. 그 자체로 "입력측" 처리다. FullFEA는 같은 점에서 토크를 0.32 N·m 낮췄는데, 기동 과도와의 분리가 남아 있다(4.2).</li>
+<li>16 krpm 약자속에서 규약은 축 토크를 거의 바꾸지 않는다. 대신 입력측 교류 동손이 필요 전압을 1–3 % 올린다. 여유 없는 기준표에는 이 몫이 결정적이다.</li>
 </ul>
 
 </div>

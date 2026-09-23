@@ -24,7 +24,7 @@ except Exception:
     pass
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from lab_existing import launch, mc_pids  # 같은 기동·PID 규약 재사용
+from mc_launch import launch, mc_pids  # 새 인스턴스 기동·PID 기록 (저장소 내 도우미)
 
 SRC = r"D:\KangDH\Thesis\e10\refModel\e10Turn6V261.mot"
 WORK = r"D:\KangDH\Thesis\e10\work_lab_pc1\drive"
