@@ -103,7 +103,7 @@ def best_point(M, Tstar, Veff, td, did=0.25, diq=0.02, iq_max=60.0):
     changes by tens of amperes per 0.01 deg, so an angle grid misses the minimum. For every id the
     torque T_shaft rises monotonically with iq; its crossing of T* is interpolated, and the smallest current
     whose voltage fits is kept. The grid (T_shaft, V over id x iq) is cached per deadtime."""
-    key = (td, did, diq, iq_max)
+    key = (td, did, diq, iq_max, FA.WE)
     cache = M.__dict__.setdefault("_grid", {})
     if key not in cache:
         ids = np.arange(-M.i_max, -60.0, did)

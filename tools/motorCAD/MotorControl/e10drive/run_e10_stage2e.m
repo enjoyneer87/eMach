@@ -1,4 +1,4 @@
-function R = run_e10_stage2e(cases, Tstop, workDir, variantNames, outName, tableNames, remedyNames)
+function R = run_e10_stage2e(cases, Tstop, workDir, variantNames, outName, tableNames, remedyNames, rpm)
 %RUN_E10_STAGE2E  단계 2e — 슬롯 고조파 대책(노치, 6차 PR, 육각형 과변조, 전압 피드백 약자속)을 Simscape 로 시험.
 %
 %   모델: stage2e\e10_stage2e.slx (build_e10_stage2e.m). 전동기 표 변형·기준표는 run_e10_stage2d 와 같다
@@ -11,6 +11,9 @@ function R = run_e10_stage2e(cases, Tstop, workDir, variantNames, outName, table
 %     fw     전압 피드백 약자속 (Kfw = 200 A/(V s), Kleak = 2 1/s)
 %     ffref  기준 전류 디커플링 (P.ffRef = 1, 2d 의 _ff 와 같음)
 %   출력 CSV 에 idfw (약자속 루프가 더한 i_d, 마지막 15 % 평균) 포함.
+%   rpm (기본 16000): 다른 속도에서 돌린다. 속도원 E10.wm, 제어기 P.we·P.thc, 직렬 저항 R_dc + R_ac,16k (rpm/16000)^2,
+%   노치 주파수가 속도를 따른다. 토크 표(E10.T, 16 krpm 손실 규약)는 그대로 둔다. 기준표는 이름 'N8000' 처럼
+%   notch_speed_range.py tables 가 만든 drive\qs_speed_tables.mat (그 속도의 여유 5 % 표).
 
 if nargin < 1 || isempty(cases), cases = [5 0; 20 0; 60 0; 20 3e-6]; end
 if nargin < 2 || isempty(Tstop), Tstop = 0.08; end
@@ -19,13 +22,16 @@ if nargin < 4 || isempty(variantNames), variantNames = {'fea_pos'}; end
 if nargin < 5 || isempty(outName), outName = 'stage2e_results.csv'; end
 if nargin < 6 || isempty(tableNames), tableNames = {'QS 95'}; end
 if nargin < 7 || isempty(remedyNames), remedyNames = {'base', 'notch', 'pr6', 'hex', 'fw'}; end
+if nargin < 8 || isempty(rpm), rpm = 16000; end
 mdl = 'e10_stage2e';
 if ~bdIsLoaded(mdl), load_system(fullfile(workDir, 'stage2e', [mdl '.slx'])); end
 mws = get_param(mdl, 'ModelWorkspace');
 E0 = getVariable(mws, 'E10');  P0 = getVariable(mws, 'P');  Ts = getVariable(mws, 'Ts_c');
 Tab = load(fullfile(workDir, 'stage2d_tables.mat'));
+kr = rpm/16000;                                        % 모델의 기준 속도는 16 krpm
+P0.we = P0.we*kr;  P0.thc = P0.thc*kr;
 
-% ---- 16 krpm 대책 파라미터
+% ---- 대책 파라미터 (속도에 따름)
 we = P0.we;
 w1 = mod(6*we*Ts, 2*pi);
 w12 = mod(12*we*Ts, 2*pi);  w2 = min(w12, 2*pi - w12);          % 12차의 접힌 주파수
@@ -53,6 +59,10 @@ for t = 1:numel(tableNames)
         Q = load(fullfile(workDir, 'qs_tables.mat'));
         q = Q.(strrep(nm, ' ', ''));
         P.Tv = double(q.Tv(:));  P.idRef = double(q.idRef(:));  P.iqRef = double(q.iqRef(:));
+    elseif startsWith(nm, 'N')
+        Q = load(fullfile(workDir, 'qs_speed_tables.mat'));
+        q = Q.(nm);
+        P.Tv = double(q.Tv(:));  P.idRef = double(q.idRef(:));  P.iqRef = double(q.iqRef(:));
     end
     refs(end+1) = struct('name', string(nm), 'P', P); %#ok<AGROW>
 end
@@ -68,6 +78,10 @@ for v = 1:numel(variantNames)
         E.(f{1}) = V.(f{1});
     end
     E.id = E.id(:).';  E.iq = E.iq(:).';  E.x = E.x(:).';
+    if rpm ~= 16000                                    % 속도원과 주파수에 따르는 교류 저항
+        E.Rs = P0.Rph + (V.Rs - P0.Rph)*kr^2;
+        E.wm = E0.wm*kr;  E.rpm = rpm;
+    end
     for m = 1:numel(remedyNames)
         rn = remedyNames{m};
         parts = strsplit(rn, '+');
@@ -108,12 +122,12 @@ for v = 1:numel(variantNames)
                 idfw = mean(dg(nn, 6)) - interp1(P.Tv, P.idRef, min(max(Tr, 0), P.Tv(end)));
                 rows(end+1, :) = {string(rn), string(vn), refs(r).name, Tr, td*1e6, Tavg, 100*(Tavg/Tr - 1), ...
                     max(Thalf(nn)) - min(Thalf(nn)), mean(atan2d(-idv, iqv)), mean(hypot(idv, iqv))/sqrt(2), ...
-                    mean(vmag)/sqrt(2), 100*mean(sat), idfw, tRun}; %#ok<AGROW>
+                    mean(vmag)/sqrt(2), 100*mean(sat), idfw, tRun, rpm}; %#ok<AGROW>
                 fprintf('%-10s %-8s %-6s T*=%3g td=%g: T=%7.3f (%+6.1f %%) ripple %5.1f gamma %.3f I %.1f V %.1f sat %3.0f%% idfw %6.2f  %.0f s\n', ...
                     rn, vn, refs(r).name, Tr, td*1e6, Tavg, rows{end, 7}, rows{end, 8}, rows{end, 9}, rows{end, 10}, ...
                     rows{end, 11}, rows{end, 12}, idfw, tRun);
                 R = cell2table(rows, 'VariableNames', {'remedy', 'variant', 'table', 'T_ref', 'td_us', 'T', 'err_pct', ...
-                    'T_ripple_pp', 'gamma', 'I_rms', 'V_rms', 'sat_pct', 'idfw', 'run_s'});
+                    'T_ripple_pp', 'gamma', 'I_rms', 'V_rms', 'sat_pct', 'idfw', 'run_s', 'rpm'});
                 writetable(R, outCsv);
             end
         end

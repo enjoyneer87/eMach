@@ -45,7 +45,25 @@ CTRL["Kaw_Ki"] = np.array([1/CTRL["Kpd"], CTRL["Lq"]/(CTRL["Ld"]*CTRL["Kpq"])]) 
 R_MODEL = 0.12843                                      # plant resistance of variants B-D (R_dc + R_ac,eff)
 VDC, FPWM = 720.0, 1e4
 DELTA_DEG = 59.97                                      # theta_d = x + delta (fea_posmap_analyze.alignment)
-THC = FA.WE*1.5*50e-6                                  # delay-compensation angle of the regulator
+R_AC16 = R_MODEL - FA.R_DC                             # AC part of the series resistance at 16 krpm (~f^2)
+
+
+def set_speed(rpm):
+    """Operating speed for the calculator: omega_e, and R = R_dc + R_ac,eff(16 krpm) (rpm/16000)^2."""
+    global R_MODEL
+    FA.set_speed(rpm)
+    R_MODEL = FA.R_DC + R_AC16*(rpm/16000.0)**2
+
+
+def thc():
+    return FA.WE*1.5*50e-6                             # delay-compensation angle of the regulator
+
+
+def window(we, Ts=50e-6, kmax=60):
+    """samples spanning a (nearly) whole number of electrical periods: 16 krpm -> 75 samples = 4 periods"""
+    n1 = 2*np.pi/(we*Ts)
+    k = min(range(1, kmax + 1), key=lambda k: abs(k*n1 - round(k*n1)) + 1e-3*k)
+    return int(round(k*n1))
 FW = dict(Kfw=200.0, Kleak=2.0)                        # voltage-feedback flux weakening of run_e10_stage2e
 
 
@@ -117,8 +135,8 @@ def sampled_harmonic_currents(PM, i0, q0, ref_decoupling, Ts=50e-6, nsub=16, per
     Bd = np.linalg.solve(A, (Ad - np.eye(2)))                    # exact ZOH for piecewise-constant input
     D = np.zeros((2, 2)) if ref_decoupling else np.array([[0.0, -we*CTRL["Lq"]], [we*CTRL["Ld"], 0.0]])
     G = -np.diag([CTRL["Kpd"], CTRL["Kpq"]]) + D
-    nper = int(round(2*np.pi/(we*Ts)*4))                        # 75
-    N = nper*periods
+    nper = window(we, Ts)                                       # 75 at 16 krpm
+    N = nper*max(periods*75//nper, 12)
     t_sub = (np.arange(N*nsub) + 0.5)*h
     slot_sub = slot(np.degrees(we*t_sub) - delta_deg)            # Motor-CAD position x = theta_d - delta
     u_slot = R_MODEL*(Li @ slot_sub)                             # forcing from  -R di = -R L^-1 (dpsi - slot)
@@ -177,7 +195,7 @@ def clip_excess(V, dv, vmax, theta=None, khex=None, extra=False):
     v = V[:, None] + dv
     m = np.hypot(v[0], v[1])
     if khex is not None:
-        ph = np.radians(theta) + THC + np.arctan2(v[1], v[0])
+        ph = np.radians(theta) + thc() + np.arctan2(v[1], v[0])
         lim = khex*VDC/np.sqrt(3)/np.cos(np.mod(ph, np.pi/3) - np.pi/6)
     else:
         lim = vmax
@@ -199,9 +217,9 @@ def solve_case(PM, i_ref, q_ref, td=0.0, harmonics=True, ref_decoupling=False, V
     dvt = (4/np.pi)*VDC*td*FPWM
 
     def ripple(i, q):
-        nper = 75
+        nper = window(we)
         if not harmonics:
-            return np.zeros((2, nper)), np.zeros((2, nper)), np.mod(19.2*np.arange(nper), 360.0)
+            return np.zeros((2, nper)), np.zeros((2, nper)), np.mod(np.degrees(we*50e-6)*np.arange(nper), 360.0)
         if not feedback:
             di = PM.harmonic_currents(i, q)
             return di, G @ di, None

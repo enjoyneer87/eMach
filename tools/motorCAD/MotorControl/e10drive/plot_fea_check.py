@@ -396,6 +396,287 @@ def fig_qs(qsfiles, s2):
     plt.close(fig)
 
 
+def fig_same_current(hm):
+    """D(위치별 맵)의 토크 결손은 같은 전류의 토크가 아니라 운전점(진각)이 옮겨진 탓 — 현상, 같은 전류, 원인"""
+    MK = {"MCB": "o", "MBC 95": "s", "MBC 90": "^"}
+    get = {(x["variant"], x["table"], x["T_ref"], x["td_us"]): x for x in hm}
+    fig, axs = plt.subplots(1, 3, figsize=(12.6, 4.0), constrained_layout=True)
+    ax = axs[0]
+    for vn, lab, col in (("fea_avg", "C 평균 맵", C[2]), ("fea_pos", "D 위치별 맵", C[3])):
+        for tb, mk in MK.items():
+            pts = [(x["T_ref"], x["T_sim"]) for k, x in get.items() if k[0] == vn and k[1] == tb and k[3] == 0]
+            if pts:
+                t, s = np.array(pts).T
+                ax.plot(t, s, mk, color=col, mec=INK2, mew=0.6, ms=7, ls="none",
+                        label="%s · %s" % (lab, tb))
+    ax.plot([-25, 65], [-25, 65], "--", color=INK2, lw=1)
+    ax.set(xlim=(-2, 65), ylim=(-25, 65), xlabel="지령 토크 [N·m]", ylabel="실현 평균 토크 [N·m]",
+           title="(a) 현상: 위치별 맵에서 토크가 모자란다")
+    ax.legend(fontsize=7, loc="upper left")
+    ax = axs[1]
+    for vn, lab, fc in (("fea_pos", "D", C[3]), ("fea_pos_ff", "D$_{ff}$ (기준 전류 디커플링)", "white")):
+        for tb, mk in MK.items():
+            pts = [(x["T_map"], x["T_sim"]) for k, x in get.items() if k[0] == vn and k[1] == tb]
+            if pts:
+                m, s = np.array(pts).T
+                ax.plot(m, s, mk, color=fc, mec=INK2, mew=0.8, ms=7, ls="none", label="%s · %s" % (lab, tb))
+    ax.plot([-25, 65], [-25, 65], "--", color=INK2, lw=1)
+    r0 = max(abs(x["T_sim"] - x["T_map"]) for x in hm if x["td_us"] == 0)
+    r3 = max(abs(x["T_sim"] - x["T_map"]) for x in hm if x["td_us"] == 3)
+    ax.text(0.97, 0.04, "최대 차 %.1f N·m (데드타임 3 µs 포함 %.1f)" % (r0, r3), transform=ax.transAxes,
+            ha="right", va="bottom", fontsize=8, color=INK2)
+    ax.set(xlim=(-25, 65), ylim=(-25, 65), xlabel="평균 맵 토크 @ D가 도달한 평균 (I, γ) [N·m]",
+           ylabel="D 실현 평균 토크 [N·m]", title="(b) 같은 평균 전류: 평균 토크는 그대로")
+    ax.legend(fontsize=7, loc="upper left")
+    ax = axs[2]
+    for vn, lab, fc in (("fea_pos", "D", C[3]), ("fea_pos_ff", "D$_{ff}$", "white")):
+        for tb, mk in MK.items():
+            pts = []
+            for k, x in get.items():
+                c = get.get(("fea_avg", k[1], k[2], k[3]))
+                if k[0] == vn and k[1] == tb and k[3] == 0 and c is not None:
+                    pts.append((x["gamma_sim"] - c["gamma_sim"], c["T_sim"] - x["T_sim"]))
+            if pts:
+                g, d = np.array(pts).T
+                ax.plot(g, d, mk, color=fc, mec=INK2, mew=0.8, ms=7, ls="none", label="%s · %s" % (lab, tb))
+    gg = np.array([0, 2])
+    ax.plot(gg, 11*gg, "--", color=INK2, lw=1)
+    ax.text(1.55, 11*1.55 + 1.2, "|dT/dγ| = 11 N·m/°", rotation=0, fontsize=8, color=INK2, ha="right")
+    ax.set(xlim=(0, 2), ylim=(0, 22), xlabel=r"실현 진각 이동 $\gamma_D - \gamma_C$ [°]", ylabel=r"토크 결손 $T_C - T_D$ [N·m]",
+           title="(c) 원인: 진각 이동 × 진각 민감도")
+    ax.legend(fontsize=7, loc="upper left")
+    fig.suptitle("슬롯 고조파는 같은 전류의 평균 토크를 바꾸지 않고 제어기가 도달하는 진각을 옮긴다 "
+                 "(Simscape 단계 2d, 16 krpm, 데드타임 0)", fontsize=10.5)
+    fig.savefig(os.path.join(OUT, "sh_same_current.png"))
+    plt.close(fig)
+
+
+def notch_pair(rpm, Ts=50e-6, r=0.9):
+    """run_e10_stage2e.m 과 같은 노치 둘(6차, 샘플링에 접힌 12차): [(b, a), (b, a)], f6, f12_seen [Hz]"""
+    we = 4*rpm*2*np.pi/60
+    out = []
+    w1 = (6*we*Ts) % (2*np.pi)
+    w12 = (12*we*Ts) % (2*np.pi)
+    w2 = min(w12, 2*np.pi - w12)
+    for w0 in (w1, w2):
+        b = np.array([1.0, -2*np.cos(w0), 1.0])
+        a = np.array([1.0, -2*r*np.cos(w0), r*r])
+        out.append((b*a.sum()/b.sum(), a))
+    return out, w1/(2*np.pi*Ts), w2/(2*np.pi*Ts)
+
+
+def fig_notch():
+    """노치란 무엇인가 — 주파수 응답(깎는 곳과 남기는 곳), 교차 주파수의 위상 지연(대가), 제어기가 보는 전류(효과)"""
+    from scipy.signal import lfilter
+    Ts, fc = 50e-6, 1e4/(2*np.pi)
+    f = np.linspace(1, 1/(2*Ts), 4000)
+    w = 2*np.pi*f*Ts
+    z = np.exp(-1j*np.outer(w, np.arange(3)))
+    fig, axs = plt.subplots(1, 3, figsize=(13.4, 4.1), constrained_layout=True)
+    for rpm, col, off in ((6000, C[1], (8, -4)), (10000, C[3], (8, -13)), (16000, C[0], (8, 5))):
+        pair, f6, f12 = notch_pair(rpm)
+        h = np.ones_like(w, dtype=complex)
+        for b, a in pair:
+            h *= (z @ b)/(z @ a)
+        lab = "%d krpm (6차 %.1f kHz, 12차 → %.1f kHz)" % (rpm/1000, f6/1e3, f12/1e3)
+        axs[0].plot(f/1e3, 20*np.log10(np.abs(h) + 1e-6), color=col, lw=1.6, label=lab)
+        ph = np.degrees(np.unwrap(np.angle(h)))
+        axs[1].plot(f/1e3, ph, color=col, lw=1.6, label="%d krpm" % (rpm/1000))
+        wc = 2*np.pi*fc*Ts
+        hc = np.prod([(np.exp(-1j*wc*np.arange(3)) @ b)/(np.exp(-1j*wc*np.arange(3)) @ a) for b, a in pair])
+        axs[1].plot(fc/1e3, np.degrees(np.angle(hc)), "o", color=col, ms=7, mec=INK2)
+        axs[1].annotate("%.1f°" % np.degrees(np.angle(hc)), (fc/1e3, np.degrees(np.angle(hc))), xytext=off,
+                        textcoords="offset points", fontsize=8, color=col)
+    for ax in axs[:2]:
+        ax.axvline(fc/1e3, color=INK2, ls="--", lw=1)
+        ax.set_xlabel("주파수 [kHz] (나이퀴스트 10 kHz)")
+    axs[0].text(fc/1e3 + 0.1, -38, "전류 루프\n교차 1.6 kHz", fontsize=8, color=INK2)
+    axs[0].set(ylabel="이득 [dB]", ylim=(-42, 4), xlim=(0, 10), title="(a) 한 주파수만 깊게 깎고 나머지는 통과(직류 이득 1)")
+    axs[0].legend(fontsize=7, loc="lower right")
+    axs[1].set(ylabel="위상 [°]", xlim=(0, 10), ylim=(-100, 100), title="(b) 대가: 홈 아래쪽의 위상 지연 — 교차에서 ●")
+    axs[1].legend(fontsize=7.5, loc="lower right")
+    ax = axs[2]
+    rpm = 16000
+    we = 4*rpm*2*np.pi/60
+    t = np.arange(0, 0.012, Ts)
+    th = we*t
+    iq = 6.8 + 5.0*np.cos(6*th) + 6.0*np.cos(12*th + 0.7)
+    y = iq.copy()
+    pair, _, _ = notch_pair(rpm)
+    for b, a in pair:
+        y = lfilter(b, a, y)
+    n0 = len(t) - int(4*2*np.pi/we/Ts)
+    tt = (t[n0:] - t[n0])*1e3
+    tf = np.linspace(t[n0], t[-1], 3000)
+    thf = we*tf
+    ax.plot((tf - t[n0])*1e3, 6.8 + 5.0*np.cos(6*thf) + 6.0*np.cos(12*thf + 0.7), color=C[1], lw=0.8, alpha=0.45,
+            label="실제 i$_q$ (평균 + 6·12차)")
+    ax.plot(tt, iq[n0:], ".", color=C[1], ms=4, label="샘플 (20 kHz)")
+    ax.plot(tt, y[n0:], color=C[0], lw=2.0, label="노치를 지난 샘플 (제어기가 보는 값)")
+    ax.axhline(6.8, color=INK2, ls=":", lw=1)
+    ax.set(xlabel="시간 [ms] (16 krpm, 전기 4주기)", ylabel="i$_q$ [A]", title="(c) 효과: 제어기는 평균만 본다")
+    ax.legend(fontsize=7.5, loc="lower right")
+    fig.suptitle("노치 필터 — 측정 dq 전류의 6차와 접힌 12차만 지우는 대역 저지 필터 (r = 0.9, 샘플 20 kHz)", fontsize=10.5)
+    fig.savefig(os.path.join(OUT, "notch_explained.png"))
+    plt.close(fig)
+
+
+def fig_phase_margin():
+    """위상 여유란 — q축 전류 루프(K_p 16 Ω, L_q 1.6 mH, 연산 지연 1샘플 + 영차 유지)의 개루프 보드 선도와 계단 응답,
+    노치 없음 / 16 krpm 노치 / 6 krpm 노치. 노치는 측정 전류(피드백 경로)에 둔다."""
+    Ts, L, R, Kp = 50e-6, 1.597e-3, 0.0786, 16.0
+    f = np.logspace(2, np.log10(0.5/Ts), 3000)
+    w = 2*np.pi*f
+    base = Kp/(1j*w*L)*np.exp(-1j*w*1.5*Ts)                   # PI 영점이 플랜트 극점을 지움: K_p/(sL) · 지연
+    cases = [("노치 없음", None, INK2), ("노치 16 krpm", 16000, C[0]), ("노치 6 krpm", 6000, C[1])]
+    fig, axs = plt.subplots(1, 3, figsize=(13.4, 4.1), constrained_layout=True)
+    zz = np.exp(-1j*np.outer(w*Ts, np.arange(3)))
+    for lab, rpm, col in cases:
+        Lw = base.copy()
+        if rpm:
+            for b, a in notch_pair(rpm)[0]:
+                Lw *= (zz @ b)/(zz @ a)
+        mag = 20*np.log10(np.abs(Lw))
+        ph = np.degrees(np.unwrap(np.angle(Lw)))
+        k = int(np.argmax(mag < 0))                             # 첫 0 dB 교차 (위에서 아래로)
+        fr = mag[k - 1]/(mag[k - 1] - mag[k])
+        fx = f[k - 1] + fr*(f[k] - f[k - 1])
+        pk = ph[k - 1] + fr*(ph[k] - ph[k - 1])
+        pm = 180 + pk
+        axs[0].semilogx(f, mag, color=col, lw=1.6, label=lab)
+        axs[1].semilogx(f, ph, color=col, lw=1.6, label="%s: 위상 여유 %.0f°" % (lab, pm))
+        axs[1].plot(fx, pk, "o", color=col, ms=6, mec=INK2)
+        # 계단 응답 (이산): i[k+1] = a i + b v, v = 지연된 PI 출력, 피드백은 노치를 지난 측정 전류
+        a_ = np.exp(-R*Ts/L)
+        b_ = (1 - a_)/R
+        n = int(3e-3/Ts)
+        i = np.zeros(n + 1)
+        x = 0.0
+        vprev = 0.0
+        filt = [(bb, aa, np.zeros(2), np.zeros(2)) for bb, aa in (notch_pair(rpm)[0] if rpm else [])]
+        for kk in range(n):
+            y = i[kk]
+            for bb, aa, xs, ys in filt:
+                out = bb[0]*y + bb[1]*xs[0] + bb[2]*xs[1] - aa[1]*ys[0] - aa[2]*ys[1]
+                xs[1], xs[0] = xs[0], y
+                ys[1], ys[0] = ys[0], out
+                y = out
+            e = 1.0 - y
+            vc = Kp*e + x
+            x += Kp*R/L*Ts*e
+            i[kk + 1] = a_*i[kk] + b_*vprev
+            vprev = vc
+        t = np.arange(n + 1)*Ts*1e3
+        axs[2].plot(t, i, color=col, lw=1.6, label="%s (최대 %.2f)" % (lab, i.max()))
+    axs[0].axhline(0, color=INK2, lw=0.8)
+    axs[0].axvline(1e4/(2*np.pi), color=INK2, ls="--", lw=1)
+    axs[0].set(xlabel="주파수 [Hz]", ylabel="개루프 이득 [dB]", ylim=(-40, 40),
+               title="(a) 교차 주파수: 개루프 이득이 0 dB가 되는 곳 (1.6 kHz)")
+    axs[0].legend(fontsize=7.5, loc="lower left")
+    axs[1].axhline(-180, color=INK, ls=":", lw=1)
+    axs[1].axvline(1e4/(2*np.pi), color=INK2, ls="--", lw=1)
+    axs[1].set(xlabel="주파수 [Hz]", ylabel="개루프 위상 [°]", ylim=(-300, -60),
+               title="(b) 위상 여유 = 교차에서 −180°까지 남은 각")
+    axs[1].legend(fontsize=7.5, loc="lower left")
+    axs[2].axhline(1, color=INK2, ls=":", lw=1)
+    axs[2].set(xlabel="시간 [ms]", ylabel="q축 전류 (지령 1 A 계단)", xlim=(0, 3),
+               title="(c) 여유가 줄면 계단 응답이 더 튀고 흔들린다")
+    axs[2].legend(fontsize=7.5, loc="lower right")
+    fig.suptitle("위상 여유와 노치의 대가 — q축 전류 루프 (K$_p$ 16 Ω, L$_q$ 1.6 mH, 샘플 20 kHz, 연산 지연 1샘플)",
+                 fontsize=10.5)
+    fig.savefig(os.path.join(OUT, "phase_margin_notch.png"))
+    plt.close(fig)
+
+
+def fig_g_vs_A(hb, rem):
+    """잘림을 없애는 두 길: 평균 명령을 내려 틈 g를 키우거나(여유, 전압 피드백 약자속) 명령 리플 A를 없앤다(노치).
+    16 krpm 20 N·m, 데드타임 0, 조화균형 계산. 막대 = 평균 명령 ± 리플 진폭, 한계 위 몫이 잘린다."""
+    VL = 403.2
+    def rget(name):
+        return next(x for x in rem if x["remedy"] == name and x["table"] == "QS 95" and x["T_ref"] == 20)
+    m25 = next(x for x in hb if x["variant"] == "fea_pos" and x["table"] == "QS 75" and x["T_ref"] == 20 and x["td_us"] == 0)
+    cases = [("대책 없음\n(여유 5 % 표)", rget("base")), ("여유 25 % 표", m25),
+             ("전압 피드백 약자속\n(여유 5 % 표)", rget("fw")), ("노치\n(여유 5 % 표)", rget("notch"))]
+    fig, ax = plt.subplots(figsize=(8.6, 4.6), constrained_layout=True)
+    for k, (lab, x) in enumerate(cases):
+        V, A = x["V_cmd"], x["dv_pk"]
+        lo, hi = V - A, V + A
+        ax.plot([k, k], [lo, min(hi, VL)], color=C[0], lw=14, solid_capstyle="butt", alpha=0.35)
+        if hi > VL:
+            ax.plot([k, k], [VL, hi], color=C[1], lw=14, solid_capstyle="butt", alpha=0.85)
+        ax.plot(k, V, "o", color=INK, ms=6, zorder=5)
+        ax.annotate("", xy=(k + 0.22, VL), xytext=(k + 0.22, V), arrowprops=dict(arrowstyle="<->", color=INK2, lw=1))
+        ax.text(k + 0.27, (V + VL)/2, "g %.0f V" % (VL - V), fontsize=8, va="center", color=INK2)
+        ax.text(k - 0.27, V + A/2, "A %.0f V" % A, fontsize=8, va="center", ha="right", color=INK2)
+        T = x.get("T_shaft", 20.0)
+        ax.text(k, 548, "잘림 %.0f %%\nT %.1f N·m" % (x["sat"] if x["sat"] > 1 else 100*x["sat"], T), ha="center",
+                va="bottom", fontsize=8.5, color=INK)
+    ax.axhline(VL, color=INK, ls="--", lw=1.2)
+    ax.text(3.45, VL + 4, "한계 403 V", fontsize=8, ha="right", va="bottom")
+    ax.set_xticks(range(len(cases)), [c[0] for c in cases], fontsize=8.5)
+    ax.set(xlim=(-0.6, 3.6), ylim=(120, 600), ylabel="명령 전압 크기 [V 첨두]")
+    ax.text(0.01, 0.01, "막대 = 평균 명령 ± 리플 진폭 A, 주황 = 한계 위(잘리는 몫). 16 krpm, 20 N·m, 조화균형 계산.",
+            transform=ax.transAxes, fontsize=7.5, color=INK2, va="bottom")
+    fig.suptitle("잘림을 없애는 두 길 — 평균을 내려 틈 g를 키우거나(여유, 약자속), 리플 A를 없앤다(노치)", fontsize=10.5)
+    fig.savefig(os.path.join(OUT, "g_vs_A.png"))
+    plt.close(fig)
+
+
+def fig_margin_vs_speed(hb, nsr, sims):
+    """여유를 늘리는 것과 속도를 낮추는 것은 다른 손잡이다 (20 N·m), 그리고 노치의 속도 범위.
+    hb: qs_harmonic_hb.json, nsr: notch_speed_range.json, sims: stage2e_speed_*.csv 행들"""
+    VL = 403.2
+    fig, axs = plt.subplots(1, 3, figsize=(13.2, 4.1), constrained_layout=True)
+    ax = axs[0]
+    h = sorted([x for x in hb if x["variant"] == "fea_pos" and x["T_ref"] == 20 and x["td_us"] == 0
+                and str(x["table"]).startswith("QS")], key=lambda x: -float(x["table"].split()[1]))
+    m = np.array([100 - float(x["table"].split()[1]) for x in h])
+    A = np.array([x["dv_pk"] for x in h])
+    g = np.array([VL - x["V_cmd"] for x in h])
+    ax.plot(m, A, "o-", color=C[1], label="리플 진폭 A (명령 전압)")
+    ax.plot(m, g, "s-", color=C[0], label="틈 g = 한계 − 평균 명령")
+    for mi, ai, x in zip(m, A, h):
+        ax.annotate("잘림 %.0f %%" % x["sat"], (mi, ai + 6), ha="center", fontsize=7.5, color=INK2)
+    ax.set(xlabel="교정표 전압 여유 [%]", ylabel="[V]", ylim=(0, 180),
+           title="(a) 16 krpm에서 여유를 늘리면: g가 커진다")
+    ax.text(0.03, 0.97, "기준 진각 %.2f° → %.2f°" % (h[0]["gamma_ref"], h[-1]["gamma_ref"]), transform=ax.transAxes,
+            va="top", fontsize=8, color=INK2)
+    ax.legend(fontsize=7.5, loc="center left")
+    ax = axs[1]
+    r20 = sorted([r for r in nsr if r["T"] == 20], key=lambda r: r["rpm"])
+    n = np.array([r["rpm"] for r in r20])/1000
+    A2 = np.array([r["base"]["dv_pk"] for r in r20])
+    ax.plot(n, A2, "o-", color=C[1], label="리플 진폭 A")
+    ax.axhline(0.05*VL, color=C[0], ls="--", lw=1.5, label="표의 여유 5 % (약 20 V)")
+    for ni, ai, r in zip(n, A2, r20):
+        eps = 90 - np.degrees(np.arctan2(-r["id_ref"], r["iq_ref"]))
+        ax.annotate("ε %.1f°" % eps, (ni, ai + 6), ha="center", fontsize=7.5, color=INK2)
+    ax.set(xlabel="속도 [krpm]", ylabel="[V]", ylim=(0, 180), xlim=(5, 17),
+           title="(b) 속도를 낮추면: A가 줄고 90°에서 멀어진다")
+    ax.legend(fontsize=7.5, loc="center right")
+    ax = axs[2]
+    for T, mk in ((20, "o"), (60, "s")):
+        for rem, col, lab in (("base", C[1], "대책 없음"), ("notch", C[2], "노치")):
+            pts = sorted((float(s["rpm"])/1000, float(s["err_pct"])) for s in sims
+                         if s["remedy"] == rem and float(s["T_ref"]) == T)
+            if pts:
+                x, y = np.array(pts).T
+                ax.plot(x, y, mk + "-", color=col, mfc=col if T == 20 else "white", mec=col, lw=1.4,
+                        label="%s %d N·m (Simscape)" % (lab, T))
+        hh = sorted([(r["rpm"]/1000, r["base"]["err"]) for r in nsr if r["T"] == T])
+        if T == 20 and hh:
+            x, y = np.array(hh).T
+            ax.plot(x, y, ":", color=INK2, lw=1.2, label="대책 없음 20 N·m (HB)")
+    ax.axhspan(-5, 5, color=GRID, alpha=0.5, lw=0)
+    ax.set(xlabel="속도 [krpm]", ylabel="토크 오차 [%]", ylim=(-62, 8), xlim=(5, 17),
+           title="(c) 노치의 속도 범위 (속도별 여유 5 % 표)")
+    ax.legend(fontsize=7, loc="lower left")
+    fig.suptitle("여유와 속도는 다른 손잡이다 — 여유는 틈 g를, 속도는 리플 A와 남은 각 ε를 바꾼다 "
+                 "(20 N·m, 위치별 맵, 표준 제어기)", fontsize=10.5)
+    fig.savefig(os.path.join(OUT, "margin_vs_speed.png"))
+    plt.close(fig)
+
+
 if __name__ == "__main__":
     A = json.load(open(os.path.join(WORK, "posmap_band_analysis.json")))
     fig_lab_check(A)
@@ -410,6 +691,8 @@ if __name__ == "__main__":
     phm = os.path.join(WORK, "qs_harmonic_margin.json")
     if rows_qs and os.path.exists(phm):
         fig_margin(rows_qs, json.load(open(phm)))
+    if os.path.exists(phm):
+        fig_same_current(json.load(open(phm)))
     phb = os.path.join(WORK, "qs_harmonic_hb.json")
     if os.path.exists(phb):
         fig_hb(json.load(open(phb)))

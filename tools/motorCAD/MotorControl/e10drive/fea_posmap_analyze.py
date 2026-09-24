@@ -31,6 +31,15 @@ LAB16 = os.path.join(DRV, "e10_satloss_16000.mat")
 RPM, P_POLE, R_DC = 16000.0, 4, 0.0786
 WM = RPM*2*np.pi/60
 WE = P_POLE*WM
+
+
+def set_speed(rpm):
+    """Change the electrical speed used for voltages (flux maps are speed-independent). WM, used only to turn the
+    band's braking losses into torque, stays at 16 krpm: those loss maps are 16 krpm values, so the shaft-torque
+    map T_em - P_brake,16k/w_m,16k is kept as one fixed torque map at every speed (the same map Simscape uses)."""
+    global RPM, WE
+    RPM = float(rpm)
+    WE = P_POLE*RPM*2*np.pi/60
 P_MECH = 159.73                    # Lab FMU windage at 16 krpm (friction 0)
 VMAX = 285.1*np.sqrt(2)
 OPS = [(5, -190.9, 2.2), (20, -195.7, 6.8), (40, -203.7, 12.8), (60, -221.4, 18.3), (80, -242.9, 22.8)]
