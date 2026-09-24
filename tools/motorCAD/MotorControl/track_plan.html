@@ -1,0 +1,267 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>구동 트랙 진행 계획</title><style>
+:root{--bg:#fbfaf7;--card:#ffffff;--fg:#1f2328;--mut:#5d6670;--line:#dcd7ce;--acc:#8a4b1f;--hl:#fff3e6;
+--ready:#1f7a45;--ready-bg:#e6f3ea;--user:#8a4b1f;--user-bg:#fbeee2;--wait:#5b5fa8;--wait-bg:#ecedf7;--later:#6b6f76;
+--later-bg:#eef0f2;--bar-thesis:#c9b8a3;--bar-track:#8a4b1f;--bar-track2:#c98a57;--today:#b3261e;--add:#1f7a45;--del:#b3261e}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){color-scheme:dark;--bg:#15171a;--card:#1d2024;
+--fg:#e8e5df;--mut:#a4abb2;--line:#383c42;--acc:#e0a36e;--hl:#2a2218;--ready:#6fd39a;--ready-bg:#17301f;--user:#e0a36e;
+--user-bg:#33251a;--wait:#a9adf0;--wait-bg:#23253d;--later:#a4abb2;--later-bg:#262a2f;--bar-thesis:#5a4d3f;
+--bar-track:#e0a36e;--bar-track2:#9a6a44;--today:#f08a80;--add:#6fd39a;--del:#f08a80}}
+:root[data-theme="dark"]{color-scheme:dark;--bg:#15171a;--card:#1d2024;--fg:#e8e5df;--mut:#a4abb2;--line:#383c42;
+--acc:#e0a36e;--hl:#2a2218;--ready:#6fd39a;--ready-bg:#17301f;--user:#e0a36e;--user-bg:#33251a;--wait:#a9adf0;
+--wait-bg:#23253d;--later:#a4abb2;--later-bg:#262a2f;--bar-thesis:#5a4d3f;--bar-track:#e0a36e;--bar-track2:#9a6a44;
+--today:#f08a80;--add:#6fd39a;--del:#f08a80}
+body{background:var(--bg);color:var(--fg);font:15px/1.65 system-ui,"Malgun Gothic","Apple SD Gothic Neo","Noto Sans KR",sans-serif;margin:0}
+.wrap{max-width:1040px;margin:0 auto;padding-inline:16px;padding-block:20px 56px}
+h1{font-size:24px;line-height:1.3;margin:4px 0 4px;text-wrap:balance}
+h2{font-size:18px;margin:34px 0 10px;padding-bottom:5px;border-bottom:2px solid var(--acc);text-wrap:balance}
+h3{font-size:16px;margin:18px 0 6px}
+.sub{color:var(--mut);margin:0 0 12px}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin:10px 0 4px;flex-wrap:wrap}
+.tabs button{font:inherit;font-size:14.5px;background:none;border:0;border-bottom:3px solid transparent;color:var(--mut);
+padding:6px 12px;cursor:pointer}
+.tabs button[aria-selected="true"]{color:var(--fg);border-bottom-color:var(--acc);font-weight:700}
+.tabs button:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.banner{background:var(--wait-bg);color:var(--fg);border-radius:8px;padding:8px 12px;margin:12px 0;font-size:14px}
+.banner button{font:inherit;font-size:13.5px;margin-left:8px;border:1px solid var(--line);background:var(--card);color:var(--fg);
+border-radius:6px;padding:1px 8px;cursor:pointer}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin:14px 0}
+.tile{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:10px 12px}
+.tile .k{font-size:12.5px;color:var(--mut);letter-spacing:.02em}
+.tile .v{font-size:19px;font-weight:700;color:var(--acc);font-variant-numeric:tabular-nums;margin:2px 0}
+.tile .d{font-size:13px;color:var(--mut)}
+.next{background:var(--hl);border-radius:8px;padding:12px 14px;margin:10px 0}
+.scroll{overflow-x:auto}
+.items{list-style:none;padding:0;margin:0}
+.item{border-bottom:1px solid var(--line);padding:12px 2px}
+.item:first-child{border-top:1px solid var(--line)}
+.ihead{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:baseline}
+.ititle{font-weight:700;font-size:15.5px}
+.chip{display:inline-block;font-size:12px;line-height:1.5;padding:0 8px;border-radius:999px;border:1px solid var(--line);color:var(--mut);white-space:nowrap}
+.p1{border-color:var(--acc);color:var(--acc);font-weight:700}
+.st-ready{background:var(--ready-bg);color:var(--ready);border-color:transparent}
+.st-user{background:var(--user-bg);color:var(--user);border-color:transparent}
+.st-wait{background:var(--wait-bg);color:var(--wait);border-color:transparent}
+.st-later{background:var(--later-bg);color:var(--later);border-color:transparent}
+.row{display:grid;grid-template-columns:5.2em 1fr;gap:2px 10px;margin-top:6px;font-size:14px}
+.row b{color:var(--mut);font-weight:600}
+.refs{margin-top:6px;font-size:13px;display:flex;flex-wrap:wrap;gap:6px 12px}
+.ref{color:var(--mut)}
+.part{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:6px 16px 12px;margin:12px 0}
+.part ol{margin:4px 0 10px;padding-left:1.4em}
+.part li{margin:3px 0}
+.part .src{color:var(--mut);font-size:12.5px}
+code{font:12.5px/1.4 ui-monospace,Consolas,monospace;word-break:break-all}
+table{border-collapse:collapse;width:100%;font-size:14px}
+td,th{border-bottom:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top}
+th{color:var(--mut);font-weight:600}
+td.n{white-space:nowrap;font-variant-numeric:tabular-nums;color:var(--mut)}
+.chg{margin:4px 0 0;padding-left:1.2em;font-size:13.5px}
+.chg .a{color:var(--add)}
+.chg .r{color:var(--del)}
+a{color:var(--acc)}
+a:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.mut{color:var(--mut)}
+.small{font-size:13px}
+.foot{margin-top:36px;font-size:13px;color:var(--mut)}
+svg text{font-family:system-ui,"Malgun Gothic","Apple SD Gothic Neo",sans-serif}
+</style></head><body><div class="wrap">
+<h1>구동 트랙 진행 계획</h1>
+<p class="sub">PC1 구동·손실 트랙(진각 벽, 슬롯 고조파, 손실 규약)의 남은 일과 학위논문 일정 · 최신 판 v2 (2026-09-24 15:38) · 생성기 <code>make_track_plan.py</code></p>
+<nav class="tabs" role="tablist"><button type="button" role="tab" data-go="plan" aria-selected="true">계획 (v2)</button><button type="button" role="tab" data-go="history" aria-selected="false">버전 이력 (2)</button></nav>
+<section id="plan" data-view><div class="tiles">
+<div class="tile"><div class="k">본심 (11월 말)</div><div class="v">D−67</div><div class="d">사전 배포본 11/1까지 D−38</div></div>
+<div class="tile"><div class="k">7장 마감 (9월 말)</div><div class="v">D−6</div><div class="d">10월 초 6·5·3장</div></div>
+<div class="tile"><div class="k">이 트랙 남은 일</div><div class="v">11건</div><div class="d">P1 2 · P2 6 · P3 3</div></div>
+<div class="tile"><div class="k">완료</div><div class="v">10건</div><div class="d">09-17부터, 근거는 결과 보고서</div></div>
+</div>
+<div class="next"><b>다음 한 가지.</b> 제4부(구동 제어와의 연계) 구성안을 확정한다: 두 장(8·9장), 7장 뒤, 결론은 10장. 확정되면 PC1이 원고 골격과 1장·결론 연결 초안을 만들고, 병행해서 노치의 속도 범위 계산을 분리 실행으로 돌린다.</div>
+<h2>일정</h2><div class="scroll"><svg viewBox="0 0 980 344" width="100%" style="min-width:720px;display:block" role="img" aria-label="학위논문 일정과 이 트랙의 제안 일정"><line x1="261.5" y1="22" x2="261.5" y2="322" stroke="var(--line)" stroke-width="1"/><text x="264.5" y="16" font-size="12" fill="var(--mut)">10월</text><line x1="607.2" y1="22" x2="607.2" y2="322" stroke="var(--line)" stroke-width="1"/><text x="610.2" y="16" font-size="12" fill="var(--mut)">11월</text><line x1="941.7" y1="22" x2="941.7" y2="322" stroke="var(--line)" stroke-width="1"/><text x="944.7" y="16" font-size="12" fill="var(--mut)">12월</text><text x="153.0" y="16" font-size="12" fill="var(--mut)">9월</text><text x="0" y="48" font-size="12.5" fill="var(--mut)" font-weight="600">학위논문 일정</text><rect x="161.2" y="34" width="100.4" height="18" rx="3" fill="var(--bar-thesis)"/><text x="266.5" y="47" font-size="12" fill="var(--fg)" text-anchor="start">7장 마감</text><rect x="261.5" y="58" width="111.5" height="18" rx="3" fill="var(--bar-thesis)"/><text x="378.0" y="71" font-size="12" fill="var(--fg)" text-anchor="start">6·5·3장</text><rect x="373.0" y="82" width="167.3" height="18" rx="3" fill="var(--bar-thesis)"/><text x="545.3" y="95" font-size="12" fill="var(--fg)" text-anchor="start">1–2·8장 + 통합 교정 → 3인 회람</text><path d="M607.2 106 l7 9 l-7 9 l-7 -9 z" fill="var(--acc)"/><text x="597.2" y="119" font-size="12" fill="var(--fg)" text-anchor="end">사전 배포본</text><rect x="618.3" y="130" width="289.9" height="18" rx="3" fill="var(--bar-thesis)"/><text x="613.3" y="143" font-size="12" fill="var(--fg)" text-anchor="end">발표 준비</text><path d="M930.5 154 l7 9 l-7 9 l-7 -9 z" fill="var(--acc)"/><text x="920.5" y="167" font-size="12" fill="var(--fg)" text-anchor="end">본심 (11월 말)</text><text x="0" y="208" font-size="12.5" fill="var(--mut)" font-weight="600">이 트랙 (제안)</text><rect x="183.5" y="194" width="33.5" height="18" rx="3" fill="var(--bar-track)"/><text x="221.9" y="207" font-size="12" fill="var(--fg)" text-anchor="start">제4부 구성안 확정</text><rect x="228.1" y="218" width="55.8" height="18" rx="3" fill="var(--bar-track)"/><text x="288.8" y="231" font-size="12" fill="var(--fg)" text-anchor="start">제4부 골격·1장·결론 연결</text><rect x="239.2" y="242" width="89.2" height="18" rx="3" fill="var(--bar-track)"/><text x="333.4" y="255" font-size="12" fill="var(--fg)" text-anchor="start">노치 속도 범위</text><rect x="306.1" y="266" width="178.4" height="18" rx="3" fill="var(--bar-track)"/><text x="489.5" y="279" font-size="12" fill="var(--fg)" text-anchor="start">제4부 8·9장 초안</text><rect x="328.4" y="290" width="111.5" height="18" rx="3" fill="var(--bar-track2)"/><text x="444.9" y="303" font-size="12" fill="var(--fg)" text-anchor="start">P2 검증 보강</text><line x1="183.5" y1="22" x2="183.5" y2="322" stroke="var(--today)" stroke-width="1.6" stroke-dasharray="4 3"/><text x="187.5" y="336" font-size="12" fill="var(--today)">오늘 09-24</text></svg></div>
+<p class="mut small">학위논문 일정은 흐름 노트 §일정 개정(2026-09-06)의 12주 역산 요지다(정본은 그 노트). 이 트랙 막대는 제안이다. JEET 게재 확정이 본심 신청 조건이며, 10월 초 편집부 진행 문의가 잡혀 있다.</p>
+<h2>P1 — 논문 신뢰성·반영에 직접 필요</h2><ul class="items">
+<li class="item"><div class="ihead"><span class="ititle">제4부 &#x27;구동 제어와의 연계&#x27; 구성과 원고</span><span class="chip p1">P1</span><span class="chip st-user">사용자 확인 필요</span><span class="chip">사용자 확정 → PC1 초안</span><span class="chip">예상 골격 0.5일, 초안 5–7일</span></div>
+<div class="row"><b>왜</b><span>노치 등 제어 관련 결과는 분량과 깊이가 있어 별도 파트로 둔다(사용자 결정 09-24). 현재 6장은 대리모델 기반 다목적 최적설계라서 여기에 넣을 자리가 아니다. 논문은 이미 3부 8장 구조이므로, 7장 뒤에 제4부를 신설하면 4부 10장이 된다.</span><b>다음</b><span>아래 &#x27;제4부 구성안&#x27;을 확정한다(두 장 대 한 장, 위치). 확정되면 원고 골격(.tex 두 개)을 만들고 phdThesis_v2.tex와 Overleaf 매니페스트에 넣는다. 1장 논문 구성·그림, 2장 311행의 한계 문장, 결론(→10장)의 기여·한계·향후 연구를 잇는다. 그다음 결과 페이지 4–5절과 해설 13–15절을 원고로 옮긴다.</span><b>산출물</b><span>8·9장 원고(약 30–38쪽), 1장·결론 연결</span></div>
+<div class="refs"><a href="gamma_wall_explainer.html#j">결과 4.9절</a><a href="drive_model_study.html#harm">해설 14절</a></div>
+</li>
+<li class="item"><div class="ihead"><span class="ititle">노치의 속도 범위 확인 (16 krpm 밖)</span><span class="chip p1">P1</span><span class="chip st-ready">바로 진행 가능</span><span class="chip">PC1</span><span class="chip">예상 FEA 3–6 h(분리 실행) + 실행 1 h</span></div>
+<div class="row"><b>왜</b><span>노치 결론은 16 krpm 한 점에서만 확인했다. 저속에서는 고조파가 전류 루프 대역(1.6 kHz)에 가까워져 노치가 기본파 제어를 흔들 수 있다. 제4부의 대책 절이 이 범위를 말해야 한다.</span><b>다음</b><span>위치별 FEA 맵을 저속 운전 영역(더 큰 i_q)까지 넓혀 계산한다. 조화균형 계산기로 4·8·12·16 krpm을 걸러 켜는 문턱 후보를 정하고, Simscape 2e로 확인한다.</span><b>산출물</b><span>노치 사용 속도 범위 (제4부 9장 대책 절)</span></div>
+<div class="refs"><a href="gamma_wall_explainer.html#rem">결과 4.9.8절</a><a href="drive_model_study.html#remedy">해설 14.2절</a></div>
+</li>
+</ul>
+<div class="part"><h3>제4부 구성안 — 구동 제어와의 연계 (신설, 7장 뒤)</h3><p>현재 논문은 3부 8장이다: 제1부 배경·모델링(1–2장), 제2부 스케일링(3–5장), 제3부 최적설계와 통합(6–7장), 8장 결론. 6장은 대리모델 기반 다목적 최적설계라 제어 내용이 들어갈 자리가 아니다. 모든 FEA가 정현파 전류원이고 제어기 연동은 하지 않는다는 한계(2장 311행)와, 결론의 &#x27;형상–제어 코디자인&#x27; 항목이 든 세 가정(지령 전류가 그대로 흐름, V_max를 전부 씀, 정현파 전류) 가운데 뒤의 둘을 이 트랙이 직접 다룬다. 그래서 7장 케이스의 설계를 실제로 운전할 수 있는가를 묻는 제4부로 두는 것이 흐름에 맞다.</p><p><b>제8장 고속 약자속 운전의 전압 여유</b> <span class="mut">(15–18쪽)</span></p><ol><li><b>문제 — 현장의 진각 80° 벽 대 손실 최적 89.7°</b> — 두 숫자가 서로 다른 제약임을 보인다 <span class="src">[결과 1절]</span></li><li><b>16 krpm 전압 방정식과 진각 창</b> — γ ≥ 85–88°, 특성전류점 −273 A, 전류·진각 격자의 전압 <span class="src">[결과 1–2절, 해설 4절]</span></li><li><b>구동 모델 사다리와 검증</b> — 평균값 dq → 사건 구동 스위칭 → Simscape → Lab FMU. 스크립트 대 Simscape 0.05–1.8 %, 지연 인공물 정정 <span class="src">[결과 3·4.2·4.3·4.7절, 해설 1–12절]</span></li><li><b>전압 여유를 먹는 요인</b> — 데드타임(주기당 한 에지, 보상), 교류 동손 부하분(R_ac 0.050 Ω, 손실 규약), Lab 보간(직접 FEA로 검증) <span class="src">[결과 4.3·4.9.1·4.9.3절, 손실 규약 문서]</span></li><li><b>교정표의 전압 여유와 비용</b> — MCB·MBC·QS 표. 평균 맵에서는 5 %로 충분, 여유는 전류로 치름(20 N·m 손실 +3.5 %/5 %) <span class="src">[결과 4.4·4.9.5절]</span></li><li><b>오차의 비용은 손실이 아니라 토크</b> — Lab FMU로 되짚은 도달점 손실 <span class="src">[결과 4.5절]</span></li></ol><p><b>제9장 슬롯 고조파와 전류 조절기</b> <span class="mut">(15–20쪽)</span></p><ol><li><b>회전자 위치별 FEA 맵</b> — dq 6·12차, 토크 리플 47–75 N·m p-p, 실제 기계도 스큐 없음 <span class="src">[결과 4.9.2절, 해설 13절]</span></li><li><b>평균 토크는 그대로, 운전점이 옮겨진다</b> — Simscape 표 변형 A–D, 잔차 분석(0.5 N·m) <span class="src">[결과 4.9.3–4.9.4절]</span></li><li><b>클램프와 안티와인드업의 기구</b> — 정류 작용, mean(e) = δ/8.5 Ω, 틈과 리플 <span class="src">[해설 14.1절(그림 8)]</span></li><li><b>필요한 여유</b> — QS 표 5–30 %: 20 N·m에 25 %, 비용 +15 % <span class="src">[결과 4.9.5절]</span></li><li><b>정상상태 계산기와 조화균형 확장</b> — QS·HB, Simscape 재현 RMS 0.7 N·m·0.04° <span class="src">[결과 4.9.6절, 해설 15절]</span></li><li><b>대책</b> — 노치(해결, 여유 5 %로 복귀), 기준 전류 디커플링, PR(역효과), 과변조(일부), 전압 피드백 약자속(손실 +18–31 %) <span class="src">[결과 4.9.8절, 해설 14.2절]</span></li><li><b>설계 절차에의 함의와 한계</b> — 고속 손실 비교는 여유 k % 조건으로, 노치 속도 범위, Motor-CAD 전압 2–4 % <span class="src">[이 계획 P1·P2]</span></li></ol><p><b>다른 장에서 고칠 곳</b></p><ul><li>1장: &#x27;3부 8장&#x27; → &#x27;4부 10장&#x27;, 논문 구성 문단과 그림 fig:thesis_flow에 제4부 추가</li><li>2장 311–313행: &#x27;제어기–FEA 공동 시뮬레이션은 수행하지 않으며&#x27; 뒤에 제4부에서 다룬다는 한 문장</li><li>4장 800행 부근: 약자속 운전각 재평가 문장과 제4부의 운전점 계산기 연결</li><li>결론(8장 → 10장): 기여에 제4부 한 항목, 한계·향후 연구의 &#x27;형상–제어 코디자인&#x27; 항목 갱신</li><li>phdThesis_v2.tex에 새 장 포함, tools/overleaf_manifest.py에 두 파일 추가</li></ul><p><b>선택지</b></p><ul><li>두 장(권장): 부는 둘 이상의 장으로 묶는 기존 구성(2·3·2장)과 맞고, 8장은 여유, 9장은 고조파로 주제가 나뉜다.</li><li>한 장: 30쪽 남짓의 긴 장 하나. 부를 두기보다 7장 뒤 독립 장으로 두는 셈이다.</li></ul></div>
+<h2>P2 — 검증 보강</h2><ul class="items">
+<li class="item"><div class="ihead"><span class="ititle">Motor-CAD 전압 출력이 2–4 % 높은 원인</span><span class="chip ">P2</span><span class="chip st-ready">바로 진행 가능</span><span class="chip">PC1</span><span class="chip">예상 0.5일</span></div>
+<div class="row"><b>왜</b><span>Lab(414–419 V)과 E-Magnetic(20 N·m에서 411 V) 전압이 같은 자속으로 계산한 |R i + jω_e ψ|(401 V)보다 높다. 여유 계산의 기준점이 걸린 문제다.</span><b>다음</b><span>E-Magnetic에서 말단 권선 인덕턴스와 교류 저항 항을 켜고 끄며 페이저 전압을 비교한다. Lab의 전압 정의도 확인한다.</span><b>산출물</b><span>원인 1줄 + 4.9.1절 갱신</span></div>
+<div class="refs"><a href="gamma_wall_explainer.html#j">결과 4.9.1절</a></div>
+</li>
+<li class="item"><div class="ihead"><span class="ititle">FullFEA 축 토크 −0.32 N·m 차이 분리</span><span class="chip ">P2</span><span class="chip st-ready">바로 진행 가능</span><span class="chip">PC1</span><span class="chip">예상 1–2 h</span></div>
+<div class="row"><b>왜</b><span>Hybrid와 FullFEA 교류 동손이 같은 운전점에서 축 토크 −0.32 N·m 차이를 냈다. 기동 과도가 섞였을 수 있다.</span><b>다음</b><span>주기 수를 늘려 과도를 뺀 뒤 다시 계산한다.</span><b>산출물</b><span>손실 규약 문서 4.2절 갱신</span></div>
+<div class="refs"><a href="loss_torque_convention.html">손실 규약 문서</a></div>
+</li>
+<li class="item"><div class="ihead"><span class="ititle">정상상태 계산기의 데드타임 계수 보정</span><span class="chip ">P2</span><span class="chip st-ready">바로 진행 가능</span><span class="chip">PC1</span><span class="chip">예상 1 h</span></div>
+<div class="row"><b>왜</b><span>보상 없는 3 µs에서 계산기가 시간영역보다 진각을 0.1–0.5° 적게 낸다.</span><b>다음</b><span>시간영역 결과로 (4/π)V_dc·t_d·f_pwm 계수를 보정하거나, 전류 영교차 몫을 넣는다.</span><b>산출물</b><span>qs_opsolver.py 갱신</span></div>
+<div class="refs"><a href="drive_model_study.html#qs">해설 15절</a></div>
+</li>
+<li class="item"><div class="ihead"><span class="ititle">조화균형 계산기 보강</span><span class="chip ">P2</span><span class="chip st-ready">바로 진행 가능</span><span class="chip">PC1</span><span class="chip">예상 0.5–1일</span></div>
+<div class="row"><b>왜</b><span>약자속 루프 60 N·m에서 계산이 수렴하지 않았다. 공진 제어기, 조건부 적분, 축 우선 클램프는 아직 계산기에 없다.</span><b>다음</b><span>빠진 제어기 구조를 넣고, 2e 결과로 다시 검증한다.</span><b>산출물</b><span>qs_harmonic_hb.py 갱신</span></div>
+<div class="refs"><a href="gamma_wall_explainer.html#rem">결과 4.9.8절</a></div>
+</li>
+<li class="item"><div class="ihead"><span class="ititle">위치별 맵 앞먹임 시험 (노치의 대안)</span><span class="chip ">P2</span><span class="chip st-ready">바로 진행 가능</span><span class="chip">PC1</span><span class="chip">예상 1–2 h</span></div>
+<div class="row"><b>왜</b><span>위치별 맵으로 예측한 Δi(θ)를 측정 전류에서 빼면, 속도에 따라 노치를 조정하지 않아도 될 수 있다.</span><b>다음</b><span>Simscape 2e 제어기에 선택지를 추가하고 조화균형 계산기에도 넣어 노치와 비교한다.</span><b>산출물</b><span>4.9.8절 보강</span></div>
+<div class="refs"><a href="drive_model_study.html#remedy">해설 14.2절</a></div>
+</li>
+<li class="item"><div class="ihead"><span class="ititle">PWM 측대파 코드 정비 (Liang 2014)</span><span class="chip ">P2</span><span class="chip st-ready">바로 진행 가능</span><span class="chip">PC1</span><span class="chip">예상 0.5일</span></div>
+<div class="row"><b>왜</b><span>eMach tools/calcSideBandHarmonic.m은 SVPWM 측대파 전압·전류 모델이다. 예제 값 스크립트이고 버그가 몇 개 있다(rpm 순서, H2 괄호, iq_2ws 누락, C25·C27). 첨두 전류와 PWM 교류손(대역분할 트랙)에 쓸 수 있다.</span><b>다음</b><span>버그를 고치고 함수로 만든 뒤, 16 krpm 측대파를 계산해 슬롯 고조파 대역과 비교한다.</span><b>산출물</b><span>함수 + 검증 그림</span></div>
+</li>
+</ul>
+<h2>P3 — 정리·공유</h2><ul class="items">
+<li class="item"><div class="ihead"><span class="ititle">PC2와 손실 규약 남은 항목 공유</span><span class="chip ">P3</span><span class="chip st-wait">다른 PC 대기</span><span class="chip">PC2</span><span class="chip">예상 PC2 판단</span></div>
+<div class="row"><b>왜</b><span>손실 규약 문서 6절에 PC2 몫이 남아 있다. eMach 전류맵 코드의 compMTPA 목적함수 점검, 회귀 케이스, 이중 계상 확인이다.</span><b>다음</b><span>PC2가 문서 6절을 보고 진행한다. 커밋 e7391ad로 공유되었다.</span><b>산출물</b><span>PC2 점검 결과</span></div>
+<div class="refs"><a href="loss_torque_convention.html">손실 규약 6절</a></div>
+</li>
+<li class="item"><div class="ihead"><span class="ititle">파이프라인 코드를 ipmfea 패키지로</span><span class="chip ">P3</span><span class="chip st-later">본심 뒤 가능</span><span class="chip">PC1</span><span class="chip">예상 1일</span></div>
+<div class="row"><b>왜</b><span>qs_opsolver, qs_harmonic_hb, fea_posmap 등이 캠페인 폴더(e10drive)에 스크립트로 있다. 코드는 패키지로 남긴다는 원칙이 있다.</span><b>다음</b><span>재사용할 부분을 ipmfea 모듈로 옮기고 회귀 기준을 세운다.</span><b>산출물</b><span>ipmfea 모듈</span></div>
+</li>
+<li class="item"><div class="ihead"><span class="ititle">단계 0 몬테카를로 스크립트 복원</span><span class="chip ">P3</span><span class="chip st-later">본심 뒤 가능</span><span class="chip">PC1</span><span class="chip">예상 1 h</span></div>
+<div class="row"><b>왜</b><span>당시 스크래치패드에만 있어 저장소에 남지 않았다.</span><b>다음</b><span>결과 표(gamma_wall_mc.csv)로 다시 만들고 저장소에 넣는다.</span><b>산출물</b><span>스크립트</span></div>
+<div class="refs"><a href="gamma_wall_explainer.html#r">결과 4.1절</a></div>
+</li>
+</ul>
+<h2>사용자 결정이 필요한 것</h2><ul><li>제4부를 두 장(8·9장, 권장)으로 할지 한 장으로 할지, 위치는 7장 뒤·결론 앞(결론은 10장)으로 확정.</li><li>제4부 초안 시기: 10월 초 6·5·3장 일정과 병행해 PC1이 초안을 쓰는 안(위 일정 막대)에 동의하는가.</li><li>원고 골격 생성과 phdThesis_v2.tex·Overleaf 매니페스트 변경을 진행해도 되는가(다른 세션의 원고 작업과 겹치지 않게).</li></ul>
+<h2>완료한 것 — 이 트랙</h2><div class="scroll"><table><tr><th>날짜</th><th>내용</th><th>근거</th></tr>
+<tr><td class="n">09-17–18</td><td>단계 0 몬테카를로, 단계 1 평균값 dq (지연 결론은 뒤에 인공물로 정정)</td><td><a href="gamma_wall_explainer.html#r">보고서</a></td></tr>
+<tr><td class="n">09-23</td><td>단계 2 스위칭 모델 (데드타임 보상 2배 오류 수정), 2b MBC 교정 여유, 2c Simscape 교차 확인, 3 Lab FMU 손실</td><td><a href="gamma_wall_explainer.html#r">보고서</a></td></tr>
+<tr><td class="n">09-23</td><td>구동 모델 해설 페이지, 결과별 파일 링크 상자, 손실 규약 문서에 Motor-CAD E-Magnetic·Lab 처리 보강</td><td><a href="drive_model_study.html">보고서</a></td></tr>
+<tr><td class="n">09-23</td><td>직접 FEA 위치별 맵 (174점 × 위치 120) → Lab 48점 보간 검증 (자속 0.9 %, 토크 0.8 %)</td><td><a href="gamma_wall_explainer.html#j">보고서</a></td></tr>
+<tr><td class="n">09-23</td><td>단계 2d: 슬롯 고조파는 평균 토크가 아니라 제어기 운전점을 옮김 (여유 5 % 표 20 N·m −54 %), 필요 여유 25 %</td><td><a href="gamma_wall_explainer.html#j">보고서</a></td></tr>
+<tr><td class="n">09-23–24</td><td>정상상태(QS) 계산기와 QS 기준표, 조화균형 확장 (Simscape 재현 RMS 0.7 N·m·0.04°), 클램프 해부</td><td><a href="drive_model_study.html#qs">보고서</a></td></tr>
+<tr><td class="n">09-24</td><td>단계 2e 대책 시험: 측정 전류의 6·12차 노치로 해결 (여유 5 %로 복귀, 비용 없음)</td><td><a href="gamma_wall_explainer.html#rem">보고서</a></td></tr>
+<tr><td class="n">09-24</td><td>HTML 보고서 Drive 게시 (판 기록·버전 상자), 커밋 e7391ad (eMach)·35f00f8 (Thesis_SKKU)</td><td></td></tr>
+<tr><td class="n">09-24</td><td>스큐 확인: 실제 e10 기계에 스큐 없음(사용자) → 결론 크기 그대로, 보고서 반영</td><td><a href="gamma_wall_explainer.html#j">보고서</a></td></tr>
+<tr><td class="n">09-24</td><td>논문 반영 방향 결정: 제어 관련은 별도 파트(제4부)로 — 6장 확인 결과 대리모델 최적설계</td><td></td></tr>
+</table></div>
+<h2>다른 트랙의 열린 항목</h2><p class="mut small">Thesis_SKKU <code>RESUME.md</code>(2026-09-10 확인) 기준이다. 이 계획에서 상태를 다시 확인하지 않았다.</p>
+<div class="scroll"><table><tr><th>우선</th><th>항목</th><th>다음 행동</th></tr>
+<tr><td class="n">P0</td><td>원고·Overleaf·PDF 전달 정합</td><td>Overleaf 변경과 최신 통합본 차이, 최신 PDF의 Drive 전달 확인</td></tr>
+<tr><td class="n">P1</td><td>2장 시제품 시험보고서</td><td>역기전력 실측 파형·고조파, 손실 분리치 확보 → 2장 TODO(547행, 591–597행) 보완(사용자 자료 의존)</td></tr>
+<tr><td class="n">P1</td><td>D4 전체 손실맵 수신·검증</td><td>4속도 × 4전류 16점 결과 수신 → 누락·설정·온도·재료 확인</td></tr>
+<tr><td class="n">P1</td><td>CDB 접근·D1 16 krpm 재평가</td><td>공유 경로 확보·해시 대조(D4 검증 뒤)</td></tr>
+<tr><td class="n">P2</td><td>짧은 적층 3D 열 검증</td><td>1/k_L 축척과 상용 열회로 차이의 범위·자원·판정 기준 정리</td></tr>
+<tr><td class="n">P2</td><td>코디자인 M2</td><td>WLTC3에서 정적/시간영역 사이클 에너지 차이 정량화(맥 주도)</td></tr>
+<tr><td class="n">대기</td><td>JEET 심사</td><td>게재 확정이 본심 신청 조건 — 10월 초 편집부 진행 문의</td></tr>
+</table></div></section>
+<section id="history" data-view hidden><h2>버전 이력</h2><p class="mut small">판은 생성기를 다시 돌릴 때 내용이 바뀌었으면 하나씩 쌓인다. "보기"를 누르면 그 판의 계획이 이 페이지 안에서 열린다.</p>
+<div class="scroll"><table><tr><th>판</th><th>날짜</th><th>설명</th><th>바뀐 점</th><th></th></tr>
+<tr><td class="n">v2 (최신)</td><td class="n">2026-09-24 15:38</td><td>스큐 없음 확인, 제어 관련은 제4부(두 장)로 구성안, 일정·결정 갱신, 버전 이력 탭</td><td><ul class="chg"><li class="a">새 항목: 제4부 &#x27;구동 제어와의 연계&#x27; 구성과 원고 (P1)</li><li class="a">닫은 항목: 기준 모델의 스큐 여부 확인 — 사용자 확인: 실제 기계에 스큐 없음, 결론 크기 그대로</li><li class="a">닫은 항목: 논문 반영 범위 결정과 원고 초안 — 결정: 제어 관련은 별도 파트(제4부), 새 P1 항목으로 이어짐</li><li class="">바뀐 항목: 노치의 속도 범위 확인 (16 krpm 밖) — 다음 행동, 이유, 산출물</li><li class="">바뀐 항목: PC2와 손실 규약 남은 항목 공유 — 다음 행동</li><li class="a">완료 추가: 스큐 확인: 실제 e10 기계에 스큐 없음(사용자) → 결론 크기 그대로, 보고서 반영</li><li class="a">완료 추가: 논문 반영 방향 결정: 제어 관련은 별도 파트(제4부)로 — 6장 확인 결과 대리모델 최적설계</li><li class="">제4부 구성안 신설</li><li class="">결정 목록 갱신</li><li class="">일정 막대 갱신</li></ul></td><td class="n"><a href="#plan" data-go="plan">보기</a></td></tr>
+<tr><td class="n">v1</td><td class="n">2026-09-24 13:18</td><td>첫 판: 남은 일 12건, 일정, 완료 8건, 다른 트랙</td><td><ul class="chg"><li class="">첫 판</li></ul></td><td class="n"><a href="#v1" data-go="v1">보기</a></td></tr>
+</table></div></section>
+<section id="v1" data-view hidden><div class="banner"><b>v1 (2026-09-24 13:18)</b> 판을 보고 있다. 지금 계획이 아니다.<button type="button" data-go="plan">최신 판으로</button><button type="button" data-go="history">버전 이력</button></div>
+<div class="tiles">
+<div class="tile"><div class="k">본심 (11월 말)</div><div class="v">D−67</div><div class="d">사전 배포본 11/1까지 D−38</div></div>
+<div class="tile"><div class="k">7장 마감 (9월 말)</div><div class="v">D−6</div><div class="d">10월 초 6·5·3장</div></div>
+<div class="tile"><div class="k">이 트랙 남은 일</div><div class="v">12건</div><div class="d">P1 3 · P2 6 · P3 3</div></div>
+<div class="tile"><div class="k">완료</div><div class="v">8건</div><div class="d">09-17부터, 근거는 결과 보고서</div></div>
+</div>
+<div class="next"><b>다음 한 가지.</b> 기준 모델의 스큐 여부 확인와 논문 반영 범위 결정 — 둘 다 사용자 확인이 필요하고, 9월 말 7장 마감 전에 끝내야 그다음 PC1 작업(노치 속도 범위, 원고 초안)이 이어진다.</div>
+<h2>일정</h2><div class="scroll"><svg viewBox="0 0 980 320" width="100%" style="min-width:720px;display:block" role="img" aria-label="학위논문 일정과 이 트랙의 제안 일정"><line x1="261.5" y1="22" x2="261.5" y2="298" stroke="var(--line)" stroke-width="1"/><text x="264.5" y="16" font-size="12" fill="var(--mut)">10월</text><line x1="607.2" y1="22" x2="607.2" y2="298" stroke="var(--line)" stroke-width="1"/><text x="610.2" y="16" font-size="12" fill="var(--mut)">11월</text><line x1="941.7" y1="22" x2="941.7" y2="298" stroke="var(--line)" stroke-width="1"/><text x="944.7" y="16" font-size="12" fill="var(--mut)">12월</text><text x="153.0" y="16" font-size="12" fill="var(--mut)">9월</text><text x="0" y="48" font-size="12.5" fill="var(--mut)" font-weight="600">학위논문 일정</text><rect x="161.2" y="34" width="100.4" height="18" rx="3" fill="var(--bar-thesis)"/><text x="266.5" y="47" font-size="12" fill="var(--fg)" text-anchor="start">7장 마감</text><rect x="261.5" y="58" width="111.5" height="18" rx="3" fill="var(--bar-thesis)"/><text x="378.0" y="71" font-size="12" fill="var(--fg)" text-anchor="start">6·5·3장</text><rect x="373.0" y="82" width="167.3" height="18" rx="3" fill="var(--bar-thesis)"/><text x="545.3" y="95" font-size="12" fill="var(--fg)" text-anchor="start">1–2·8장 + 통합 교정 → 3인 회람</text><path d="M607.2 106 l7 9 l-7 9 l-7 -9 z" fill="var(--acc)"/><text x="597.2" y="119" font-size="12" fill="var(--fg)" text-anchor="end">사전 배포본</text><rect x="618.3" y="130" width="289.9" height="18" rx="3" fill="var(--bar-thesis)"/><text x="613.3" y="143" font-size="12" fill="var(--fg)" text-anchor="end">발표 준비</text><path d="M930.5 154 l7 9 l-7 9 l-7 -9 z" fill="var(--acc)"/><text x="920.5" y="167" font-size="12" fill="var(--fg)" text-anchor="end">본심 (11월 말)</text><text x="0" y="208" font-size="12.5" fill="var(--mut)" font-weight="600">이 트랙 (제안)</text><rect x="183.5" y="194" width="33.5" height="18" rx="3" fill="var(--bar-track)"/><text x="221.9" y="207" font-size="12" fill="var(--fg)" text-anchor="start">스큐 확인</text><rect x="183.5" y="218" width="78.1" height="18" rx="3" fill="var(--bar-track)"/><text x="266.5" y="231" font-size="12" fill="var(--fg)" text-anchor="start">논문 반영 결정·초안</text><rect x="239.2" y="242" width="89.2" height="18" rx="3" fill="var(--bar-track)"/><text x="333.4" y="255" font-size="12" fill="var(--fg)" text-anchor="start">노치 속도 범위</text><rect x="306.1" y="266" width="133.8" height="18" rx="3" fill="var(--bar-track2)"/><text x="444.9" y="279" font-size="12" fill="var(--fg)" text-anchor="start">P2 검증 보강</text><line x1="183.5" y1="22" x2="183.5" y2="298" stroke="var(--today)" stroke-width="1.6" stroke-dasharray="4 3"/><text x="187.5" y="312" font-size="12" fill="var(--today)">오늘 09-24</text></svg></div>
+<p class="mut small">학위논문 일정은 흐름 노트 §일정 개정(2026-09-06)의 12주 역산 요지다(정본은 그 노트). 이 트랙 막대는 제안이다. JEET 게재 확정이 본심 신청 조건이며, 10월 초 편집부 진행 문의가 잡혀 있다.</p>
+<h2>P1 — 논문 신뢰성·반영에 직접 필요</h2><ul class="items">
+<li class="item"><div class="ihead"><span class="ititle">기준 모델의 스큐 여부 확인</span><span class="chip p1">P1</span><span class="chip st-user">사용자 확인 필요</span><span class="chip">사용자(실기 사양) + PC1</span><span class="chip">예상 확인 0.5 h, 재계산 2–3 h</span></div>
+<div class="row"><b>왜</b><span>12차 고조파의 크기가 토크 리플과 클램프 문제의 크기를 정한다. 모델은 스큐 없이 계산된 것으로 보인다(SkewType = 0). 3단 스텝 스큐가 켜져 있다면 12차는 약 0.14배다.</span><b>다음</b><span>Motor-CAD의 스큐 설정 의미를 확인하고, 실제 e10 기계의 스큐를 도면·사양으로 확인한다. 스큐가 있으면 위치별 FEA 맵을 다시 계산하고(약 1시간 45분, 분리 실행) 2d·2e·조화균형 계산을 다시 돌린다(수 분).</span><b>산출물</b><span>4.9.2절·결론의 크기 재확인</span></div>
+<div class="refs"><a href="gamma_wall_explainer.html#j">결과 4.9.2절</a></div>
+</li>
+<li class="item"><div class="ihead"><span class="ititle">논문 반영 범위 결정과 원고 초안</span><span class="chip p1">P1</span><span class="chip st-user">사용자 확인 필요</span><span class="chip">사용자 결정 → PC1 초안</span><span class="chip">예상 초안 0.5–1일</span></div>
+<div class="row"><b>왜</b><span>이 트랙은 고속 손실 비교의 조건(교정표 전압 여유)과 제어 연계를 바꾼다. 일정상 9월 말이 7장 마감이다.</span><b>다음</b><span>어떤 결론을 어느 장·절에 넣을지 정한다. 후보는 셋이다. ① 16 krpm 손실·효율 결과에 &#x27;전압 여유 k %를 둔 교정표&#x27; 조건을 명시한다. ② 교류 동손 모델이 고속 진각을 바꾸지 않는다는 결론을 강화한다. ③ 슬롯 고조파와 제어기의 상호작용(노치로 해결)은 8장 향후 연구 한 항목이나 부록으로 둔다. 그다음 그림(여유·조화균형·대책)을 고르고 초안을 쓴다.</span><b>산출물</b><span>원고 초안 + 그림 2–3장</span></div>
+<div class="refs"><a href="gamma_wall_explainer.html#c">결과 5절 결론</a></div>
+</li>
+<li class="item"><div class="ihead"><span class="ititle">노치의 속도 범위 확인 (16 krpm 밖)</span><span class="chip p1">P1</span><span class="chip st-ready">바로 진행 가능</span><span class="chip">PC1</span><span class="chip">예상 FEA 3–6 h(분리 실행) + 실행 1 h</span></div>
+<div class="row"><b>왜</b><span>노치 결론은 16 krpm 한 점에서만 확인했다. 저속에서는 고조파가 전류 루프 대역(1.6 kHz)에 가까워져 노치가 기본파 제어를 흔들 수 있다. 켜는 문턱을 정해야 한다.</span><b>다음</b><span>위치별 FEA 맵을 저속 운전 영역(더 큰 i_q)까지 넓혀 계산한다. 조화균형 계산기로 4·8·12·16 krpm을 걸러 문턱 후보를 정하고, Simscape 2e로 확인한다.</span><b>산출물</b><span>노치 사용 속도 범위, 4.9.8절 보강</span></div>
+<div class="refs"><a href="gamma_wall_explainer.html#rem">결과 4.9.8절</a><a href="drive_model_study.html#remedy">해설 14.2절</a></div>
+</li>
+</ul>
+<h2>P2 — 검증 보강</h2><ul class="items">
+<li class="item"><div class="ihead"><span class="ititle">Motor-CAD 전압 출력이 2–4 % 높은 원인</span><span class="chip ">P2</span><span class="chip st-ready">바로 진행 가능</span><span class="chip">PC1</span><span class="chip">예상 0.5일</span></div>
+<div class="row"><b>왜</b><span>Lab(414–419 V)과 E-Magnetic(20 N·m에서 411 V) 전압이 같은 자속으로 계산한 |R i + jω_e ψ|(401 V)보다 높다. 여유 계산의 기준점이 걸린 문제다.</span><b>다음</b><span>E-Magnetic에서 말단 권선 인덕턴스와 교류 저항 항을 켜고 끄며 페이저 전압을 비교한다. Lab의 전압 정의도 확인한다.</span><b>산출물</b><span>원인 1줄 + 4.9.1절 갱신</span></div>
+<div class="refs"><a href="gamma_wall_explainer.html#j">결과 4.9.1절</a></div>
+</li>
+<li class="item"><div class="ihead"><span class="ititle">FullFEA 축 토크 −0.32 N·m 차이 분리</span><span class="chip ">P2</span><span class="chip st-ready">바로 진행 가능</span><span class="chip">PC1</span><span class="chip">예상 1–2 h</span></div>
+<div class="row"><b>왜</b><span>Hybrid와 FullFEA 교류 동손이 같은 운전점에서 축 토크 −0.32 N·m 차이를 냈다. 기동 과도가 섞였을 수 있다.</span><b>다음</b><span>주기 수를 늘려 과도를 뺀 뒤 다시 계산한다.</span><b>산출물</b><span>손실 규약 문서 4.2절 갱신</span></div>
+<div class="refs"><a href="loss_torque_convention.html">손실 규약 문서</a></div>
+</li>
+<li class="item"><div class="ihead"><span class="ititle">정상상태 계산기의 데드타임 계수 보정</span><span class="chip ">P2</span><span class="chip st-ready">바로 진행 가능</span><span class="chip">PC1</span><span class="chip">예상 1 h</span></div>
+<div class="row"><b>왜</b><span>보상 없는 3 µs에서 계산기가 시간영역보다 진각을 0.1–0.5° 적게 낸다.</span><b>다음</b><span>시간영역 결과로 (4/π)V_dc·t_d·f_pwm 계수를 보정하거나, 전류 영교차 몫을 넣는다.</span><b>산출물</b><span>qs_opsolver.py 갱신</span></div>
+<div class="refs"><a href="drive_model_study.html#qs">해설 15절</a></div>
+</li>
+<li class="item"><div class="ihead"><span class="ititle">조화균형 계산기 보강</span><span class="chip ">P2</span><span class="chip st-ready">바로 진행 가능</span><span class="chip">PC1</span><span class="chip">예상 0.5–1일</span></div>
+<div class="row"><b>왜</b><span>약자속 루프 60 N·m에서 계산이 수렴하지 않았다. 공진 제어기, 조건부 적분, 축 우선 클램프는 아직 계산기에 없다.</span><b>다음</b><span>빠진 제어기 구조를 넣고, 2e 결과로 다시 검증한다.</span><b>산출물</b><span>qs_harmonic_hb.py 갱신</span></div>
+<div class="refs"><a href="gamma_wall_explainer.html#rem">결과 4.9.8절</a></div>
+</li>
+<li class="item"><div class="ihead"><span class="ititle">위치별 맵 앞먹임 시험 (노치의 대안)</span><span class="chip ">P2</span><span class="chip st-ready">바로 진행 가능</span><span class="chip">PC1</span><span class="chip">예상 1–2 h</span></div>
+<div class="row"><b>왜</b><span>위치별 맵으로 예측한 Δi(θ)를 측정 전류에서 빼면, 속도에 따라 노치를 조정하지 않아도 될 수 있다.</span><b>다음</b><span>Simscape 2e 제어기에 선택지를 추가하고 조화균형 계산기에도 넣어 노치와 비교한다.</span><b>산출물</b><span>4.9.8절 보강</span></div>
+<div class="refs"><a href="drive_model_study.html#remedy">해설 14.2절</a></div>
+</li>
+<li class="item"><div class="ihead"><span class="ititle">PWM 측대파 코드 정비 (Liang 2014)</span><span class="chip ">P2</span><span class="chip st-ready">바로 진행 가능</span><span class="chip">PC1</span><span class="chip">예상 0.5일</span></div>
+<div class="row"><b>왜</b><span>eMach tools/calcSideBandHarmonic.m은 SVPWM 측대파 전압·전류 모델이다. 예제 값 스크립트이고 버그가 몇 개 있다(rpm 순서, H2 괄호, iq_2ws 누락, C25·C27). 첨두 전류와 PWM 교류손(대역분할 트랙)에 쓸 수 있다.</span><b>다음</b><span>버그를 고치고 함수로 만든 뒤, 16 krpm 측대파를 계산해 슬롯 고조파 대역과 비교한다.</span><b>산출물</b><span>함수 + 검증 그림</span></div>
+</li>
+</ul>
+<h2>P3 — 정리·공유</h2><ul class="items">
+<li class="item"><div class="ihead"><span class="ititle">PC2와 손실 규약 남은 항목 공유</span><span class="chip ">P3</span><span class="chip st-wait">다른 PC 대기</span><span class="chip">PC2</span><span class="chip">예상 PC2 판단</span></div>
+<div class="row"><b>왜</b><span>손실 규약 문서 6절에 PC2 몫이 남아 있다. eMach 전류맵 코드의 compMTPA 목적함수 점검, 회귀 케이스, 이중 계상 확인이다.</span><b>다음</b><span>PC2가 문서 6절을 보고 진행한다. 이번 커밋(e7391ad)으로 공유된다.</span><b>산출물</b><span>PC2 점검 결과</span></div>
+<div class="refs"><a href="loss_torque_convention.html">손실 규약 6절</a></div>
+</li>
+<li class="item"><div class="ihead"><span class="ititle">파이프라인 코드를 ipmfea 패키지로</span><span class="chip ">P3</span><span class="chip st-later">본심 뒤 가능</span><span class="chip">PC1</span><span class="chip">예상 1일</span></div>
+<div class="row"><b>왜</b><span>qs_opsolver, qs_harmonic_hb, fea_posmap 등이 캠페인 폴더(e10drive)에 스크립트로 있다. 코드는 패키지로 남긴다는 원칙이 있다.</span><b>다음</b><span>재사용할 부분을 ipmfea 모듈로 옮기고 회귀 기준을 세운다.</span><b>산출물</b><span>ipmfea 모듈</span></div>
+</li>
+<li class="item"><div class="ihead"><span class="ititle">단계 0 몬테카를로 스크립트 복원</span><span class="chip ">P3</span><span class="chip st-later">본심 뒤 가능</span><span class="chip">PC1</span><span class="chip">예상 1 h</span></div>
+<div class="row"><b>왜</b><span>당시 스크래치패드에만 있어 저장소에 남지 않았다.</span><b>다음</b><span>결과 표(gamma_wall_mc.csv)로 다시 만들고 저장소에 넣는다.</span><b>산출물</b><span>스크립트</span></div>
+<div class="refs"><a href="gamma_wall_explainer.html#r">결과 4.1절</a></div>
+</li>
+</ul>
+<h2>사용자 결정이 필요한 것</h2><ul><li>실제 e10 기계에 스큐가 있는가 (도면·사양). 없으면 지금 결론 그대로, 있으면 위치별 맵을 다시 계산한다.</li><li>이 트랙 결과를 논문 어느 장·절에 넣을까 (위 P1 둘째 항목의 후보 셋).</li><li>노치 결과를 본문에 넣을지, 8장 향후 연구 한 항목으로 둘지.</li></ul>
+<h2>완료한 것 — 이 트랙</h2><div class="scroll"><table><tr><th>날짜</th><th>내용</th><th>근거</th></tr>
+<tr><td class="n">09-17–18</td><td>단계 0 몬테카를로, 단계 1 평균값 dq (지연 결론은 뒤에 인공물로 정정)</td><td><a href="gamma_wall_explainer.html#r">보고서</a></td></tr>
+<tr><td class="n">09-23</td><td>단계 2 스위칭 모델 (데드타임 보상 2배 오류 수정), 2b MBC 교정 여유, 2c Simscape 교차 확인, 3 Lab FMU 손실</td><td><a href="gamma_wall_explainer.html#r">보고서</a></td></tr>
+<tr><td class="n">09-23</td><td>구동 모델 해설 페이지, 결과별 파일 링크 상자, 손실 규약 문서에 Motor-CAD E-Magnetic·Lab 처리 보강</td><td><a href="drive_model_study.html">보고서</a></td></tr>
+<tr><td class="n">09-23</td><td>직접 FEA 위치별 맵 (174점 × 위치 120) → Lab 48점 보간 검증 (자속 0.9 %, 토크 0.8 %)</td><td><a href="gamma_wall_explainer.html#j">보고서</a></td></tr>
+<tr><td class="n">09-23</td><td>단계 2d: 슬롯 고조파는 평균 토크가 아니라 제어기 운전점을 옮김 (여유 5 % 표 20 N·m −54 %), 필요 여유 25 %</td><td><a href="gamma_wall_explainer.html#j">보고서</a></td></tr>
+<tr><td class="n">09-23–24</td><td>정상상태(QS) 계산기와 QS 기준표, 조화균형 확장 (Simscape 재현 RMS 0.7 N·m·0.04°), 클램프 해부</td><td><a href="drive_model_study.html#qs">보고서</a></td></tr>
+<tr><td class="n">09-24</td><td>단계 2e 대책 시험: 측정 전류의 6·12차 노치로 해결 (여유 5 %로 복귀, 비용 없음)</td><td><a href="gamma_wall_explainer.html#rem">보고서</a></td></tr>
+<tr><td class="n">09-24</td><td>HTML 보고서 Drive 게시 (판 기록·버전 상자), 커밋 e7391ad (eMach)·35f00f8 (Thesis_SKKU)</td><td></td></tr>
+</table></div>
+<h2>다른 트랙의 열린 항목</h2><p class="mut small">Thesis_SKKU <code>RESUME.md</code>(2026-09-10 확인) 기준이다. 이 계획에서 상태를 다시 확인하지 않았다.</p>
+<div class="scroll"><table><tr><th>우선</th><th>항목</th><th>다음 행동</th></tr>
+<tr><td class="n">P0</td><td>원고·Overleaf·PDF 전달 정합</td><td>Overleaf 변경과 최신 통합본 차이, 최신 PDF의 Drive 전달 확인</td></tr>
+<tr><td class="n">P1</td><td>2장 시제품 시험보고서</td><td>역기전력 실측 파형·고조파, 손실 분리치 확보 → 2장 TODO(547행, 591–597행) 보완 (사용자 자료 의존)</td></tr>
+<tr><td class="n">P1</td><td>D4 전체 손실맵 수신·검증</td><td>4속도 × 4전류 16점 결과 수신 → 누락·설정·온도·재료 확인</td></tr>
+<tr><td class="n">P1</td><td>CDB 접근·D1 16 krpm 재평가</td><td>공유 경로 확보·해시 대조 (D4 검증 뒤)</td></tr>
+<tr><td class="n">P2</td><td>짧은 적층 3D 열 검증</td><td>1/k_L 축척과 상용 열회로 차이의 범위·자원·판정 기준 정리</td></tr>
+<tr><td class="n">P2</td><td>코디자인 M2</td><td>WLTC3에서 정적/시간영역 사이클 에너지 차이 정량화 (맥 주도)</td></tr>
+<tr><td class="n">대기</td><td>JEET 심사</td><td>게재 확정이 본심 신청 조건 — 10월 초 편집부 진행 문의</td></tr>
+</table></div></section>
+<p class="foot">관련 보고서: <a href="gamma_wall_explainer.html">진각 벽 결과 보고서</a> · <a href="drive_model_study.html">구동 모델 해설</a> · <a href="loss_torque_convention.html">손실 토크 귀속 규약</a>. Drive 사본은 <code>J:\내 드라이브\Thesis_SKKU_sync\html_reports\index.html</code>. 계획은 <code>eMach\tools\motorCAD\MotorControl\make_track_plan.py</code>의 PLAN을 고쳐 다시 만들고, 판 기록은 <code>track_plan_history.json</code>에 쌓인다.</p>
+</div>
+<script>
+(function(){
+  var views = Array.prototype.slice.call(document.querySelectorAll('[data-view]'));
+  var tabs = Array.prototype.slice.call(document.querySelectorAll('.tabs button'));
+  function show(id){
+    var target = document.getElementById(id) ? id : 'plan';
+    views.forEach(function(v){ v.hidden = (v.id !== target); });
+    var tab = target === 'history' ? 'history' : 'plan';
+    tabs.forEach(function(b){ b.setAttribute('aria-selected', b.getAttribute('data-go') === tab ? 'true' : 'false'); });
+  }
+  document.addEventListener('click', function(e){
+    var el = e.target.closest ? e.target.closest('[data-go]') : null;
+    if (!el) return;
+    e.preventDefault();
+    var id = el.getAttribute('data-go');
+    try { history.replaceState(null, '', '#' + id); } catch (err) {}
+    show(id);
+    window.scrollTo(0, 0);
+  });
+  function top(){ try { window.scrollTo(0, 0); } catch (err) {} }
+  window.addEventListener('hashchange', function(){ show(location.hash.slice(1)); top(); });
+  show(location.hash.slice(1) || 'plan');
+  if (location.hash) { requestAnimationFrame(top); window.addEventListener('load', top); }   // keep the tabs in view
+})();
+</script>
+</body></html>

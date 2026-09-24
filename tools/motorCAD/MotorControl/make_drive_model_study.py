@@ -536,7 +536,7 @@ V<sub>dc</sub>t<sub>d</sub>/T<sub>s</sub>로 세면 에지를 두 번 센 것이
 <li><b>출력과 정렬.</b> 결과는 <code>Angular_Flux_Linkage_D/Q</code>, <code>Angular_Electromagnetic_Torque</code>, 상 자속 파형 같은 <code>Angular_*</code> 배열(전류점 × 위치)이다. 위치 x(Motor-CAD 회전자 위치, 전기각)와 d축 각의 관계는 무부하 상 자속의 기본파 위상으로 구했고 θ<sub>d</sub> = x + 60°다. 상 자속을 이 각으로 Park 변환하면 Motor-CAD의 dq 자속과 d축 0.42 mWb, q축 0.03 mWb 안에서 같다(평균 ψ<sub>d</sub>의 1 % 미만, <code>fea_posmap_analyze.py</code>).</li>
 <li><b>검증 결과.</b> 위치 평균은 Lab 48점 보간과 자속 0.9 %, 토크 0.8 %, dT/dγ 0.06 N·m/°, 필요 전압 0.7 % 안에서 같다(결과 페이지 4.9.1절). 위치별 성분은 dq 6·12차다. 20 N·m점에서 ψ<sub>q</sub> 12차 10.4 mWb(평균의 62 %), 토크 리플 50 N·m p-p다.</li>
 <li><b>Simscape 표로.</b> 대역 밖은 Lab 표를 그대로 두고, 대역 안만 FEA 값으로 바꿔 <code>drive\\stage2d_tables.mat</code>(69 × 29 × 5 또는 121)을 만든다. i<sub>q</sub> 격자는 0을 포함한 ± 대칭이 되도록 음수 쪽을 Lab 대칭 확장으로 채운다.</li>
-<li><b>스큐.</b> 기준 모델은 스큐 없이 계산된 것으로 보인다(<code>SkewType = 0</code>). 3단 스텝 스큐(±11.25° 전기각)를 켜면 12차가 약 0.14배로 준다. 실제 기계의 스큐 여부가 14절 결론의 크기를 좌우한다.</li>
+<li><b>스큐.</b> 실제 e10 기계에는 스큐가 없고(사용자 확인, 09-24), 기준 모델도 스큐 없이 계산됐다(<code>SkewType = 0</code>). 따라서 14절의 결론 크기는 그대로다. 스큐가 있는 기계라면 3단 스텝 스큐(±11.25° 전기각)만으로 12차가 약 0.14배로 준다.</li>
 </ul>
 {B_POS}
 
@@ -640,7 +640,7 @@ V<sub>dc</sub>t<sub>d</sub>/T<sub>s</sub>로 세면 에지를 두 번 센 것이
 <tr><td>공간 고조파</td><td>회전자 위치별 자속(단계 2d D)</td><td>같은 전류에서 평균 토크는 1.2 N·m 안에서 불변. 대신 제어기 운전점이 틀어짐 (14절)</td></tr>
 <tr><td>정상상태 계산기</td><td>평균 맵 시간영역 실현점</td><td>진각 0.02°(t<sub>d</sub> 0), 0.1–0.5°(3 µs 무보상) (15절)</td></tr>
 <tr><td>Motor-CAD 전압 출력</td><td>Lab·E-Magnetic 전압 대 같은 자속의 |R i + jω<sub>e</sub>ψ|</td><td class="warn">Motor-CAD가 2–4 % 높음, 원인 미확정</td></tr>
-<tr><td>스큐</td><td>기준 모델 설정</td><td class="warn">SkewType 0 (스큐 없음으로 보임) — 실제 기계 확인 필요</td></tr></table></div>
+<tr><td>스큐</td><td>기준 모델 설정 대 실제 기계</td><td>둘 다 스큐 없음 (SkewType 0, 사용자 확인 09-24)</td></tr></table></div>
 <p class="mut">교훈: 한 모델만 믿지 않는다. 두 모델이 같은 원인에 대해 다른 답을 내면, 둘 사이에 다른 부분 하나를 찾는다. 단계 1→2의 지연, 보상식 2배 오류가 그렇게 나왔다.</p>
 
 <h2 id="try">17. 직접 해보기</h2>
