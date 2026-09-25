@@ -1,5 +1,9 @@
 % function compMTPAFromMCADTable(target_Tload,Vlim,MCADLinkTable,MachineData,nTargetList)
 %% 전반적인 수정필요
+error('MotorControl:UnpinnedLegacyExample', ...
+    ['This legacy 438.2 Nm example needs its original motor/table, MachineData, ' ...
+     'phase-peak voltage and loss allocation. Use validate_pc2_optimizer or ' ...
+     'validate_pc2_lab_exports for explicit fixtures.']);
 MotFilePath=getCurrentMCADFilePath(mcad(1))
 
 modifiedDataStruct=getMcadActiveXTableFromMotFile(MotFilePath)

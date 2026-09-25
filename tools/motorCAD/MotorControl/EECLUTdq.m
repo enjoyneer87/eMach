@@ -1,117 +1,109 @@
 classdef EECLUTdq
+    % Steady dq value model. Map inputs are magnetizing PEAK currents;
+    % public optimizer inputs/outputs are RMS and Vlim is phase PEAK.
+    % LossContract.PowerFcn(d_pk,q_pk) returns InputW and DragW separately.
+    % This accounting choice must be explicit; it is not a material law.
     properties
-        LambdaDFit           % Fit function for d-axis flux linkage
-        LambdaQFit           % Fit function for q-axis flux linkage
-        LdFitResult          % Fit result for d-axis inductance
-        LqFitResult          % Fit result for q-axis inductance
-        PMFitResult          % Fit result for permanent magnet flux linkage
-        ScaledLossFitResult  % Fit result for scaled losses
-        omegaE               % Electrical angular frequency
-        SpeedScaledInfo      %
-        PoleNumber           % Number of poles in the motor
-        TShaft
-        Vs_pk
-        %% Last data
-        lastImRMS            % Last motor currents [idm_rms, iqm_rms] without losses
-        lastIRMS                % Last total motor currents [id_total, iq_total] including losses
-        lastElecLossData     % Last calculated electrical losses data
+        LambdaDFit
+        LambdaQFit
+        LdFitResult % retained for callers; voltage uses the flux maps directly
+        LqFitResult
+        PMFitResult
+        ScaledLossFitResult % legacy fits; not silently assigned to a branch
+        omegaE
+        SpeedScaledInfo
+        PoleNumber
+        LossContract
+        TShaft = 0
+        Vs_pk = 0
+        lastImRMS = [0,0]
+        lastIRMS = [0,0]
+        lastElecLossData = struct()
+        lastPowerBalance = struct()
     end
-    
     methods
-        function obj = EECLUTdq(LambdaDFit, LambdaQFit, LdFitResult, LqFitResult, PMFitResult, ScaledLossFitResult, omegaE,SpeedScaledInfo, PoleNumber)
-            obj.LambdaDFit = LambdaDFit;
-            obj.LambdaQFit = LambdaQFit;
-            obj.LdFitResult = LdFitResult;
-            obj.LqFitResult = LqFitResult;
-            obj.PMFitResult = PMFitResult;
-            obj.ScaledLossFitResult = ScaledLossFitResult;
-            obj.omegaE = omegaE;
-            obj.SpeedScaledInfo =SpeedScaledInfo;
-            obj.PoleNumber = PoleNumber;
-            obj.lastIRMS = [0, 0];  % 초기값 설정
-            obj.lastImRMS =[0,0]  ;         % Last motor currents [idm_rms, iqm_rms] without losses
-            obj.lastElecLossData.ispk           =0;
-            obj.lastElecLossData.idsRMS         =0;
-            obj.lastElecLossData.iqsRMS         =0;
-            obj.lastElecLossData.RelecLoss      =0;
-            obj.lastElecLossData.omegaE         =0;
-            obj.lastElecLossData.PelecLoss      =0;
-            obj.lastElecLossData.TorqueElecLoss=0;
-            obj.TShaft  =0;
-            obj.Vs_pk   =0;
+        function obj = EECLUTdq(fd,fq,ld,lq,pm,loss,omega,speed,poles,contract)
+            if nargin == 0, return; end
+            if nargin < 10
+                error('MotorControl:MissingLossContract', ...
+                    'Supply an explicit InputW/DragW loss contract; see validate_pc2_optimizer.');
+            end
+            required = {'Name','PowerFcn','RdcOhm','MaxMagnetizingRMS','MaxTerminalRMS'};
+            assert(isstruct(contract) && all(isfield(contract,required)), ...
+                'MotorControl:InvalidLossContract','Incomplete loss contract.');
+            assert(isa(contract.PowerFcn,'function_handle'), ...
+                'MotorControl:InvalidLossContract','PowerFcn must be a function handle.');
+            validateattributes(contract.RdcOhm,{'numeric'},{'scalar','real','finite','nonnegative'});
+            validateattributes([contract.MaxMagnetizingRMS,contract.MaxTerminalRMS], ...
+                {'numeric'},{'vector','numel',2,'real','finite','positive'});
+            validateattributes(poles,{'numeric'},{'scalar','finite','positive','even','integer'});
+            validateattributes(omega,{'numeric'},{'scalar','real','finite'});
+            assert(isfield(speed,'nTarget'),'MotorControl:MissingMechanicalSpeed', ...
+                'nTarget [mechanical rpm] is required.');
+            validateattributes(speed.nTarget,{'numeric'},{'scalar','real','finite'});
+            assert(abs(speed.nTarget*2*pi/60*(poles/2)-omega) <= 1e-9*max(1,abs(omega)), ...
+                'MotorControl:SpeedMismatch','Electrical and mechanical speeds disagree.');
+            obj.LambdaDFit=fd; obj.LambdaQFit=fq;
+            obj.LdFitResult=ld; obj.LqFitResult=lq; obj.PMFitResult=pm;
+            obj.ScaledLossFitResult=loss; obj.omegaE=omega;
+            obj.SpeedScaledInfo=speed; obj.PoleNumber=poles;
+            obj.LossContract=contract;
         end
-        
+
         function totalCurrent = compMTPA(obj, Im_rms)
-            % EECLUTdq is a value class: evaluate this trial, not cached state
-            % captured when the optimizer's objective handle was created.
             obj = obj.updateElecLossData(Im_rms);
-            totalCurrent = hypot(obj.lastIRMS(1), obj.lastIRMS(2));
-        end
-        
-        function [c, ceq,newObj] = evaluateMotorConstraints(obj, Im_rms, target_Tload, Vlim)
-            obj=obj.updateElecLossData(Im_rms);
-            id_rms = obj.lastIRMS(1);
-            iq_rms = obj.lastIRMS(2);
-            idm_rms = obj.lastImRMS(1);
-            iqm_rms = obj.lastImRMS(2);
-            ids_rms = obj.lastElecLossData.idsRMS;
-            iqs_rms = obj.lastElecLossData.iqsRMS;
-            %% 
-            idm_pk=rms2pk(idm_rms);
-            iqm_pk=rms2pk(iqm_rms);
-            psi_pm = obj.PMFitResult(idm_pk, iqm_pk);
-            Ld = obj.LdFitResult(idm_pk, iqm_pk);
-            Lq = obj.LqFitResult(idm_pk, iqm_pk);
-            TorqueElecLoss= obj.lastElecLossData.TorqueElecLossWODCLoss;
-            % id_rms, iq_rms로 RelecLoss를 표현한  Vd, Vq 계산 (식 26번) 
-            % Vd_pk = obj.lastElecLossData.RelecLoss * rms2pk(id_rms) + obj.omegaE^2 * Lq * Ld / obj.lastElecLossData.RelecLoss * rms2pk(id_rms)- ...
-            %     obj.omegaE * Lq * rms2pk(iq_rms) + (obj.omegaE^2 * Lq * psi_pm) / obj.lastElecLossData.RelecLoss;
-            % Vq_pk = obj.lastElecLossData.RelecLoss * rms2pk(iq_rms) + obj.omegaE^2 * Lq * Ld / obj.lastElecLossData.RelecLoss *rms2pk(iq_rms) + ...
-            %     obj.omegaE * Ld * rms2pk(id_rms) + obj.omegaE * psi_pm;
-            Vd_pk =  obj.omegaE^2 * Lq * Ld / obj.lastElecLossData.RelecLoss * rms2pk(id_rms)- ...
-                obj.omegaE * Lq * rms2pk(iq_rms) + (obj.omegaE^2 * Lq * psi_pm) / obj.lastElecLossData.RelecLoss;
-            Vq_pk =  obj.omegaE^2 * Lq * Ld / obj.lastElecLossData.RelecLoss *rms2pk(iq_rms) + ...
-                obj.omegaE * Ld * rms2pk(id_rms) + obj.omegaE * psi_pm;
-            Vs_pk = sqrt(Vd_pk.^2 + Vq_pk.^2);
-
-            lambdaD = obj.LambdaDFit(idm_pk, iqm_pk);
-            lambdaQ = obj.LambdaQFit(idm_pk, iqm_pk);
-            TorqueDQ =calcDQFluxTorque(id_rms, iq_rms, lambdaD,lambdaQ,obj.PoleNumber);
-            % TorqueDQ = calcDQLTorque(id_rms, iq_rms, obj.PoleNumber,psi_pm, Ld, Lq);
-            obj.TShaft=TorqueDQ-TorqueElecLoss;
-            obj.Vs_pk=Vs_pk;
-            ceq = obj.TShaft - target_Tload;
-            % fmincon accepts c <= 0. Vlim is a phase-peak voltage limit.
-            c = Vs_pk - Vlim;
-
-            newObj = obj;  % 업데이트된 객체 반환
-
+            totalCurrent = hypot(obj.lastIRMS(1),obj.lastIRMS(2));
         end
 
-        function obj=updateElecLossData(obj, Im_rms)
-            idm_rms = Im_rms(1);
-            iqm_rms = Im_rms(2);
-            idm_pk=rms2pk(idm_rms);
-            iqm_pk=rms2pk(iqm_rms);
-            lambdaD = obj.LambdaDFit(idm_pk, iqm_pk);
-            lambdaQ = obj.LambdaQFit(idm_pk, iqm_pk);
-            %% Calculate the electrical losses & Currents
-            [Power_PostLoss, Torque_PostLoss] = calcTotalElecLossFromInterP(idm_rms, iqm_rms, obj.ScaledLossFitResult, obj.SpeedScaledInfo);
-            obj.lastElecLossData             = calcCurrentElecLoss(lambdaD, lambdaQ, Power_PostLoss, Torque_PostLoss, obj.omegaE);
+        function [c,ceq,obj] = evaluateMotorConstraints(obj,Im_rms,target_Tload,Vlim)
+            validateattributes(Vlim,{'numeric'},{'scalar','finite','positive'});
+            obj = obj.updateElecLossData(Im_rms);
+            d = sqrt(2)*obj.lastImRMS(1); q = sqrt(2)*obj.lastImRMS(2);
+            flux = [obj.LambdaDFit(d,q),obj.LambdaQFit(d,q)];
+            e = obj.omegaE*[-flux(2),flux(1)];
+            i_pk = sqrt(2)*obj.lastIRMS;
+            v_pk = e + obj.LossContract.RdcOhm*i_pk;
+            tm = calcDQFluxTorque(Im_rms(1),Im_rms(2),flux(1),flux(2),obj.PoleNumber);
+            obj.TShaft = tm-obj.lastElecLossData.TorqueElecLossWODCLoss;
+            obj.Vs_pk = hypot(v_pk(1),v_pk(2));
+            pm = obj.TShaft*obj.omegaE/(obj.PoleNumber/2);
+            pdc = 3*obj.LossContract.RdcOhm*sum(obj.lastIRMS.^2);
+            pin = 1.5*dot(v_pk,i_pk);
+            loss = obj.lastElecLossData;
+            obj.lastPowerBalance = struct('terminalW',pin,'shaftW',pm,'dcCopperW',pdc, ...
+                'inputLossW',loss.PelecLossWODCLoss,'dragLossW',loss.DragW, ...
+                'residualW',pin-pm-pdc-loss.PelecLossWODCLoss-loss.DragW, ...
+                'magnetizingTorqueNm',tm,'vdPeakV',v_pk(1),'vqPeakV',v_pk(2));
+            % All constraints are <= 0. Current circles prevent using the
+            % corners of a rectangular map as an unqualified current rating.
+            c = [obj.Vs_pk-Vlim; hypot(Im_rms(1),Im_rms(2))-obj.LossContract.MaxMagnetizingRMS; ...
+                hypot(obj.lastIRMS(1),obj.lastIRMS(2))-obj.LossContract.MaxTerminalRMS];
+            ceq = obj.TShaft-target_Tload;
+        end
 
-            %% 
-            % idm_rms=idm_rms                         ;
-            % iqm_rms=iqm_rms                         ;
-            ids_RMS=obj.lastElecLossData.idsRMS         ;                
-            iqs_RMS=obj.lastElecLossData.iqsRMS         ;                
-            id_rms=idm_rms+ids_RMS                  ;        
-            iq_rms=iqm_rms+iqs_RMS                  ;        
-
-            %% Update the last data 
-
-            % obj.lastElecLossData = lastElecLossData;
-            obj.lastImRMS = [idm_rms, iqm_rms];
-            obj.lastIRMS = [obj.lastImRMS(1) + obj.lastElecLossData.idsRMS, obj.lastImRMS(2) + obj.lastElecLossData.iqsRMS];
+        function obj = updateElecLossData(obj,Im_rms)
+            validateattributes(Im_rms,{'numeric'},{'real','finite','vector','numel',2});
+            Im_rms=reshape(Im_rms,1,2);
+            d=sqrt(2)*Im_rms(1); q=sqrt(2)*Im_rms(2);
+            flux=[obj.LambdaDFit(d,q),obj.LambdaQFit(d,q)];
+            validateattributes(flux,{'numeric'},{'real','finite','vector','numel',2});
+            loss=obj.LossContract.PowerFcn(d,q);
+            assert(isstruct(loss) && all(isfield(loss,{'InputW','DragW'})), ...
+                'MotorControl:InvalidLossAllocation','PowerFcn must return InputW and DragW.');
+            validateattributes([loss.InputW,loss.DragW],{'numeric'}, ...
+                {'real','finite','nonnegative','vector','numel',2});
+            omegaM=obj.omegaE/(obj.PoleNumber/2);
+            dragTorque=0;
+            if loss.DragW ~= 0
+                if omegaM == 0
+                    error('MotorControl:LossAtZeroSpeed','Nonzero DragW / zero speed is undefined.');
+                end
+                dragTorque=loss.DragW/omegaM;
+            end
+            obj.lastElecLossData=calcCurrentElecLoss(flux(1),flux(2),loss.InputW,dragTorque,obj.omegaE);
+            obj.lastElecLossData.DragW=loss.DragW;
+            obj.lastImRMS=Im_rms;
+            obj.lastIRMS=Im_rms+[obj.lastElecLossData.idsRMS,obj.lastElecLossData.iqsRMS];
         end
     end
 end

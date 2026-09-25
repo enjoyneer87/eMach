@@ -1,0 +1,48 @@
+{
+  "session_id": "b5dcb1f7-b506-4a58-9041-5b2e341cb41c",
+  "write_record_line": 1082,
+  "historical_patch_record_line": 1092,
+  "original_write_content_sha256": "a638d1e672e3e074b7300b7f7cc6761d135d3b66b43c17d17c2686f1b996e144",
+  "recovered_script_sha256": "13fe9cb685cd5b825e47d912c30ceffe613775030bf21810dc49ceb2655432e0",
+  "historical_seed": 20260917,
+  "historical_n": 20000,
+  "historical_phase_rms_limit_V": 285.1,
+  "historical_extrapolation_max_deg": 93,
+  "scope": "Historical CSV replay, not a validated present inverter operating envelope",
+  "comparisons": [
+    {
+      "current_rms_A": 135,
+      "rows": 21,
+      "max_numeric_errors": {
+        "speed": 0,
+        "gamma_cmd": 0,
+        "T0": 0,
+        "T_mean": 0,
+        "T_std": 0,
+        "flip_pct": 0,
+        "vlim_pct": 0,
+        "current": 0
+      },
+      "source_csv_sha256": "2c96f2c4324e00d248b2b3c91a1f23bb7b215c98b1d3605b578743efce431446"
+    },
+    {
+      "current_rms_A": 200,
+      "rows": 21,
+      "max_numeric_errors": {
+        "speed": 0,
+        "gamma_cmd": 0,
+        "T0": 0,
+        "T_mean": 0,
+        "T_std": 0,
+        "flip_pct": 0,
+        "vlim_pct": 0,
+        "current": 0
+      },
+      "source_csv_sha256": "847f10908cd9ddcae0af73f98681c7c6a80bfd3d0e1ba0f41bacf0e5ea3effce"
+    }
+  ],
+  "source_grid_sha256": "787f675eee5d489c2115ece51d7128f9706fd0d60a40334afcd777500c13240a",
+  "voltage_correction_record_line": 1433,
+  "failed_initial_recovery": "Initial Write+angle patch reproduced all torque statistics exactly, but not voltage-exceedance rates; later voltage correction at record 1433 found and applied.",
+  "passed": true
+}

@@ -1,6 +1,5 @@
 function [idm_rms_opt, iqm_rms_opt, id_rms, iq_rms, eeclutdq_out] = findOptimalCurrentsWithConstraints(target_Tload, Vlim, eeclutdq, MCADLinkTable)
-    % Vlim is phase peak, not DC-link voltage. This repairs the numerical
-    % optimizer only; the legacy loss branch still needs a physical audit.
+    % Vlim is phase peak. The model requires an explicit loss allocation.
      % Calculate Id, Iq from peak current and angle data
     [Idm_pk, Iqm_pk] = arrayfun(@(x) pkgamma2dq(MCADLinkTable.Is(x), MCADLinkTable.('Current Angle')(x)), 1:height(MCADLinkTable));
 
@@ -12,11 +11,14 @@ function [idm_rms_opt, iqm_rms_opt, id_rms, iq_rms, eeclutdq_out] = findOptimalC
     Torque = arrayfun(@(idx) calcDQFluxTorque(Idm_rms(idx), Iqm_rms(idx), MCADLinkTable.('Flux Linkage D')(idx), MCADLinkTable.('Flux Linkage Q')(idx), eeclutdq.PoleNumber), 1:length(Idm_rms));
     
     % Find index of current closest to target torque
-    [~, idx] = min(abs(Torque - target_Tload));
+    admissible = hypot(Idm_rms,Iqm_rms) <= eeclutdq.LossContract.MaxMagnetizingRMS;
+    assert(any(admissible),'MotorControl:NoMapSeed','No map seed inside the current circle.');
+    distance = abs(Torque-target_Tload); distance(~admissible)=Inf;
+    [~, idx] = min(distance);
     initial_guess_rms = [Idm_rms(idx), Iqm_rms(idx)]; % Optimal initial guess based on RMS currents
   
 
-    maxIs_rms = max(MCADLinkTable.Is) / sqrt(2);
+    maxIs_rms = min(max(MCADLinkTable.Is)/sqrt(2),eeclutdq.LossContract.MaxMagnetizingRMS);
 
 
     function [c, ceq] = nestedEvaluateMotorConstraints(Im_rms)
@@ -24,7 +26,7 @@ function [idm_rms_opt, iqm_rms_opt, id_rms, iq_rms, eeclutdq_out] = findOptimalC
     end
 
 
-    options = optimoptions('fmincon', 'Display', 'iter', 'Algorithm', 'sqp', ...
+    options = optimoptions('fmincon', 'Display', 'none', 'Algorithm', 'sqp', ...
                        'MaxFunctionEvaluations', 5000, ...
                        'ConstraintTolerance', 1e-8);
     [Im_opt_rms, ~, exitflag] = fmincon(@(Im_rms) eeclutdq.compMTPA(Im_rms), initial_guess_rms, [], [], [], [], ...
@@ -36,7 +38,7 @@ function [idm_rms_opt, iqm_rms_opt, id_rms, iq_rms, eeclutdq_out] = findOptimalC
             || any(c > options.ConstraintTolerance) || any(abs(ceq) > options.ConstraintTolerance)
         error('MotorControl:NoFeasibleOptimum', ...
               'No converged feasible optimum (exitflag %d, voltage residual %g V, torque residual %g Nm).', ...
-              exitflag, max(c), max(abs(ceq)));
+              exitflag, c(1), max(abs(ceq)));
     end
 
     idm_rms_opt = Im_opt_rms(1);

@@ -1,24 +1,24 @@
-function ElecLossBranchData = calcCurrentElecLoss(lambdaD, lambdaQ, Power_PostLoss, Torque_PostLoss, omegaE)
-    % 전력 손실에서 전기적 손실을 계산
-    PelecLoss = Power_PostLoss;
-
-    % 전기적 RMS 전류 계산
-    iqsRMS = (PelecLoss * lambdaQ) / (omegaE * (lambdaD + lambdaQ)^2);
-    isRMS = sqrt(PelecLoss * iqsRMS / (omegaE * lambdaQ));
-    idsRMS = lambdaD / lambdaQ * iqsRMS;
-
-    % 전기적 저항 계산
-    RelecLoss = PelecLoss / (isRMS^2);
-
-    % pk 전류 계산
-    ispk = rms2pk(isRMS);
-
-    % 결과 데이터 구조 생성
-    ElecLossBranchData.ispk = ispk;
-    ElecLossBranchData.idsRMS = idsRMS;
-    ElecLossBranchData.iqsRMS = iqsRMS;
-    ElecLossBranchData.RelecLoss = RelecLoss;
-    ElecLossBranchData.omegaE = omegaE;
-    ElecLossBranchData.PelecLossWODCLoss=PelecLoss;
-    ElecLossBranchData.TorqueElecLossWODCLoss=Torque_PostLoss;
+function data = calcCurrentElecLoss(lambdaD, lambdaQ, inputLossW, dragTorqueNm, omegaE)
+% Balanced three-phase, amplitude-invariant dq: P = 3/2 * e_pk' * i_pk.
+% This branch represents ONLY explicitly allocated input-side loss [W].
+% dragTorqueNm is an independent mechanical allocation, never inferred here.
+validateattributes([lambdaD,lambdaQ,omegaE,dragTorqueNm],{'numeric'}, ...
+    {'real','finite','vector','numel',4});
+validateattributes(inputLossW,{'numeric'},{'real','finite','scalar','nonnegative'});
+e = omegaE*[-lambdaQ,lambdaD];
+e2 = dot(e,e);
+if inputLossW == 0
+    i_pk = [0,0]; resistance = Inf; % open circuit, including zero speed/flux
+elseif e2 == 0
+    error('MotorControl:LossAtZeroEMF', ...
+        'Positive shunt loss cannot be represented at zero induced voltage.');
+else
+    i_pk = (2/3)*inputLossW/e2*e;
+    resistance = 1.5*e2/inputLossW;
+end
+data = struct('ispk',hypot(i_pk(1),i_pk(2)), ...
+    'idsRMS',i_pk(1)/sqrt(2),'iqsRMS',i_pk(2)/sqrt(2), ...
+    'RelecLoss',resistance,'omegaE',omegaE, ...
+    'PelecLossWODCLoss',inputLossW,'TorqueElecLossWODCLoss',dragTorqueNm, ...
+    'absorbedPowerW',1.5*dot(e,i_pk));
 end

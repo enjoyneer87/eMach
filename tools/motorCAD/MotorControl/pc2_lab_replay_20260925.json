@@ -1,0 +1,535 @@
+{
+  "passed": true,
+  "scope": "frozen Lab data numerical replay; diagnostic allocations only",
+  "source_model_attribution": "export_lab_satmap.py attributes exports to reference e10Turn6V261; no historical build hash",
+  "source_type": "existing interpolated Motor-CAD Lab exports, 2026-09-17; no new FEA or measurement",
+  "sources": [
+    {
+      "file": "D:\\KangDH\\Thesis\\e10\\work_lab_pc1\\drive\\e10_satloss_2000.mat",
+      "sha256": "60054e324cc5ae7beb70d40f0d81a28dc2d71fd498c120f6b1dacf8889d07e83",
+      "rpm": 2000,
+      "shape": [
+        51,
+        51
+      ]
+    },
+    {
+      "file": "D:\\KangDH\\Thesis\\e10\\work_lab_pc1\\drive\\e10_satloss_4000.mat",
+      "sha256": "1f1a74d389f5fd26e33d1754ecf1d41ab2562a5001cf268700c50bcde0896bf6",
+      "rpm": 4000,
+      "shape": [
+        51,
+        51
+      ]
+    },
+    {
+      "file": "D:\\KangDH\\Thesis\\e10\\work_lab_pc1\\drive\\e10_satloss_8000.mat",
+      "sha256": "b4901e35bf10ced540e66ff3a0874c1e201349462f5b93fff7d76b4576d11aaa",
+      "rpm": 8000,
+      "shape": [
+        51,
+        51
+      ]
+    },
+    {
+      "file": "D:\\KangDH\\Thesis\\e10\\work_lab_pc1\\drive\\e10_satloss_16000.mat",
+      "sha256": "67261ef93d2a7cfb8e190e250306904dd8ff588b038e43248ad9b38eb09fcf1b",
+      "rpm": 16000,
+      "shape": [
+        51,
+        51
+      ]
+    }
+  ],
+  "phase_peak_limit_V": 403.22142800203466,
+  "Rdc_Ohm": 0.0786,
+  "shaft_boundary": "magnetizing dq flux torque minus allocated DragW/omegaM; mechanical friction omitted",
+  "limitations": [
+    "Neither allocation is selected as the physical convention.",
+    "This shunt branch does not reproduce Motor-CAD Lab AC series-resistance voltage.",
+    "Local constrained optima; global optimality of nonlinear maps not established.",
+    "Original 15000 rpm / 438.2 Nm case remains unpinned."
+  ],
+  "cases": [
+    {
+      "rpm": 2000,
+      "target_Nm": 20,
+      "allocation": "all_non_dc_as_drag",
+      "im_rms": [
+        -1.5481543073569828,
+        10.807903928952374
+      ],
+      "terminal_rms": [
+        -1.5481543073569828,
+        10.807903928952374
+      ],
+      "total_current_A": 10.918221883477736,
+      "gamma_magnetizing_deg": 8.151755190210455,
+      "phase_peak_V": 187.06144770207987,
+      "non_dc_loss_W": 108.60027016308837,
+      "independent_energy_residual_W": -8.9528384705772623E-12,
+      "torque_residual_Nm": -3.907985046680551E-14,
+      "power_balance": {
+        "terminalW": 4325.499619742508,
+        "shaftW": 4188.7902047863827,
+        "dcCopperW": 28.109144793037736,
+        "inputLossW": 0,
+        "dragLossW": 108.60027016308837,
+        "residualW": -7.673861546209082E-13,
+        "magnetizingTorqueNm": 20.518528094527085,
+        "vdPeakV": -37.03260103604179,
+        "vqPeakV": 183.35913306105948
+      }
+    },
+    {
+      "rpm": 2000,
+      "target_Nm": 60,
+      "allocation": "all_non_dc_as_drag",
+      "im_rms": [
+        -10.058612827680536,
+        29.097425794301234
+      ],
+      "terminal_rms": [
+        -10.058612827680536,
+        29.097425794301234
+      ],
+      "total_current_A": 30.78694333434299,
+      "gamma_magnetizing_deg": 19.069621688018497,
+      "phase_peak_V": 200.272721960871,
+      "non_dc_loss_W": 134.003858874252,
+      "independent_energy_residual_W": -4.418438948050607E-10,
+      "torque_residual_Nm": -2.1032064978498966E-12,
+      "power_balance": {
+        "terminalW": 12923.874173706812,
+        "shaftW": 12566.370614358731,
+        "dcCopperW": 223.49970047382851,
+        "inputLossW": 0,
+        "dragLossW": 134.003858874252,
+        "residualW": 1.7053025658242404E-13,
+        "magnetizingTorqueNm": 60.639821295994672,
+        "vdPeakV": -93.775207815450031,
+        "vqPeakV": 176.96150304737327
+      }
+    },
+    {
+      "rpm": 2000,
+      "target_Nm": 20,
+      "allocation": "all_non_dc_as_shunt",
+      "im_rms": [
+        -1.4447737708248234,
+        10.548033038178341
+      ],
+      "terminal_rms": [
+        -1.4980085664391594,
+        10.817403285132487
+      ],
+      "total_current_A": 10.920633841417825,
+      "gamma_magnetizing_deg": 7.7993227285811049,
+      "phase_peak_V": 187.00551320729875,
+      "non_dc_loss_W": 108.21966534459628,
+      "independent_energy_residual_W": 1.6086687537608668E-11,
+      "torque_residual_Nm": 7.460698725481052E-14,
+      "power_balance": {
+        "terminalW": 4325.1314355479071,
+        "shaftW": 4188.7902047864063,
+        "dcCopperW": 28.121565416903913,
+        "inputLossW": 108.21966534459628,
+        "dragLossW": 0,
+        "residualW": 6.2527760746888816E-13,
+        "magnetizingTorqueNm": 20.000000000000075,
+        "vdPeakV": -36.187630136505277,
+        "vqPeakV": 183.47075351409194
+      }
+    },
+    {
+      "rpm": 2000,
+      "target_Nm": 60,
+      "allocation": "all_non_dc_as_shunt",
+      "im_rms": [
+        -9.8117757591900059,
+        28.861728616711012
+      ],
+      "terminal_rms": [
+        -9.9615035382431536,
+        29.144906084705678
+      ],
+      "total_current_A": 30.800277651812571,
+      "gamma_magnetizing_deg": 18.775876524165369,
+      "phase_peak_V": 200.181290659711,
+      "non_dc_loss_W": 133.72714601561907,
+      "independent_energy_residual_W": -5.475158104673028E-10,
+      "torque_residual_Nm": -2.6147972675971687E-12,
+      "power_balance": {
+        "terminalW": 12923.791105362743,
+        "shaftW": 12566.370614358624,
+        "dcCopperW": 223.69334498849807,
+        "inputLossW": 133.72714601561907,
+        "dragLossW": 0,
+        "residualW": 1.8189894035458565E-12,
+        "magnetizingTorqueNm": 59.999999999997385,
+        "vdPeakV": -93.096094271503489,
+        "vqPeakV": 177.21643930961665
+      }
+    },
+    {
+      "rpm": 4000,
+      "target_Nm": 20,
+      "allocation": "all_non_dc_as_drag",
+      "im_rms": [
+        -1.5737587358475973,
+        10.869841246026136
+      ],
+      "terminal_rms": [
+        -1.5737587358475973,
+        10.869841246026136
+      ],
+      "total_current_A": 10.983176465507036,
+      "gamma_magnetizing_deg": 8.2381607026874644,
+      "phase_peak_V": 372.94477228107718,
+      "non_dc_loss_W": 269.15323252339374,
+      "independent_energy_residual_W": -3.2173375075217336E-11,
+      "torque_residual_Nm": -7.1054273576010019E-14,
+      "power_balance": {
+        "terminalW": 8675.1782350673911,
+        "shaftW": 8377.58040957275,
+        "dcCopperW": 28.444592971247872,
+        "inputLossW": 0,
+        "dragLossW": 269.15323252339374,
+        "residualW": -1.2505552149377763E-12,
+        "magnetizingTorqueNm": 20.642556011078835,
+        "vdPeakV": -74.2967448097984,
+        "vqPeakV": 365.46928309018284
+      }
+    },
+    {
+      "rpm": 4000,
+      "target_Nm": 60,
+      "allocation": "all_non_dc_as_drag",
+      "im_rms": [
+        -10.116443306480821,
+        29.155913963756824
+      ],
+      "terminal_rms": [
+        -10.116443306480821,
+        29.155913963756824
+      ],
+      "total_current_A": 30.861136470247345,
+      "gamma_magnetizing_deg": 19.135618595408182,
+      "phase_peak_V": 397.22452409425074,
+      "non_dc_loss_W": 333.67844227716466,
+      "independent_energy_residual_W": -1.0113581083714962E-9,
+      "torque_residual_Nm": -2.4016344468691386E-12,
+      "power_balance": {
+        "terminalW": 25690.997888685168,
+        "shaftW": 25132.741228717339,
+        "dcCopperW": 224.57821769066743,
+        "inputLossW": 0,
+        "dragLossW": 333.67844227716466,
+        "residualW": -3.637978807091713E-12,
+        "magnetizingTorqueNm": 60.796598602371816,
+        "vdPeakV": -186.76829697680253,
+        "vqPeakV": 350.57798816567032
+      }
+    },
+    {
+      "rpm": 4000,
+      "target_Nm": 20,
+      "allocation": "all_non_dc_as_shunt",
+      "im_rms": [
+        -1.4452585789353729,
+        10.547966199006993
+      ],
+      "terminal_rms": [
+        -1.5111674256857284,
+        10.881467458539166
+      ],
+      "total_current_A": 10.985898280964577,
+      "gamma_magnetizing_deg": 7.8019564714947229,
+      "phase_peak_V": 372.80538511109154,
+      "non_dc_loss_W": 267.96797102762628,
+      "independent_energy_residual_W": 3.979039320256561E-13,
+      "torque_residual_Nm": 3.5527136788005009E-15,
+      "power_balance": {
+        "terminalW": 8674.00707341357,
+        "shaftW": 8377.5804095727835,
+        "dcCopperW": 28.45869281316137,
+        "inputLossW": 267.96797102762628,
+        "dragLossW": 0,
+        "residualW": -1.4210854715202004E-12,
+        "magnetizingTorqueNm": 20.000000000000004,
+        "vdPeakV": -72.210059109053248,
+        "vqPeakV": 365.74521532249236
+      }
+    },
+    {
+      "rpm": 4000,
+      "target_Nm": 60,
+      "allocation": "all_non_dc_as_shunt",
+      "im_rms": [
+        -9.8091622797582669,
+        28.862620532668334
+      ],
+      "terminal_rms": [
+        -9.9954457244855952,
+        29.214934619367565
+      ],
+      "total_current_A": 30.877521598163586,
+      "gamma_magnetizing_deg": 18.770686210127156,
+      "phase_peak_V": 396.994306020442,
+      "non_dc_loss_W": 332.75707273218313,
+      "independent_energy_residual_W": -1.1482370609883219E-11,
+      "torque_residual_Nm": -1.4210854715202004E-14,
+      "power_balance": {
+        "terminalW": 25690.315053433143,
+        "shaftW": 25132.741228718336,
+        "dcCopperW": 224.81675198262485,
+        "inputLossW": 332.75707273218313,
+        "dragLossW": 0,
+        "residualW": -5.6843418860808015E-13,
+        "magnetizingTorqueNm": 59.999999999999986,
+        "vdPeakV": -185.09151849740982,
+        "vqPeakV": 351.20593501957705
+      }
+    },
+    {
+      "rpm": 8000,
+      "target_Nm": 20,
+      "allocation": "all_non_dc_as_drag",
+      "im_rms": [
+        -84.073379449111954,
+        5.67099600033568
+      ],
+      "terminal_rms": [
+        -84.073379449111954,
+        5.67099600033568
+      ],
+      "total_current_A": 84.264425041829981,
+      "gamma_magnetizing_deg": 86.141077128819319,
+      "phase_peak_V": 403.22142800203471,
+      "non_dc_loss_W": 965.076956610375,
+      "independent_energy_residual_W": 4.5474735088646412E-12,
+      "torque_residual_Nm": 3.5527136788005009E-15,
+      "power_balance": {
+        "terminalW": 19394.53410241114,
+        "shaftW": 16755.160819145567,
+        "dcCopperW": 1674.2963266551974,
+        "inputLossW": 0,
+        "dragLossW": 965.076956610375,
+        "residualW": 9.0949470177292824E-13,
+        "magnetizingTorqueNm": 21.151975760814683,
+        "vdPeakV": -82.117860487543268,
+        "vqPeakV": 394.7710437569458
+      }
+    },
+    {
+      "rpm": 8000,
+      "target_Nm": 60,
+      "allocation": "all_non_dc_as_drag",
+      "im_rms": [
+        -97.099807957843282,
+        15.756396132641894
+      ],
+      "terminal_rms": [
+        -97.099807957843282,
+        15.756396132641894
+      ],
+      "total_current_A": 98.369897451094147,
+      "gamma_magnetizing_deg": 80.7829473039336,
+      "phase_peak_V": 403.22142800203483,
+      "non_dc_loss_W": 1147.3749503790016,
+      "independent_energy_residual_W": 2.7057467377744615E-11,
+      "torque_residual_Nm": 3.5527136788005009E-14,
+      "power_balance": {
+        "terminalW": 53694.608347461966,
+        "shaftW": 50265.482457436716,
+        "dcCopperW": 2281.7509396462438,
+        "inputLossW": 0,
+        "dragLossW": 1147.3749503790016,
+        "residualW": 5.2295945351943374E-12,
+        "magnetizingTorqueNm": 61.369577961994807,
+        "vdPeakV": -204.26516066292163,
+        "vqPeakV": 347.65394308040135
+      }
+    },
+    {
+      "rpm": 8000,
+      "target_Nm": 20,
+      "allocation": "all_non_dc_as_shunt",
+      "im_rms": [
+        -83.884656341498655,
+        5.3671965139497742
+      ],
+      "terminal_rms": [
+        -84.079376541901752,
+        6.4831257307504222
+      ],
+      "total_current_A": 84.3289539773595,
+      "gamma_magnetizing_deg": 86.33903138718965,
+      "phase_peak_V": 403.2214280020346,
+      "non_dc_loss_W": 963.1332942570416,
+      "independent_energy_residual_W": 3.4106051316484809E-12,
+      "torque_residual_Nm": 7.1054273576010019E-15,
+      "power_balance": {
+        "terminalW": 19395.155743930911,
+        "shaftW": 16755.160819145567,
+        "dcCopperW": 1676.8616305283024,
+        "inputLossW": 963.1332942570416,
+        "dragLossW": 0,
+        "residualW": -2.2737367544323206E-13,
+        "magnetizingTorqueNm": 20.000000000000007,
+        "vdPeakV": -78.241718946409264,
+        "vqPeakV": 395.55752225979865
+      }
+    },
+    {
+      "rpm": 8000,
+      "target_Nm": 60,
+      "allocation": "all_non_dc_as_shunt",
+      "im_rms": [
+        -96.548177703420762,
+        15.435176795669646
+      ],
+      "terminal_rms": [
+        -97.197045159800254,
+        16.62463192612163
+      ],
+      "total_current_A": 98.608539054562982,
+      "gamma_magnetizing_deg": 80.916974400214983,
+      "phase_peak_V": 403.22142800203477,
+      "non_dc_loss_W": 1139.156682539822,
+      "independent_energy_residual_W": 2.5693225325085223E-11,
+      "torque_residual_Nm": 5.6843418860808015E-14,
+      "power_balance": {
+        "terminalW": 53697.474389157811,
+        "shaftW": 50265.482457436738,
+        "dcCopperW": 2292.8352491812693,
+        "inputLossW": 1139.156682539822,
+        "dragLossW": 0,
+        "residualW": -1.7962520360015333E-11,
+        "magnetizingTorqueNm": 60.000000000000057,
+        "vdPeakV": -200.6058719608057,
+        "vqPeakV": 349.77822135582562
+      }
+    },
+    {
+      "rpm": 16000,
+      "target_Nm": 20,
+      "allocation": "all_non_dc_as_drag",
+      "im_rms": [
+        -138.80206337141806,
+        5.2187611576958437
+      ],
+      "terminal_rms": [
+        -138.80206337141806,
+        5.2187611576958437
+      ],
+      "total_current_A": 138.90013773997572,
+      "gamma_magnetizing_deg": 87.846774028480638,
+      "phase_peak_V": 403.22142800203483,
+      "non_dc_loss_W": 6618.2424029561007,
+      "independent_energy_residual_W": 3.0013325158506632E-11,
+      "torque_residual_Nm": 1.0658141036401503E-14,
+      "power_balance": {
+        "terminalW": 44677.9119819419,
+        "shaftW": 33510.321638291141,
+        "dcCopperW": 4549.3479406946417,
+        "inputLossW": 0,
+        "dragLossW": 6618.2424029561007,
+        "residualW": 1.546140993013978E-11,
+        "magnetizingTorqueNm": 23.949972473790687,
+        "vdPeakV": -137.4846486432597,
+        "vqPeakV": 379.05869121738863
+      }
+    },
+    {
+      "rpm": 16000,
+      "target_Nm": 60,
+      "allocation": "all_non_dc_as_drag",
+      "im_rms": [
+        -158.150881829745,
+        13.477175907170649
+      ],
+      "terminal_rms": [
+        -158.150881829745,
+        13.477175907170649
+      ],
+      "total_current_A": 158.72408668490991,
+      "gamma_magnetizing_deg": 85.12918172325125,
+      "phase_peak_V": 403.22142800206183,
+      "non_dc_loss_W": 8090.7492636062761,
+      "independent_energy_residual_W": -5.3023541113361716E-10,
+      "torque_residual_Nm": -3.0553337637684308E-13,
+      "power_balance": {
+        "terminalW": 114562.30273511462,
+        "shaftW": 100530.96491487286,
+        "dcCopperW": 5940.5885566354818,
+        "inputLossW": 0,
+        "dragLossW": 8090.7492636062761,
+        "residualW": -6.3664629124104977E-12,
+        "magnetizingTorqueNm": 64.828810269824885,
+        "vdPeakV": -320.64423323781273,
+        "vqPeakV": 244.48884574016273
+      }
+    },
+    {
+      "rpm": 16000,
+      "target_Nm": 20,
+      "allocation": "all_non_dc_as_shunt",
+      "im_rms": [
+        -137.97197495204489,
+        4.3694108042187407
+      ],
+      "terminal_rms": [
+        -139.9723152483364,
+        11.881826272726357
+      ],
+      "total_current_A": 140.47571616316793,
+      "gamma_magnetizing_deg": 88.186116016501629,
+      "phase_peak_V": 403.2214280020346,
+      "non_dc_loss_W": 6558.2422021092552,
+      "independent_energy_residual_W": 5.4569682106375694E-12,
+      "torque_residual_Nm": 0,
+      "power_balance": {
+        "terminalW": 44721.705887281038,
+        "shaftW": 33510.321638291127,
+        "dcCopperW": 4653.14204688065,
+        "inputLossW": 6558.2422021092552,
+        "dragLossW": 0,
+        "residualW": 5.4569682106375694E-12,
+        "magnetizingTorqueNm": 20,
+        "vdPeakV": -117.88276367812149,
+        "vqPeakV": 385.60494554350328
+      }
+    },
+    {
+      "rpm": 16000,
+      "target_Nm": 60,
+      "allocation": "all_non_dc_as_shunt",
+      "im_rms": [
+        -155.01237882593972,
+        12.565458489558683
+      ],
+      "terminal_rms": [
+        -161.97569564955992,
+        19.051052713132854
+      ],
+      "total_current_A": 163.0922088593978,
+      "gamma_magnetizing_deg": 85.3656796033947,
+      "phase_peak_V": 403.2214280020354,
+      "non_dc_loss_W": 7841.4950660378345,
+      "independent_energy_residual_W": -1.9099388737231493E-11,
+      "torque_residual_Nm": -1.4210854715202004E-14,
+      "power_balance": {
+        "terminalW": 114644.52035458351,
+        "shaftW": 100530.96491487334,
+        "dcCopperW": 6272.0603736723069,
+        "inputLossW": 7841.4950660378345,
+        "dragLossW": 0,
+        "residualW": 2.4556356947869062E-11,
+        "magnetizingTorqueNm": 59.999999999999986,
+        "vdPeakV": -302.26551080906569,
+        "vqPeakV": 266.87652758407813
+      }
+    }
+  ]
+}

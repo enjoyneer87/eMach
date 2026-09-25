@@ -23,11 +23,13 @@ RUN2 = ("addpath('%s'); S = load('%s'); r = sim_e10_stage2(S, struct('Tref_fn', 
         "'td', 3e-6, 'Tstop', 0.08)); plot(r.t*1e3, r.T)") % (E10, DATA16)
 
 BOX0 = files_box("이 결과의 파일 — 단계 0", [
+    item(HERE / "gamma_wall_mc.py", "09-25 원 세션에서 복원한 몬테카를로 코드", cmd=""),
+    item(HERE / "gamma_wall_mc_recovery_20260925.json", "135/200 A의 42행 수치 일치와 출처 기록", cmd=""),
     item(EX / "gamma_wall_mc.csv", "몬테카를로 결과 (진각별 산포·반전·전압 초과)"),
     item(EX / "gamma_wall_mc_200A.csv", "같은 시험, 200 A"),
     item(EX / "gamma_wall_mc.png", "그림 1 원본", cmd=""),
     item(EX / "gammagrid_ref_hyb_fine16000.json", "재샘플에 쓴 16 krpm (I, γ) 격자 (Motor-CAD)", cmd="")],
-    note="몬테카를로 스크립트는 당시 스크래치패드에 있어 남아 있지 않다(ipmfea로 옮길 예정).")
+    note="09-25 원 세션의 코드·각도 외삽·전압 정정 기록에서 gamma_wall_mc.py를 복원했다. 135/200 A, 각 21행의 모든 숫자가 기존 CSV와 일치한다. 시드 20260917·20,000회·285.1 V RMS·93°까지 선형 외삽을 보존한 과거 결과 재현이며 폐루프 안정성 시험은 아니다.")
 BOX1 = files_box("이 결과의 파일 — 단계 1 (평균값 dq Simulink)", [
     item(E10 / "build_e10_stage1.m", "Simulink 모델 생성 스크립트", cmd="addpath('%s'); S = load('%s'); build_e10_stage1(S)" % (E10, DATA16)),
     item(E10 / "e10_stage1.slx", "생성된 모델 (저장소 미추적)"),

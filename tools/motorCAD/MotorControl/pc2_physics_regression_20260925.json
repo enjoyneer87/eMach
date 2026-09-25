@@ -1,0 +1,33 @@
+{
+  "scope": "analytic and numerical consistency; physical loss allocation not validated",
+  "matlab_version": "26.1.0.3251617 (R2026a) Update 2",
+  "passed": true,
+  "objective_at_a": 30.798084939719534,
+  "objective_at_b": 47.816165190165925,
+  "analytic_im_rms": [
+    -3.9414437886438169,
+    18.918930185490325
+  ],
+  "optimizer_im_rms": [
+    -3.9414434209976585,
+    18.918930262086477
+  ],
+  "analytic_error_A": 3.7554050146030434E-7,
+  "voltage_residual_under_V": -10.96939731147495,
+  "voltage_residual_over_V": 9.03060268852505,
+  "final_torque_residual_Nm": 3.26139115713886E-12,
+  "infeasible_rejected": true,
+  "audit": {
+    "requested_loss_W": 40,
+    "branch_absorbed_power_W": 40,
+    "corrected_loss_equivalent_torque_Nm": 0.4,
+    "zero_loss_open_circuit": true,
+    "max_branch_power_error_W": 0,
+    "max_energy_residual_W": 1.0800249583553523E-12,
+    "signed_speed_and_axis_cases": 10,
+    "allocation_energy_cases": 6,
+    "circular_current_constraint_checked": true,
+    "physical_loss_allocation_validated": false
+  },
+  "original_438p2_case": "not run: original motor/table and voltage convention not pinned"
+}
