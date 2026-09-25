@@ -1,0 +1,29 @@
+{
+  "scope": "synthetic numerical regression; not physical motor validation",
+  "matlab_version": "26.1.0.3251617 (R2026a) Update 2",
+  "passed": true,
+  "objective_at_a": 30.442844248971436,
+  "objective_at_b": 47.370021804188788,
+  "analytic_im_rms": [
+    -5.6691341084403009,
+    24.353341936922483
+  ],
+  "optimizer_im_rms": [
+    -5.669136108018078,
+    24.353341520328215
+  ],
+  "analytic_error_A": 2.04251366489567E-6,
+  "voltage_residual_under_V": -12,
+  "voltage_residual_over_V": 8,
+  "final_torque_residual_Nm": -1.5852208434807835E-11,
+  "infeasible_rejected": true,
+  "audit": {
+    "requested_loss_W": 40,
+    "branch_absorbed_power_W": -2.6645352591003757E-15,
+    "legacy_loss_torque_Nm": 6.0000000000000009,
+    "loss_over_mechanical_speed_Nm": 0.4,
+    "zero_loss_resistance_finite": false,
+    "physical_loss_model_validated": false
+  },
+  "original_438p2_case": "not run: original motor/table fixture and voltage convention not pinned"
+}

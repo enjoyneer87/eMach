@@ -42,12 +42,10 @@ classdef EECLUTdq
         end
         
         function totalCurrent = compMTPA(obj, Im_rms)
-            if isempty(obj.lastIRMS)  % lastI가 비어 있으면 안전한 값 반환
-                totalCurrent = 0;
-            else
-                totalCurrent = sqrt(obj.lastIRMS(1).^2 + obj.lastIRMS(2).^2);
-            end
-            % obj=obj.updateElecLossData(Im_rms);
+            % EECLUTdq is a value class: evaluate this trial, not cached state
+            % captured when the optimizer's objective handle was created.
+            obj = obj.updateElecLossData(Im_rms);
+            totalCurrent = hypot(obj.lastIRMS(1), obj.lastIRMS(2));
         end
         
         function [c, ceq,newObj] = evaluateMotorConstraints(obj, Im_rms, target_Tload, Vlim)
@@ -78,12 +76,13 @@ classdef EECLUTdq
 
             lambdaD = obj.LambdaDFit(idm_pk, iqm_pk);
             lambdaQ = obj.LambdaQFit(idm_pk, iqm_pk);
-            TorqueDQ =calcDQFluxTorque(id_rms, iq_rms, lambdaD,lambdaQ,obj.PoleNumber)
+            TorqueDQ =calcDQFluxTorque(id_rms, iq_rms, lambdaD,lambdaQ,obj.PoleNumber);
             % TorqueDQ = calcDQLTorque(id_rms, iq_rms, obj.PoleNumber,psi_pm, Ld, Lq);
             obj.TShaft=TorqueDQ-TorqueElecLoss;
             obj.Vs_pk=Vs_pk;
             ceq = obj.TShaft - target_Tload;
-            c = Vlim - Vs_pk;
+            % fmincon accepts c <= 0. Vlim is a phase-peak voltage limit.
+            c = Vs_pk - Vlim;
 
             newObj = obj;  % 업데이트된 객체 반환
 
