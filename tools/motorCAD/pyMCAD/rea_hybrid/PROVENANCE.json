@@ -1,0 +1,85 @@
+{
+  "schema": "rea-hybrid-provenance-v1",
+  "date": "2026-10-19",
+  "kernel_origin": "motorcad_hybrid_rea_20261015/hybrid_kernel.py",
+  "kernel_source_sha256": "1e0f9a07a19500a21ca935ee351205daa6c515c57097de96124e701ece8df2d0",
+  "binary_sha256": "488be07c3ac4a82fd1f737aad76ff6b6df415ba82f5f05adf85c7f7f7f5ca323",
+  "version_scope": "Motor-CAD v261, HybridACLossMethod=0, rectangular conductor",
+  "source_kernel_copied_without_modification": true,
+  "geometry_scope": "e10 Ref single-strand six-cuboid manual hairpin; exact radial similarity only",
+  "geometry_replay": {
+    "points": 600,
+    "line_counts": [
+      2,
+      3,
+      3,
+      4,
+      5,
+      13
+    ],
+    "max_abs_coordinate_difference_m": 0.0
+  },
+  "native_skin_replay": {
+    "Ref": {
+      "n": 120,
+      "copper_width_mm": 3.711,
+      "copper_height_mm": 1.686,
+      "copper_corner_radius_mm": 0.3,
+      "rounded_corner_area_mm2": 6.179489338823081,
+      "recorded_current_Arms": 460.0,
+      "recorded_J_Arms_per_mm2": 74.43980801294,
+      "rounded_geometry_J_Arms_per_mm2": 74.43980801294005,
+      "geometry_vs_stored_J_relative_error": 6.661338147750939e-16,
+      "active_only_geometry_volume_m3": 0.0002669539394371571,
+      "independently_recorded_native_volume_m3": 0.00042383088996676704,
+      "native_to_active_volume_ratio": 1.5876554991485337,
+      "native_scope_parity_status": "verified_against_recorded_independent_getters",
+      "max_abs_native_scope_relative_error": 4.884981308350689e-15
+    },
+    "HalfSC": {
+      "n": 120,
+      "copper_width_mm": 5.566,
+      "copper_height_mm": 2.529,
+      "copper_corner_radius_mm": 0.45,
+      "rounded_corner_area_mm2": 13.902586512351933,
+      "recorded_current_Arms": 460.0,
+      "recorded_J_Arms_per_mm2": 33.0873682815286,
+      "rounded_geometry_J_Arms_per_mm2": 33.087368281528555,
+      "geometry_vs_stored_J_relative_error": -1.3322676295501878e-15,
+      "active_only_geometry_volume_m3": 0.0006005917373336035,
+      "independently_recorded_native_volume_m3": null,
+      "native_to_active_volume_ratio": null,
+      "native_scope_parity_status": "unresolved_total_copper_mass_or_volume",
+      "max_abs_native_scope_relative_error": null
+    },
+    "SC": {
+      "n": 120,
+      "copper_width_mm": 7.422,
+      "copper_height_mm": 3.372,
+      "copper_corner_radius_mm": 0.6,
+      "rounded_corner_area_mm2": 24.717957355292324,
+      "recorded_current_Arms": 460.0,
+      "recorded_J_Arms_per_mm2": 18.609952003235,
+      "rounded_geometry_J_Arms_per_mm2": 18.609952003235012,
+      "geometry_vs_stored_J_relative_error": 6.661338147750939e-16,
+      "active_only_geometry_volume_m3": 0.0010678157577486283,
+      "independently_recorded_native_volume_m3": 0.002178554831022344,
+      "native_to_active_volume_ratio": 2.040197304838043,
+      "native_scope_parity_status": "verified_against_recorded_independent_getters",
+      "max_abs_native_scope_relative_error": 4.9960036108132044e-15
+    }
+  },
+  "note": "Native skin validation uses native total copper volumes; Elmer calculation explicitly uses active-only actual bar areas. High-frequency expression is derived from native path and algebra tested, not independently validated for all geometries/frequencies.",
+  "excluded_artifacts": [
+    "executables",
+    "decompiler output",
+    "REA runtime",
+    "private native mesh histories"
+  ],
+  "source_evidence_sha256": {
+    "hybrid_kernel.py": "1e0f9a07a19500a21ca935ee351205daa6c515c57097de96124e701ece8df2d0",
+    "README.md": "ab4187941e13554e35803d0eef63f0f4d9c543923ccb0d5801f726a33ee289fd",
+    "native_parity_v1/VALIDATION_SUMMARY.json": "febe7cde93202e0f1c4dddb17dbdf2addea040d4dd958a5cbb23099b59ff9219",
+    "ref_sc_transfer_v1/README.md": "af2bb16acb243d2ef097ea70c26c40fb458e5e1849c8c2f4c267bb694d79e60e"
+  }
+}
