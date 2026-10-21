@@ -2,7 +2,7 @@
 """e10 Icepak 기하/재료 확인: 코일 현재 k, 코일-스테이터 접촉/틈 여부, 슬롯 반경관계.
 transient+접촉모델 구성 전 진단(솔브 없음)."""
 import os, math, traceback
-SP = r"C:\Users\moa\AppData\Local\Temp\claude\d--KDH-NvidiaNemo\298544ad-ddbc-4058-ba12-169c3e37aff3\scratchpad"
+SP = r"C:\work\thermal_scratch"
 PROJ = r"D:\KDH\simVary\Ansys_Thermal\e10_icepak_hybrid.aedt"
 LOG = os.path.join(SP, "e10_ipk_geomcheck.txt")
 _l = open(LOG, "w", encoding="utf-8")

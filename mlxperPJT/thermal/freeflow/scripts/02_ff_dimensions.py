@@ -1,6 +1,6 @@
 import os, traceback, numpy as np
 GEO=r"D:\KDH\simVary\simFreeFlow\20251226\FreeFlow\FreeFlowProject\Geometry"
-L=open(r"C:\Users\moa\AppData\Local\Temp\claude\d--KDH-NvidiaNemo\298544ad-ddbc-4058-ba12-169c3e37aff3\scratchpad\ff_dims_out.txt","w",encoding="utf-8")
+L=open(r"C:\work\thermal_scratch\ff_dims_out.txt","w",encoding="utf-8")
 def P(*a): L.write(" ".join(str(x) for x in a)+"\n"); L.flush()
 try:
     import pyvista as pv

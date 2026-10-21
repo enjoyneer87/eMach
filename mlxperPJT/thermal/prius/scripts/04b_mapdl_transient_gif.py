@@ -2,7 +2,7 @@
 """Prius transient GIF: 코일 z=0 단면 + 내부부품(코일+자석) 시간전개."""
 import os, glob, traceback
 import numpy as np
-SP=r"C:\Users\moa\AppData\Local\Temp\claude\d--KDH-NvidiaNemo\292f8893-fe65-44a6-9565-cb88503b2e90\scratchpad"
+SP=r"C:\work\thermal_scratch"
 OUT=os.path.join(SP,"viz_prius")
 log=open(os.path.join(SP,"prius_gif.txt"),"w",encoding="utf-8")
 def P(*a): log.write(" ".join(str(x) for x in a)+"\n"); log.flush()

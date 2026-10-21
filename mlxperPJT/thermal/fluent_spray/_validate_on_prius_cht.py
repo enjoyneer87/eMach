@@ -4,7 +4,7 @@ DPM(오일 방울 분사) + Eulerian Wall Film + 오일재료 + 발열원 API를
 각 단계 성공여부를 로그로 남겨 '작동하는 레시피' 확보. (물리적 스프레이는 e10 캐비티
 메시 필요 - 여기선 API 워크플로우 검증이 목적.)"""
 import os, traceback
-LOG = r"C:\Users\moa\AppData\Local\Temp\claude\d--KDH-NvidiaNemo\298544ad-ddbc-4058-ba12-169c3e37aff3\scratchpad\flu_spray_recipe.txt"
+LOG = r"C:\work\thermal_scratch\flu_spray_recipe.txt"
 def W(*a):
     with open(LOG, "a", encoding="utf-8") as f: f.write(" ".join(str(x) for x in a) + "\n")
 open(LOG, "w").close()

@@ -11,7 +11,7 @@
 """
 import os, json, time, traceback
 
-SP = r"C:\Users\moa\AppData\Local\Temp\claude\d--KDH-NvidiaNemo\298544ad-ddbc-4058-ba12-169c3e37aff3\scratchpad"
+SP = r"C:\work\thermal_scratch"
 ORIG_PRJ = r"D:\KDH\simVary\simFreeFlow\20251226\FreeFlow\FreeFlowProject\Project.freeflow"
 NEW_PRJ = r"D:\KDH\simVary\simFreeFlow\20251226\FreeFlow\FreeFlowProject\Project_thermal.freeflow"
 MAPDL_JSON = r"D:\KDH\NvidiaNemo\eMach\mlxperPJT\thermal\freeflow\data\ff_mapdl_hybrid_temps.json"

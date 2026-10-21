@@ -7,7 +7,7 @@ import math
 import traceback
 import numpy as np
 
-SP = r"C:\Users\moa\AppData\Local\Temp\claude\d--KDH-NvidiaNemo\292f8893-fe65-44a6-9565-cb88503b2e90\scratchpad"
+SP = r"C:\work\thermal_scratch"
 STP = (r"D:\KDH\simVary\Ansys_Thermal\Flu_MacTherm_EN_ILT_2019"
        r"\FLU_EMTHERM_2019R2_2021R1_EN_M02-FluentSetup\2019R2\PriusMotor_3D45degree.stp")
 OUT_CDB = r"D:\KDH\simVary\Ansys_Thermal\prius_motor_mesh.cdb"

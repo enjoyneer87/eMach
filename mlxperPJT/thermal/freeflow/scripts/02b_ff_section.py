@@ -2,7 +2,7 @@
 """Stator/Rotating STL z-단면 -> 전자계 형상 detail 확인."""
 import os, traceback, numpy as np
 GEO=r"D:\KDH\simVary\simFreeFlow\20251226\FreeFlow\FreeFlowProject\Geometry"
-OUT=r"C:\Users\moa\AppData\Local\Temp\claude\d--KDH-NvidiaNemo\298544ad-ddbc-4058-ba12-169c3e37aff3\scratchpad\ff_sec"
+OUT=r"C:\work\thermal_scratch\ff_sec"
 os.makedirs(OUT, exist_ok=True)
 log=open(os.path.join(OUT,"log.txt"),"w",encoding="utf-8")
 def P(*a): log.write(" ".join(str(x) for x in a)+"\n"); log.flush()

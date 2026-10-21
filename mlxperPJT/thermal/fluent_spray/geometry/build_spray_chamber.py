@@ -3,7 +3,7 @@
 gmsh OCC 2볼륨 컨포멀 -> CGNS(존/BC 네이밍) + meshio CGNS/Nastran 폴백 export.
 Fluent 직접 import 대상."""
 import os, traceback
-SP = r"C:\Users\moa\AppData\Local\Temp\claude\d--KDH-NvidiaNemo\298544ad-ddbc-4058-ba12-169c3e37aff3\scratchpad"
+SP = r"C:\work\thermal_scratch"
 LOG = os.path.join(SP, "ff_spray_geom.txt")
 _l = open(LOG, "w", encoding="utf-8")
 def W(*a): _l.write(" ".join(str(x) for x in a) + "\n"); _l.flush()

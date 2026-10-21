@@ -1,7 +1,7 @@
 import os, json
 import numpy as np, matplotlib
 matplotlib.use("Agg"); import matplotlib.pyplot as plt
-OUT=r"C:\Users\moa\AppData\Local\Temp\claude\d--KDH-NvidiaNemo\292f8893-fe65-44a6-9565-cb88503b2e90\scratchpad\viz_prius_wj"
+OUT=r"C:\work\thermal_scratch\viz_prius_wj"
 os.makedirs(OUT,exist_ok=True)
 comp=["Coil","Stator","Rotor","Magnet"]
 # max 온도 [C]

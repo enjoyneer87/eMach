@@ -6,7 +6,7 @@ import csv
 import time
 import traceback
 
-SP = r"C:\Users\moa\AppData\Local\Temp\claude\d--KDH-NvidiaNemo\292f8893-fe65-44a6-9565-cb88503b2e90\scratchpad"
+SP = r"C:\work\thermal_scratch"
 OUT = os.path.join(SP, "viz_prius")
 os.makedirs(OUT, exist_ok=True)
 log = open(os.path.join(SP, "run_prius.txt"), "w", encoding="utf-8")

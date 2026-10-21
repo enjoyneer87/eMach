@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """Fluent 250A 재솔브: 존 소스항을 250A 손실밀도로 교체 후 CHT 재해석."""
 import os, json, traceback
-log=open(r"C:\Users\moa\AppData\Local\Temp\claude\d--KDH-NvidiaNemo\292f8893-fe65-44a6-9565-cb88503b2e90\scratchpad\fluent_250A.txt","w",encoding="utf-8")
+log=open(r"C:\work\thermal_scratch\fluent_250A.txt","w",encoding="utf-8")
 def P(*a): log.write(" ".join(str(x) for x in a)+"\n"); log.flush()
 CAS=r"D:\KDH\simVary\Ansys_Thermal\Flu_MacTherm_EN_ILT_2019\FLU_EMTHERM_2019R2_2021R1_EN_M02-FluentSetup\2019R2\PriusMotor_3D45degree.cas.h5"
 SAVE=r"D:\KDH\simVary\Ansys_Thermal\Prius_work\PriusMotor_250A"

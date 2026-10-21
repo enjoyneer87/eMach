@@ -13,7 +13,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..",
 from thermal_viz import render_standard_viz, STANDARD_GIFS, STANDARD_PNGS
 
 # MAPDL 결과 위치(세션 스크래치) — 필요시 경로만 갱신
-RTH_ROOT = r"C:\Users\moa\AppData\Local\Temp\claude\d--KDH-NvidiaNemo\292f8893-fe65-44a6-9565-cb88503b2e90\scratchpad"
+RTH_ROOT = r"C:\work\thermal_scratch"
 VIZ_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "viz"))
 
 # 데이터셋 규격: (키, rth, 출력폴더, 라벨, clim_lo[냉각수온])

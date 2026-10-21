@@ -5,7 +5,7 @@ V1b STEADY가 COOLED-OK(winding136.5) 확인됨. 이제 IC70→dt45→900s trans
 MAPDL transient@900s: winding152.2 stator126 magnet86.9 rotor86.9 shaft84.9.
 """
 import os, glob, math, json, traceback
-SP=r"C:\Users\moa\AppData\Local\Temp\claude\d--KDH-NvidiaNemo\298544ad-ddbc-4058-ba12-169c3e37aff3\scratchpad"
+SP=r"C:\work\thermal_scratch"
 PROJ=r"D:\KDH\simVary\Ansys_Thermal\e10_icepak_hybrid.aedt"
 OUTJSON=r"D:\KDH\NvidiaNemo\eMach\mlxperPJT\thermal\freeflow\data\e10_icepak_v1_homog.json"
 LOG=os.path.join(SP,"e10_ipk_v1c_trans.txt")

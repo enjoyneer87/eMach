@@ -3,7 +3,7 @@
 -> 짧은 검증구간(TARGET_S초) 솔브 -> 저장. 벽시계 안전상한 CAP_S 도달시 강제중단."""
 import os, time, traceback
 
-SP = r"C:\Users\moa\AppData\Local\Temp\claude\d--KDH-NvidiaNemo\298544ad-ddbc-4058-ba12-169c3e37aff3\scratchpad"
+SP = r"C:\work\thermal_scratch"
 PRJ = r"D:\KDH\simVary\simFreeFlow\20251226\FreeFlow\FreeFlowProject\Project_thermal.freeflow"
 LOG = os.path.join(SP, "ff_thermal_shortrun.txt")
 TARGET_S = 0.40     # 목표 물리시간(검증구간)

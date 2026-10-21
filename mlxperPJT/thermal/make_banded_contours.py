@@ -2,13 +2,13 @@
 """iso/슬라이스 재생성: 솔리드 clim + 이산밴드 + 좁은범위(표면 구조) 뷰."""
 import os, glob, traceback
 import numpy as np
-log = open(r"C:\Users\moa\AppData\Local\Temp\claude\d--KDH-NvidiaNemo\292f8893-fe65-44a6-9565-cb88503b2e90\scratchpad\iso_banded.txt", "w", encoding="utf-8")
+log = open(r"C:\work\thermal_scratch\iso_banded.txt", "w", encoding="utf-8")
 def P(*a): log.write(" ".join(str(x) for x in a) + "\n"); log.flush()
 try:
     import pyvista as pv
     from ansys.mapdl import reader as rd
     pv.OFF_SCREEN = True
-    SP = r"C:\Users\moa\AppData\Local\Temp\claude\d--KDH-NvidiaNemo\292f8893-fe65-44a6-9565-cb88503b2e90\scratchpad"
+    SP = r"C:\work\thermal_scratch"
     OUT = os.path.join(SP, "viz_real")
     rth = sorted(glob.glob(os.path.join(SP, "real_*", "file.rth")),
                  key=os.path.getmtime)[-1]

@@ -7,9 +7,9 @@ import os, sys, traceback
 sys.path.insert(0, r"D:\KDH\NvidiaNemo\eMach\mlxperPJT\thermal")
 from thermal_viz import render_standard_viz, STANDARD_GIFS, STANDARD_PNGS
 
-RTH = r"C:\Users\moa\AppData\Local\Temp\claude\d--KDH-NvidiaNemo\298544ad-ddbc-4058-ba12-169c3e37aff3\scratchpad\ff_hybrid_v2_run2\file.rth"
+RTH = r"C:\work\thermal_scratch\ff_hybrid_v2_run2\file.rth"
 OUT = r"D:\KDH\NvidiaNemo\eMach\mlxperPJT\thermal\freeflow\viz\mapdl"
-LOG = r"C:\Users\moa\AppData\Local\Temp\claude\d--KDH-NvidiaNemo\298544ad-ddbc-4058-ba12-169c3e37aff3\scratchpad\ff_dashboard.txt"
+LOG = r"C:\work\thermal_scratch\ff_dashboard.txt"
 _l = open(LOG, "w", encoding="utf-8")
 def P(*a): _l.write(" ".join(str(x) for x in a) + "\n"); _l.flush()
 

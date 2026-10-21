@@ -5,7 +5,7 @@ import csv
 import traceback
 import numpy as np
 
-SP = r"C:\Users\moa\AppData\Local\Temp\claude\d--KDH-NvidiaNemo\292f8893-fe65-44a6-9565-cb88503b2e90\scratchpad"
+SP = r"C:\work\thermal_scratch"
 OUT = os.path.join(SP, "viz_real_aniso")
 os.makedirs(OUT, exist_ok=True)
 ISO_RTH = os.path.join(SP, "real_133476", "file.rth")     # 등방성 v5

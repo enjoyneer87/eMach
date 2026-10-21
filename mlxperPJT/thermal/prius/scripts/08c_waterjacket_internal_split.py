@@ -8,8 +8,8 @@
 """
 import os, shutil, traceback
 import numpy as np
-OSP = r"C:\Users\moa\AppData\Local\Temp\claude\d--KDH-NvidiaNemo\292f8893-fe65-44a6-9565-cb88503b2e90\scratchpad"
-NSP = r"C:\Users\moa\AppData\Local\Temp\claude\d--KDH-NvidiaNemo\298544ad-ddbc-4058-ba12-169c3e37aff3\scratchpad"
+OSP = r"C:\work\thermal_scratch"
+NSP = r"C:\work\thermal_scratch"
 REPO = r"D:\KDH\NvidiaNemo\eMach\mlxperPJT\thermal\prius\viz"
 log = open(os.path.join(NSP, "wj_twogifs.txt"), "w", encoding="utf-8")
 def P(*a): log.write(" ".join(str(x) for x in a) + "\n"); log.flush()

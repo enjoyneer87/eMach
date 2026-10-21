@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """Icepak stage D2: robust per-object Temperature extraction (export_csv + summary data)."""
 import os, json, csv, traceback
-SP = r"C:\Users\moa\AppData\Local\Temp\claude\d--KDH-NvidiaNemo\298544ad-ddbc-4058-ba12-169c3e37aff3\scratchpad"
+SP = r"C:\work\thermal_scratch"
 PROJ = r"D:\KDH\simVary\Ansys_Thermal\Prius_work\Prius_Icepak.aedt"
 OUTJSON = r"D:\KDH\NvidiaNemo\eMach\mlxperPJT\thermal\prius\data\icepak_prius_250A_temps.json"
 log = open(SP + r"\ipk_D2.txt", "w", encoding="utf-8")

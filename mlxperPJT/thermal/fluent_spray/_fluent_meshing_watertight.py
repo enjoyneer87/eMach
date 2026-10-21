@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 """Fluent Meshing watertight 워크플로우: multi-solid STL -> 볼륨메시 -> 솔버메시."""
 import os, traceback
-LOG=r"C:\Users\moa\AppData\Local\Temp\claude\d--KDH-NvidiaNemo\298544ad-ddbc-4058-ba12-169c3e37aff3\scratchpad\flu_wtm.txt"
+LOG=r"C:\work\thermal_scratch\flu_wtm.txt"
 def W(*a):
     with open(LOG,"a",encoding="utf-8") as f: f.write(" ".join(str(x) for x in a)+"\n")
 open(LOG,"w").close()
-STL=r"C:\Users\moa\AppData\Local\Temp\claude\d--KDH-NvidiaNemo\298544ad-ddbc-4058-ba12-169c3e37aff3\scratchpad\spray_e10_multisolid.stl"
-OUT=r"C:\Users\moa\AppData\Local\Temp\claude\d--KDH-NvidiaNemo\298544ad-ddbc-4058-ba12-169c3e37aff3\scratchpad\spray_e10_solver.msh.h5"
+STL=r"C:\work\thermal_scratch\spray_e10_multisolid.stl"
+OUT=r"C:\work\thermal_scratch\spray_e10_solver.msh.h5"
 try:
     import ansys.fluent.core as pf
     meshing = pf.launch_fluent(mode="meshing", precision="double", processor_count=4,

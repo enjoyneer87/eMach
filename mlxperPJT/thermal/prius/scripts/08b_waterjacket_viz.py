@@ -2,7 +2,7 @@
 """워터재킷 저/고부하 시각화: 컨투어3뷰 + 코일/자석 + 이력 + GIF."""
 import os, traceback
 import numpy as np
-SP=r"C:\Users\moa\AppData\Local\Temp\claude\d--KDH-NvidiaNemo\292f8893-fe65-44a6-9565-cb88503b2e90\scratchpad"
+SP=r"C:\work\thermal_scratch"
 log=open(os.path.join(SP,"wj_viz.txt"),"w",encoding="utf-8")
 def P(*a): log.write(" ".join(str(x) for x in a)+"\n"); log.flush()
 RUNS=[("real_37072","viz_prius_wj_low","LOW load (Fluent-match)"),

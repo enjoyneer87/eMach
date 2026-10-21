@@ -1,8 +1,8 @@
 import os, traceback
 import numpy as np
-log=open(r"C:\Users\moa\AppData\Local\Temp\claude\d--KDH-NvidiaNemo\292f8893-fe65-44a6-9565-cb88503b2e90\scratchpad\prius_meshchk.txt","w",encoding="utf-8")
+log=open(r"C:\work\thermal_scratch\prius_meshchk.txt","w",encoding="utf-8")
 def P(*a): log.write(" ".join(str(x) for x in a)+"\n"); log.flush()
-OUT=r"C:\Users\moa\AppData\Local\Temp\claude\d--KDH-NvidiaNemo\292f8893-fe65-44a6-9565-cb88503b2e90\scratchpad"
+OUT=r"C:\work\thermal_scratch"
 mapdl=None
 try:
     from ansys.mapdl.core import launch_mapdl

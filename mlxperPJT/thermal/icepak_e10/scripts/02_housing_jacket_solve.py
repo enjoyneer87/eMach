@@ -4,7 +4,7 @@
 (스테이터 OD와 컨포멀 접촉) + 하우징 외면 오일자켓 84.4C 고정. stator OD fixT 제거.
 코일 등방성387·함침k0.13 유지. SteadyState 검증(스테이터 드레인 개선 여부도)."""
 import os, json, math, traceback
-SP = r"C:\Users\moa\AppData\Local\Temp\claude\d--KDH-NvidiaNemo\298544ad-ddbc-4058-ba12-169c3e37aff3\scratchpad"
+SP = r"C:\work\thermal_scratch"
 PROJ = r"D:\KDH\simVary\Ansys_Thermal\e10_icepak_hybrid.aedt"
 OUTJSON = r"D:\KDH\NvidiaNemo\eMach\mlxperPJT\thermal\freeflow\data\e10_icepak_housing.json"
 VIZ = r"D:\KDH\NvidiaNemo\eMach\mlxperPJT\thermal\freeflow\viz\icepak"

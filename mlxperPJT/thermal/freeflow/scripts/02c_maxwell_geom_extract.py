@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """e10 Maxwell 2D에서 로터적층/자석/샤프트/스테이터/권선 2D 단면 폴리곤 추출 -> JSON."""
 import os, json, traceback
-SP=r"C:\Users\moa\AppData\Local\Temp\claude\d--KDH-NvidiaNemo\298544ad-ddbc-4058-ba12-169c3e37aff3\scratchpad"
+SP=r"C:\work\thermal_scratch"
 AEDT=r"D:\KDH\simVary\e10_20251226\e10_User_2D_GF0_RD1AS0AC1WG0HCT1HET0_ANSYSEM_2D.aedt"
 LOG=os.path.join(SP,"e10_geom.txt"); OUT=os.path.join(SP,"e10_geom.json")
 _l=open(LOG,"w",encoding="utf-8")

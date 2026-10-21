@@ -6,7 +6,7 @@ V1b가 subtract-컨포멀 성립을 증명 → V2는 imported 코일도 컨포�
 1) copy+정렬검증(early abort) 2) 함침/재료/손실/대류벽 3) STEADY 솔브.
 """
 import os, math, json, traceback
-SP=r"C:\Users\moa\AppData\Local\Temp\claude\d--KDH-NvidiaNemo\298544ad-ddbc-4058-ba12-169c3e37aff3\scratchpad"
+SP=r"C:\work\thermal_scratch"
 PROJ=r"D:\KDH\simVary\Ansys_Thermal\e10_icepak_hybrid.aedt"
 MAXW=r"D:\KDH\simVary\e10_6TSweep\refModel\e10Turn6V261_3D_Script_ANSYSEM_3D.aedt"
 MDESIGN="Motor-CAD e10Turn6V261_3D_Script"

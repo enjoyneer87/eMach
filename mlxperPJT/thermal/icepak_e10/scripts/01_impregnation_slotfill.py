@@ -4,7 +4,7 @@
 함침체 = 슬롯밴드(r71.2~91, z±75) − 스테이터 − 코일144.
 이 스크립트는 형상 boolean만(솔브X) — 성공/부피 확인용. 성공시 저장."""
 import os, traceback
-SP = r"C:\Users\moa\AppData\Local\Temp\claude\d--KDH-NvidiaNemo\298544ad-ddbc-4058-ba12-169c3e37aff3\scratchpad"
+SP = r"C:\work\thermal_scratch"
 PROJ = r"D:\KDH\simVary\Ansys_Thermal\e10_icepak_hybrid.aedt"
 LOG = os.path.join(SP, "e10_ipk_impreg_build.txt")
 _l = open(LOG, "w", encoding="utf-8")

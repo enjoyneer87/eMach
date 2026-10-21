@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """e10 Motor-CAD 손실 읽기 - ActiveXParametersMotorCADv261.txt 정확한 파라미터명."""
 import os, json, traceback
-SP=r"C:\Users\moa\AppData\Local\Temp\claude\d--KDH-NvidiaNemo\298544ad-ddbc-4058-ba12-169c3e37aff3\scratchpad"
+SP=r"C:\work\thermal_scratch"
 MOT=r"D:\KDH\simVary\e10_6TSweep\refModel\e10Turn6V261.mot"
 OUTJSON=r"D:\KDH\NvidiaNemo\eMach\mlxperPJT\thermal\freeflow\data\e10_losses.json"
 log=open(SP+r"\e10_mcad2.txt","w",encoding="utf-8")

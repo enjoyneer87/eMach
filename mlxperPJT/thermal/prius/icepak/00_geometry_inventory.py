@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """STEP 전체 볼륨 인벤토리 (하우징+재킷 포함) - Icepak 재료/소스 매핑용."""
 import math, json, traceback
-SP = r"C:\Users\moa\AppData\Local\Temp\claude\d--KDH-NvidiaNemo\298544ad-ddbc-4058-ba12-169c3e37aff3\scratchpad"
+SP = r"C:\work\thermal_scratch"
 STP = (r"D:\KDH\simVary\Ansys_Thermal\Flu_MacTherm_EN_ILT_2019"
        r"\FLU_EMTHERM_2019R2_2021R1_EN_M02-FluentSetup\2019R2\PriusMotor_3D45degree.stp")
 log = open(SP + r"\ipk_inventory.txt", "w", encoding="utf-8")

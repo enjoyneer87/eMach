@@ -1,5 +1,5 @@
 import os, json, time, traceback
-log=open(r"C:\Users\moa\AppData\Local\Temp\claude\d--KDH-NvidiaNemo\292f8893-fe65-44a6-9565-cb88503b2e90\scratchpad\prius_coreloss2.txt","w",encoding="utf-8")
+log=open(r"C:\work\thermal_scratch\prius_coreloss2.txt","w",encoding="utf-8")
 def P(*a): log.write(" ".join(str(x) for x in a)+"\n"); log.flush()
 PATH=r"D:\KDH\simVary\Ansys_Thermal\SyC_Mxwl_Fluent_eMachine_2022r2\Initial_ProjectFiles\Prius_Model_24R2.aedt"
 d=None

@@ -4,7 +4,7 @@
 재료: 1 stator, 2 magnet, 3 winding, 4 shaft, 5 rotor."""
 import os, json, math, traceback
 import numpy as np
-SP = r"C:\Users\moa\AppData\Local\Temp\claude\d--KDH-NvidiaNemo\298544ad-ddbc-4058-ba12-169c3e37aff3\scratchpad"
+SP = r"C:\work\thermal_scratch"
 GEOM = os.path.join(SP, "e10_geom.json")
 OLD_CDB = r"D:\KDH\simVary\Ansys_Thermal\ff_e10_mesh.cdb"     # 기존(mat1/3/5cyl)
 OUT_CDB = r"D:\KDH\simVary\Ansys_Thermal\ff_e10_mesh_v2.cdb"  # 병합(mat1..5)

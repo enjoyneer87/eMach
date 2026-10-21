@@ -4,7 +4,7 @@
 import os, traceback, numpy as np
 GEO=r"D:\KDH\simVary\simFreeFlow\20251226\FreeFlow\FreeFlowProject\Geometry"
 OUT_CDB=r"D:\KDH\simVary\Ansys_Thermal\ff_e10_mesh.cdb"
-L=open(r"C:\Users\moa\AppData\Local\Temp\claude\d--KDH-NvidiaNemo\298544ad-ddbc-4058-ba12-169c3e37aff3\scratchpad\ff_mesh_final.txt","w")
+L=open(r"C:\work\thermal_scratch\ff_mesh_final.txt","w")
 def P(*a): L.write(" ".join(str(x) for x in a)+"\n"); L.flush()
 MESH_MAX,MESH_MIN=0.005,0.0018
 ROT=dict(r=0.0714, z0=-0.207, z1=-0.057)

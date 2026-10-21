@@ -2,7 +2,7 @@
 """Prius 부품별 시각화: 코일/자석 3D(자체스케일) + z=0 코일단면 + 부품 이력."""
 import os, glob, traceback
 import numpy as np
-SP=r"C:\Users\moa\AppData\Local\Temp\claude\d--KDH-NvidiaNemo\292f8893-fe65-44a6-9565-cb88503b2e90\scratchpad"
+SP=r"C:\work\thermal_scratch"
 OUT=os.path.join(SP,"viz_prius")
 log=open(os.path.join(SP,"prius_viz.txt"),"w",encoding="utf-8")
 def P(*a): log.write(" ".join(str(x) for x in a)+"\n"); log.flush()

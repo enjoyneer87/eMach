@@ -4,7 +4,7 @@
 뜨겁게 유지되는 건 실제 물리(단시간운전 ~160C, 포화 전 종료). transient끼리 비교.
 IC 70C, dt 45s → 900s (MAPDL와 동일). 함침 elan-UP142 k0.13, 코일 k387."""
 import os, glob, json, math, traceback
-SP = r"C:\Users\moa\AppData\Local\Temp\claude\d--KDH-NvidiaNemo\298544ad-ddbc-4058-ba12-169c3e37aff3\scratchpad"
+SP = r"C:\work\thermal_scratch"
 PROJ = r"D:\KDH\simVary\Ansys_Thermal\e10_icepak_hybrid.aedt"
 OUTJSON = r"D:\KDH\NvidiaNemo\eMach\mlxperPJT\thermal\freeflow\data\e10_icepak_transient_result.json"
 VIZ = r"D:\KDH\NvidiaNemo\eMach\mlxperPJT\thermal\freeflow\viz\icepak"

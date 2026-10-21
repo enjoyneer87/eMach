@@ -5,7 +5,7 @@ Network(solver-input 실패 2회 확정) 폐기. MAPDL과 동일 Robin BC.
 MAPDL 오일노드: JACKET84.4 SPRAY91.9 GAP_S122.3 GAP_R87.0 SHF70.3 / htc 1000/2000/1e4/1e4/250.
 """
 import os, glob, math, json, traceback
-SP=r"C:\Users\moa\AppData\Local\Temp\claude\d--KDH-NvidiaNemo\298544ad-ddbc-4058-ba12-169c3e37aff3\scratchpad"
+SP=r"C:\work\thermal_scratch"
 PROJ=r"D:\KDH\simVary\Ansys_Thermal\e10_icepak_hybrid.aedt"
 LOG=os.path.join(SP,"e10_ipk_v1b_htc.txt")
 _l=open(LOG,"w",encoding="utf-8")

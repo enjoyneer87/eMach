@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """e10 Icepak analyze=False 원인 규명: 엔진 메시지(GetMessages) + generate_mesh 명시 + 재솔브."""
 import os, glob, traceback
-SP = r"C:\Users\moa\AppData\Local\Temp\claude\d--KDH-NvidiaNemo\298544ad-ddbc-4058-ba12-169c3e37aff3\scratchpad"
+SP = r"C:\work\thermal_scratch"
 PROJ = r"D:\KDH\simVary\Ansys_Thermal\e10_icepak_hybrid.aedt"
 LOG = os.path.join(SP, "e10_ipk_whyfail.txt")
 _l = open(LOG, "w", encoding="utf-8")

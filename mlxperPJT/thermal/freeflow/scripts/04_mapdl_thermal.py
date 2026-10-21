@@ -5,7 +5,7 @@ Prius 03_mapdl_thermal.py(JAC279) 구조를 FreeFlow 오일냉각 토폴로지�
 과도해석 -> file.rth -> thermal_viz dashboard.
 """
 import os, math, csv, time, json, traceback
-SP = r"C:\Users\moa\AppData\Local\Temp\claude\d--KDH-NvidiaNemo\298544ad-ddbc-4058-ba12-169c3e37aff3\scratchpad"
+SP = r"C:\work\thermal_scratch"
 CDB = r"D:\KDH\simVary\Ansys_Thermal\ff_e10_mesh_v2"   # .cdb (자석/샤프트 포함)
 LOSSJSON = r"D:\KDH\NvidiaNemo\eMach\mlxperPJT\thermal\freeflow\data\e10_losses.json"
 OUTJSON = r"D:\KDH\NvidiaNemo\eMach\mlxperPJT\thermal\freeflow\data\ff_mapdl_hybrid_temps.json"

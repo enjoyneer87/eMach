@@ -5,7 +5,7 @@ import glob
 import traceback
 import numpy as np
 
-SP = r"C:\Users\moa\AppData\Local\Temp\claude\d--KDH-NvidiaNemo\292f8893-fe65-44a6-9565-cb88503b2e90\scratchpad"
+SP = r"C:\work\thermal_scratch"
 OUT = os.path.join(SP, "viz_real")
 log = open(os.path.join(SP, "fem_gif.txt"), "w", encoding="utf-8")
 def P(*a):

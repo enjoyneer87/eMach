@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
-OUT=os.path.join(SP:=r"C:\Users\moa\AppData\Local\Temp\claude\d--KDH-NvidiaNemo\292f8893-fe65-44a6-9565-cb88503b2e90\scratchpad","viz_prius")
+OUT=os.path.join(SP:=r"C:\work\thermal_scratch","viz_prius")
 os.makedirs(OUT,exist_ok=True)
 fz=json.load(open(r"D:\KDH\simVary\Ansys_Thermal\fluent_prius_zone_temps.json",encoding="utf-8"))
 INK,GRIDC="#333333","#e5e5e0"
