@@ -1,0 +1,77 @@
+# 모터 열해석 자동화 패키지 (`mlxperPJT/thermal`)
+
+Motor-CAD · Maxwell · gmsh · MAPDL · FreeFlow · Icepak/IcepakFEA · Fluent · Mechanical 를 잇는
+모터 열해석 자동화 코드. JMAG JAC279 방식의 **3D FEM + 열등가회로 하이브리드(MAPDL)** 를 축으로,
+두 모터(실제 Toyota **Prius**, FreeFlow 오일냉각 모터 **e10**)에서 교차검증까지 마쳤다.
+
+- 단계 실행·점검: **[`pipeline.py`](pipeline.py)** (이 README 의 표를 코드로 옮긴 레지스트리)
+- Claude Code 스킬: **[`.claude/skills/motor-thermal-hybrid`](../../.claude/skills/motor-thermal-hybrid/SKILL.md)**
+  — 함정 목록·기준값·토큰 절약 실행 스크립트(run_detached/wait_done/ansys_clean/sync_out)
+- 이력·근거: [`HANDOFF_20260721.md`](HANDOFF_20260721.md) → [`_20260722`](HANDOFF_20260722.md) → [`_20260907`](HANDOFF_20260907.md)
+
+## 도구 체인
+
+```
+                    ┌──────────── e10 (FreeFlow 오일냉각) ────────────┐
+Motor-CAD (.mot) ──▶│ 손실·운전점                                      │
+Maxwell 2D/3D ─────▶│ 로터·자석 단면 / 손실 ─▶ gmsh(OCC) ─▶ CDB v2      │
+                    │                         │                        │
+                    │              MAPDL 하이브리드 (FEM + 오일 회로)   │──▶ thermal_viz
+                    │                ▲ 벽온도      │ 오일노드 온도 ref  │
+                    │   FreeFlow SPH ┘ (1-way)     ▼                    │
+                    │                     Icepak V1 (대류벽) ─▶ 비교    │
+                    └──────────────────────────────────────────────────┘
+Prius: Maxwell 손실 ─▶ STEP→CDB ─▶ MAPDL(JAC279 / 워터재킷) ⇄ Fluent CHT ⇄ Icepak  (3-way 검증)
+Mechanical: Maxwell → AEDT Mechanical Thermal(IcepakFEA) 빌드 · C67 원심응력 · em2struct(NVH 가진력)
+Fluent: 엔드턴 오일 스프레이 CHT (DPM + Wall Film) — 메시는 GUI
+```
+
+## 단계 (`python pipeline.py list`)
+
+| 체인 | 단계 | 도구 | 스크립트 |
+|---|---|---|---|
+| e10 | `mcad_losses` → `maxwell_geom` → `mesh_stl` → `mesh_v2` | Motor-CAD · Maxwell · gmsh | `freeflow/scripts/01, 02c, 03, 03b` |
+| e10 | `mapdl_hybrid` → `mapdl_viz` | MAPDL | `freeflow/scripts/04, 10` |
+| e10 | `ff_thermal_setup` → `ff_thermal_solve` → `ff_thermal_viz` | FreeFlow (`--headless --script`) | `freeflow/scripts/11, 12, 13` |
+| e10 | `icepak_v1_steady` → `icepak_v1_trans` (· `icepak_v2_bars`) → `compare` | Icepak | `icepak_e10/scripts/10, 11, 12` · `freeflow/scripts/19` |
+| prius | `maxwell_losses` → `mesh` → `mapdl_jac279` / `mapdl_wj_low` / `mapdl_wj_high` | Maxwell · gmsh · MAPDL | `prius/scripts/01, 02, 03, 08` |
+| prius | `fluent_extract` · `fluent_250A` → `validation` · `viz` | Fluent(h5py) | `prius/scripts/05, 09, 10, render_prius_viz` |
+| prius | `icepak_import` → `icepak_sources` → `icepak_solve` → `threeway` | Icepak | `prius/icepak/01, 02, 05, 07` |
+| mech | `aedt_thermal_build` (노트북) · `c67_stress` · `em2struct` | IcepakFEA · Mechanical | `WS01_2_…ipynb` · `plans/…/d6` · `tools/em2struct` |
+| fluent | `spray_geom` → `spray_mesh`(GUI) → `spray_cht` | gmsh · Fluent | `fluent_spray/` |
+| thesis | `preflight` → `d1` · `d2` · `d3` · `d4` → `figs` | MAPDL · Motor-CAD | `plans/PLAN_20260906_assets/` (읽기전용) |
+
+## 빠른 시작 (moa)
+
+```powershell
+$PY = "C:\Users\moa\.ansys_python_venvs\PyMotorEnv_310\Scripts\python.exe"
+cd D:\KDH\NvidiaNemo\eMach\mlxperPJT\thermal
+& $PY pipeline.py init                       # 스크래치 폴더 준비(최초 1회)
+& $PY pipeline.py check e10                  # 빠진 입력·모듈만 출력
+& $PY pipeline.py run e10.mapdl_hybrid --dry-run
+& $PY pipeline.py run e10.mapdl_hybrid --detached --scheduled-task
+```
+
+긴 솔브는 `--detached` 로 띄우고 `.claude/skills/motor-thermal-hybrid/scripts/wait_done.ps1` 을
+**한 번** 실행해 완료를 받는다(로그 폴링 금지). 솔브 전 `ansys_clean.ps1 -Kill` 로 잔존 MAPDL 정리.
+
+## 검증된 기준값 (요약)
+
+| 모델 | 비교 | 결과 |
+|---|---|---|
+| Prius 동일조건 | MAPDL 워터재킷 vs Fluent CHT, 코일 max | 저부하 88.3 = 88.3 °C, 250A 119.2 vs 118.2 °C |
+| e10 | MAPDL 하이브리드 과도 900s | 권선 152.2 / 스테이터 126.0 / 자석 86.9 °C |
+| e10 | Icepak V1 vs MAPDL, 권선 | 136.5 vs 152.2 °C (10% 이내) |
+| e10 | FreeFlow 1-way (1.63 s) | 오일 70.0 → 평균 70.8 / 최대 72.2 °C |
+
+전체 표와 비물리 신호 판정은 스킬의 `references/results.md`.
+
+## 이식성 · 규칙
+
+- 스크립트는 moa 경로를 하드코딩한다: 레포 `D:\KDH\NvidiaNemo\eMach`, 원본 데이터 `D:\KDH\simVary\…`,
+  로그·중간파일 **`C:\work\thermal_scratch`**(2026-10 이전 Claude 세션 임시폴더 경로를 일괄 이전).
+  다른 PC에서는 `THERMAL_SIMVARY`/`THERMAL_SCRATCH` 로 `check` 만 맞출 수 있고, 실행은 경로 상수 수정이 필요.
+- 큰 원본(`*.cdb` 260MB, `.aedt`, `.mot`, `.freeflow`, Fluent `.h5`)과 산출 이미지는 **git 밖**
+  (이미지는 gdrive `Prius_thermal_viz/`, 입력 자산은 사내 NAS). 공개 레포에 올리지 않는다.
+- `plans/**` 는 학위논문 세션 관할 — 읽기전용 참조 구현. 수정은 `freeflow/scripts/` 로 승격 후.
+- moa 는 GitHub 에 닿지 않는다 → 변경은 `git bundle` 로 게이트웨이를 거쳐 push.
