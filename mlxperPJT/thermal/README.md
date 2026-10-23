@@ -9,6 +9,24 @@ Motor-CAD · Maxwell · gmsh · MAPDL · FreeFlow · Icepak/IcepakFEA · Fluent 
   — 함정 목록·기준값·토큰 절약 실행 스크립트(run_detached/wait_done/ansys_clean/sync_out)
 - 이력·근거: [`HANDOFF_20260721.md`](HANDOFF_20260721.md) → [`_20260722`](HANDOFF_20260722.md) → [`_20260907`](HANDOFF_20260907.md)
 
+## 짧은 상태 조회 (솔버 실행 없음)
+
+레포 루트에서 Python 표준 라이브러리만으로 실행한다. 조회 결과는 한 줄 JSON이다.
+
+```powershell
+python -B -X utf8 mlxperPJT/thermal/ops.py snapshot         # Git·작성자·최신 핸드오프
+python -B -X utf8 mlxperPJT/thermal/ops.py snapshot --live  # 원격 tip 조회, fetch 없음
+python -B -X utf8 mlxperPJT/thermal/ops.py stages --chain e10 --query mapdl
+python -B -X utf8 mlxperPJT/thermal/ops.py artifacts        # 세 결과 폴더의 JSON 목록
+python -B -X utf8 mlxperPJT/thermal/ops.py evidence mlxperPJT/thermal/thesis_out/e10_cont_rating.json
+```
+
+목록은 기본 8개이며 생략 수를 표시한다. 결과 내용은 `--pointer /key`로 좁혀 읽는다.
+원격 커밋이 로컬에 없으면 선후 관계는 `unknown`이다. 캐시된 upstream과 실시간 원격 조회,
+저장된 JSON과 현재 솔버 실행 상태를 구별한다. 파일 수정시각은 해석 날짜를 보증하지 않는다.
+Codex용 짧은 사용 지침은 레포 루트의
+[`.agents/skills/emach-ops/SKILL.md`](../../.agents/skills/emach-ops/SKILL.md)에 있다.
+
 ## 도구 체인
 
 ```

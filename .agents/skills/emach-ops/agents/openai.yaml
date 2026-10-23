@@ -1,0 +1,4 @@
+interface:
+  display_name: "eMach Ops"
+  short_description: "eMach Git 상태·열해석 코드·저장 결과를 짧게 조회"
+  default_prompt: "$emach-ops를 사용해 현재 eMach 작업 상태와 필요한 근거를 간결하게 확인해줘."
