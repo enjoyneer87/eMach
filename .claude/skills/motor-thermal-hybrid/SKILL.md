@@ -53,6 +53,11 @@ python pipeline.py run e10.mapdl_hybrid --detached --scheduled-task   # 이후 w
 ```
 스크립트들의 로그·중간파일 위치는 `C:\work\thermal_scratch` 로 통일돼 있다(과거 세션 임시폴더에서 이전).
 
+**결과 보고는 `thermal_report.py`** — 결과 JSON·그림을 한 파일 HTML(판정 카드·SVG 차트·그림 내장)로 만든다.
+결과를 사람에게 보여줄 때 이미지·JSON 을 하나씩 읽어 요약하지 말고 이 리포트를 생성해 경로를 전달한다:
+`python thermal_report.py --viz-root "G:\내 드라이브\Prius_thermal_viz"` → `C:\work\thermal_scratch\reports\`.
+출력의 `gates` (pass/warn/fail) 만 확인하면 된다.
+
 **Prius (실제 Toyota Prius, OD269/83.8mm, 8극48슬롯)** — `prius\scripts\`
 01 Maxwell 손실 추출 → 02 STEP→gmsh→CDB → 03 MAPDL 하이브리드(JAC279 회로) →
 08 **워터재킷 교차검증 버전**(Fluent 조건 정합) → 05~07·09 Fluent 추출/재솔브 → 10 검증 매트릭스.

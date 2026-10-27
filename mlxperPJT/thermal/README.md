@@ -73,6 +73,16 @@ cd D:\KDH\NvidiaNemo\eMach\mlxperPJT\thermal
 긴 솔브는 `--detached` 로 띄우고 `.claude/skills/motor-thermal-hybrid/scripts/wait_done.ps1` 을
 **한 번** 실행해 완료를 받는다(로그 폴링 금지). 솔브 전 `ansys_clean.ps1 -Kill` 로 잔존 MAPDL 정리.
 
+## 결과 리포트 (HTML)
+
+```powershell
+& $PY thermal_report.py --viz-root "G:\내 드라이브\Prius_thermal_viz"
+# → C:\work\thermal_scratch\reports\thermal_report_<날짜>.html
+```
+결과 JSON 과 표준 그림을 **한 파일짜리 HTML**(인라인 SVG 차트, 그림 내장)로 묶는다. 판정 카드:
+Prius MAPDL↔Fluent 코일(±2 °C), e10 권선 회귀(152.2±1 °C), Icepak V1↔MAPDL(±15%),
+FreeFlow 오일 승온 일관성, 비물리값(>300 °C) 격리. `--gifs` 로 과도 GIF 포함(수 MB).
+
 ## 검증된 기준값 (요약)
 
 | 모델 | 비교 | 결과 |
